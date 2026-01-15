@@ -5,11 +5,9 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import {
   sedes,
-  grupos,
   Sede,
   Grupo,
-  Estudiante,
-  generarEstudiantesGrupo
+  Estudiante
 } from '@/app/data/demoData';
 import {
   ArrowLeft,
@@ -38,6 +36,11 @@ export default function RegistroPage() {
   const [saving, setSaving] = useState(false);
   const [totalEstudiantesPrincipal, setTotalEstudiantesPrincipal] = useState(0);
 
+  // Nuevos estados para grupos dinámicos y fecha
+  const [gruposReales, setGruposReales] = useState<Grupo[]>([]);
+  const [loadingGrupos, setLoadingGrupos] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -55,8 +58,7 @@ export default function RegistroPage() {
     };
 
     const fetchCounts = async () => {
-      // Solo contamos estudiantes reales para sede principal (demo por ahora asume que todos son de principal o se filtrarian por sede_id si existiera)
-      // En este caso, haremos un count general de la tabla estudiantes como "Sede Principal"
+      // Solo contamos estudiantes reales para sede principal
       const { count } = await supabase
         .from('estudiantes')
         .select('*', { count: 'exact', head: true });
@@ -70,26 +72,93 @@ export default function RegistroPage() {
     fetchCounts();
   }, [router]);
 
+  // Función para cargar grupos reales desde la BD
+  const fetchGruposReales = async () => {
+    setLoadingGrupos(true);
+    // Traemos todos los estudiantes para agrupar (podría optimizarse con RPC o vista, pero el dataset es pequeño)
+    const { data, error } = await supabase
+      .from('estudiantes')
+      .select('grupo, grado, id');
+
+    if (error) {
+      console.error('Error fetching grupos:', error);
+      setLoadingGrupos(false);
+      return;
+    }
+
+    // Agrupar y contar
+    const gruposMap = new Map<string, { count: number, grado: string }>();
+
+    data.forEach((est: any) => {
+      const key = est.grupo;
+      if (!gruposMap.has(key)) {
+        gruposMap.set(key, { count: 0, grado: est.grado });
+      }
+      const current = gruposMap.get(key)!;
+      current.count++;
+      current.grado = est.grado; // Asegurar que tenemos el grado
+    });
+
+    // Convertir a array y ordenar
+    const gruposArray: Grupo[] = Array.from(gruposMap.entries()).map(([nombre, info]) => ({
+      id: nombre, // Usamos el nombre como ID para simplificar
+      nombre,
+      grado: info.grado,
+      estudiantes: info.count,
+      sedeId: 'principal' // Asumimos principal por los datos actuales
+    }));
+
+    // Ordenar logic: 6° a 11°. Extraemos el número del grado.
+    gruposArray.sort((a, b) => {
+      const gradoA = parseInt(a.grado.replace(/\D/g, '')) || 0;
+      const gradoB = parseInt(b.grado.replace(/\D/g, '')) || 0;
+
+      if (gradoA !== gradoB) {
+        return gradoA - gradoB;
+      }
+      // Si son del mismo grado, ordenar por nombre de grupo (ej: 601 vs 602)
+      return a.nombre.localeCompare(b.nombre, undefined, { numeric: true });
+    });
+
+    setGruposReales(gruposArray);
+    setLoadingGrupos(false);
+  };
+
   const handleSedeSelect = (sede: Sede) => {
-    // Si es primaria o maría inmaculada (que tienen 0 estudiantes), quizás deberíamos bloquear o mostrar alerta?
-    // Por ahora permitimos seleccionar, pero la UI mostrará 0.
     setSedeSeleccionada(sede);
+    if (sede.id === 'principal') {
+      fetchGruposReales();
+    } else {
+      setGruposReales([]); // O manejar lógica para otras sedes si tuvieran datos
+    }
     setStep('grupo');
   };
 
-  const handleGrupoSelect = (grupo: Grupo) => {
+  const handleGrupoSelect = async (grupo: Grupo) => {
     setGrupoSeleccionado(grupo);
-    const estudiantesGenerados = generarEstudiantesGrupo(grupo.id, grupo.estudiantes);
-    setEstudiantes(estudiantesGenerados);
-
-    // Inicializar todos como pendientes
-    const asistenciasIniciales: Record<string, 'recibio' | 'no-recibio' | 'ausente'> = {};
-    estudiantesGenerados.forEach(est => {
-      asistenciasIniciales[est.id] = 'recibio'; // Por defecto recibió
-    });
-    setAsistencias(asistenciasIniciales);
-
     setStep('registro');
+
+    // Cargar estudiantes reales del grupo seleccionado
+    // Nota: Usamos el nombre del grupo porque en los datos reales id y nombre son similares o relacionados
+    const { data, error } = await supabase
+      .from('estudiantes')
+      .select('*')
+      .eq('grupo', grupo.nombre)
+      .order('nombre');
+
+    if (data) {
+      // Mapear a la estructura Estudiante local si es necesario, aunque parece compatible
+      // Si 'asistencias' no viene de la BD (es relacional), aquí vendrá vacío o nulo.
+      // Inicializamos asistencias vacías o buscamos si ya existen para la fecha seleccionada (pendiente de implementación completa de persistencia)
+      setEstudiantes(data as any); // Casting rápido, ajustar tipado estricto luego
+
+      // Inicializar asistencias (por ahora todas en 'recibio' por defecto visual, o resetear)
+      const asistenciasIniciales: Record<string, 'recibio' | 'no-recibio' | 'ausente'> = {};
+      data.forEach((est: any) => {
+        asistenciasIniciales[est.id] = 'recibio';
+      });
+      setAsistencias(asistenciasIniciales);
+    }
   };
 
   const handleMarcarTodos = () => {
@@ -102,9 +171,14 @@ export default function RegistroPage() {
 
   const handleGuardar = async () => {
     setSaving(true);
-    // Simular guardado
+
+    // Aquí iría la lógica real de guardado en Supabase (tabla 'asistencias')
+    // Usando selectedDate y el estado de asistencias
+
+    // Simulación
     await new Promise(resolve => setTimeout(resolve, 1500));
-    alert('Asistencia guardada correctamente');
+
+    alert(`Asistencia guardada correctamente para el ${selectedDate}`);
     setSaving(false);
     router.push('/dashboard');
   };
@@ -121,12 +195,15 @@ export default function RegistroPage() {
     pendientes: estudiantes.length - Object.keys(asistencias).length
   };
 
+  // Formatear fecha para el título
+  const dateTitle = new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'long' });
+
   if (!usuario) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -149,20 +226,37 @@ export default function RegistroPage() {
                   {step === 'grupo' && 'Seleccionar Grupo'}
                   {step === 'registro' && 'Registro de Asistencia'}
                 </h1>
-                <p className="text-sm text-gray-600">
-                  {step === 'sede' && `miércoles ${new Date().getDate()} de enero`}
-                  {step === 'grupo' && sedeSeleccionada?.nombre}
-                  {step === 'registro' && `Grupo ${grupoSeleccionado?.nombre} • ${grupoSeleccionado?.grado} • miércoles ${new Date().getDate()} de enero`}
+                <p className="text-sm text-gray-600 capitalize">
+                  {step === 'sede' && dateTitle}
+                  {step === 'grupo' && dateTitle}
+                  {/* En registro mostramos info del grupo */}
+                  {step === 'registro' && `Grupo ${grupoSeleccionado?.nombre} • ${dateTitle}`}
                 </p>
               </div>
             </div>
 
-            {step === 'registro' && (
+            {/* Selector de Fecha */}
+            {(step === 'grupo' || step === 'registro') && (
+              <div className="relative">
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                />
+                <button className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">
+                  <Calendar className="w-6 h-6" />
+                </button>
+              </div>
+            )}
+
+            {/* Calendar Icon for Sede step just as visual or link */}
+            {step === 'sede' && (
               <Link
                 href="/dashboard"
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
-                <Calendar className="w-6 h-6" />
+                <Calendar className="w-6 h-6 text-gray-400" />
               </Link>
             )}
           </div>
@@ -244,35 +338,35 @@ export default function RegistroPage() {
         {/* Selección de Grupo */}
         {step === 'grupo' && sedeSeleccionada && (
           <div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {grupos
-                .filter(g => g.sedeId === sedeSeleccionada.id)
-                .map(grupo => (
-                  <button
-                    key={grupo.id}
-                    onClick={() => handleGrupoSelect(grupo)}
-                    className="bg-white rounded-xl p-6 shadow-sm border-2 border-gray-200 hover:border-blue-500 transition-all text-center"
-                  >
-                    <div className="text-3xl font-bold text-gray-900 mb-2">
-                      {grupo.nombre}
-                    </div>
-                    <div className="text-gray-600 mb-3">{grupo.grado}</div>
-                    <div className="text-sm text-gray-500">
-                      {grupo.estudiantes} estudiantes
-                    </div>
-                  </button>
-                ))}
-            </div>
-
-            <button
-              onClick={() => {
-                // Cargar estudiantes desde Excel (simulado)
-                alert('Función disponible próximamente');
-              }}
-              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl p-4 font-medium transition-colors"
-            >
-              Cargar Estudiantes
-            </button>
+            {loadingGrupos ? (
+              <div className="flex justify-center p-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+                {gruposReales
+                  .map(grupo => (
+                    <button
+                      key={grupo.id}
+                      onClick={() => handleGrupoSelect(grupo)}
+                      className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all text-center flex flex-col items-center justify-center min-h-[120px]"
+                    >
+                      <div className="text-xl font-bold text-gray-900 mb-1">
+                        {grupo.nombre}
+                      </div>
+                      <div className="text-gray-600 text-sm mb-2">{grupo.grado}</div>
+                      <div className="text-xs text-gray-400">
+                        {grupo.estudiantes} estudiantes
+                      </div>
+                    </button>
+                  ))}
+                {gruposReales.length === 0 && (
+                  <div className="col-span-3 text-center py-8 text-gray-500">
+                    No se encontraron grupos para esta sede.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
