@@ -659,15 +659,14 @@ function RegistroContent() {
                         {grupo.nombre}
                         {grupo.completado && <CheckCircle className="w-5 h-5 text-white" fill="currentColor" stroke="none" />}
                       </div>
-                      <div className={`text-xs mb-1 ${grupo.completado ? 'text-green-50' : 'text-gray-600'}`}>{grupo.grado}</div>
-                      <div className={`text-xs ${grupo.completado ? 'text-green-100' : 'text-gray-400'}`}>
-                        {grupo.estudiantes} est.
+                      <div className={`text-xs ${grupo.completado ? 'text-green-100' : 'text-gray-500'}`}>
+                        {grupo.grado} • {grupo.estudiantes} estudiantes
                       </div>
 
                       {/* Status badge */}
                       <div className={`mt-2 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${grupo.completado
-                          ? 'bg-white/20 text-white'
-                          : 'bg-yellow-100 text-yellow-700'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-yellow-100 text-yellow-700'
                         }`}>
                         {grupo.completado ? 'Completado' : 'Pendiente'}
                       </div>
