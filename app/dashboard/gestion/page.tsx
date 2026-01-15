@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { ArrowLeft, Search, Eye, FileDown, Users } from 'lucide-react';
 import Link from 'next/link';
+import * as XLSX from 'xlsx';
 
 interface Estudiante {
   id: string;
@@ -161,6 +162,95 @@ export default function GestionPage() {
     };
     updateStats();
   }, [estudiantesFiltrados]);
+
+  const handleGenerateReport = async (estudiante: Estudiante) => {
+    try {
+      // Fetch all attendance records for this student
+      const { data: attendanceData, error } = await supabase
+        .from('asistencia_pae')
+        .select('*')
+        .eq('estudiante_id', estudiante.id)
+        .order('fecha', { ascending: false });
+
+      if (error) throw error;
+
+      // Prepare data for Excel
+      const excelData = [
+        ['REPORTE DE ASISTENCIA - PAE BARROBLANCO'],
+        [''],
+        ['Información del Estudiante'],
+        ['Nombre:', estudiante.nombre],
+        ['Matrícula:', estudiante.matricula],
+        ['Grado:', estudiante.grado],
+        ['Grupo:', estudiante.grupo],
+        ['Sede:', estudiante.sede],
+        [''],
+        ['Historial de Asistencia'],
+        ['Fecha', 'Estado', 'Tipo de Novedad', 'Descripción de Novedad'],
+      ];
+
+      // Add attendance records
+      if (attendanceData && attendanceData.length > 0) {
+        attendanceData.forEach((record: any) => {
+          excelData.push([
+            new Date(record.fecha).toLocaleDateString('es-CO', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            record.estado === 'recibio' ? 'Recibió' :
+              record.estado === 'no_recibio' ? 'No Recibió' :
+                'Ausente',
+            record.novedad_tipo || '-',
+            record.novedad_descripcion || '-'
+          ]);
+        });
+      } else {
+        excelData.push(['No hay registros de asistencia disponibles', '', '', '']);
+      }
+
+      // Calculate statistics
+      const totalRecords = attendanceData?.length || 0;
+      const recibio = attendanceData?.filter((r: any) => r.estado === 'recibio').length || 0;
+      const noRecibio = attendanceData?.filter((r: any) => r.estado === 'no_recibio').length || 0;
+      const ausente = attendanceData?.filter((r: any) => r.estado === 'ausente').length || 0;
+      const porcentajeAsistencia = totalRecords > 0 ? ((recibio / totalRecords) * 100).toFixed(1) : '0.0';
+
+      excelData.push(
+        [''],
+        ['Estadísticas Generales'],
+        ['Total de registros:', totalRecords],
+        ['Recibió:', recibio],
+        ['No Recibió:', noRecibio],
+        ['Ausente:', ausente],
+        ['Porcentaje de Asistencia:', `${porcentajeAsistencia}%`]
+      );
+
+      // Create worksheet and workbook
+      const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 25 },
+        { wch: 20 },
+        { wch: 20 },
+        { wch: 40 }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Reporte de Asistencia');
+
+      // Generate filename
+      const filename = `Reporte_${estudiante.nombre.replace(/ /g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Download file
+      XLSX.writeFile(wb, filename);
+
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert('Error al generar el reporte. Por favor, intenta de nuevo.');
+    }
+  };
 
   if (!usuario) return null;
 
@@ -332,7 +422,10 @@ export default function GestionPage() {
                         Ver Historial
                       </button>
 
-                      <button className="flex-1 px-3 py-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-sm">
+                      <button
+                        onClick={() => handleGenerateReport(estudiante)}
+                        className="flex-1 px-3 py-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-sm"
+                      >
                         <FileDown className="w-4 h-4" />
                         Reporte
                       </button>
