@@ -107,11 +107,16 @@ export default function GestionPage() {
         {/* Estadísticas */}
         <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-            <div className="text-3xl font-bold text-blue-600">{estudiantes.length}</div>
+            <div className="text-3xl font-bold text-blue-600">{estudiantesFiltrados.length}</div>
             <div className="text-sm text-gray-600">Estudiantes</div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-            <div className="text-3xl font-bold text-green-600">95.1%</div>
+            <div className="text-3xl font-bold text-green-600">
+              {estudiantesFiltrados.length > 0
+                ? (estudiantesFiltrados.reduce((sum, est) => sum + Number(calcularAsistenciaReal(est)), 0) / estudiantesFiltrados.length).toFixed(1)
+                : '0.0'
+              }%
+            </div>
             <div className="text-sm text-gray-600">Asistencia Real (30d)</div>
           </div>
         </div>
