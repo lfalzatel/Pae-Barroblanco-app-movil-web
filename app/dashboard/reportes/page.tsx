@@ -403,20 +403,7 @@ export default function ReportesPage() {
           </div>
         </div>
 
-        {/* Exportar datos */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Exportar Datos</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button className="bg-green-50 hover:bg-green-100 text-green-700 py-4 px-6 rounded-xl font-medium flex items-center justify-center gap-3 transition-colors border border-green-200">
-              <FileDown className="w-5 h-5" />
-              Descargar Excel
-            </button>
-            <button className="bg-blue-50 hover:bg-blue-100 text-blue-700 py-4 px-6 rounded-xl font-medium flex items-center justify-center gap-3 transition-colors border border-blue-200">
-              <FileDown className="w-5 h-5" />
-              Descargar PDF
-            </button>
-          </div>
-        </div>
+
       </div>
     </div>
   );
