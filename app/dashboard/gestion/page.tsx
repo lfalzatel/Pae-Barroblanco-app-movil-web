@@ -219,10 +219,10 @@ export default function GestionPage() {
       excelData.push(
         [''],
         ['Estadísticas Generales'],
-        ['Total de registros:', totalRecords],
-        ['Recibió:', recibio],
-        ['No Recibió:', noRecibio],
-        ['Ausente:', ausente],
+        ['Total de registros:', totalRecords.toString()],
+        ['Recibió:', recibio.toString()],
+        ['No Recibió:', noRecibio.toString()],
+        ['Ausente:', ausente.toString()],
         ['Porcentaje de Asistencia:', `${porcentajeAsistencia}%`]
       );
 
