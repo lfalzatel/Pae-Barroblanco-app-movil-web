@@ -33,7 +33,7 @@ export default function GestionPage() {
     { id: 'todas', nombre: 'Todas' },
     { id: 'Principal', nombre: 'Principal' },
     { id: 'Primaria', nombre: 'Primaria' },
-    { id: 'Maria Inmaculada', nombre: 'María I.' }
+    { id: 'Maria Inmaculada', nombre: 'Maria Inmaculada' }
   ];
 
   useEffect(() => {
@@ -252,8 +252,8 @@ export default function GestionPage() {
                         setGrupoDropdownOpen(false);
                       }}
                       className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${grupoFilter === 'todos'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                         }`}
                     >
                       Todos
@@ -266,8 +266,8 @@ export default function GestionPage() {
                           setGrupoDropdownOpen(false);
                         }}
                         className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${grupoFilter === grupo
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                           }`}
                       >
                         {grupo}

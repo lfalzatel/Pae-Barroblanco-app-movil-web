@@ -272,18 +272,33 @@ export default function ReportesPage() {
           >
             Todas
           </button>
-          {sedes.map(sede => (
-            <button
-              key={sede.id}
-              onClick={() => setSedeFilter(sede.id)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${sedeFilter === sede.id
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-            >
-              {sede.nombre}
-            </button>
-          ))}
+          <button
+            onClick={() => setSedeFilter('principal')}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${sedeFilter === 'principal'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+          >
+            Principal
+          </button>
+          <button
+            onClick={() => setSedeFilter('primaria')}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${sedeFilter === 'primaria'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+          >
+            Primaria
+          </button>
+          <button
+            onClick={() => setSedeFilter('maria-inmaculada')}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${sedeFilter === 'maria-inmaculada'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+          >
+            Maria Inmaculada
+          </button>
         </div>
 
         {/* Estadísticas principales */}
