@@ -191,7 +191,7 @@ export default function ReportesPage() {
     }
   }, [usuario, periodo, sedeFilter, grupoFilter, selectedDate]);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
       // Determine period label
       let periodoLabel = '';
@@ -205,74 +205,171 @@ export default function ReportesPage() {
         periodoLabel = 'Este Mes';
       }
 
-      // Determine sede label
-      const sedeLabel = sedeFilter === 'todas' ? 'Todas las Sedes' :
-        sedeFilter === 'principal' ? 'Principal' :
-          sedeFilter === 'primaria' ? 'Primaria' : 'Maria Inmaculada';
+      // Fetch ALL students to calculate totals per sede and grupo
+      const sedeMap: Record<string, string> = {
+        'principal': 'Principal',
+        'primaria': 'Primaria',
+        'maria-inmaculada': 'Maria Inmaculada'
+      };
 
-      // Determine grupo label
-      const grupoLabel = grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter;
+      let queryAllStudents = supabase.from('estudiantes').select('id, nombre, grupo, sede');
+
+      if (sedeFilter !== 'todas') {
+        queryAllStudents = queryAllStudents.eq('sede', sedeMap[sedeFilter] || 'Principal');
+      }
+
+      if (grupoFilter !== 'todos') {
+        queryAllStudents = queryAllStudents.eq('grupo', grupoFilter);
+      }
+
+      const { data: allStudents } = await queryAllStudents;
+
+      // Group students by sede
+      const studentsBySede: Record<string, any[]> = {};
+      const studentsByGrupo: Record<string, any[]> = {};
+
+      (allStudents || []).forEach(student => {
+        if (!studentsBySede[student.sede]) {
+          studentsBySede[student.sede] = [];
+        }
+        studentsBySede[student.sede].push(student);
+
+        const grupoKey = `${student.grupo}-${student.sede}`;
+        if (!studentsByGrupo[grupoKey]) {
+          studentsByGrupo[grupoKey] = [];
+        }
+        studentsByGrupo[grupoKey].push(student);
+      });
+
+      // Calculate statistics per sede
+      const sedeStats: any[] = [];
+      for (const [sede, students] of Object.entries(studentsBySede)) {
+        const studentIds = students.map(s => s.id);
+
+        const { data: attendanceData } = await supabase
+          .from('asistencia_pae')
+          .select('estado')
+          .in('estudiante_id', studentIds)
+          .eq('fecha', selectedDate);
+
+        const recibieron = (attendanceData || []).filter(a => a.estado === 'recibio').length;
+        const noRecibieron = (attendanceData || []).filter(a => a.estado === 'no_recibio').length;
+        const ausentes = (attendanceData || []).filter(a => a.estado === 'ausente').length;
+        const porcentaje = students.length > 0 ? ((recibieron / students.length) * 100).toFixed(1) : '0.0';
+
+        sedeStats.push({
+          sede,
+          total: students.length,
+          recibieron,
+          noRecibieron,
+          ausentes,
+          porcentaje
+        });
+      }
+
+      // Calculate statistics per grupo
+      const grupoStats: any[] = [];
+      for (const [grupoKey, students] of Object.entries(studentsByGrupo)) {
+        const [grupo, sede] = grupoKey.split('-');
+        const studentIds = students.map(s => s.id);
+
+        const { data: attendanceData } = await supabase
+          .from('asistencia_pae')
+          .select('estado')
+          .in('estudiante_id', studentIds)
+          .eq('fecha', selectedDate);
+
+        const recibieron = (attendanceData || []).filter(a => a.estado === 'recibio').length;
+        const noRecibieron = (attendanceData || []).filter(a => a.estado === 'no_recibio').length;
+        const ausentes = (attendanceData || []).filter(a => a.estado === 'ausente').length;
+        const porcentaje = students.length > 0 ? ((recibieron / students.length) * 100) : 0;
+
+        // Determine estado based on percentage
+        let estado = 'Crítico';
+        if (porcentaje >= 90) {
+          estado = 'Excelente';
+        } else if (porcentaje >= 70) {
+          estado = 'Bueno';
+        } else if (porcentaje >= 50) {
+          estado = 'Regular';
+        }
+
+        grupoStats.push({
+          grupo,
+          sede,
+          total: students.length,
+          recibieron,
+          noRecibieron,
+          ausentes,
+          porcentaje: porcentaje.toFixed(1),
+          estado
+        });
+      }
+
+      // Sort grupo stats
+      grupoStats.sort((a, b) => {
+        if (a.sede !== b.sede) return a.sede.localeCompare(b.sede);
+        return a.grupo.localeCompare(b.grupo);
+      });
 
       // Prepare Excel data
       const excelData: any[][] = [
-        ['REPORTE DE ASISTENCIA PAE - BARROBLANCO'],
-        [''],
-        ['Período:', periodoLabel],
-        ['Sede:', sedeLabel],
-        ['Grupo:', grupoLabel],
-        ['Fecha de generación:', new Date().toLocaleDateString('es-CO', {
+        ['REPORTE DE ASISTENCIA PAE BARROBLANCO'],
+        ['Fecha de Generación:', new Date().toLocaleDateString('es-CO', {
           year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
+          month: '2-digit',
+          day: '2-digit'
         })],
         [''],
-        ['ESTADÍSTICAS GENERALES'],
-        ['Total de Estudiantes:', stats.totalEstudiantes.toString()],
-        ['Recibieron:', stats.recibieron.toString()],
-        ['No Recibieron:', stats.noRecibieron.toString()],
-        ['Ausentes:', stats.ausentes.toString()],
-        [''],
-        ['DETALLE DE REGISTROS DE ASISTENCIA'],
-        ['Estudiante', 'Grupo', 'Sede', 'Fecha', 'Estado', 'Tipo de Novedad', 'Descripción']
+        ['RESUMEN POR SEDE'],
+        ['Sede', 'Total Estudiantes', 'Recibieron', 'No Recibieron', 'No Asistieron', '% Asistencia']
       ];
 
-      // Add attendance records
-      if (registros.length > 0) {
-        registros.forEach((registro: any) => {
-          excelData.push([
-            registro.estudiantes?.nombre || 'N/A',
-            registro.estudiantes?.grupo || 'N/A',
-            registro.estudiantes?.sede || 'N/A',
-            new Date(registro.fecha).toLocaleDateString('es-CO', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }),
-            registro.estado === 'recibio' ? 'Recibió' :
-              registro.estado === 'no_recibio' ? 'No Recibió' :
-                'Ausente',
-            registro.novedad_tipo || '-',
-            registro.novedad_descripcion || '-'
-          ]);
-        });
-      } else {
-        excelData.push(['No hay registros de asistencia para este período y filtros', '', '', '', '', '', '']);
-      }
+      // Add sede statistics
+      sedeStats.forEach(stat => {
+        excelData.push([
+          `Sede ${stat.sede}`,
+          stat.total.toString(),
+          stat.recibieron.toString(),
+          stat.noRecibieron.toString(),
+          stat.ausentes.toString(),
+          `${stat.porcentaje}%`
+        ]);
+      });
+
+      excelData.push(
+        [''],
+        ['DETALLE POR GRUPO'],
+        ['Grupo', 'Sede', 'Total', 'Recibieron', 'No Recibieron', 'No Asistieron', '% Asistencia', 'Estado']
+      );
+
+      // Add grupo statistics
+      grupoStats.forEach(stat => {
+        excelData.push([
+          stat.grupo,
+          stat.sede,
+          stat.total.toString(),
+          stat.recibieron.toString(),
+          stat.noRecibieron.toString(),
+          stat.ausentes.toString(),
+          `${stat.porcentaje}%`,
+          stat.estado
+        ]);
+      });
 
       // Create worksheet and workbook
       const ws = XLSX.utils.aoa_to_sheet(excelData);
 
       // Set column widths
       ws['!cols'] = [
-        { wch: 30 },  // Estudiante
-        { wch: 12 },  // Grupo
-        { wch: 20 },  // Sede
-        { wch: 25 },  // Fecha
+        { wch: 20 },  // Grupo/Sede
+        { wch: 18 },  // Sede/Total
+        { wch: 15 },  // Total/Recibieron
+        { wch: 15 },  // Recibieron/No Recibieron
+        { wch: 18 },  // No Recibieron/No Asistieron
+        { wch: 15 },  // % Asistencia
         { wch: 15 },  // Estado
-        { wch: 20 },  // Tipo Novedad
-        { wch: 40 }   // Descripción
+        { wch: 12 }   // Extra
       ];
 
       const wb = XLSX.utils.book_new();
@@ -480,8 +577,8 @@ export default function ReportesPage() {
                         setGrupoDropdownOpen(false);
                       }}
                       className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${grupoFilter === 'todos'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                         }`}
                     >
                       Todos
@@ -494,8 +591,8 @@ export default function ReportesPage() {
                           setGrupoDropdownOpen(false);
                         }}
                         className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${grupoFilter === grupo
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                           }`}
                       >
                         {grupo}
