@@ -125,12 +125,12 @@ export default function DashboardPage() {
 
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <button className="bg-orange-400 hover:bg-orange-500 text-white rounded-xl py-4 px-2 flex flex-col items-center justify-center gap-2 font-bold shadow-sm transition-colors cursor-not-allowed opacity-90">
-          <UploadCloud className="w-8 h-8" />
+        <button className="bg-orange-400 hover:bg-orange-500 text-white rounded-xl py-3 px-2 flex flex-row items-center justify-center gap-2 font-bold shadow-sm transition-colors cursor-not-allowed opacity-90">
+          <UploadCloud className="w-6 h-6" />
           <span className="text-sm">Migrar Local</span>
         </button>
-        <button className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-4 px-2 flex flex-col items-center justify-center gap-2 font-bold shadow-sm transition-colors cursor-not-allowed opacity-90">
-          <FileSpreadsheet className="w-8 h-8" />
+        <button className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-3 px-2 flex flex-row items-center justify-center gap-2 font-bold shadow-sm transition-colors cursor-not-allowed opacity-90">
+          <FileSpreadsheet className="w-6 h-6" />
           <span className="text-sm">Cargar Excel</span>
         </button>
       </div>
