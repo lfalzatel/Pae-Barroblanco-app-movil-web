@@ -14,6 +14,9 @@ export default function ReportesPage() {
   const [usuario, setUsuario] = useState<any | null>(null);
   const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes' | 'fecha'>('hoy');
   const [sedeFilter, setSedeFilter] = useState('todas');
+  const [grupoFilter, setGrupoFilter] = useState('todos');
+  const [grupoDropdownOpen, setGrupoDropdownOpen] = useState(false);
+  const [gruposDisponibles, setGruposDisponibles] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const now = new Date();
     const offset = now.getTimezoneOffset() * 60000;
@@ -50,6 +53,39 @@ export default function ReportesPage() {
 
     checkUser();
   }, [router]);
+
+  // Fetch available grupos when sede changes
+  useEffect(() => {
+    const fetchGrupos = async () => {
+      try {
+        const sedeMap: Record<string, string> = {
+          'principal': 'Principal',
+          'primaria': 'Primaria',
+          'maria-inmaculada': 'Maria Inmaculada'
+        };
+
+        let query = supabase
+          .from('estudiantes')
+          .select('grupo');
+
+        if (sedeFilter !== 'todas') {
+          query = query.eq('sede', sedeMap[sedeFilter] || 'Principal');
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        const grupos = Array.from(new Set((data || []).map((e: any) => e.grupo))).sort();
+        setGruposDisponibles(grupos as string[]);
+
+      } catch (error) {
+        console.error('Error fetching grupos:', error);
+      }
+    };
+
+    fetchGrupos();
+  }, [sedeFilter]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -121,6 +157,10 @@ export default function ReportesPage() {
           queryAsistencia = queryAsistencia.eq('estudiantes.sede', sedeMap[sedeFilter] || 'Principal');
         }
 
+        if (grupoFilter !== 'todos') {
+          queryAsistencia = queryAsistencia.eq('estudiantes.grupo', grupoFilter);
+        }
+
         const { data: asistenciaData, error: errorAsist } = await queryAsistencia;
         if (errorAsist) throw errorAsist;
 
@@ -149,7 +189,7 @@ export default function ReportesPage() {
     if (usuario) {
       fetchData();
     }
-  }, [usuario, periodo, sedeFilter, selectedDate]);
+  }, [usuario, periodo, sedeFilter, grupoFilter, selectedDate]);
 
   const handleExportExcel = () => {
     try {
@@ -170,12 +210,16 @@ export default function ReportesPage() {
         sedeFilter === 'principal' ? 'Principal' :
           sedeFilter === 'primaria' ? 'Primaria' : 'Maria Inmaculada';
 
+      // Determine grupo label
+      const grupoLabel = grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter;
+
       // Prepare Excel data
       const excelData: any[][] = [
         ['REPORTE DE ASISTENCIA PAE - BARROBLANCO'],
         [''],
         ['Período:', periodoLabel],
         ['Sede:', sedeLabel],
+        ['Grupo:', grupoLabel],
         ['Fecha de generación:', new Date().toLocaleDateString('es-CO', {
           year: 'numeric',
           month: 'long',
