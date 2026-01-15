@@ -6,11 +6,12 @@ import { supabase } from '../../lib/supabase';
 import { Usuario, calcularEstadisticasHoy, sedes } from '../data/demoData';
 import {
   Users,
-  Upload,
-  FileDown,
+  CloudUpload,
+  FileSpreadsheet,
   Search,
   CheckCircle,
-  XCircle
+  XCircle,
+  FileDown // Keeping just in case, but replacing usage
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -125,12 +126,12 @@ export default function DashboardPage() {
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <button className="bg-orange-400 hover:bg-orange-500 text-white rounded-xl py-4 px-2 flex flex-col items-center justify-center gap-2 font-bold shadow-sm transition-colors cursor-not-allowed opacity-90">
-          <Upload className="w-6 h-6 md:w-8 md:h-8" />
-          <span className="text-sm md:text-base">Migrar Local</span>
+          <CloudUpload className="w-8 h-8" />
+          <span className="text-sm">Migrar Local</span>
         </button>
         <button className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-4 px-2 flex flex-col items-center justify-center gap-2 font-bold shadow-sm transition-colors cursor-not-allowed opacity-90">
-          <FileDown className="w-6 h-6 md:w-8 md:h-8" />
-          <span className="text-sm md:text-base">Cargar Excel</span>
+          <FileSpreadsheet className="w-8 h-8" />
+          <span className="text-sm">Cargar Excel</span>
         </button>
       </div>
 
@@ -151,69 +152,69 @@ export default function DashboardPage() {
       {/* Statistics */}
       <div>
         <h3 className="text-xl font-extrabold text-gray-900 mb-4">Estadísticas de Hoy</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {/* Total Estudiantes */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-gray-500 text-sm font-medium mb-1">Total Estudiantes</div>
                 <div className="text-3xl font-bold text-blue-600 tracking-tight">
                   {stats.totalEstudiantes.toLocaleString()}
                 </div>
+                <div className="text-gray-500 text-xs font-bold uppercase mt-1">Total</div>
               </div>
-              <div className="bg-blue-100 p-2 rounded-full">
-                <Users className="w-6 h-6 text-blue-600" />
+              <div className="bg-blue-50 p-1.5 rounded-full">
+                <Users className="w-5 h-5 text-blue-600" />
               </div>
             </div>
-            <div className="text-xs text-blue-500 font-medium">En las 3 sedes</div>
+            <div className="text-[10px] text-blue-400 font-semibold">En las 3 sedes</div>
           </div>
 
           {/* Presentes Hoy */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-gray-500 text-sm font-medium mb-1">Presentes Hoy</div>
                 <div className="text-3xl font-bold text-emerald-500 tracking-tight">
                   {stats.presentesHoy.toLocaleString()}
                 </div>
+                <div className="text-gray-500 text-xs font-bold uppercase mt-1">Presentes</div>
               </div>
-              <div className="bg-emerald-100 p-2 rounded-full">
-                <CheckCircle className="w-6 h-6 text-emerald-500" />
+              <div className="bg-emerald-50 p-1.5 rounded-full">
+                <CheckCircle className="w-5 h-5 text-emerald-500" />
               </div>
             </div>
-            <div className="text-xs text-emerald-600 font-medium">{stats.porcentajeAsistencia}% asistencia</div>
+            <div className="text-[10px] text-emerald-600 font-semibold">{stats.porcentajeAsistencia}% asistencia</div>
           </div>
 
           {/* Recibieron */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-gray-500 text-sm font-medium mb-1">Recibieron</div>
                 <div className="text-3xl font-bold text-emerald-500 tracking-tight">
                   {stats.recibieron.toLocaleString()}
                 </div>
+                <div className="text-gray-500 text-xs font-bold uppercase mt-1">Recibieron</div>
               </div>
-              <div className="bg-emerald-100 p-2 rounded-full">
-                <CheckCircle className="w-6 h-6 text-emerald-500" />
+              <div className="bg-emerald-50 p-1.5 rounded-full">
+                <CheckCircle className="w-5 h-5 text-emerald-500" />
               </div>
             </div>
-            <div className="text-xs text-emerald-600 font-medium">Alimentación escolar</div>
+            <div className="text-[10px] text-emerald-600 font-semibold">PAE Entregado</div>
           </div>
 
           {/* No Recibieron */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-gray-500 text-sm font-medium mb-1">No Recibieron</div>
                 <div className="text-3xl font-bold text-red-500 tracking-tight">
                   {stats.noRecibieron.toLocaleString()}
                 </div>
+                <div className="text-gray-500 text-xs font-bold uppercase mt-1">No Recib.</div>
               </div>
-              <div className="bg-red-100 p-2 rounded-full">
-                <XCircle className="w-6 h-6 text-red-500" />
+              <div className="bg-red-50 p-1.5 rounded-full">
+                <XCircle className="w-5 h-5 text-red-500" />
               </div>
             </div>
-            <div className="text-xs text-red-600 font-medium">Sin alimentación</div>
+            <div className="text-[10px] text-red-600 font-semibold">Sin recibir</div>
           </div>
         </div>
       </div>
