@@ -27,6 +27,7 @@ export default function GestionPage() {
   const [selectedStudent, setSelectedStudent] = useState<Estudiante | null>(null);
   const [studentHistory, setStudentHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [grupoDropdownOpen, setGrupoDropdownOpen] = useState(false);
 
   const sedes = [
     { id: 'todas', nombre: 'Todas' },
@@ -220,18 +221,62 @@ export default function GestionPage() {
             />
           </div>
 
-          {/* Group Filter */}
-          <div className="flex gap-3">
-            <select
-              value={grupoFilter}
-              onChange={(e) => setGrupoFilter(e.target.value)}
-              className="flex-1 px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+          {/* Group Filter - Custom Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
+              className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between"
             >
-              <option value="todos">Todos los Grupos</option>
-              {gruposDisponibles.map(grupo => (
-                <option key={grupo} value={grupo}>{grupo}</option>
-              ))}
-            </select>
+              <span className="text-gray-900">
+                {grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter}
+              </span>
+              <svg className={`w-5 h-5 text-gray-400 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {grupoDropdownOpen && (
+              <>
+                {/* Backdrop to close dropdown */}
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setGrupoDropdownOpen(false)}
+                ></div>
+
+                {/* Dropdown Menu */}
+                <div className="absolute z-20 w-full mt-2 bg-white border border-gray-300 rounded-xl shadow-lg max-h-96 overflow-y-auto">
+                  <div className="p-3 grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => {
+                        setGrupoFilter('todos');
+                        setGrupoDropdownOpen(false);
+                      }}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${grupoFilter === 'todos'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        }`}
+                    >
+                      Todos
+                    </button>
+                    {gruposDisponibles.map(grupo => (
+                      <button
+                        key={grupo}
+                        onClick={() => {
+                          setGrupoFilter(grupo);
+                          setGrupoDropdownOpen(false);
+                        }}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${grupoFilter === grupo
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                          }`}
+                      >
+                        {grupo}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
