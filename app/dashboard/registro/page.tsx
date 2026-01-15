@@ -409,8 +409,23 @@ function RegistroContent() {
       showToast(`Asistencia guardada para el ${selectedDate}`, 'success');
 
       // Regresar a la lista de grupos y recargar estado
-      await fetchGruposReales(); // Esperar para asegurar consistencia
+
+      // 1. Actualización Optimista: Actualizamos el estado local inmediatamente
+      if (grupoSeleccionado) {
+        setGruposReales(prev => prev.map(g => {
+          if (g.nombre === grupoSeleccionado.nombre) {
+            return { ...g, completado: true }; // Asumimos completado si no hubo error
+          }
+          return g;
+        }));
+      }
+
+      // 2. Navegación inmediata (sin esperar el fetch)
       handleBack();
+
+      // 3. Recarga silenciosa en segundo plano para asegurar consistencia real
+      // Quitamos el 'await' intencionalmente
+      fetchGruposReales();
 
     } catch (error: any) {
       console.error('Error guardando:', error);
