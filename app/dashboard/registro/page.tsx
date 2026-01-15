@@ -657,7 +657,7 @@ function RegistroContent() {
                     >
                       <div className={`text-xl font-bold mb-0.5 flex items-center gap-1.5 ${grupo.completado ? 'text-white' : 'text-gray-900'}`}>
                         {grupo.nombre}
-                        <CheckCircle className={`w-5 h-5 ${grupo.completado ? 'text-white' : 'text-gray-400'}`} fill="currentColor" stroke="none" />
+                        {grupo.completado && <CheckCircle className="w-5 h-5 text-white" fill="currentColor" stroke="none" />}
                       </div>
                       <div className={`text-xs ${grupo.completado ? 'text-green-100' : 'text-gray-500'}`}>
                         {grupo.grado} • {grupo.estudiantes} estudiantes
