@@ -642,31 +642,31 @@ function RegistroContent() {
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-8">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-8">
                 {gruposReales
                   .map(grupo => (
                     <button
                       key={grupo.id}
                       onClick={() => handleGrupoSelect(grupo)}
-                      className={`rounded-xl p-4 shadow-sm border transition-all text-center flex flex-col items-center justify-center min-h-[130px] relative overflow-hidden group
+                      className={`rounded-lg p-3 shadow-sm border transition-all text-center flex flex-col items-center justify-center min-h-[100px] relative overflow-hidden group
                             ${grupo.completado
                           ? 'bg-[#10B981] border-[#10B981] text-white'
                           : 'bg-white border-gray-200 hover:border-blue-500 hover:bg-blue-50 hover:shadow-md'
                         }
                         `}
                     >
-                      <div className={`text-2xl font-bold mb-1 flex items-center gap-2 ${grupo.completado ? 'text-white' : 'text-gray-900'}`}>
+                      <div className={`text-xl font-bold mb-0.5 flex items-center gap-1.5 ${grupo.completado ? 'text-white' : 'text-gray-900'}`}>
                         {grupo.nombre}
-                        {grupo.completado && <CheckCircle className="w-6 h-6 text-white" fill="currentColor" stroke="none" />}
+                        {grupo.completado && <CheckCircle className="w-5 h-5 text-white" fill="currentColor" stroke="none" />}
                       </div>
-                      <div className={`text-sm mb-2 ${grupo.completado ? 'text-green-50' : 'text-gray-600'}`}>{grupo.grado}</div>
+                      <div className={`text-xs mb-1 ${grupo.completado ? 'text-green-50' : 'text-gray-600'}`}>{grupo.grado}</div>
                       <div className={`text-xs ${grupo.completado ? 'text-green-100' : 'text-gray-400'}`}>
-                        {grupo.estudiantes} estudiantes
+                        {grupo.estudiantes} est.
                       </div>
 
                       {grupo.completado && (
-                        <div className="mt-3 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-white uppercase tracking-wider">
-                          Completado
+                        <div className="mt-2 bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-bold text-white uppercase tracking-wider">
+                          ✓
                         </div>
                       )}
                     </button>

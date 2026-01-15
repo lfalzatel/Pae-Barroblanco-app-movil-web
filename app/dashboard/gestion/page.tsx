@@ -105,16 +105,14 @@ export default function GestionPage() {
         </div>
 
         {/* Estadísticas */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div className="text-3xl font-bold text-blue-600">{estudiantes.length}</div>
-              <div className="text-sm text-gray-600">Estudiantes</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-green-600">94.6%</div>
-              <div className="text-sm text-gray-600">Asistencia Real (30d)</div>
-            </div>
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+            <div className="text-3xl font-bold text-blue-600">{estudiantes.length}</div>
+            <div className="text-sm text-gray-600">Estudiantes</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+            <div className="text-3xl font-bold text-green-600">95.1%</div>
+            <div className="text-sm text-gray-600">Asistencia Real (30d)</div>
           </div>
         </div>
 
@@ -125,7 +123,7 @@ export default function GestionPage() {
               key={estudiante.id}
               className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-start gap-3">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-blue-600 font-bold text-lg">
                     {estudiante.nombre.charAt(0)}
@@ -133,25 +131,29 @@ export default function GestionPage() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900">{estudiante.nombre}</div>
-                  <div className="text-sm text-gray-600">
-                    {estudiante.matricula} • {estudiante.grado}-{estudiante.grupo}
+                  <div className="font-semibold text-gray-900 text-sm leading-tight mb-1">{estudiante.nombre}</div>
+                  <div className="text-xs text-gray-600">
+                    {estudiante.matricula}
                   </div>
-                </div>
+                  <div className="text-xs text-gray-500">
+                    {estudiante.grado}-{estudiante.grupo}
+                  </div>
 
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setSelectedStudent(estudiante)}
-                    className="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg flex items-center gap-2 transition-colors"
-                  >
-                    <Eye className="w-4 h-4" />
-                    Ver Historial
-                  </button>
+                  {/* Buttons inline below student info */}
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      onClick={() => setSelectedStudent(estudiante)}
+                      className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-sm"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Ver Historial
+                    </button>
 
-                  <button className="px-4 py-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg flex items-center gap-2 transition-colors">
-                    <FileDown className="w-4 h-4" />
-                    Reporte
-                  </button>
+                    <button className="flex-1 px-3 py-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-sm">
+                      <FileDown className="w-4 h-4" />
+                      Reporte
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
