@@ -39,7 +39,11 @@ function RegistroContent() {
   const [sedeSeleccionada, setSedeSeleccionada] = useState<Sede | null>(null);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState<Grupo | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(
-    searchParams.get('fecha') || new Date().toISOString().split('T')[0]
+    searchParams.get('fecha') || (() => {
+      const now = new Date();
+      const offset = now.getTimezoneOffset() * 60000;
+      return new Date(now.getTime() - offset).toISOString().split('T')[0];
+    })()
   );
 
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
