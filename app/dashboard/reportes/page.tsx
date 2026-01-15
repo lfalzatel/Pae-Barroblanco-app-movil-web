@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
 import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
+import * as XLSX from 'xlsx';
 
 export default function ReportesPage() {
   const router = useRouter();
@@ -150,6 +151,106 @@ export default function ReportesPage() {
     }
   }, [usuario, periodo, sedeFilter, selectedDate]);
 
+  const handleExportExcel = () => {
+    try {
+      // Determine period label
+      let periodoLabel = '';
+      if (periodo === 'fecha') {
+        periodoLabel = `Fecha específica: ${selectedDate}`;
+      } else if (periodo === 'hoy') {
+        periodoLabel = 'Hoy';
+      } else if (periodo === 'semana') {
+        periodoLabel = 'Esta Semana';
+      } else {
+        periodoLabel = 'Este Mes';
+      }
+
+      // Determine sede label
+      const sedeLabel = sedeFilter === 'todas' ? 'Todas las Sedes' :
+        sedeFilter === 'principal' ? 'Principal' :
+          sedeFilter === 'primaria' ? 'Primaria' : 'Maria Inmaculada';
+
+      // Prepare Excel data
+      const excelData: any[][] = [
+        ['REPORTE DE ASISTENCIA PAE - BARROBLANCO'],
+        [''],
+        ['Período:', periodoLabel],
+        ['Sede:', sedeLabel],
+        ['Fecha de generación:', new Date().toLocaleDateString('es-CO', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })],
+        [''],
+        ['ESTADÍSTICAS GENERALES'],
+        ['Total de Estudiantes:', stats.totalEstudiantes.toString()],
+        ['Recibieron:', stats.recibieron.toString()],
+        ['No Recibieron:', stats.noRecibieron.toString()],
+        ['Ausentes:', stats.ausentes.toString()],
+        [''],
+        ['DETALLE DE REGISTROS DE ASISTENCIA'],
+        ['Estudiante', 'Grupo', 'Sede', 'Fecha', 'Estado', 'Tipo de Novedad', 'Descripción']
+      ];
+
+      // Add attendance records
+      if (registros.length > 0) {
+        registros.forEach((registro: any) => {
+          excelData.push([
+            registro.estudiantes?.nombre || 'N/A',
+            registro.estudiantes?.grupo || 'N/A',
+            registro.estudiantes?.sede || 'N/A',
+            new Date(registro.fecha).toLocaleDateString('es-CO', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            registro.estado === 'recibio' ? 'Recibió' :
+              registro.estado === 'no_recibio' ? 'No Recibió' :
+                'Ausente',
+            registro.novedad_tipo || '-',
+            registro.novedad_descripcion || '-'
+          ]);
+        });
+      } else {
+        excelData.push(['No hay registros de asistencia para este período y filtros', '', '', '', '', '', '']);
+      }
+
+      // Create worksheet and workbook
+      const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 30 },  // Estudiante
+        { wch: 12 },  // Grupo
+        { wch: 20 },  // Sede
+        { wch: 25 },  // Fecha
+        { wch: 15 },  // Estado
+        { wch: 20 },  // Tipo Novedad
+        { wch: 40 }   // Descripción
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Reporte de Asistencia');
+
+      // Generate filename
+      const sedeFilename = sedeFilter === 'todas' ? 'Todas' : sedeFilter;
+      const periodoFilename = periodo === 'fecha' ? selectedDate : periodo;
+      const filename = `Reporte_Asistencia_${sedeFilename}_${periodoFilename}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Download file
+      XLSX.writeFile(wb, filename);
+
+      // Close export menu
+      setShowExportMenu(false);
+
+    } catch (error) {
+      console.error('Error generating Excel report:', error);
+      alert('Error al generar el reporte Excel. Por favor, intenta de nuevo.');
+    }
+  };
+
   if (!usuario) return null;
 
   return (
@@ -185,7 +286,10 @@ export default function ReportesPage() {
 
                 {showExportMenu && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-50 py-1">
-                    <button className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700">
+                    <button
+                      onClick={handleExportExcel}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
+                    >
                       <span className="text-green-600 font-bold">XLS</span> Descargar Excel
                     </button>
                     <button className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 border-t border-gray-100">
