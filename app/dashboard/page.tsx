@@ -181,39 +181,36 @@ export default function DashboardPage() {
             <div className="text-xs text-emerald-600 font-medium">{stats.porcentajeAsistencia}% asistencia</div>
           </div>
 
-          {/* Ausentes Hoy (Nombres cambiados para match UI) */}
+          {/* Recibieron */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-gray-500 text-sm font-medium mb-1">Ausentes Hoy</div>
+                <div className="text-gray-500 text-sm font-medium mb-1">Recibieron</div>
+                <div className="text-3xl font-bold text-emerald-500 tracking-tight">
+                  {stats.recibieron.toLocaleString()}
+                </div>
+              </div>
+              <div className="bg-emerald-100 p-2 rounded-full">
+                <CheckCircle className="w-6 h-6 text-emerald-500" />
+              </div>
+            </div>
+            <div className="text-xs text-emerald-600 font-medium">Alimentación escolar</div>
+          </div>
+
+          {/* No Recibieron */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-gray-500 text-sm font-medium mb-1">No Recibieron</div>
                 <div className="text-3xl font-bold text-red-500 tracking-tight">
-                  {stats.ausentes.toLocaleString()}
+                  {stats.noRecibieron.toLocaleString()}
                 </div>
               </div>
               <div className="bg-red-100 p-2 rounded-full">
                 <XCircle className="w-6 h-6 text-red-500" />
               </div>
             </div>
-            <div className="text-xs text-red-500 font-medium">
-              {stats.totalEstudiantes > 0 ? ((stats.ausentes / stats.totalEstudiantes * 100).toFixed(1)) : 0}% inasistencia
-            </div>
-          </div>
-
-          {/* Novedades (Simuladas con No Recibieron por ahora) */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <div className="text-gray-500 text-sm font-medium mb-1">Novedades</div>
-                <div className="text-3xl font-bold text-yellow-500 tracking-tight">
-                  {stats.noRecibieron.toLocaleString()}
-                </div>
-              </div>
-              <div className="bg-yellow-100 p-2 rounded-full">
-                {/* Usando AlertCircle si existiera, sino XCircle amarillo */}
-                <XCircle className="w-6 h-6 text-yellow-600" />
-              </div>
-            </div>
-            <div className="text-xs text-yellow-600 font-medium">Requieren atención</div>
+            <div className="text-xs text-red-600 font-medium">Sin alimentación</div>
           </div>
         </div>
       </div>
