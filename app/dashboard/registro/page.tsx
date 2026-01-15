@@ -252,9 +252,8 @@ function RegistroContent() {
     setStep('registro');
     if (updateUrlParam) updateUrl({ grupo: grupo.nombre });
 
-    setLoadingGrupos(true); // Reusamos loading state para la carga de estudiantes
+    setLoadingGrupos(true);
     try {
-      // Cargar Estudiantes del Grupo
       const { data: estudiantesData, error } = await supabase
         .from('estudiantes')
         .select('*')
@@ -264,7 +263,6 @@ function RegistroContent() {
       if (error) throw error;
       setEstudiantes(estudiantesData || []);
 
-      // Cargar Asistencias existentes para la fecha
       const { data: asistenciasData, error: asistError } = await supabase
         .from('asistencia_pae')
         .select('*')
@@ -275,16 +273,34 @@ function RegistroContent() {
 
       const newAsistencias: Record<string, 'recibio' | 'no_recibio' | 'ausente'> = {};
       const newNovedades: Record<string, { tipo: string; descripcion: string }> = {};
+      const asistenciaMap = new Map();
 
       asistenciasData?.forEach((a: any) => {
-        newAsistencias[a.estudiante_id] = a.estado;
-        if (a.novedad_tipo || a.novedad_descripcion) {
-          newNovedades[a.estudiante_id] = {
-            tipo: a.novedad_tipo || '',
-            descripcion: a.novedad_descripcion || ''
-          };
+        asistenciaMap.set(a.estudiante_id, a);
+      });
+
+      // Lógica de carga inicial con defecto "Recibió" para activos
+      estudiantesData?.forEach((est: any) => {
+        if (asistenciaMap.has(est.id)) {
+          // Si ya existe registro en DB, usarlo
+          const a = asistenciaMap.get(est.id);
+          newAsistencias[est.id] = a.estado;
+          if (a.novedad_tipo || a.novedad_descripcion) {
+            newNovedades[est.id] = {
+              tipo: a.novedad_tipo || '',
+              descripcion: a.novedad_descripcion || ''
+            };
+          }
+        } else {
+          // Si NO existe registro, marcar como Recibió por defecto solo si está Activo
+          // NOTA: estado_pae o estado. Asumimos columna 'estado' existente ('activo'/'inactivo')
+          const isActivo = est.estado === 'activo' || !est.estado; // Default activo si null
+          if (isActivo) {
+            newAsistencias[est.id] = 'recibio';
+          }
         }
       });
+
       setAsistencias(newAsistencias);
       setNovedades(newNovedades);
 
@@ -292,6 +308,35 @@ function RegistroContent() {
       console.error('Error loading group details:', error);
     } finally {
       setLoadingGrupos(false);
+    }
+  };
+
+  const handleToggleEstado = async (estudiante: Estudiante) => {
+    const newState = estudiante.estado === 'activo' ? 'inactivo' : 'activo';
+
+    // Optimistic Update
+    setEstudiantes(prev => prev.map(e => e.id === estudiante.id ? { ...e, estado: newState } : e));
+
+    if (newState === 'inactivo') {
+      // Remover asistencia si se inactiva
+      const newAsist = { ...asistencias };
+      delete newAsist[estudiante.id];
+      setAsistencias(newAsist);
+    } else {
+      // Marcar recibió si se activa
+      setAsistencias(prev => ({ ...prev, [estudiante.id]: 'recibio' }));
+    }
+
+    // DB Update
+    const { error } = await supabase
+      .from('estudiantes')
+      .update({ estado: newState })
+      .eq('id', estudiante.id);
+
+    if (error) {
+      console.error('Error updating status:', error);
+      showToast('Error al actualizar estado', 'error');
+      // Revertir en caso de error (opcional, por simplicidad omitido aquí)
     }
   };
 
@@ -322,8 +367,8 @@ function RegistroContent() {
   const handleMarcarTodos = () => {
     const nuevasAsistencias = { ...asistencias };
     estudiantes.forEach(est => {
-      // Solo marcar si no tiene estado
-      if (!nuevasAsistencias[est.id]) {
+      // Solo marcar si no tiene estado y es activo
+      if (est.estado !== 'inactivo' && !nuevasAsistencias[est.id]) {
         nuevasAsistencias[est.id] = 'recibio';
       }
     });
@@ -390,9 +435,9 @@ function RegistroContent() {
     recibieron: Object.values(asistencias).filter(a => a === 'recibio').length,
     noRecibieron: Object.values(asistencias).filter(a => a === 'no_recibio').length,
     ausentes: Object.values(asistencias).filter(a => a === 'ausente').length,
-    total: estudiantes.length
+    inactivos: estudiantes.filter(e => e.estado === 'inactivo').length
   };
-  const pendientes = statsCount.total - (statsCount.recibieron + statsCount.noRecibieron + statsCount.ausentes);
+  // const pendientes = statsCount.total - (statsCount.recibieron + statsCount.noRecibieron + statsCount.ausentes); // Removed 'Total'
 
   const dateTitle = new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'long' });
 
@@ -462,42 +507,30 @@ function RegistroContent() {
         </div>
       )}
 
-      {/* Header Sticky Principal */}
-      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40 transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleBack}
-                disabled={step === 'sede'} // Deshabilitar si no hay historial visual
-                className={`p-2 rounded-lg transition-colors ${step === 'sede' ? 'text-gray-300 cursor-default' : 'hover:bg-gray-100 text-gray-700'}`}
-              >
+      {/* STICKY HEADER BLOCK: Title + Stats + Buttons */}
+      <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-40 transition-all">
+        {/* 1. Header Navigation */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <button onClick={handleBack} disabled={step === 'sede'} className={`p-2 rounded-lg ${step === 'sede' ? 'text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
                 <ArrowLeft className="w-6 h-6" />
               </button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 leading-none mb-1">
+                <h1 className="text-xl font-bold text-gray-900 leading-none">
                   {step === 'sede' && 'Seleccionar Sede'}
                   {step === 'grupo' && 'Seleccionar Grupo'}
                   {step === 'registro' && 'Registro de Asistencia'}
                 </h1>
-                <p className="text-sm text-gray-600 capitalize">
+                <p className="text-sm text-gray-600 mt-1 capitalize">
                   {step === 'registro' ? `Grupo ${grupoSeleccionado?.nombre} • ${dateTitle}` : dateTitle}
                 </p>
               </div>
             </div>
-
-            {/* Selector de Fecha */}
             {(step === 'grupo' || step === 'registro') && (
               <div className="relative">
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
-                />
-                <button className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors relative z-10 pointer-events-none">
-                  <Calendar className="w-6 h-6" />
-                </button>
+                <button className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Calendar className="w-6 h-6" /></button>
+                <input type="date" value={selectedDate} onChange={(e) => handleDateChange(e.target.value)} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
               </div>
             )}
             {step === 'sede' && (
@@ -506,6 +539,43 @@ function RegistroContent() {
               </div>
             )}
           </div>
+
+          {/* 2. Stats Row & Buttons (Only visible in 'registro') */}
+          {step === 'registro' && grupoSeleccionado && (
+            <div className="space-y-4 pb-2">
+              {/* Stats - Clean Number Design */}
+              <div className="flex justify-between px-2 sm:justify-start sm:gap-12">
+                <div className="text-center">
+                  <span className="block text-2xl font-bold text-green-600">{statsCount.recibieron}</span>
+                  <span className="text-xs text-gray-500 font-medium">Recibieron</span>
+                </div>
+                <div className="text-center">
+                  <span className="block text-2xl font-bold text-red-600">{statsCount.noRecibieron}</span>
+                  <span className="text-xs text-gray-500 font-medium">No Recibieron</span>
+                </div>
+                <div className="text-center">
+                  <span className="block text-2xl font-bold text-gray-600">{statsCount.ausentes}</span>
+                  <span className="text-xs text-gray-500 font-medium">No Asistieron</span>
+                </div>
+                <div className="text-center">
+                  <span className="block text-2xl font-bold text-orange-400">{statsCount.inactivos}</span>
+                  <span className="text-xs text-gray-500 font-medium">Inactivos</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button onClick={handleMarcarTodos} className="flex-1 bg-[#10B981] hover:bg-green-600 text-white rounded-xl py-3 px-4 font-bold flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-95">
+                  <CheckCircle className="w-5 h-5" />
+                  <span>Todos Recibieron</span>
+                </button>
+                <button onClick={handleGuardar} disabled={saving} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 px-4 font-bold flex items-center justify-center gap-2 shadow-md disabled:opacity-50 transition-transform active:scale-95">
+                  {saving ? <div className="w-5 h-5 animate-spin border-2 border-white/30 border-t-white rounded-full" /> : <Save className="w-5 h-5" />}
+                  <span>{saving ? 'Guardando...' : 'Guardar'}</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -589,47 +659,8 @@ function RegistroContent() {
         {/* Registro de Asistencia */}
         {step === 'registro' && grupoSeleccionado && (
           <div>
-            {/* Contenedor Sticky para Stats, Botones y Buscador */}
-            <div className="sticky top-[73px] z-30 bg-gray-50 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-              {/* Stats Row - 5 Cards */}
-              <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar mb-4">
-                <div className="bg-white rounded-xl p-3 border border-gray-200 text-center min-w-[90px] flex-1">
-                  <span className="block text-xl font-bold text-blue-600">{statsCount.total}</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold">Total</span>
-                </div>
-                <div className="bg-white rounded-xl p-3 border border-green-200 text-center min-w-[90px] flex-1">
-                  <span className="block text-xl font-bold text-green-600">{statsCount.recibieron}</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold">Recibieron</span>
-                </div>
-                <div className="bg-white rounded-xl p-3 border border-red-200 text-center min-w-[90px] flex-1">
-                  <span className="block text-xl font-bold text-red-600">{statsCount.noRecibieron}</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold">No Recibieron</span>
-                </div>
-                <div className="bg-white rounded-xl p-3 border border-gray-200 text-center min-w-[90px] flex-1">
-                  <span className="block text-xl font-bold text-gray-600">{statsCount.ausentes}</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold">No Asistieron</span>
-                </div>
-                <div className="bg-white rounded-xl p-3 border border-yellow-200 text-center min-w-[90px] flex-1">
-                  <span className="block text-xl font-bold text-yellow-600">{pendientes}</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold">Pendientes</span>
-                </div>
-              </div>
-
-              {/* Actions & Search */}
-              <div className="flex flex-col gap-3">
-                <div className="flex gap-3">
-                  <button onClick={handleMarcarTodos} className="flex-1 bg-[#10B981] hover:bg-green-600 text-white rounded-xl py-3 px-4 font-bold flex items-center justify-center gap-2 transition-colors shadow-sm">
-                    <CheckCircle className="w-5 h-5" />
-                    <span className="text-sm">Todos Recibieron</span>
-                  </button>
-                  <button onClick={handleGuardar} disabled={saving} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 px-4 font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-md shadow-blue-200">
-                    {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-5 h-5" />}
-                    <span className="text-sm">{saving ? 'Guardando...' : 'Guardar'}</span>
-                  </button>
-                </div>
-                <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Buscar estudiante..." className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" />
-              </div>
-            </div>
+            {/* Buscador - Now Scrolling (below sticky) to match typical behaviors or put sticky? User requested sticky cards+buttons. */}
+            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Buscar estudiante..." className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm mb-6" />
 
             {/* Lista */}
             <div className="space-y-4 pt-2">
@@ -639,7 +670,7 @@ function RegistroContent() {
                 </div>
               ) : (
                 estudiantesFiltrados.map(estudiante => (
-                  <div key={estudiante.id} className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 transition-all ${asistencias[estudiante.id] === 'recibio' ? 'border-l-4 border-l-green-500' : asistencias[estudiante.id] === 'no_recibio' ? 'border-l-4 border-l-red-500' : asistencias[estudiante.id] === 'ausente' ? 'opacity-75 border-l-4 border-l-gray-400' : 'border-l-4 border-l-yellow-400'}`}>
+                  <div key={estudiante.id} className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 transition-all ${estudiante.estado === 'inactivo' ? 'opacity-60 grayscale' : ''} ${asistencias[estudiante.id] === 'recibio' ? 'border-l-4 border-l-green-500' : asistencias[estudiante.id] === 'no_recibio' ? 'border-l-4 border-l-red-500' : asistencias[estudiante.id] === 'ausente' ? 'opacity-75 border-l-4 border-l-gray-400' : 'border-l-4 border-l-yellow-400'}`}>
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
                         <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl text-white ${['bg-purple-200 text-purple-700', 'bg-blue-200 text-blue-700', 'bg-pink-200 text-pink-700'][estudiante.nombre.length % 3]}`}>
@@ -648,45 +679,51 @@ function RegistroContent() {
                         <div>
                           <div className="font-bold text-gray-900 leading-tight">{estudiante.nombre}</div>
                           <div className="text-xs text-gray-500 mt-0.5">{estudiante.matricula} • {estudiante.grupo}</div>
-                          <div className={`inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${asistencias[estudiante.id] ? 'hidden' : 'bg-yellow-100 text-yellow-700'}`}>
-                            Pendiente
-                          </div>
+                          {/* Removed "Pendiente" badge, as default 'recibio' or actual status will be shown */}
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-end">
-                        <div className={`w-10 h-6 rounded-full p-1 transition-colors ${asistencias[estudiante.id] ? 'bg-blue-600' : 'bg-gray-300'}`}>
-                          <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${asistencias[estudiante.id] ? 'translate-x-4' : ''}`} />
+                      {/* Toggle Activo/Inactivo */}
+                      <button onClick={() => handleToggleEstado(estudiante)} className="flex flex-col items-center gap-1 group">
+                        <div className={`w-11 h-6 rounded-full p-1 transition-colors duration-200 ${estudiante.estado !== 'inactivo' ? 'bg-[#00BFA5]' : 'bg-gray-300'}`}>
+                          <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ${estudiante.estado !== 'inactivo' ? 'translate-x-5' : 'translate-x-0'}`} />
                         </div>
-                        <span className="text-[10px] text-gray-400 font-medium mt-1">Activo</span>
+                        <span className="text-[10px] text-gray-400 font-medium group-hover:text-gray-600">
+                          {estudiante.estado !== 'inactivo' ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Attendance Buttons (Hidden if Inactive) */}
+                    {estudiante.estado !== 'inactivo' && (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-3 gap-3">
+                          <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'recibio' })} className={`py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'recibio' ? 'bg-white border-2 border-[#10B981] text-[#10B981] shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                            <CheckCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'recibio' ? 'fill-current' : ''}`} />
+                            <span>Recibió</span>
+                          </button>
+                          <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'no_recibio' })} className={`py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'no_recibio' ? 'bg-red-500 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                            <XCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'no_recibio' ? 'fill-current' : ''}`} />
+                            <span>No Recibió</span>
+                          </button>
+                          <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'ausente' })} className={`py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'ausente' ? 'bg-gray-700 text-white' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                            <UserX className="w-5 h-5" />
+                            <span>No Asistió</span>
+                          </button>
+                        </div>
+
+                        {/* Botón Registrar Novedad (Solo si No Recibió) */}
+                        {asistencias[estudiante.id] === 'no_recibio' && (
+                          <button
+                            onClick={() => openNovedadModal(estudiante)}
+                            className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors border border-yellow-200"
+                          >
+                            <AlertCircle className="w-5 h-5" />
+                            Registrar Novedad
+                            {novedades[estudiante.id] && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1" />}
+                          </button>
+                        )}
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                      <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'recibio' })} className={`py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'recibio' ? 'bg-white border-2 border-green-500 text-green-700 shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                        <CheckCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'recibio' ? 'text-green-500' : 'text-gray-400'}`} />
-                        <span className="hidden sm:inline">Recibió</span>
-                      </button>
-                      <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'no_recibio' })} className={`py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'no_recibio' ? 'bg-red-500 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                        <XCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'no_recibio' ? 'text-white' : 'text-gray-400'}`} />
-                        <span className="hidden sm:inline">No Recibió</span>
-                      </button>
-                      <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'ausente' })} className={`py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'ausente' ? 'bg-white border-2 border-gray-500 text-gray-700' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                        <UserX className={`w-5 h-5 ${asistencias[estudiante.id] === 'ausente' ? 'text-gray-500' : 'text-gray-400'}`} />
-                        <span className="hidden sm:inline">No Asistió</span>
-                      </button>
-                    </div>
-
-                    {/* Botón Registrar Novedad (Solo si No Recibió) */}
-                    {asistencias[estudiante.id] === 'no_recibio' && (
-                      <button
-                        onClick={() => openNovedadModal(estudiante)}
-                        className="w-full mt-4 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors border border-yellow-200"
-                      >
-                        <AlertCircle className="w-5 h-5 text-yellow-600" />
-                        Registrar Novedad
-                        {novedades[estudiante.id] && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1" />}
-                      </button>
                     )}
                   </div>
                 ))
