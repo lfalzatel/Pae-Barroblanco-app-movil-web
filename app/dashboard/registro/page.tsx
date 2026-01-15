@@ -559,8 +559,8 @@ export default function RegistroPage() {
                     </button>
 
                     <button
-                      onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'no-recibio' })}
-                      className={`py-2 px-1 rounded-lg text-xs font-medium transition-colors flex flex-col items-center gap-1 ${asistencias[estudiante.id] === 'no-recibio'
+                      onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'no_recibio' })}
+                      className={`py-2 px-1 rounded-lg text-xs font-medium transition-colors flex flex-col items-center gap-1 ${asistencias[estudiante.id] === 'no_recibio'
                         ? 'bg-red-500 text-white shadow-md shadow-red-200'
                         : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
                         }`}
