@@ -23,7 +23,7 @@ import {
   Home
 } from 'lucide-react';
 import Link from 'next/link';
-import { toast } from 'sonner'; // Asumimos que hay un toast o usaremos alert por ahora
+// import { toast } from 'sonner'; // Removed to fix build error
 
 // Extendemos la interfaz de Grupo para incluir el estado de completado
 interface GrupoConEstado extends Grupo {
