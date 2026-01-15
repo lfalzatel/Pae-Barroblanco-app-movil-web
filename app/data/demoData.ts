@@ -30,6 +30,7 @@ export interface Estudiante {
   grupo: string;
   sedeId: string;
   asistencias: AsistenciaRecord[];
+  estado?: string;
 }
 
 export interface AsistenciaRecord {
@@ -108,7 +109,7 @@ export const grupos: Grupo[] = [
   { id: '802', nombre: '802', grado: '8°', estudiantes: 32, sedeId: 'principal' },
   { id: '901', nombre: '901', grado: '9°', estudiantes: 30, sedeId: 'principal' },
   { id: '902', nombre: '902', grado: '9°', estudiantes: 28, sedeId: 'principal' },
-  
+
   // Sede Primaria
   { id: '101', nombre: '101', grado: '1°', estudiantes: 25, sedeId: 'primaria' },
   { id: '102', nombre: '102', grado: '1°', estudiantes: 24, sedeId: 'primaria' },
@@ -120,7 +121,7 @@ export const grupos: Grupo[] = [
   { id: '402', nombre: '402', grado: '4°', estudiantes: 29, sedeId: 'primaria' },
   { id: '501', nombre: '501', grado: '5°', estudiantes: 31, sedeId: 'primaria' },
   { id: '502', nombre: '502', grado: '5°', estudiantes: 30, sedeId: 'primaria' },
-  
+
   // María Inmaculada
   { id: 'mi-101', nombre: '101', grado: '1°', estudiantes: 22, sedeId: 'maria-inmaculada' },
   { id: 'mi-201', nombre: '201', grado: '2°', estudiantes: 23, sedeId: 'maria-inmaculada' },
@@ -160,7 +161,7 @@ function generarNombreEstudiante(index: number): string {
     'MONTOYA ALVAREZ MATEO',
     'OSORIO ARBELAEZ VALERIA'
   ];
-  
+
   return nombres[index % nombres.length];
 }
 
@@ -168,26 +169,26 @@ function generarNombreEstudiante(index: number): string {
 export function generarEstudiantesGrupo(grupoId: string, cantidad: number): Estudiante[] {
   const grupo = grupos.find(g => g.id === grupoId);
   if (!grupo) return [];
-  
+
   const estudiantes: Estudiante[] = [];
-  
+
   for (let i = 1; i <= cantidad; i++) {
     const estudianteId = `${grupoId}-${i.toString().padStart(3, '0')}`;
     const matricula = `${210000 + Math.floor(Math.random() * 10000)}`;
-    
+
     // Generar asistencias de los últimos 30 días
     const asistencias: AsistenciaRecord[] = [];
     const hoy = new Date();
-    
+
     for (let dia = 0; dia < 30; dia++) {
       const fecha = new Date(hoy);
       fecha.setDate(fecha.getDate() - dia);
-      
+
       // Solo días laborables
       if (fecha.getDay() !== 0 && fecha.getDay() !== 6) {
         const rand = Math.random();
         let estado: 'recibio' | 'no-recibio' | 'ausente';
-        
+
         if (rand > 0.95) {
           estado = 'ausente';
         } else if (rand > 0.9) {
@@ -195,7 +196,7 @@ export function generarEstudiantesGrupo(grupoId: string, cantidad: number): Estu
         } else {
           estado = 'recibio';
         }
-        
+
         asistencias.push({
           fecha: fecha.toISOString().split('T')[0],
           estado,
@@ -203,7 +204,7 @@ export function generarEstudiantesGrupo(grupoId: string, cantidad: number): Estu
         });
       }
     }
-    
+
     estudiantes.push({
       id: estudianteId,
       nombre: generarNombreEstudiante(i),
@@ -214,7 +215,7 @@ export function generarEstudiantesGrupo(grupoId: string, cantidad: number): Estu
       asistencias: asistencias.reverse() // Más reciente primero
     });
   }
-  
+
   return estudiantes;
 }
 
@@ -222,7 +223,7 @@ export function generarEstudiantesGrupo(grupoId: string, cantidad: number): Estu
 export function calcularEstadisticasHoy() {
   const totalEstudiantes = grupos.reduce((sum, g) => sum + g.estudiantes, 0);
   const presentesHoy = Math.floor(totalEstudiantes * 0.919); // 91.9% según la imagen
-  
+
   return {
     totalEstudiantes,
     presentesHoy,
