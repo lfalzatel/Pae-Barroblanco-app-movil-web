@@ -65,8 +65,8 @@ export default function DashboardLayout({
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${isActive
-                                        ? 'bg-blue-50 text-blue-600'
-                                        : 'text-gray-600 hover:bg-gray-50'
+                                    ? 'bg-blue-50 text-blue-600'
+                                    : 'text-gray-600 hover:bg-gray-50'
                                     }`}
                             >
                                 <Icon className="w-5 h-5" />
@@ -110,6 +110,21 @@ export default function DashboardLayout({
                     );
                 })}
             </div>
+
+            {/* Mobile Top Header for Logout */}
+            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-40">
+                <h1 className="text-xl font-bold text-gray-900">Sistema PAE</h1>
+                <button
+                    onClick={handleLogout}
+                    className="p-2 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                    aria-label="Cerrar Sesión"
+                >
+                    <LogOut className="w-6 h-6" />
+                </button>
+            </div>
+
+            {/* Spacer for Mobile Header */}
+            <div className="md:hidden h-16"></div>
         </div>
     );
 }

@@ -101,117 +101,122 @@ export default function DashboardPage() {
   if (!usuario) return null;
 
   return (
-    <div className="p-4 lg:p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl shadow-lg overflow-hidden">
-          <div className="bg-cover bg-center h-48 relative"
-            style={{
-              backgroundImage: 'url("/hero-cafeteria.jpg")'
-            }}>
-            <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/50 to-transparent"></div>
-            <div className="relative h-full flex flex-col justify-end p-6">
-              <h2 className="text-3xl font-bold text-white mb-2">
-                Sistema de Asistencia PAE
-              </h2>
-              <p className="text-blue-100">
-                Gestión integral del Programa de Alimentación Escolar en Barroblanco Institución
-              </p>
-            </div>
+    <div className="p-4 lg:p-8 max-w-7xl mx-auto pb-24 md:pb-8">
+      {/* Header Image */}
+      <div className="mb-6 -mx-4 lg:mx-0">
+        <div className="h-48 md:h-64 relative overflow-hidden lg:rounded-2xl">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: 'url("/hero-cafeteria.jpg")' }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white">
+            <h2 className="text-xl md:text-3xl font-bold leading-tight mb-2">
+              Gestión integral del Programa de Alimentación Escolar en Barroblanco Institución
+            </h2>
           </div>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <button className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 font-semibold shadow-lg transition-colors">
-          <Upload className="w-6 h-6" />
-          Migrar Local
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <button className="bg-orange-400 hover:bg-orange-500 text-white rounded-xl py-4 px-2 flex flex-col items-center justify-center gap-2 font-bold shadow-sm transition-colors cursor-not-allowed opacity-90">
+          <Upload className="w-6 h-6 md:w-8 md:h-8" />
+          <span className="text-sm md:text-base">Migrar Local</span>
         </button>
-        <button className="bg-green-500 hover:bg-green-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 font-semibold shadow-lg transition-colors">
-          <FileDown className="w-6 h-6" />
-          Cargar Excel
+        <button className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-4 px-2 flex flex-col items-center justify-center gap-2 font-bold shadow-sm transition-colors cursor-not-allowed opacity-90">
+          <FileDown className="w-6 h-6 md:w-8 md:h-8" />
+          <span className="text-sm md:text-base">Cargar Excel</span>
         </button>
       </div>
 
       {/* Search */}
       <div className="mb-8">
-        <div className="relative">
+        <div className="relative shadow-sm">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar estudiante por nombre o matrícula..."
-            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-12 pr-4 py-4 bg-white border-0 ring-1 ring-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600 shadow-sm"
           />
         </div>
       </div>
 
       {/* Statistics */}
-      <div className="mb-8">
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Estadísticas de Hoy</h3>
+      <div>
+        <h3 className="text-xl font-extrabold text-gray-900 mb-4">Estadísticas de Hoy</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Total Estudiantes */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-gray-500 text-sm font-medium mb-1">Total Estudiantes</div>
+                <div className="text-3xl font-bold text-blue-600 tracking-tight">
+                  {stats.totalEstudiantes.toLocaleString()}
+                </div>
+              </div>
+              <div className="bg-blue-100 p-2 rounded-full">
                 <Users className="w-6 h-6 text-blue-600" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-blue-600 mb-1">
-              {stats.totalEstudiantes.toLocaleString()}
-            </div>
-            <div className="text-sm text-gray-600">Total Estudiantes</div>
-            <div className="text-xs text-gray-500 mt-1">En las 3 sedes</div>
+            <div className="text-xs text-blue-500 font-medium">En las 3 sedes</div>
           </div>
 
           {/* Presentes Hoy */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-gray-500 text-sm font-medium mb-1">Presentes Hoy</div>
+                <div className="text-3xl font-bold text-emerald-500 tracking-tight">
+                  {stats.presentesHoy.toLocaleString()}
+                </div>
+              </div>
+              <div className="bg-emerald-100 p-2 rounded-full">
+                <CheckCircle className="w-6 h-6 text-emerald-500" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-green-600 mb-1">
-              {stats.presentesHoy.toLocaleString()}
+            <div className="text-xs text-emerald-600 font-medium">{stats.porcentajeAsistencia}% asistencia</div>
+          </div>
+
+          {/* Ausentes Hoy (Nombres cambiados para match UI) */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-gray-500 text-sm font-medium mb-1">Ausentes Hoy</div>
+                <div className="text-3xl font-bold text-red-500 tracking-tight">
+                  {stats.ausentes.toLocaleString()}
+                </div>
+              </div>
+              <div className="bg-red-100 p-2 rounded-full">
+                <XCircle className="w-6 h-6 text-red-500" />
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Presentes Hoy</div>
-            <div className="text-xs text-gray-500 mt-1">
-              {stats.porcentajeAsistencia}% asistencia
+            <div className="text-xs text-red-500 font-medium">
+              {stats.totalEstudiantes > 0 ? ((stats.ausentes / stats.totalEstudiantes * 100).toFixed(1)) : 0}% inasistencia
             </div>
           </div>
 
-          {/* Recibieron */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-emerald-600" />
+          {/* Novedades (Simuladas con No Recibieron por ahora) */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-gray-500 text-sm font-medium mb-1">Novedades</div>
+                <div className="text-3xl font-bold text-yellow-500 tracking-tight">
+                  {stats.noRecibieron.toLocaleString()}
+                </div>
+              </div>
+              <div className="bg-yellow-100 p-2 rounded-full">
+                {/* Usando AlertCircle si existiera, sino XCircle amarillo */}
+                <XCircle className="w-6 h-6 text-yellow-600" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-emerald-600 mb-1">
-              {stats.recibieron.toLocaleString()}
-            </div>
-            <div className="text-sm text-gray-600">Recibieron</div>
-            <div className="text-xs text-gray-500 mt-1">Alimentación escolar</div>
-          </div>
-
-          {/* No Recibieron */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <XCircle className="w-6 h-6 text-red-600" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-red-600 mb-1">
-              {stats.noRecibieron.toLocaleString()}
-            </div>
-            <div className="text-sm text-gray-600">No Recibieron</div>
-            <div className="text-xs text-gray-500 mt-1">Sin alimentación</div>
+            <div className="text-xs text-yellow-600 font-medium">Requieren atención</div>
           </div>
         </div>
       </div>
-      {/* Overlay for mobile sidebar - Removed since it's handled by layout */}
     </div>
   );
 }
