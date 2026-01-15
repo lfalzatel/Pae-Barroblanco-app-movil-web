@@ -394,6 +394,56 @@ export default function ReportesPage() {
         ]);
       });
 
+      // NEW: If a specific group is selected, add a detailed student list
+      if (grupoFilter !== 'todos') {
+        excelData.push(
+          [''],
+          [`DETALLE DE ESTUDIANTES - GRUPO ${grupoFilter}`],
+          ['Estudiante', 'Estado', 'Novedad', 'Descripción']
+        );
+
+        // Find students for this group
+        const selectedSedeLabel = sedeFilter === 'todas' ? '' : sedeMap[sedeFilter];
+        const grupoKey = Object.keys(studentsByGrupo).find(key =>
+          key.startsWith(`${grupoFilter}-`) && (selectedSedeLabel ? key.endsWith(`-${selectedSedeLabel}`) : true)
+        );
+
+        if (grupoKey) {
+          const studentsInGroup = studentsByGrupo[grupoKey];
+          const studentIds = studentsInGroup.map(s => s.id);
+
+          const { data: attendanceDetails } = await supabase
+            .from('asistencia_pae')
+            .select('estudiante_id, estado, novedad_tipo, novedad_descripcion')
+            .in('estudiante_id', studentIds)
+            .eq('fecha', reportDate);
+
+          const attendanceMap: Record<string, any> = {};
+          (attendanceDetails || []).forEach(record => {
+            attendanceMap[record.estudiante_id] = record;
+          });
+
+          // Sort students by name
+          const sortedStudents = [...studentsInGroup].sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+          sortedStudents.forEach(student => {
+            const record = attendanceMap[student.id];
+            let estadoLabel = 'No Registrado';
+            if (record) {
+              estadoLabel = record.estado === 'recibio' ? 'Recibió' :
+                record.estado === 'no_recibio' ? 'No Recibió' : 'Ausente';
+            }
+
+            excelData.push([
+              student.nombre,
+              estadoLabel,
+              record?.novedad_tipo || '-',
+              record?.novedad_descripcion || '-'
+            ]);
+          });
+        }
+      }
+
       // Create worksheet and workbook
       const ws = XLSX.utils.aoa_to_sheet(excelData);
 
