@@ -45,7 +45,13 @@ export default function DashboardLayout({
         { href: '/dashboard/reportes', label: 'Reportes', icon: BarChart3 },
     ];
 
-    if (!usuario) return null;
+    if (!usuario) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
