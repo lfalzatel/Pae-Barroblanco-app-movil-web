@@ -1,13 +1,39 @@
-'use client';
-
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-
-// ... imports
+import {
+  Usuario,
+  sedes,
+  grupos,
+  Sede,
+  Grupo,
+  Estudiante,
+  generarEstudiantesGrupo
+} from '@/app/data/demoData';
+import {
+  ArrowLeft,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  UserX,
+  Save,
+  AlertCircle,
+  School,
+  GraduationCap,
+  Users
+} from 'lucide-react';
+import Link from 'next/link';
 
 export default function RegistroPage() {
   const router = useRouter();
   const [usuario, setUsuario] = useState<any | null>(null);
-  // ... state
+  const [step, setStep] = useState<'sede' | 'grupo' | 'registro'>('sede');
+  const [sedeSeleccionada, setSedeSeleccionada] = useState<Sede | null>(null);
+  const [grupoSeleccionado, setGrupoSeleccionado] = useState<Grupo | null>(null);
+  const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
+  const [asistencias, setAsistencias] = useState<Record<string, 'recibio' | 'no-recibio' | 'ausente'>>({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -139,8 +165,8 @@ export default function RegistroPage() {
               >
                 <div className="flex items-center gap-4">
                   <div className={`w-16 h-16 rounded-lg flex items-center justify-center ${sede.id === 'principal' ? 'bg-blue-100' :
-                      sede.id === 'primaria' ? 'bg-green-100' :
-                        'bg-purple-100'
+                    sede.id === 'primaria' ? 'bg-green-100' :
+                      'bg-purple-100'
                     }`}>
                     {sede.id === 'principal' ? (
                       <School className={`w-8 h-8 ${sede.id === 'principal' ? 'text-blue-600' : ''
@@ -266,9 +292,9 @@ export default function RegistroPage() {
                 <div
                   key={estudiante.id}
                   className={`bg-white rounded-xl p-4 shadow-sm border-2 ${asistencias[estudiante.id] === 'recibio' ? 'border-green-200' :
-                      asistencias[estudiante.id] === 'no-recibio' ? 'border-red-200' :
-                        asistencias[estudiante.id] === 'ausente' ? 'border-gray-300' :
-                          'border-yellow-200'
+                    asistencias[estudiante.id] === 'no-recibio' ? 'border-red-200' :
+                      asistencias[estudiante.id] === 'ausente' ? 'border-gray-300' :
+                        'border-yellow-200'
                     } transition-all`}
                 >
                   <div className="flex items-center gap-4">
@@ -297,8 +323,8 @@ export default function RegistroPage() {
                           [estudiante.id]: 'recibio'
                         })}
                         className={`p-2 rounded-lg transition-colors ${asistencias[estudiante.id] === 'recibio'
-                            ? 'bg-green-500 text-white'
-                            : 'bg-green-50 text-green-600 hover:bg-green-100'
+                          ? 'bg-green-500 text-white'
+                          : 'bg-green-50 text-green-600 hover:bg-green-100'
                           }`}
                         title="Recibió"
                       >
@@ -311,8 +337,8 @@ export default function RegistroPage() {
                           [estudiante.id]: 'no-recibio'
                         })}
                         className={`p-2 rounded-lg transition-colors ${asistencias[estudiante.id] === 'no-recibio'
-                            ? 'bg-red-500 text-white'
-                            : 'bg-red-50 text-red-600 hover:bg-red-100'
+                          ? 'bg-red-500 text-white'
+                          : 'bg-red-50 text-red-600 hover:bg-red-100'
                           }`}
                         title="No Recibió"
                       >
@@ -325,8 +351,8 @@ export default function RegistroPage() {
                           [estudiante.id]: 'ausente'
                         })}
                         className={`p-2 rounded-lg transition-colors ${asistencias[estudiante.id] === 'ausente'
-                            ? 'bg-gray-500 text-white'
-                            : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                          ? 'bg-gray-500 text-white'
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                           }`}
                         title="No Asistió"
                       >

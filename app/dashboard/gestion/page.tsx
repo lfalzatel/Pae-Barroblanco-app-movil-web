@@ -2,25 +2,36 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import { Usuario, grupos, generarEstudiantesGrupo, Estudiante } from '@/app/data/demoData';
 import { ArrowLeft, Search, Eye, FileDown, Users as UsersIcon } from 'lucide-react';
 import Link from 'next/link';
 
 export default function GestionPage() {
   const router = useRouter();
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [usuario, setUsuario] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [grupoFilter, setGrupoFilter] = useState('todos');
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Estudiante | null>(null);
-  
+
   useEffect(() => {
-    const userStr = localStorage.getItem('currentUser');
-    if (!userStr) {
-      router.push('/');
-      return;
-    }
-    setUsuario(JSON.parse(userStr));
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/');
+        return;
+      }
+
+      setUsuario({
+        email: session.user.email,
+        nombre: session.user.user_metadata?.nombre || 'Usuario',
+        rol: session.user.user_metadata?.rol || 'docente',
+      });
+    };
+
+    checkUser();
 
     // Cargar estudiantes de algunos grupos de ejemplo
     const estudiantesDemo: Estudiante[] = [];
@@ -35,7 +46,7 @@ export default function GestionPage() {
 
   const estudiantesFiltrados = estudiantes.filter(est => {
     const matchSearch = est.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                       est.matricula.includes(searchQuery);
+      est.matricula.includes(searchQuery);
     const matchGrupo = grupoFilter === 'todos' || est.grupo === grupoFilter;
     return matchSearch && matchGrupo;
   });
@@ -120,7 +131,7 @@ export default function GestionPage() {
                     {estudiante.nombre.charAt(0)}
                   </span>
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-gray-900">{estudiante.nombre}</div>
                   <div className="text-sm text-gray-600">
@@ -136,7 +147,7 @@ export default function GestionPage() {
                     <Eye className="w-4 h-4" />
                     Ver Historial
                   </button>
-                  
+
                   <button className="px-4 py-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg flex items-center gap-2 transition-colors">
                     <FileDown className="w-4 h-4" />
                     Reporte
@@ -186,18 +197,16 @@ export default function GestionPage() {
                   {selectedStudent.asistencias.slice(0, 10).map((asistencia, index) => (
                     <div
                       key={index}
-                      className={`p-3 rounded-lg flex items-center justify-between ${
-                        asistencia.estado === 'recibio' ? 'bg-green-50' :
-                        asistencia.estado === 'no-recibio' ? 'bg-red-50' :
-                        'bg-gray-50'
-                      }`}
+                      className={`p-3 rounded-lg flex items-center justify-between ${asistencia.estado === 'recibio' ? 'bg-green-50' :
+                          asistencia.estado === 'no-recibio' ? 'bg-red-50' :
+                            'bg-gray-50'
+                        }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${
-                          asistencia.estado === 'recibio' ? 'bg-green-500' :
-                          asistencia.estado === 'no-recibio' ? 'bg-red-500' :
-                          'bg-gray-400'
-                        }`}></div>
+                        <div className={`w-2 h-2 rounded-full ${asistencia.estado === 'recibio' ? 'bg-green-500' :
+                            asistencia.estado === 'no-recibio' ? 'bg-red-500' :
+                              'bg-gray-400'
+                          }`}></div>
                         <span className="text-sm font-medium text-gray-900">
                           {new Date(asistencia.fecha).toLocaleDateString('es-CO', {
                             year: 'numeric',
@@ -206,14 +215,13 @@ export default function GestionPage() {
                           })}
                         </span>
                       </div>
-                      <span className={`text-sm font-medium ${
-                        asistencia.estado === 'recibio' ? 'text-green-600' :
-                        asistencia.estado === 'no-recibio' ? 'text-red-600' :
-                        'text-gray-600'
-                      }`}>
+                      <span className={`text-sm font-medium ${asistencia.estado === 'recibio' ? 'text-green-600' :
+                          asistencia.estado === 'no-recibio' ? 'text-red-600' :
+                            'text-gray-600'
+                        }`}>
                         {asistencia.estado === 'recibio' ? 'Recibió' :
-                         asistencia.estado === 'no-recibio' ? 'No Recibió' :
-                         'Ausente'}
+                          asistencia.estado === 'no-recibio' ? 'No Recibió' :
+                            'Ausente'}
                       </span>
                     </div>
                   ))}
