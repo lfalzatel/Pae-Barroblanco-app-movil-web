@@ -122,37 +122,65 @@ export default function ReportesPage() {
         </div>
 
         {/* Estadísticas principales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex flex-col items-center justify-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-              <Users className="w-6 h-6 text-blue-600" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+          {/* Total */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-1">
+              <div>
+                <div className="text-2xl font-bold text-blue-600 tracking-tight">
+                  {stats.totalEstudiantes}
+                </div>
+                <div className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">TOTAL</div>
+              </div>
+              <div className="bg-blue-50 p-1.5 rounded-full">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.totalEstudiantes}</div>
-            <div className="text-sm text-gray-500 font-medium">Total</div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex flex-col items-center justify-center">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+          {/* Recibieron */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-1">
+              <div>
+                <div className="text-2xl font-bold text-emerald-500 tracking-tight">
+                  {stats.recibieron}
+                </div>
+                <div className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">RECIBIERON</div>
+              </div>
+              <div className="bg-emerald-50 p-1.5 rounded-full">
+                <CheckCircle className="w-5 h-5 text-emerald-500" />
+              </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.recibieron}</div>
-            <div className="text-sm text-gray-500 font-medium">Recibieron</div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex flex-col items-center justify-center">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-3">
-              <XCircle className="w-6 h-6 text-red-600" />
+          {/* No Recibieron */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-1">
+              <div>
+                <div className="text-2xl font-bold text-yellow-500 tracking-tight">
+                  {stats.noRecibieron}
+                </div>
+                <div className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">NO RECIBIERON</div>
+              </div>
+              <div className="bg-yellow-100 p-1.5 rounded-full">
+                <XCircle className="w-5 h-5 text-yellow-600" />
+              </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.noRecibieron}</div>
-            <div className="text-sm text-gray-500 font-medium">No Recibieron</div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex flex-col items-center justify-center">
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-              <UserX className="w-6 h-6 text-gray-600" />
+          {/* Ausentes */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-1">
+              <div>
+                <div className="text-2xl font-bold text-red-500 tracking-tight">
+                  {stats.ausentes}
+                </div>
+                <div className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">AUSENTES</div>
+              </div>
+              <div className="bg-red-50 p-1.5 rounded-full">
+                <UserX className="w-5 h-5 text-red-500" />
+              </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.ausentes}</div>
-            <div className="text-sm text-gray-500 font-medium">Ausentes</div>
           </div>
         </div>
 
