@@ -664,11 +664,13 @@ function RegistroContent() {
                         {grupo.estudiantes} est.
                       </div>
 
-                      {grupo.completado && (
-                        <div className="mt-2 bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-bold text-white uppercase tracking-wider">
-                          ✓
-                        </div>
-                      )}
+                      {/* Status badge */}
+                      <div className={`mt-2 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${grupo.completado
+                          ? 'bg-white/20 text-white'
+                          : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                        {grupo.completado ? 'Completado' : 'Pendiente'}
+                      </div>
                     </button>
                   ))}
                 {gruposReales.length === 0 && (
