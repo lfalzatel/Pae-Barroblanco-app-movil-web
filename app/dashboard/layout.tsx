@@ -9,8 +9,7 @@ import {
     ClipboardList,
     Users,
     BarChart3,
-    LogOut,
-    Menu
+    LogOut
 } from 'lucide-react';
 
 export default function DashboardLayout({

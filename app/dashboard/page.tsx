@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
-import { Usuario, calcularEstadisticasHoy, sedes } from '../data/demoData';
+import { Usuario, calcularEstadisticasHoy } from '../data/demoData';
 import {
   Users,
   UploadCloud,
@@ -11,10 +11,8 @@ import {
   Search,
   CheckCircle,
   XCircle,
-  UserX,
-  FileDown // Keeping just in case, but replacing usage
+  UserX
 } from 'lucide-react';
-import Link from 'next/link';
 
 export default function DashboardPage() {
   const router = useRouter();

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Usuario, grupos, generarEstudiantesGrupo, Estudiante } from '@/app/data/demoData';
-import { ArrowLeft, Search, Eye, FileDown, Users as UsersIcon } from 'lucide-react';
+import { ArrowLeft, Search, Eye, FileDown } from 'lucide-react';
 import Link from 'next/link';
 
 export default function GestionPage() {
@@ -198,14 +198,14 @@ export default function GestionPage() {
                     <div
                       key={index}
                       className={`p-3 rounded-lg flex items-center justify-between ${asistencia.estado === 'recibio' ? 'bg-green-50' :
-                          asistencia.estado === 'no-recibio' ? 'bg-red-50' :
-                            'bg-gray-50'
+                        asistencia.estado === 'no-recibio' ? 'bg-red-50' :
+                          'bg-gray-50'
                         }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-2 h-2 rounded-full ${asistencia.estado === 'recibio' ? 'bg-green-500' :
-                            asistencia.estado === 'no-recibio' ? 'bg-red-500' :
-                              'bg-gray-400'
+                          asistencia.estado === 'no-recibio' ? 'bg-red-500' :
+                            'bg-gray-400'
                           }`}></div>
                         <span className="text-sm font-medium text-gray-900">
                           {new Date(asistencia.fecha).toLocaleDateString('es-CO', {
@@ -216,8 +216,8 @@ export default function GestionPage() {
                         </span>
                       </div>
                       <span className={`text-sm font-medium ${asistencia.estado === 'recibio' ? 'text-green-600' :
-                          asistencia.estado === 'no-recibio' ? 'text-red-600' :
-                            'text-gray-600'
+                        asistencia.estado === 'no-recibio' ? 'text-red-600' :
+                          'text-gray-600'
                         }`}>
                         {asistencia.estado === 'recibio' ? 'Recibió' :
                           asistencia.estado === 'no-recibio' ? 'No Recibió' :

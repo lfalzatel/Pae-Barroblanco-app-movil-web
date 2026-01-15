@@ -1,0 +1,60 @@
+
+> sistema-pae-barroblanco@1.0.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.3
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ Ô£ô (pwa) Compiling for server...
+ Ô£ô (pwa) Compiling for server...
+ Ô£ô (pwa) Compiling for client (static)...
+ Ôùï (pwa) Service worker: C:\6. Viaje a san andres\3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App (PWA)\public\sw.js
+ Ôùï (pwa)   URL: /sw.js
+ Ôùï (pwa)   Scope: /
+Failed to compile.
+
+./app/dashboard/registro/page.tsx
+Error: 
+  x You're importing a component that needs useEffect. It only works in a Client Component but none of its parents are marked with "use client", so they're Server Components by default.
+  | Learn more: https://nextjs.org/docs/getting-started/react-essentials
+  | 
+  | 
+   ,-[C:\6. Viaje a san andres\3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App (PWA)\app\dashboard\registro\page.tsx:1:1]
+ 1 | import { useEffect, useState } from 'react';
+   :          ^^^^^^^^^
+ 2 | import { useRouter } from 'next/navigation';
+ 3 | import { supabase } from '@/lib/supabase';
+ 4 | import {
+   `----
+
+  x You're importing a component that needs useState. It only works in a Client Component but none of its parents are marked with "use client", so they're Server Components by default.
+  | Learn more: https://nextjs.org/docs/getting-started/react-essentials
+  | 
+  | 
+   ,-[C:\6. Viaje a san andres\3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App (PWA)\app\dashboard\registro\page.tsx:1:1]
+ 1 | import { useEffect, useState } from 'react';
+   :                     ^^^^^^^^
+ 2 | import { useRouter } from 'next/navigation';
+ 3 | import { supabase } from '@/lib/supabase';
+ 4 | import {
+   `----
+
+  x You're importing a component that needs useRouter. It only works in a Client Component but none of its parents are marked with "use client", so they're Server Components by default.
+  | Learn more: https://nextjs.org/docs/getting-started/react-essentials
+  | 
+  | 
+   ,-[C:\6. Viaje a san andres\3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App (PWA)\app\dashboard\registro\page.tsx:1:1]
+ 1 | import { useEffect, useState } from 'react';
+ 2 | import { useRouter } from 'next/navigation';
+   :          ^^^^^^^^^
+ 3 | import { supabase } from '@/lib/supabase';
+ 4 | import {
+ 5 |   Usuario,
+   `----
+
+Import trace for requested module:
+./app/dashboard/registro/page.tsx
+
+
+> Build failed because of webpack errors
