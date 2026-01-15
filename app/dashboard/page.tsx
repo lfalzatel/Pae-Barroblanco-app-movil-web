@@ -11,6 +11,7 @@ import {
   Search,
   CheckCircle,
   XCircle,
+  UserX,
   FileDown // Keeping just in case, but replacing usage
 } from 'lucide-react';
 import Link from 'next/link';
@@ -169,22 +170,6 @@ export default function DashboardPage() {
             <div className="text-[10px] text-blue-400 font-semibold">En las 3 sedes</div>
           </div>
 
-          {/* Presentes Hoy */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <div className="text-3xl font-bold text-emerald-500 tracking-tight">
-                  {stats.presentesHoy.toLocaleString()}
-                </div>
-                <div className="text-gray-500 text-xs font-bold uppercase mt-1">Presentes</div>
-              </div>
-              <div className="bg-emerald-50 p-1.5 rounded-full">
-                <CheckCircle className="w-5 h-5 text-emerald-500" />
-              </div>
-            </div>
-            <div className="text-[10px] text-emerald-600 font-semibold">{stats.porcentajeAsistencia}% asistencia</div>
-          </div>
-
           {/* Recibieron */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
@@ -205,10 +190,26 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-3xl font-bold text-red-500 tracking-tight">
+                <div className="text-3xl font-bold text-yellow-500 tracking-tight">
                   {stats.noRecibieron.toLocaleString()}
                 </div>
                 <div className="text-gray-500 text-xs font-bold uppercase mt-1">No Recib.</div>
+              </div>
+              <div className="bg-yellow-100 p-1.5 rounded-full">
+                <XCircle className="w-5 h-5 text-yellow-600" />
+              </div>
+            </div>
+            <div className="text-[10px] text-yellow-600 font-semibold">Sin alimentación</div>
+          </div>
+
+          {/* No Asistieron (Ausentes) */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-3xl font-bold text-red-500 tracking-tight">
+                  {stats.ausentes.toLocaleString()}
+                </div>
+                <div className="text-gray-500 text-xs font-bold uppercase mt-1">No Asistieron</div>
               </div>
               <div className="bg-red-50 p-1.5 rounded-full">
                 <XCircle className="w-5 h-5 text-red-500" />
