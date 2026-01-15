@@ -340,9 +340,13 @@ export default function ReportesPage() {
       });
 
       // Prepare Excel data
+      // For analysis date, parse manually to avoid timezone shift
+      const [year, month, day] = reportDate.split('-').map(Number);
+      const analysisDate = new Date(year, month - 1, day);
+
       const excelData: any[][] = [
         ['REPORTE DE ASISTENCIA PAE BARROBLANCO'],
-        ['Fecha de Análisis:', new Date(reportDate).toLocaleDateString('es-CO', {
+        ['Fecha de Análisis:', analysisDate.toLocaleDateString('es-CO', {
           weekday: 'long',
           year: 'numeric',
           month: 'long',
