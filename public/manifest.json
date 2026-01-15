@@ -1,0 +1,24 @@
+{
+    "name": "Sistema PAE Barroblanco",
+    "short_name": "PAE Barroblanco",
+    "description": "Sistema de gestión del Programa de Alimentación Escolar - IE Barroblanco",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#FFFFFF",
+    "theme_color": "#4CAF50",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
