@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '../../lib/supabase';
 import { Usuario, calcularEstadisticasHoy, sedes } from '../data/demoData';
-import { 
-  Home, 
-  ClipboardList, 
-  Users, 
-  BarChart3, 
-  LogOut, 
+import {
+  Home,
+  ClipboardList,
+  Users,
+  BarChart3,
+  LogOut,
   Menu,
   X,
   Upload,
@@ -22,21 +23,33 @@ import Link from 'next/link';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [usuario, setUsuario] = useState<any | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   useEffect(() => {
-    const userStr = localStorage.getItem('currentUser');
-    if (!userStr) {
-      router.push('/');
-      return;
-    }
-    setUsuario(JSON.parse(userStr));
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/');
+        return;
+      }
+
+      // Adaptar el usuario de Supabase al formato que espera el dashboard
+      setUsuario({
+        email: session.user.email,
+        nombre: session.user.user_metadata?.nombre || 'Usuario',
+        rol: session.user.user_metadata?.rol || 'docente',
+        // Otros campos si son necesarios
+      });
+    };
+
+    checkUser();
   }, [router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     router.push('/');
   };
 
@@ -59,7 +72,7 @@ export default function DashboardPage() {
               </button>
               <h1 className="text-xl font-bold text-gray-900">Sistema PAE</h1>
             </div>
-            
+
             <button
               onClick={() => router.push('/dashboard/registro')}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors"
@@ -106,7 +119,7 @@ export default function DashboardPage() {
                 <Home className="w-5 h-5" />
                 Inicio
               </Link>
-              
+
               <Link
                 href="/dashboard/registro"
                 className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg"
@@ -114,7 +127,7 @@ export default function DashboardPage() {
                 <ClipboardList className="w-5 h-5" />
                 Registrar
               </Link>
-              
+
               <Link
                 href="/dashboard/gestion"
                 className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg"
@@ -122,7 +135,7 @@ export default function DashboardPage() {
                 <Users className="w-5 h-5" />
                 Gestión
               </Link>
-              
+
               <Link
                 href="/dashboard/reportes"
                 className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg"
@@ -150,8 +163,8 @@ export default function DashboardPage() {
           {/* Header */}
           <div className="mb-8">
             <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl shadow-lg overflow-hidden">
-              <div className="bg-cover bg-center h-48 relative" 
-                style={{ 
+              <div className="bg-cover bg-center h-48 relative"
+                style={{
                   backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Cg fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.1\'%3E%3Cpath opacity=\'.5\' d=\'M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
                 }}>
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 to-transparent"></div>
