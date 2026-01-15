@@ -198,7 +198,7 @@ export default function GestionPage() {
                     setSedeFilter(sede.id);
                     setGrupoFilter('todos'); // Reset group filter
                   }}
-                  className={`px-3 py-1.5 text-sm rounded-lg font-medium whitespace-nowrap transition-colors ${sedeFilter === sede.id
+                  className={`px-3 py-1.5 text-sm rounded-full font-medium whitespace-nowrap transition-colors ${sedeFilter === sede.id
                     ? 'bg-blue-600 text-white'
                     : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                     }`}
