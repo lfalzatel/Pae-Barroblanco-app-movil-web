@@ -23,6 +23,12 @@ import {
   Home
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner'; // Asumimos que hay un toast o usaremos alert por ahora
+
+// Extendemos la interfaz de Grupo para incluir el estado de completado
+interface GrupoConEstado extends Grupo {
+  completado: boolean;
+}
 
 export default function RegistroPage() {
   const router = useRouter();
@@ -37,7 +43,7 @@ export default function RegistroPage() {
   const [totalEstudiantesPrincipal, setTotalEstudiantesPrincipal] = useState(0);
 
   // Nuevos estados para grupos dinámicos y fecha
-  const [gruposReales, setGruposReales] = useState<Grupo[]>([]);
+  const [gruposReales, setGruposReales] = useState<GrupoConEstado[]>([]);
   const [loadingGrupos, setLoadingGrupos] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
@@ -54,6 +60,7 @@ export default function RegistroPage() {
         email: session.user.email,
         nombre: session.user.user_metadata?.nombre || 'Usuario',
         rol: session.user.user_metadata?.rol || 'docente',
+        id: session.user.id
       });
     };
 
@@ -72,11 +79,19 @@ export default function RegistroPage() {
     fetchCounts();
   }, [router]);
 
-  // Función para cargar grupos reales desde la BD
+  // Efecto para recargar grupos cuando cambia la fecha o la sede (si ya estamos en paso grupo)
+  useEffect(() => {
+    if (step === 'grupo' && sedeSeleccionada?.id === 'principal') {
+      fetchGruposReales();
+    }
+  }, [selectedDate, step, sedeSeleccionada]);
+
+  // Función para cargar grupos reales desde la BD y verificar estado de asistencia
   const fetchGruposReales = async () => {
     setLoadingGrupos(true);
-    // Traemos todos los estudiantes para agrupar (podría optimizarse con RPC o vista, pero el dataset es pequeño)
-    const { data, error } = await supabase
+
+    // 1. Traer estudiantes y grupos
+    const { data: estudiantesData, error } = await supabase
       .from('estudiantes')
       .select('grupo, grado, id');
 
@@ -86,29 +101,49 @@ export default function RegistroPage() {
       return;
     }
 
-    // Agrupar y contar
-    const gruposMap = new Map<string, { count: number, grado: string }>();
+    // 2. Traer asistencias para la fecha seleccionada para saber qué estudiantes ya tienen registro
+    // Esto nos dirá qué grupos ya han sido gestionados hoy
+    const { data: asistenciaData } = await supabase
+      .from('asistencia_pae')
+      .select('estudiante_id')
+      .eq('fecha', selectedDate);
 
-    data.forEach((est: any) => {
+    const estudiantesConAsistencia = new Set(asistenciaData?.map((a: any) => a.estudiante_id));
+
+    // 3. Agrupar y procesar
+    const gruposMap = new Map<string, { count: number, grado: string, estudiantesIds: string[] }>();
+
+    estudiantesData.forEach((est: any) => {
       const key = est.grupo;
       if (!gruposMap.has(key)) {
-        gruposMap.set(key, { count: 0, grado: est.grado });
+        gruposMap.set(key, { count: 0, grado: est.grado, estudiantesIds: [] });
       }
       const current = gruposMap.get(key)!;
       current.count++;
-      current.grado = est.grado; // Asegurar que tenemos el grado
+      current.grado = est.grado;
+      current.estudiantesIds.push(est.id);
     });
 
-    // Convertir a array y ordenar
-    const gruposArray: Grupo[] = Array.from(gruposMap.entries()).map(([nombre, info]) => ({
-      id: nombre, // Usamos el nombre como ID para simplificar
-      nombre,
-      grado: info.grado,
-      estudiantes: info.count,
-      sedeId: 'principal' // Asumimos principal por los datos actuales
-    }));
+    // 4. Convertir a array y determinar si está "completado"
+    // Consideramos "completado" si la mayoría de los estudiantes del grupo tienen asistencia registrada esa fecha
+    // O simplificando: si al menos uno tiene asistencia (asumiendo que se registran en lote)
+    const gruposArray: GrupoConEstado[] = Array.from(gruposMap.entries()).map(([nombre, info]) => {
+      // Verificar cuántos de este grupo tienen asistencia
+      const registrados = info.estudiantesIds.filter(id => estudiantesConAsistencia.has(id)).length;
+      // Si más del 50% (o > 0 para empezar) tienen registro, lo marcamos
+      const completado = registrados > 0;
 
-    // Ordenar logic: 6° a 11°. Extraemos el número del grado.
+      return {
+        id: nombre,
+        nombre,
+        grado: info.grado,
+        estudiantes: info.count,
+        sedeId: 'principal',
+        completado
+      };
+    });
+
+    // Ordenar logic: 6° a 11°.
     gruposArray.sort((a, b) => {
       const gradoA = parseInt(a.grado.replace(/\D/g, '')) || 0;
       const gradoB = parseInt(b.grado.replace(/\D/g, '')) || 0;
@@ -116,7 +151,6 @@ export default function RegistroPage() {
       if (gradoA !== gradoB) {
         return gradoA - gradoB;
       }
-      // Si son del mismo grado, ordenar por nombre de grupo (ej: 601 vs 602)
       return a.nombre.localeCompare(b.nombre, undefined, { numeric: true });
     });
 
@@ -126,20 +160,15 @@ export default function RegistroPage() {
 
   const handleSedeSelect = (sede: Sede) => {
     setSedeSeleccionada(sede);
-    if (sede.id === 'principal') {
-      fetchGruposReales();
-    } else {
-      setGruposReales([]); // O manejar lógica para otras sedes si tuvieran datos
-    }
     setStep('grupo');
+    // El useEffect se encargará de cargar los datos
   };
 
   const handleGrupoSelect = async (grupo: Grupo) => {
     setGrupoSeleccionado(grupo);
     setStep('registro');
 
-    // Cargar estudiantes reales del grupo seleccionado
-    // Nota: Usamos el nombre del grupo porque en los datos reales id y nombre son similares o relacionados
+    // Cargar estudiantes del grupo
     const { data, error } = await supabase
       .from('estudiantes')
       .select('*')
@@ -147,17 +176,30 @@ export default function RegistroPage() {
       .order('nombre');
 
     if (data) {
-      // Mapear a la estructura Estudiante local si es necesario, aunque parece compatible
-      // Si 'asistencias' no viene de la BD (es relacional), aquí vendrá vacío o nulo.
-      // Inicializamos asistencias vacías o buscamos si ya existen para la fecha seleccionada (pendiente de implementación completa de persistencia)
-      setEstudiantes(data as any); // Casting rápido, ajustar tipado estricto luego
+      setEstudiantes(data as any);
 
-      // Inicializar asistencias (por ahora todas en 'recibio' por defecto visual, o resetear)
-      const asistenciasIniciales: Record<string, 'recibio' | 'no-recibio' | 'ausente'> = {};
-      data.forEach((est: any) => {
-        asistenciasIniciales[est.id] = 'recibio';
-      });
-      setAsistencias(asistenciasIniciales);
+      // Cargar asistencias existentes para este grupo y fecha
+      const { data: asistenciasExistentes } = await supabase
+        .from('asistencia_pae')
+        .select('estudiante_id, estado')
+        .eq('fecha', selectedDate)
+        .in('estudiante_id', data.map((e: any) => e.id));
+
+      const mapaAsistencias: Record<string, 'recibio' | 'no-recibio' | 'ausente'> = {};
+
+      // Si hay datos previos, cargarlos
+      if (asistenciasExistentes && asistenciasExistentes.length > 0) {
+        asistenciasExistentes.forEach((a: any) => {
+          mapaAsistencias[a.estudiante_id] = a.estado;
+        });
+      } else {
+        // Si no hay datos, predeterminar 'recibio'
+        data.forEach((est: any) => {
+          mapaAsistencias[est.id] = 'recibio';
+        });
+      }
+
+      setAsistencias(mapaAsistencias);
     }
   };
 
@@ -170,17 +212,52 @@ export default function RegistroPage() {
   };
 
   const handleGuardar = async () => {
+    if (!usuario?.id) return;
     setSaving(true);
 
-    // Aquí iría la lógica real de guardado en Supabase (tabla 'asistencias')
-    // Usando selectedDate y el estado de asistencias
+    try {
+      // Preparamos los registros para insertar/upsert
+      // Usamos upsert para manejar actualizaciones si ya existen registros ese día
+      const registros = Object.entries(asistencias).map(([estudianteId, estado]) => ({
+        estudiante_id: estudianteId,
+        fecha: selectedDate,
+        estado,
+        registrado_por: usuario.id
+      }));
 
-    // Simulación
-    await new Promise(resolve => setTimeout(resolve, 1500));
+      // Primero borramos registros existentes de estos estudiantes para esta fecha
+      // (Supabase upsert a veces requiere manejo cuidadoso de constraints, delete+insert es más seguro para este caso simple sin ID fijo de asistencia)
+      // Ojo: Si la tabla tiene unique constraint en (estudiante_id, fecha), upsert funciona directo.
+      // Asumiremos que no hay constraint o usaremos delete+insert para asegurar limpieza.
 
-    alert(`Asistencia guardada correctamente para el ${selectedDate}`);
-    setSaving(false);
-    router.push('/dashboard');
+      // Eliminamos previos para este grupo en esta fecha
+      await supabase
+        .from('asistencia_pae')
+        .delete()
+        .eq('fecha', selectedDate)
+        .in('estudiante_id', estudiantes.map(e => e.id));
+
+      // Insertamos nuevos
+      const { error } = await supabase
+        .from('asistencia_pae')
+        .insert(registros);
+
+      if (error) throw error;
+
+      alert(`✅ Asistencia guardada para el ${selectedDate}`);
+
+      // Volver a selección de grupo y recargar datos para ver el check verde
+      if (sedeSeleccionada?.id === 'principal') {
+        await fetchGruposReales();
+      }
+      setStep('grupo');
+
+    } catch (error) {
+      console.error('Error guardando:', error);
+      alert('❌ Error al guardar la asistencia');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const estudiantesFiltrados = estudiantes.filter(est =>
@@ -192,7 +269,7 @@ export default function RegistroPage() {
     recibieron: Object.values(asistencias).filter(a => a === 'recibio').length,
     noRecibieron: Object.values(asistencias).filter(a => a === 'no-recibio').length,
     ausentes: Object.values(asistencias).filter(a => a === 'ausente').length,
-    pendientes: estudiantes.length - Object.keys(asistencias).length
+    // pendientes: estudiantes.length - Object.keys(asistencias).length // This was incorrect, it should be total students
   };
 
   // Formatear fecha para el título
@@ -203,7 +280,7 @@ export default function RegistroPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -221,7 +298,7 @@ export default function RegistroPage() {
                 <ArrowLeft className="w-6 h-6" />
               </Link>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">
+                <h1 className="text-xl font-bold text-gray-900 leading-none mb-1">
                   {step === 'sede' && 'Seleccionar Sede'}
                   {step === 'grupo' && 'Seleccionar Grupo'}
                   {step === 'registro' && 'Registro de Asistencia'}
@@ -229,7 +306,6 @@ export default function RegistroPage() {
                 <p className="text-sm text-gray-600 capitalize">
                   {step === 'sede' && dateTitle}
                   {step === 'grupo' && dateTitle}
-                  {/* En registro mostramos info del grupo */}
                   {step === 'registro' && `Grupo ${grupoSeleccionado?.nombre} • ${dateTitle}`}
                 </p>
               </div>
@@ -242,20 +318,16 @@ export default function RegistroPage() {
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
                 />
-                <button className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">
+                <button className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors relative z-10 pointer-events-none">
                   <Calendar className="w-6 h-6" />
                 </button>
               </div>
             )}
 
-            {/* Calendar Icon for Sede step just as visual or link */}
             {step === 'sede' && (
-              <Link
-                href="/dashboard"
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
+              <Link href="/dashboard" className="p-2 hover:bg-gray-100 rounded-lg">
                 <Calendar className="w-6 h-6 text-gray-400" />
               </Link>
             )}
@@ -263,7 +335,7 @@ export default function RegistroPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Selección de Sede */}
         {step === 'sede' && (
           <div className="space-y-4">
@@ -343,21 +415,34 @@ export default function RegistroPage() {
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-8">
                 {gruposReales
                   .map(grupo => (
                     <button
                       key={grupo.id}
                       onClick={() => handleGrupoSelect(grupo)}
-                      className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all text-center flex flex-col items-center justify-center min-h-[120px]"
+                      className={`rounded-xl p-4 shadow-sm border transition-all text-center flex flex-col items-center justify-center min-h-[130px] relative overflow-hidden group
+                            ${grupo.completado
+                          ? 'bg-[#10B981] border-[#10B981] text-white' // Estilo Completado
+                          : 'bg-white border-gray-200 hover:border-blue-500 hover:bg-blue-50 hover:shadow-md' // Estilo Normal
+                        }
+                        `}
                     >
-                      <div className="text-xl font-bold text-gray-900 mb-1">
+                      <div className={`text-2xl font-bold mb-1 flex items-center gap-2 ${grupo.completado ? 'text-white' : 'text-gray-900'}`}>
                         {grupo.nombre}
+                        {grupo.completado && <CheckCircle className="w-6 h-6 text-white" fill="currentColor" stroke="none" />}
+                        {/* Usamos un ícono rellenable o estilo solido para mejor visibilidad */}
                       </div>
-                      <div className="text-gray-600 text-sm mb-2">{grupo.grado}</div>
-                      <div className="text-xs text-gray-400">
+                      <div className={`text-sm mb-2 ${grupo.completado ? 'text-green-50' : 'text-gray-600'}`}>{grupo.grado}</div>
+                      <div className={`text-xs ${grupo.completado ? 'text-green-100' : 'text-gray-400'}`}>
                         {grupo.estudiantes} estudiantes
                       </div>
+
+                      {grupo.completado && (
+                        <div className="mt-3 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-white uppercase tracking-wider">
+                          Completado
+                        </div>
+                      )}
                     </button>
                   ))}
                 {gruposReales.length === 0 && (
@@ -370,11 +455,11 @@ export default function RegistroPage() {
           </div>
         )}
 
-        {/* Registro de Asistencia */}
+        {/* Registro de Asistencia (sin cambios mayores, solo integración) */}
         {step === 'registro' && grupoSeleccionado && (
           <div>
             {/* Estadísticas */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
               <div className="bg-green-50 rounded-xl p-4 border border-green-200">
                 <div className="text-3xl font-bold text-green-600">{contadores.recibieron}</div>
                 <div className="text-sm text-green-700">Recibieron</div>
@@ -392,27 +477,32 @@ export default function RegistroPage() {
 
               <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
                 <div className="text-3xl font-bold text-yellow-600">{estudiantes.length}</div>
-                <div className="text-sm text-yellow-700">Pendientes</div>
+                <div className="text-sm text-yellow-700">Total</div>
               </div>
             </div>
 
             {/* Botones de acción */}
-            <div className="flex gap-3 mb-6">
+            <div className="flex gap-3 mb-6 sticky top-[140px] z-10 bg-gray-50 pb-2">
               <button
                 onClick={handleMarcarTodos}
-                className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded-xl py-3 px-4 font-medium flex items-center justify-center gap-2 transition-colors"
+                className="flex-1 bg-white hover:bg-gray-50 text-green-600 border border-green-200 rounded-xl py-3 px-4 font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
               >
                 <CheckCircle className="w-5 h-5" />
-                Todos Recibieron
+                <span className="hidden sm:inline">Todos Recibieron</span>
+                <span className="sm:hidden">Todos</span>
               </button>
 
               <button
                 onClick={handleGuardar}
                 disabled={saving}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 px-4 font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                className="flex-[1.5] bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 px-4 font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-md shadow-blue-200"
               >
-                <Save className="w-5 h-5" />
-                {saving ? 'Guardando...' : 'Guardar'}
+                {saving ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Save className="w-5 h-5" />
+                )}
+                {saving ? 'Guardando...' : 'Guardar Asistencia'}
               </button>
             </div>
 
@@ -422,8 +512,8 @@ export default function RegistroPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar estudiante..."
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Buscar estudiante por nombre o matrícula..."
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
               />
             </div>
 
@@ -434,85 +524,71 @@ export default function RegistroPage() {
                   key={estudiante.id}
                   className={`bg-white rounded-xl p-4 shadow-sm border-2 ${asistencias[estudiante.id] === 'recibio' ? 'border-green-200' :
                     asistencias[estudiante.id] === 'no-recibio' ? 'border-red-200' :
-                      asistencias[estudiante.id] === 'ausente' ? 'border-gray-300' :
+                      asistencias[estudiante.id] === 'ausente' ? 'border-gray-200 opacity-75' :
                         'border-yellow-200'
                     } transition-all`}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-blue-600 font-bold text-lg">
-                        {estudiante.nombre.charAt(0)}
-                      </span>
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 text-lg font-bold
+                        ${asistencias[estudiante.id] === 'recibio' ? 'bg-green-100 text-green-600' :
+                        asistencias[estudiante.id] === 'no-recibio' ? 'bg-red-100 text-red-600' :
+                          'bg-gray-100 text-gray-500'}`}>
+                      {estudiante.nombre.charAt(0)}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 truncate">
+                      <div className="font-semibold text-gray-900 truncate text-sm sm:text-base">
                         {estudiante.nombre}
                       </div>
-                      <div className="text-sm text-gray-600">
-                        {estudiante.matricula} • {estudiante.grado}-{estudiante.grupo}
+                      <div className="text-xs text-gray-500">
+                        {estudiante.matricula}
                       </div>
-                      {asistencias[estudiante.id] === 'recibio' && (
-                        <div className="text-xs text-green-600 mt-1">Pendiente</div>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setAsistencias({
-                          ...asistencias,
-                          [estudiante.id]: 'recibio'
-                        })}
-                        className={`p-2 rounded-lg transition-colors ${asistencias[estudiante.id] === 'recibio'
-                          ? 'bg-green-500 text-white'
-                          : 'bg-green-50 text-green-600 hover:bg-green-100'
-                          }`}
-                        title="Recibió"
-                      >
-                        <CheckCircle className="w-5 h-5" />
-                      </button>
-
-                      <button
-                        onClick={() => setAsistencias({
-                          ...asistencias,
-                          [estudiante.id]: 'no-recibio'
-                        })}
-                        className={`p-2 rounded-lg transition-colors ${asistencias[estudiante.id] === 'no-recibio'
-                          ? 'bg-red-500 text-white'
-                          : 'bg-red-50 text-red-600 hover:bg-red-100'
-                          }`}
-                        title="No Recibió"
-                      >
-                        <XCircle className="w-5 h-5" />
-                      </button>
-
-                      <button
-                        onClick={() => setAsistencias({
-                          ...asistencias,
-                          [estudiante.id]: 'ausente'
-                        })}
-                        className={`p-2 rounded-lg transition-colors ${asistencias[estudiante.id] === 'ausente'
-                          ? 'bg-gray-500 text-white'
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                          }`}
-                        title="No Asistió"
-                      >
-                        <UserX className="w-5 h-5" />
-                      </button>
                     </div>
                   </div>
 
-                  {/* Botón de novedad */}
-                  {asistencias[estudiante.id] && asistencias[estudiante.id] !== 'recibio' && (
+                  <div className="grid grid-cols-3 gap-2 mt-4">
                     <button
-                      className="w-full mt-3 py-2 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 rounded-lg text-yellow-700 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+                      onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'recibio' })}
+                      className={`py-2 px-1 rounded-lg text-xs font-medium transition-colors flex flex-col items-center gap-1 ${asistencias[estudiante.id] === 'recibio'
+                        ? 'bg-green-500 text-white shadow-md shadow-green-200'
+                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                        }`}
                     >
-                      <AlertCircle className="w-4 h-4" />
-                      Registrar Novedad
+                      <CheckCircle className="w-5 h-5" />
+                      Recibió
                     </button>
-                  )}
+
+                    <button
+                      onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'no-recibio' })}
+                      className={`py-2 px-1 rounded-lg text-xs font-medium transition-colors flex flex-col items-center gap-1 ${asistencias[estudiante.id] === 'no-recibio'
+                        ? 'bg-red-500 text-white shadow-md shadow-red-200'
+                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                        }`}
+                    >
+                      <XCircle className="w-5 h-5" />
+                      No Recibió
+                    </button>
+
+                    <button
+                      onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'ausente' })}
+                      className={`py-2 px-1 rounded-lg text-xs font-medium transition-colors flex flex-col items-center gap-1 ${asistencias[estudiante.id] === 'ausente'
+                        ? 'bg-gray-600 text-white shadow-md shadow-gray-200'
+                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                        }`}
+                    >
+                      <UserX className="w-5 h-5" />
+                      Ausente
+                    </button>
+                  </div>
+
                 </div>
               ))}
+
+              {estudiantesFiltrados.length === 0 && (
+                <div className="text-center py-8 text-gray-500 bg-white rounded-xl border border-gray-200 border-dashed">
+                  No se encontraron estudiantes
+                </div>
+              )}
             </div>
           </div>
         )}
