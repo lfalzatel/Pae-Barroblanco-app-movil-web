@@ -93,7 +93,7 @@ export default function DashboardLayout({
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 md:ml-64 pb-20 md:pb-0">
+            <main className="flex-1 md:ml-64 pb-20 md:pb-0 pt-16 md:pt-0">
                 {children}
             </main>
 

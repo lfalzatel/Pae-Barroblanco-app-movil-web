@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import {
-  Usuario,
   sedes,
   grupos,
   Sede,
@@ -22,7 +21,8 @@ import {
   AlertCircle,
   School,
   GraduationCap,
-  Users
+  Users,
+  Home
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -36,6 +36,7 @@ export default function RegistroPage() {
   const [asistencias, setAsistencias] = useState<Record<string, 'recibio' | 'no-recibio' | 'ausente'>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [saving, setSaving] = useState(false);
+  const [totalEstudiantesPrincipal, setTotalEstudiantesPrincipal] = useState(0);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -53,10 +54,25 @@ export default function RegistroPage() {
       });
     };
 
+    const fetchCounts = async () => {
+      // Solo contamos estudiantes reales para sede principal (demo por ahora asume que todos son de principal o se filtrarian por sede_id si existiera)
+      // En este caso, haremos un count general de la tabla estudiantes como "Sede Principal"
+      const { count } = await supabase
+        .from('estudiantes')
+        .select('*', { count: 'exact', head: true });
+
+      if (count !== null) {
+        setTotalEstudiantesPrincipal(count);
+      }
+    };
+
     checkUser();
+    fetchCounts();
   }, [router]);
 
   const handleSedeSelect = (sede: Sede) => {
+    // Si es primaria o maría inmaculada (que tienen 0 estudiantes), quizás deberíamos bloquear o mostrar alerta?
+    // Por ahora permitimos seleccionar, pero la UI mostrará 0.
     setSedeSeleccionada(sede);
     setStep('grupo');
   };
@@ -86,10 +102,8 @@ export default function RegistroPage() {
 
   const handleGuardar = async () => {
     setSaving(true);
-
     // Simular guardado
     await new Promise(resolve => setTimeout(resolve, 1500));
-
     alert('Asistencia guardada correctamente');
     setSaving(false);
     router.push('/dashboard');
@@ -159,40 +173,65 @@ export default function RegistroPage() {
         {/* Selección de Sede */}
         {step === 'sede' && (
           <div className="space-y-4">
-            {sedes.map(sede => (
-              <button
-                key={sede.id}
-                onClick={() => handleSedeSelect(sede)}
-                className="w-full bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow text-left"
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`w-16 h-16 rounded-lg flex items-center justify-center ${sede.id === 'principal' ? 'bg-blue-100' :
-                    sede.id === 'primaria' ? 'bg-green-100' :
-                      'bg-purple-100'
-                    }`}>
-                    {sede.id === 'principal' ? (
-                      <School className={`w-8 h-8 ${sede.id === 'principal' ? 'text-blue-600' : ''
-                        }`} />
-                    ) : (
-                      <GraduationCap className={`w-8 h-8 ${sede.id === 'primaria' ? 'text-green-600' : 'text-purple-600'
-                        }`} />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900">{sede.nombre}</h3>
-                    <p className="text-gray-600">{sede.descripcion}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <Users className="w-5 h-5" />
-                      <span className="text-sm font-medium">
-                        {sede.estudiantesTotal} Estudiantes
-                      </span>
-                    </div>
-                  </div>
+            {/* Sede Principal */}
+            <button
+              onClick={() => handleSedeSelect(sedes.find(s => s.id === 'principal')!)}
+              className="w-full relative h-48 rounded-2xl overflow-hidden shadow-md group transition-all hover:shadow-xl hover:scale-[1.01]"
+            >
+              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url("/sede_principal.png")' }} />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+              <div className="absolute inset-0 p-6 flex flex-col justify-center items-start text-white">
+                <div className="bg-white/20 p-3 rounded-full mb-3 backdrop-blur-sm">
+                  <School className="w-8 h-8 text-white" />
                 </div>
-              </button>
-            ))}
+                <h3 className="text-2xl font-bold mb-1">Sede Principal</h3>
+                <p className="text-gray-200 mb-4">Grados 6° - 11°</p>
+                <div className="bg-white/20 px-4 py-1.5 rounded-full backdrop-blur-md flex items-center gap-2">
+                  <span className="font-bold">{totalEstudiantesPrincipal} Estudiantes</span>
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+            </button>
+
+            {/* Sede Primaria */}
+            <button
+              onClick={() => handleSedeSelect(sedes.find(s => s.id === 'primaria')!)}
+              className="w-full relative h-48 rounded-2xl overflow-hidden shadow-md group transition-all hover:shadow-xl hover:scale-[1.01]"
+            >
+              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url("/sede_primaria.png")' }} />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+              <div className="absolute inset-0 p-6 flex flex-col justify-center items-start text-white">
+                <div className="bg-white/20 p-3 rounded-full mb-3 backdrop-blur-sm">
+                  <GraduationCap className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-1">Sede Primaria</h3>
+                <p className="text-gray-200 mb-4">Educación Primaria</p>
+                <div className="bg-white/20 px-4 py-1.5 rounded-full backdrop-blur-md flex items-center gap-2">
+                  <span className="font-bold">0 Estudiantes</span>
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+            </button>
+
+            {/* María Inmaculada */}
+            <button
+              onClick={() => handleSedeSelect(sedes.find(s => s.id === 'maria-inmaculada')!)}
+              className="w-full relative h-48 rounded-2xl overflow-hidden shadow-md group transition-all hover:shadow-xl hover:scale-[1.01]"
+            >
+              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url("/sede_maria.png")' }} />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+              <div className="absolute inset-0 p-6 flex flex-col justify-center items-start text-white">
+                <div className="bg-white/20 p-3 rounded-full mb-3 backdrop-blur-sm">
+                  <Home className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-1">María Inmaculada</h3>
+                <p className="text-gray-200 mb-4">Educación Primaria</p>
+                <div className="bg-white/20 px-4 py-1.5 rounded-full backdrop-blur-md flex items-center gap-2">
+                  <span className="font-bold">0 Estudiantes</span>
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+            </button>
           </div>
         )}
 
