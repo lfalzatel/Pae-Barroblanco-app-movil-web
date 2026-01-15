@@ -13,6 +13,7 @@ export default function ReportesPage() {
   const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes'>('hoy');
   const [sedeFilter, setSedeFilter] = useState('todas');
 
+  const [registros, setRegistros] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalEstudiantes: 0,
     recibieron: 0,
@@ -80,17 +81,22 @@ export default function ReportesPage() {
         const { count: totalCount, error: errorEst } = await queryEstudiantes;
         if (errorEst) throw errorEst;
 
-        // 2. Consultar Asistencia (filtrado por fecha y sede)
+        // 2. Consultar Asistencia (Stats + Registros)
         let queryAsistencia = supabase
           .from('asistencia_pae')
           .select(`
+            id,
             estado,
             fecha,
+            created_at,
             estudiantes!inner (
+              nombre,
+              grupo,
               sede
             )
           `)
-          .gte('fecha', startDate);
+          .gte('fecha', startDate)
+          .order('created_at', { ascending: false });
 
         // Filtro adicional para 'hoy' para asegurar que sea SOLO hoy (no futuro)
         if (periodo === 'hoy') {
@@ -115,6 +121,9 @@ export default function ReportesPage() {
           noRecibieron: noRecibieronCount,
           ausentes: ausentesCount
         });
+
+        // Guardar los registros para la lista (limitado a los últimos 50 para no saturar)
+        setRegistros(asistenciaData?.slice(0, 50) || []);
 
       } catch (error) {
         console.error('Error fetching reports data:', error);
@@ -280,18 +289,55 @@ export default function ReportesPage() {
 
         {/* Registros recientes */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <div className="p-4 border-b border-gray-200 bg-gray-50">
             <h2 className="text-lg font-bold text-gray-900">Registros Recientes</h2>
-            <button className="text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
-              <Trash2 className="w-4 h-4" />
-              Limpiar Hoy
-            </button>
           </div>
 
-          <div className="p-6">
-            <div className="text-center text-gray-500 py-8">
-              No hay registros recientes para este periodo
-            </div>
+          <div className="overflow-x-auto">
+            {registros.length === 0 ? (
+              <div className="p-6 text-center text-gray-500 py-8">
+                No hay registros recientes para este periodo
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estudiante</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Hora</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {registros.map((registro: any) => {
+                    const fecha = new Date(registro.created_at);
+                    const hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const fechaStr = fecha.toLocaleDateString();
+
+                    return (
+                      <tr key={registro.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-bold text-gray-900">{registro.estudiantes?.nombre}</div>
+                          <div className="text-xs text-gray-500">{registro.estudiantes?.grupo}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${registro.estado === 'recibio' ? 'bg-green-100 text-green-800' :
+                              registro.estado === 'no_recibio' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                            }`}>
+                            {registro.estado === 'recibio' ? 'Recibió' :
+                              registro.estado === 'no_recibio' ? 'No Recibió' : 'Ausente'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{hora}</div>
+                          <div className="text-xs text-gray-500">{fechaStr}</div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
