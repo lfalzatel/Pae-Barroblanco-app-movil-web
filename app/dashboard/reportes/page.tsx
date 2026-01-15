@@ -342,6 +342,12 @@ export default function ReportesPage() {
       // Prepare Excel data
       const excelData: any[][] = [
         ['REPORTE DE ASISTENCIA PAE BARROBLANCO'],
+        ['Fecha de Análisis:', new Date(reportDate).toLocaleDateString('es-CO', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })],
         ['Fecha de Generación:', new Date().toLocaleDateString('es-CO', {
           year: 'numeric',
           month: '2-digit',
