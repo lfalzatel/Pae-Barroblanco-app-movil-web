@@ -193,16 +193,27 @@ export default function ReportesPage() {
 
   const handleExportExcel = async () => {
     try {
-      // Determine period label
+      // Determine period label and date range
       let periodoLabel = '';
-      if (periodo === 'fecha') {
-        periodoLabel = `Fecha específica: ${selectedDate}`;
-      } else if (periodo === 'hoy') {
+      let reportDate = selectedDate; // Default to selected date
+
+      const today = new Date();
+
+      if (periodo === 'hoy') {
         periodoLabel = 'Hoy';
+        const offset = today.getTimezoneOffset() * 60000;
+        reportDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
       } else if (periodo === 'semana') {
         periodoLabel = 'Esta Semana';
-      } else {
+        const offset = today.getTimezoneOffset() * 60000;
+        reportDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
+      } else if (periodo === 'mes') {
         periodoLabel = 'Este Mes';
+        const offset = today.getTimezoneOffset() * 60000;
+        reportDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
+      } else if (periodo === 'fecha') {
+        periodoLabel = `Fecha específica: ${selectedDate}`;
+        reportDate = selectedDate;
       }
 
       // Fetch ALL students to calculate totals per sede and grupo
@@ -211,6 +222,9 @@ export default function ReportesPage() {
         'primaria': 'Primaria',
         'maria-inmaculada': 'Maria Inmaculada'
       };
+
+      // All possible sedes
+      const allSedes = ['Principal', 'Primaria', 'Maria Inmaculada'];
 
       let queryAllStudents = supabase.from('estudiantes').select('id, nombre, grupo, sede');
 
@@ -228,6 +242,11 @@ export default function ReportesPage() {
       const studentsBySede: Record<string, any[]> = {};
       const studentsByGrupo: Record<string, any[]> = {};
 
+      // Initialize all sedes with empty arrays
+      allSedes.forEach(sede => {
+        studentsBySede[sede] = [];
+      });
+
       (allStudents || []).forEach(student => {
         if (!studentsBySede[student.sede]) {
           studentsBySede[student.sede] = [];
@@ -243,18 +262,26 @@ export default function ReportesPage() {
 
       // Calculate statistics per sede
       const sedeStats: any[] = [];
-      for (const [sede, students] of Object.entries(studentsBySede)) {
+      for (const sede of allSedes) {
+        const students = studentsBySede[sede] || [];
         const studentIds = students.map(s => s.id);
 
-        const { data: attendanceData } = await supabase
-          .from('asistencia_pae')
-          .select('estado')
-          .in('estudiante_id', studentIds)
-          .eq('fecha', selectedDate);
+        let recibieron = 0;
+        let noRecibieron = 0;
+        let ausentes = 0;
 
-        const recibieron = (attendanceData || []).filter(a => a.estado === 'recibio').length;
-        const noRecibieron = (attendanceData || []).filter(a => a.estado === 'no_recibio').length;
-        const ausentes = (attendanceData || []).filter(a => a.estado === 'ausente').length;
+        if (studentIds.length > 0) {
+          const { data: attendanceData } = await supabase
+            .from('asistencia_pae')
+            .select('estado')
+            .in('estudiante_id', studentIds)
+            .eq('fecha', reportDate);
+
+          recibieron = (attendanceData || []).filter(a => a.estado === 'recibio').length;
+          noRecibieron = (attendanceData || []).filter(a => a.estado === 'no_recibio').length;
+          ausentes = (attendanceData || []).filter(a => a.estado === 'ausente').length;
+        }
+
         const porcentaje = students.length > 0 ? ((recibieron / students.length) * 100).toFixed(1) : '0.0';
 
         sedeStats.push({
@@ -277,7 +304,7 @@ export default function ReportesPage() {
           .from('asistencia_pae')
           .select('estado')
           .in('estudiante_id', studentIds)
-          .eq('fecha', selectedDate);
+          .eq('fecha', reportDate);
 
         const recibieron = (attendanceData || []).filter(a => a.estado === 'recibio').length;
         const noRecibieron = (attendanceData || []).filter(a => a.estado === 'no_recibio').length;
@@ -325,7 +352,7 @@ export default function ReportesPage() {
         ['Sede', 'Total Estudiantes', 'Recibieron', 'No Recibieron', 'No Asistieron', '% Asistencia']
       ];
 
-      // Add sede statistics
+      // Add sede statistics (always show all 3 sedes)
       sedeStats.forEach(stat => {
         excelData.push([
           `Sede ${stat.sede}`,
@@ -378,7 +405,7 @@ export default function ReportesPage() {
       // Generate filename
       const sedeFilename = sedeFilter === 'todas' ? 'Todas' : sedeFilter;
       const periodoFilename = periodo === 'fecha' ? selectedDate : periodo;
-      const filename = `Reporte_Asistencia_${sedeFilename}_${periodoFilename}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      const filename = `Reporte_Asistencia_${sedeFilename}_${periodoFilename}_${reportDate}.xlsx`;
 
       // Download file
       XLSX.writeFile(wb, filename);
