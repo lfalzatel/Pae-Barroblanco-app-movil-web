@@ -37,7 +37,7 @@ export default function ReportesPage() {
   if (!usuario) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -53,10 +53,10 @@ export default function ReportesPage() {
             </div>
 
             <div className="flex gap-2">
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
+              <button className="p-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
                 <FileDown className="w-6 h-6 text-green-600" />
               </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
+              <button className="p-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
                 <Calendar className="w-6 h-6 text-blue-600" />
               </button>
             </div>
@@ -70,8 +70,8 @@ export default function ReportesPage() {
           <button
             onClick={() => setPeriodo('hoy')}
             className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors ${periodo === 'hoy'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
               }`}
           >
             Hoy
@@ -79,8 +79,8 @@ export default function ReportesPage() {
           <button
             onClick={() => setPeriodo('semana')}
             className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors ${periodo === 'semana'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
               }`}
           >
             Semana
@@ -88,8 +88,8 @@ export default function ReportesPage() {
           <button
             onClick={() => setPeriodo('mes')}
             className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors ${periodo === 'mes'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
               }`}
           >
             Mes
@@ -97,12 +97,12 @@ export default function ReportesPage() {
         </div>
 
         {/* Filtro de sede */}
-        <div className="mb-6 flex gap-3">
+        <div className="mb-6 flex gap-3 overflow-x-auto pb-2 no-scrollbar">
           <button
             onClick={() => setSedeFilter('todas')}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors ${sedeFilter === 'todas'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            className={`px-6 py-2 rounded-full font-medium transition-colors whitespace-nowrap ${sedeFilter === 'todas'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
               }`}
           >
             Todas las Sedes
@@ -111,9 +111,9 @@ export default function ReportesPage() {
             <button
               key={sede.id}
               onClick={() => setSedeFilter(sede.id)}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors ${sedeFilter === sede.id
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              className={`px-6 py-2 rounded-full font-medium transition-colors whitespace-nowrap ${sedeFilter === sede.id
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                 }`}
             >
               {sede.nombre}
@@ -123,44 +123,36 @@ export default function ReportesPage() {
 
         {/* Estadísticas principales */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex flex-col items-center justify-center">
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
+              <Users className="w-6 h-6 text-blue-600" />
             </div>
-            <div className="text-3xl font-bold text-gray-900">{stats.totalEstudiantes}</div>
-            <div className="text-sm text-gray-600">Total</div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.totalEstudiantes}</div>
+            <div className="text-sm text-gray-500 font-medium">Total</div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex flex-col items-center justify-center">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+              <CheckCircle className="w-6 h-6 text-green-600" />
             </div>
-            <div className="text-3xl font-bold text-green-600">{stats.recibieron}</div>
-            <div className="text-sm text-gray-600">Recibieron</div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.recibieron}</div>
+            <div className="text-sm text-gray-500 font-medium">Recibieron</div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <XCircle className="w-6 h-6 text-red-600" />
-              </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex flex-col items-center justify-center">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-3">
+              <XCircle className="w-6 h-6 text-red-600" />
             </div>
-            <div className="text-3xl font-bold text-red-600">{stats.noRecibieron}</div>
-            <div className="text-sm text-gray-600">No Recibieron</div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.noRecibieron}</div>
+            <div className="text-sm text-gray-500 font-medium">No Recibieron</div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                <UserX className="w-6 h-6 text-gray-600" />
-              </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex flex-col items-center justify-center">
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+              <UserX className="w-6 h-6 text-gray-600" />
             </div>
-            <div className="text-3xl font-bold text-gray-600">{stats.ausentes}</div>
-            <div className="text-sm text-gray-600">Ausentes</div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.ausentes}</div>
+            <div className="text-sm text-gray-500 font-medium">Ausentes</div>
           </div>
         </div>
 
