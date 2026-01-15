@@ -347,12 +347,12 @@ export default function ReportesPage() {
           year: 'numeric',
           month: 'long',
           day: 'numeric'
-        })],
+        }), '← La fecha que se está reportando'],
         ['Fecha de Generación:', new Date().toLocaleDateString('es-CO', {
           year: 'numeric',
           month: '2-digit',
           day: '2-digit'
-        })],
+        }), '← Cuándo se descargó el archivo'],
         [''],
         ['RESUMEN POR SEDE'],
         ['Sede', 'Total Estudiantes', 'Recibieron', 'No Recibieron', 'No Asistieron', '% Asistencia']
