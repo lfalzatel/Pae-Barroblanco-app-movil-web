@@ -176,19 +176,21 @@ export default function RegistroPage() {
             {/* Sede Principal */}
             <button
               onClick={() => handleSedeSelect(sedes.find(s => s.id === 'principal')!)}
-              className="w-full relative h-48 rounded-2xl overflow-hidden shadow-md group transition-all hover:shadow-xl hover:scale-[1.01]"
+              className="w-full relative h-32 rounded-2xl overflow-hidden shadow-md group transition-all hover:shadow-xl hover:scale-[1.01]"
             >
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url("/sede_principal.png")' }} />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-              <div className="absolute inset-0 p-6 flex flex-col justify-center items-start text-white">
-                <div className="bg-white/20 p-3 rounded-full mb-3 backdrop-blur-sm">
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
+              <div className="absolute inset-0 p-4 flex items-center gap-4 text-white">
+                <div className="bg-white/20 p-3 rounded-full backdrop-blur-sm flex-shrink-0">
                   <School className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold mb-1">Sede Principal</h3>
-                <p className="text-gray-200 mb-4">Grados 6° - 11°</p>
-                <div className="bg-white/20 px-4 py-1.5 rounded-full backdrop-blur-md flex items-center gap-2">
-                  <span className="font-bold">{totalEstudiantesPrincipal} Estudiantes</span>
-                  <Users className="w-4 h-4" />
+                <div className="flex-1 text-left">
+                  <h3 className="text-xl font-bold leading-tight">Sede Principal</h3>
+                  <p className="text-gray-200 text-sm mb-1">Grados 6° - 11°</p>
+                  <div className="inline-flex bg-white/20 px-3 py-1 rounded-full backdrop-blur-md items-center gap-1.5 pt-0.5">
+                    <span className="font-bold text-xs">{totalEstudiantesPrincipal} Estudiantes</span>
+                    <Users className="w-3 h-3" />
+                  </div>
                 </div>
               </div>
             </button>
@@ -196,19 +198,21 @@ export default function RegistroPage() {
             {/* Sede Primaria */}
             <button
               onClick={() => handleSedeSelect(sedes.find(s => s.id === 'primaria')!)}
-              className="w-full relative h-48 rounded-2xl overflow-hidden shadow-md group transition-all hover:shadow-xl hover:scale-[1.01]"
+              className="w-full relative h-32 rounded-2xl overflow-hidden shadow-md group transition-all hover:shadow-xl hover:scale-[1.01]"
             >
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url("/sede_primaria.png")' }} />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-              <div className="absolute inset-0 p-6 flex flex-col justify-center items-start text-white">
-                <div className="bg-white/20 p-3 rounded-full mb-3 backdrop-blur-sm">
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
+              <div className="absolute inset-0 p-4 flex items-center gap-4 text-white">
+                <div className="bg-white/20 p-3 rounded-full backdrop-blur-sm flex-shrink-0">
                   <GraduationCap className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold mb-1">Sede Primaria</h3>
-                <p className="text-gray-200 mb-4">Educación Primaria</p>
-                <div className="bg-white/20 px-4 py-1.5 rounded-full backdrop-blur-md flex items-center gap-2">
-                  <span className="font-bold">0 Estudiantes</span>
-                  <Users className="w-4 h-4" />
+                <div className="flex-1 text-left">
+                  <h3 className="text-xl font-bold leading-tight">Sede Primaria</h3>
+                  <p className="text-gray-200 text-sm mb-1">Educación Primaria</p>
+                  <div className="inline-flex bg-white/20 px-3 py-1 rounded-full backdrop-blur-md items-center gap-1.5 pt-0.5">
+                    <span className="font-bold text-xs">0 Estudiantes</span>
+                    <Users className="w-3 h-3" />
+                  </div>
                 </div>
               </div>
             </button>
@@ -216,19 +220,21 @@ export default function RegistroPage() {
             {/* María Inmaculada */}
             <button
               onClick={() => handleSedeSelect(sedes.find(s => s.id === 'maria-inmaculada')!)}
-              className="w-full relative h-48 rounded-2xl overflow-hidden shadow-md group transition-all hover:shadow-xl hover:scale-[1.01]"
+              className="w-full relative h-32 rounded-2xl overflow-hidden shadow-md group transition-all hover:shadow-xl hover:scale-[1.01]"
             >
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url("/sede_maria.png")' }} />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-              <div className="absolute inset-0 p-6 flex flex-col justify-center items-start text-white">
-                <div className="bg-white/20 p-3 rounded-full mb-3 backdrop-blur-sm">
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
+              <div className="absolute inset-0 p-4 flex items-center gap-4 text-white">
+                <div className="bg-white/20 p-3 rounded-full backdrop-blur-sm flex-shrink-0">
                   <Home className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold mb-1">María Inmaculada</h3>
-                <p className="text-gray-200 mb-4">Educación Primaria</p>
-                <div className="bg-white/20 px-4 py-1.5 rounded-full backdrop-blur-md flex items-center gap-2">
-                  <span className="font-bold">0 Estudiantes</span>
-                  <Users className="w-4 h-4" />
+                <div className="flex-1 text-left">
+                  <h3 className="text-xl font-bold leading-tight">María Inmaculada</h3>
+                  <p className="text-gray-200 text-sm mb-1">Educación Primaria</p>
+                  <div className="inline-flex bg-white/20 px-3 py-1 rounded-full backdrop-blur-md items-center gap-1.5 pt-0.5">
+                    <span className="font-bold text-xs">0 Estudiantes</span>
+                    <Users className="w-3 h-3" />
+                  </div>
                 </div>
               </div>
             </button>
