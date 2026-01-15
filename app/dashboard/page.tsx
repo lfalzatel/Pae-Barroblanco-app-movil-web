@@ -155,7 +155,7 @@ export default function DashboardPage() {
         <h3 className="text-xl font-extrabold text-gray-900 mb-4">Estadísticas de Hoy</h3>
         <div className="grid grid-cols-2 gap-3">
           {/* Total Estudiantes */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <div className="text-2xl md:text-3xl font-bold text-blue-600 tracking-tight">
@@ -171,7 +171,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Recibieron */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <div className="text-2xl md:text-3xl font-bold text-emerald-500 tracking-tight">
@@ -187,7 +187,7 @@ export default function DashboardPage() {
           </div>
 
           {/* No Recibieron */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <div className="text-2xl md:text-3xl font-bold text-yellow-500 tracking-tight">
@@ -203,7 +203,7 @@ export default function DashboardPage() {
           </div>
 
           {/* No Asistieron (Ausentes) */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <div className="text-2xl md:text-3xl font-bold text-red-500 tracking-tight">

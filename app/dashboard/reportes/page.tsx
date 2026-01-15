@@ -2,23 +2,34 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
 import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ReportesPage() {
   const router = useRouter();
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [usuario, setUsuario] = useState<any | null>(null);
   const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes'>('hoy');
   const [sedeFilter, setSedeFilter] = useState('todas');
-  
+
   useEffect(() => {
-    const userStr = localStorage.getItem('currentUser');
-    if (!userStr) {
-      router.push('/');
-      return;
-    }
-    setUsuario(JSON.parse(userStr));
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/');
+        return;
+      }
+
+      setUsuario({
+        email: session.user.email,
+        nombre: session.user.user_metadata?.nombre || 'Usuario',
+        rol: session.user.user_metadata?.rol || 'docente',
+      });
+    };
+
+    checkUser();
   }, [router]);
 
   const stats = calcularEstadisticasHoy();
@@ -40,7 +51,7 @@ export default function ReportesPage() {
                 <p className="text-sm text-gray-600">Análisis de asistencia en tiempo real</p>
               </div>
             </div>
-            
+
             <div className="flex gap-2">
               <button className="p-2 hover:bg-gray-100 rounded-lg">
                 <FileDown className="w-6 h-6 text-green-600" />
@@ -58,31 +69,28 @@ export default function ReportesPage() {
         <div className="flex gap-3 mb-6">
           <button
             onClick={() => setPeriodo('hoy')}
-            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors ${
-              periodo === 'hoy'
+            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors ${periodo === 'hoy'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+              }`}
           >
             Hoy
           </button>
           <button
             onClick={() => setPeriodo('semana')}
-            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors ${
-              periodo === 'semana'
+            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors ${periodo === 'semana'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+              }`}
           >
             Semana
           </button>
           <button
             onClick={() => setPeriodo('mes')}
-            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors ${
-              periodo === 'mes'
+            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors ${periodo === 'mes'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+              }`}
           >
             Mes
           </button>
@@ -92,11 +100,10 @@ export default function ReportesPage() {
         <div className="mb-6 flex gap-3">
           <button
             onClick={() => setSedeFilter('todas')}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-              sedeFilter === 'todas'
+            className={`px-6 py-2 rounded-lg font-medium transition-colors ${sedeFilter === 'todas'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+              }`}
           >
             Todas las Sedes
           </button>
@@ -104,11 +111,10 @@ export default function ReportesPage() {
             <button
               key={sede.id}
               onClick={() => setSedeFilter(sede.id)}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                sedeFilter === sede.id
+              className={`px-6 py-2 rounded-lg font-medium transition-colors ${sedeFilter === sede.id
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
+                }`}
             >
               {sede.nombre}
             </button>
@@ -167,7 +173,7 @@ export default function ReportesPage() {
               Limpiar Hoy
             </button>
           </div>
-          
+
           <div className="p-6">
             <div className="text-center text-gray-500 py-8">
               No hay registros recientes
