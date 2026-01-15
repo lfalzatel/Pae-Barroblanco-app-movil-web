@@ -1,17 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
-import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ReportesPage() {
   const router = useRouter();
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const [usuario, setUsuario] = useState<any | null>(null);
-  const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes'>('hoy');
+  const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes' | 'fecha'>('hoy');
   const [sedeFilter, setSedeFilter] = useState('todas');
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - offset).toISOString().split('T')[0];
+  });
+
+  // Estado para menú de exportar
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const [registros, setRegistros] = useState<any[]>([]);
   const [stats, setStats] = useState({
@@ -47,6 +56,7 @@ export default function ReportesPage() {
       try {
         const today = new Date();
         let startDate = today.toISOString().split('T')[0];
+        let isSpecificDate = false;
 
         // Calcular rango de fechas
         if (periodo === 'semana') {
@@ -55,9 +65,15 @@ export default function ReportesPage() {
         } else if (periodo === 'mes') {
           const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
           startDate = firstDay.toISOString().split('T')[0];
+        } else if (periodo === 'fecha') {
+          startDate = selectedDate;
+          isSpecificDate = true;
         } else {
           // Hoy
-          startDate = new Date().toISOString().split('T')[0];
+          const now = new Date();
+          const offset = now.getTimezoneOffset() * 60000;
+          startDate = new Date(now.getTime() - offset).toISOString().split('T')[0];
+          isSpecificDate = true;
         }
 
         const sedeMap: Record<string, string> = {
@@ -72,9 +88,6 @@ export default function ReportesPage() {
           .select('*', { count: 'exact', head: true });
 
         if (sedeFilter !== 'todas') {
-          // Ajuste: La base de datos usa ''Principal'' por defecto.
-          // Si el filtro es otro, usamos el mapa.
-          // Nota: Actualmente solo hay datos de 'Principal' en seed.
           queryEstudiantes = queryEstudiantes.eq('sede', sedeMap[sedeFilter] || 'Principal');
         }
 
@@ -98,8 +111,8 @@ export default function ReportesPage() {
           .gte('fecha', startDate)
           .order('created_at', { ascending: false });
 
-        // Filtro adicional para 'hoy' para asegurar que sea SOLO hoy (no futuro)
-        if (periodo === 'hoy') {
+        if (isSpecificDate) {
+          // Si es fecha específica (hoy o seleccionada), filtrar también con lte para que sea SOLO ese día
           queryAsistencia = queryAsistencia.lte('fecha', startDate);
         }
 
@@ -135,7 +148,7 @@ export default function ReportesPage() {
     if (usuario) {
       fetchData();
     }
-  }, [usuario, periodo, sedeFilter]);
+  }, [usuario, periodo, sedeFilter, selectedDate]);
 
   if (!usuario) return null;
 
@@ -150,18 +163,67 @@ export default function ReportesPage() {
                 <ArrowLeft className="w-6 h-6" />
               </Link>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Reportes y Estadísticas</h1>
-                <p className="text-sm text-gray-600">Análisis de asistencia en tiempo real</p>
+                <h1 className="text-xl font-bold text-gray-900">Reportes</h1>
+                <p className="text-sm text-gray-600">
+                  {periodo === 'fecha'
+                    ? `Datos del ${selectedDate}`
+                    : periodo === 'hoy' ? 'Datos de Hoy' : periodo === 'semana' ? 'Esta Semana' : 'Este Mes'
+                  }
+                </p>
               </div>
             </div>
 
             <div className="flex gap-2">
-              <button className="p-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
-                <FileDown className="w-6 h-6 text-green-600" />
-              </button>
-              <button className="p-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
-                <Calendar className="w-6 h-6 text-blue-600" />
-              </button>
+              {/* Export Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="p-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors relative"
+                >
+                  <FileDown className="w-6 h-6 text-green-600" />
+                </button>
+
+                {showExportMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-50 py-1">
+                    <button className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700">
+                      <span className="text-green-600 font-bold">XLS</span> Descargar Excel
+                    </button>
+                    <button className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 border-t border-gray-100">
+                      <span className="text-red-500 font-bold">PDF</span> Descargar PDF
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Date Picker Button */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    // Intentar abrir el picker nativo
+                    if (dateInputRef.current) {
+                      try {
+                        dateInputRef.current.showPicker();
+                      } catch (e) {
+                        dateInputRef.current.click(); // Fallback
+                      }
+                    }
+                  }}
+                  className={`p-2 rounded-lg transition-colors ${periodo === 'fecha' ? 'bg-blue-100 ring-2 ring-blue-500' : 'bg-blue-50 hover:bg-blue-100'}`}
+                >
+                  <Calendar className="w-6 h-6 text-blue-600" />
+                </button>
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer pointer-events-none"
+                  value={selectedDate}
+                  onChange={(e) => {
+                    setSelectedDate(e.target.value);
+                    setPeriodo('fecha');
+                  }}
+                  style={{ visibility: 'hidden', position: 'absolute' }}
+                />
+              </div>
             </div>
           </div>
         </div>
