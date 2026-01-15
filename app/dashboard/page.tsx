@@ -112,9 +112,12 @@ export default function DashboardPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
           </div>
           <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white">
-            <h2 className="text-xl md:text-3xl font-bold leading-tight mb-2">
+            <h1 className="text-2xl md:text-3xl font-bold leading-tight mb-1">
+              Sistema de Asistencia PAE
+            </h1>
+            <p className="text-sm md:text-base text-gray-100 opacity-90">
               Gestión integral del Programa de Alimentación Escolar en Barroblanco Institución
-            </h2>
+            </p>
           </div>
         </div>
       </div>
