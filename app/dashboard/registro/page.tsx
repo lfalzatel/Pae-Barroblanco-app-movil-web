@@ -252,9 +252,9 @@ export default function RegistroPage() {
       }
       setStep('grupo');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error guardando:', error);
-      alert('❌ Error al guardar la asistencia');
+      alert(`❌ Error al guardar la asistencia: ${error.message || 'Error desconocido'}`);
     } finally {
       setSaving(false);
     }
