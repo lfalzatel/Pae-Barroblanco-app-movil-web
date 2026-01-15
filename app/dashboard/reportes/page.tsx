@@ -302,9 +302,9 @@ export default function ReportesPage() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estudiante</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Hora</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estudiante</th>
+                    <th className="px-3 sm:px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th className="px-3 sm:px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Hora</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -315,20 +315,20 @@ export default function ReportesPage() {
 
                     return (
                       <tr key={registro.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-bold text-gray-900">{registro.estudiantes?.nombre}</div>
+                        <td className="px-3 sm:px-6 py-3 max-w-[140px] sm:max-w-none">
+                          <div className="text-sm font-bold text-gray-900 line-clamp-2 leading-tight">{registro.estudiantes?.nombre}</div>
                           <div className="text-xs text-gray-500">{registro.estudiantes?.grupo}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-center">
                           <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${registro.estado === 'recibio' ? 'bg-green-100 text-green-800' :
-                              registro.estado === 'no_recibio' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
+                            registro.estado === 'no_recibio' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
                             }`}>
                             {registro.estado === 'recibio' ? 'Recibió' :
                               registro.estado === 'no_recibio' ? 'No Recibió' : 'Ausente'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-right">
                           <div className="text-sm text-gray-900">{hora}</div>
                           <div className="text-xs text-gray-500">{fechaStr}</div>
                         </td>
