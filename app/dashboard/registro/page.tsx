@@ -27,6 +27,7 @@ import Link from 'next/link';
 // Extendemos la interfaz de Grupo para incluir el estado de completado
 interface GrupoConEstado extends Grupo {
   completado: boolean;
+  estudiantesActivos?: number;
 }
 
 function RegistroContent() {
@@ -192,13 +193,21 @@ function RegistroContent() {
 
       const gruposUnicos: GrupoConEstado[] = Array.from(gruposMap.values());
 
-      // 2. Contar estudiantes por grupo
+      // 2. Contar estudiantes por grupo (Totales y Activos)
       for (let grupo of gruposUnicos) {
-        const { count } = await supabase
+        const { count: total } = await supabase
           .from('estudiantes')
           .select('*', { count: 'exact', head: true })
           .eq('grupo', grupo.nombre);
-        grupo.estudiantes = count || 0;
+
+        const { count: activos } = await supabase
+          .from('estudiantes')
+          .select('*', { count: 'exact', head: true })
+          .eq('grupo', grupo.nombre)
+          .or('estado.eq.activo,estado.is.null'); // Considerar null como activo
+
+        grupo.estudiantes = total || 0;
+        grupo.estudiantesActivos = activos || 0;
       }
 
       // 3. Verificar completitud (si ya se registró asistencia hoy)
@@ -216,9 +225,10 @@ function RegistroContent() {
           conteoPorGrupo[g] = (conteoPorGrupo[g] || 0) + 1;
         });
 
-        // Si el conteo de asistencia >= estudiantes del grupo, marcar como completado
+        // Si el conteo de asistencia >= estudiantes ACTIVOS del grupo, marcar como completado
         gruposUnicos.forEach(g => {
-          if (conteoPorGrupo[g.nombre] && conteoPorGrupo[g.nombre] >= g.estudiantes && g.estudiantes > 0) {
+          const threshold = (g as any).estudiantesActivos;
+          if (conteoPorGrupo[g.nombre] && conteoPorGrupo[g.nombre] >= threshold && threshold > 0) {
             g.completado = true;
           }
         });
