@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { Usuario, calcularEstadisticasHoy, sedes } from '../data/demoData';
 import {
   Users,
-  CloudUpload,
+  UploadCloud,
   FileSpreadsheet,
   Search,
   CheckCircle,
@@ -126,7 +126,7 @@ export default function DashboardPage() {
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <button className="bg-orange-400 hover:bg-orange-500 text-white rounded-xl py-4 px-2 flex flex-col items-center justify-center gap-2 font-bold shadow-sm transition-colors cursor-not-allowed opacity-90">
-          <CloudUpload className="w-8 h-8" />
+          <UploadCloud className="w-8 h-8" />
           <span className="text-sm">Migrar Local</span>
         </button>
         <button className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-4 px-2 flex flex-col items-center justify-center gap-2 font-bold shadow-sm transition-colors cursor-not-allowed opacity-90">
