@@ -23,6 +23,7 @@ import {
   Home
 } from 'lucide-react';
 import Link from 'next/link';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 // Extendemos la interfaz de Grupo para incluir el estado de completado
 interface GrupoConEstado extends Grupo {
@@ -110,14 +111,7 @@ function RegistroContent() {
       if (sede) {
         setSedeSeleccionada(sede);
         if (grupoNombre) {
-          // Si hay grupo, vamos directo a registro, pero necesitamos cargar info del grupo primero si no está
-          // Como Grupo es un objeto complejo en este código legado (demoData), lo reconstruimos o buscamos
-          // Para simplificar, si estamos en modo URL, asumimos datos básicos o esperamos a fetchGruposReales
           setStep('registro');
-          // La carga de datos del grupo se hará cuando fetchGruposReales termine o via efecto secundario
-          // Pero fetchGruposReales solo corre en paso 'grupo', así que necesitamos lógica específica aquí.
-
-          // Estrategia: Cargar lista de grupos siempre que haya sede, y luego seleccionar el grupo si está en URL
         } else {
           setStep('grupo');
         }
@@ -129,26 +123,24 @@ function RegistroContent() {
     }
   }, [searchParams]);
 
-  // 4. Cargar Grupos cuando hay sede seleccionada (independiente del step visual, para tener la data)
+  // 4. Cargar Grupos cuando hay sede seleccionada
   useEffect(() => {
-    if (sedeSeleccionada?.id === 'principal') {
+    if (sedeSeleccionada) {
       fetchGruposReales();
     }
-  }, [sedeSeleccionada, selectedDate]); // Recargar si cambia sede o fecha
+  }, [sedeSeleccionada, selectedDate]);
 
-  // 5. Establecer grupo seleccionado si viene de la URL y ya cargaron los grupos
+  // 5. Establecer grupo seleccionado si viene de la URL
   useEffect(() => {
     const grupoNombre = searchParams.get('grupo');
     if (grupoNombre && gruposReales.length > 0 && !grupoSeleccionado) {
       const grupo = gruposReales.find(g => g.nombre === grupoNombre);
       if (grupo) {
-        handleGrupoSelect(grupo, false); // false = no actualizar URL (ya está ahí)
+        handleGrupoSelect(grupo, false);
       }
     }
   }, [gruposReales, searchParams]);
 
-
-  // Función helper para actualizar URL
   const updateUrl = (params: Record<string, string | null>) => {
     const newParams = new URLSearchParams(searchParams.toString());
     Object.entries(params).forEach(([key, value]) => {
@@ -172,7 +164,6 @@ function RegistroContent() {
         sedeSeleccionada.id === 'primaria' ? 'Primaria' :
           'Maria Inmaculada';
 
-      // 1. Obtener todos los estudiantes de la sede de una sola vez
       const { data: allStudents, error: studentsError } = await supabase
         .from('estudiantes')
         .select('grupo, grado, estado')
@@ -180,7 +171,6 @@ function RegistroContent() {
 
       if (studentsError) throw studentsError;
 
-      // 2. Agrupar y contar estudiantes (Totales y Activos) en memoria
       const gruposMap = new Map();
       allStudents?.forEach((item: any) => {
         if (!gruposMap.has(item.grupo)) {
@@ -202,7 +192,6 @@ function RegistroContent() {
 
       const gruposUnicos: GrupoConEstado[] = Array.from(gruposMap.values());
 
-      // 3. Verificar completitud (asistencia registrada hoy)
       const { data: asistenciaData } = await supabase
         .from('asistencia_pae')
         .select('estudiante_id, estudiantes!inner(grupo)')
@@ -223,7 +212,6 @@ function RegistroContent() {
         });
       }
 
-      // 4. Ordenar: grado y luego nombre
       gruposUnicos.sort((a, b) => {
         const gradeA = parseInt(a.grado) || 0;
         const gradeB = parseInt(b.grado) || 0;
@@ -278,10 +266,8 @@ function RegistroContent() {
         asistenciaMap.set(a.estudiante_id, a);
       });
 
-      // Lógica de carga inicial con defecto "Recibió" para activos
       estudiantesData?.forEach((est: any) => {
         if (asistenciaMap.has(est.id)) {
-          // Si ya existe registro en DB, usarlo
           const a = asistenciaMap.get(est.id);
           newAsistencias[est.id] = a.estado;
           if (a.novedad_tipo || a.novedad_descripcion) {
@@ -291,9 +277,7 @@ function RegistroContent() {
             };
           }
         } else {
-          // Si NO existe registro, marcar como Recibió por defecto solo si está Activo
-          // NOTA: estado_pae o estado. Asumimos columna 'estado' existente ('activo'/'inactivo')
-          const isActivo = est.estado === 'activo' || !est.estado; // Default activo si null
+          const isActivo = est.estado === 'activo' || !est.estado;
           if (isActivo) {
             newAsistencias[est.id] = 'recibio';
           }
@@ -312,21 +296,16 @@ function RegistroContent() {
 
   const handleToggleEstado = async (estudiante: Estudiante) => {
     const newState = estudiante.estado === 'activo' ? 'inactivo' : 'activo';
-
-    // Optimistic Update
     setEstudiantes(prev => prev.map(e => e.id === estudiante.id ? { ...e, estado: newState } : e));
 
     if (newState === 'inactivo') {
-      // Remover asistencia si se inactiva
       const newAsist = { ...asistencias };
       delete newAsist[estudiante.id];
       setAsistencias(newAsist);
     } else {
-      // Marcar recibió si se activa
       setAsistencias(prev => ({ ...prev, [estudiante.id]: 'recibio' }));
     }
 
-    // DB Update
     const { error } = await supabase
       .from('estudiantes')
       .update({ estado: newState })
@@ -335,14 +314,12 @@ function RegistroContent() {
     if (error) {
       console.error('Error updating status:', error);
       showToast('Error al actualizar estado', 'error');
-      // Revertir en caso de error (opcional, por simplicidad omitido aquí)
     }
   };
 
   const handleDateChange = (newDate: string) => {
     setSelectedDate(newDate);
     updateUrl({ fecha: newDate });
-    // Si estamos en un grupo, recargar asistencias
     if (grupoSeleccionado) {
       handleGrupoSelect(grupoSeleccionado, false);
     }
@@ -358,15 +335,13 @@ function RegistroContent() {
       updateUrl({ grupo: null });
       setStep('grupo');
       setGrupoSeleccionado(null);
-      // Recargar grupos para actualizar colores
-      if (sedeSeleccionada?.id === 'principal') fetchGruposReales();
+      if (sedeSeleccionada) fetchGruposReales();
     }
   };
 
   const handleMarcarTodos = () => {
     const nuevasAsistencias = { ...asistencias };
     estudiantes.forEach(est => {
-      // Solo marcar si no tiene estado y es activo
       if (est.estado !== 'inactivo' && !nuevasAsistencias[est.id]) {
         nuevasAsistencias[est.id] = 'recibio';
       }
@@ -382,13 +357,12 @@ function RegistroContent() {
       const updates = Object.entries(asistencias).map(([estudianteId, estado]) => ({
         estudiante_id: estudianteId,
         fecha: selectedDate,
-        estado, // Ya es compatible con DB (no_recibio)
+        estado,
         registrado_por: usuario.id,
         novedad_tipo: novedades[estudianteId]?.tipo || null,
         novedad_descripcion: novedades[estudianteId]?.descripcion || null
       }));
 
-      // Upsert (Insertar o Actualizar)
       const { error } = await supabase
         .from('asistencia_pae')
         .upsert(updates, { onConflict: 'estudiante_id,fecha' });
@@ -396,26 +370,7 @@ function RegistroContent() {
       if (error) throw error;
 
       showToast(`Asistencia guardada para el ${selectedDate}`, 'success');
-
-      // Regresar a la lista de grupos y recargar estado
-
-      // 1. Actualización Optimista: Actualizamos el estado local inmediatamente
-      if (grupoSeleccionado) {
-        setGruposReales(prev => prev.map(g => {
-          if (g.nombre === grupoSeleccionado.nombre) {
-            return { ...g, completado: true }; // Asumimos completado si no hubo error
-          }
-          return g;
-        }));
-      }
-
-      // 2. Navegación inmediata (sin esperar el fetch)
       handleBack();
-
-      // 3. Recarga silenciosa en segundo plano para asegurar consistencia real
-      // Quitamos el 'await' intencionalmente
-      fetchGruposReales();
-
     } catch (error: any) {
       console.error('Error guardando:', error);
       showToast(`Error: ${error.message || 'Desconocido'}`, 'error');
@@ -451,7 +406,6 @@ function RegistroContent() {
     ausentes: Object.values(asistencias).filter(a => a === 'ausente').length,
     inactivos: estudiantes.filter(e => e.estado === 'inactivo').length
   };
-  // const pendientes = statsCount.total - (statsCount.recibieron + statsCount.noRecibieron + statsCount.ausentes); // Removed 'Total'
 
   const dateTitle = new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'long' });
 
@@ -523,11 +477,14 @@ function RegistroContent() {
 
       {/* STICKY HEADER BLOCK: Title + Stats + Buttons */}
       <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-40 transition-all">
-        {/* 1. Header Navigation */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <button onClick={handleBack} disabled={step === 'sede'} className={`p-2 rounded-lg ${step === 'sede' ? 'text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+              <button
+                onClick={handleBack}
+                className={`p-2 rounded-lg ${step === 'sede' ? 'text-gray-300 cursor-default' : 'hover:bg-gray-100 text-gray-700'}`}
+                disabled={step === 'sede'}
+              >
                 <ArrowLeft className="w-6 h-6" />
               </button>
               <div>
@@ -554,10 +511,8 @@ function RegistroContent() {
             )}
           </div>
 
-          {/* 2. Stats Row & Buttons (Only visible in 'registro') */}
           {step === 'registro' && grupoSeleccionado && (
             <div className="space-y-4 pb-2">
-              {/* Stats - Clean Number Design */}
               <div className="flex justify-between px-2 sm:justify-start sm:gap-12">
                 <div className="text-center">
                   <span className="block text-2xl font-bold text-green-600">{statsCount.recibieron}</span>
@@ -577,7 +532,6 @@ function RegistroContent() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex gap-3">
                 <button onClick={handleMarcarTodos} className="flex-1 bg-[#10B981] hover:bg-green-600 text-white rounded-xl py-3 px-4 font-bold flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-95">
                   <CheckCircle className="w-5 h-5" />
@@ -594,7 +548,6 @@ function RegistroContent() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Selección de Sede */}
         {step === 'sede' && (
           <div className="space-y-4">
             {sedes.map(sede => (
@@ -623,131 +576,149 @@ function RegistroContent() {
           </div>
         )}
 
-        {/* Selección de Grupo */}
         {step === 'grupo' && sedeSeleccionada && (
           <div>
             {loadingGrupos ? (
-              <div className="flex justify-center p-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-8">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="rounded-lg p-3 border border-gray-100 bg-white min-h-[100px] flex flex-col items-center justify-center space-y-2">
+                    <Skeleton className="h-6 w-12" />
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-16 rounded-full" />
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-8">
-                {gruposReales
-                  .map(grupo => (
-                    <button
-                      key={grupo.id}
-                      onClick={() => handleGrupoSelect(grupo)}
-                      className={`rounded-lg p-3 shadow-sm border transition-all text-center flex flex-col items-center justify-center min-h-[100px] relative overflow-hidden group
-                            ${grupo.completado
-                          ? 'bg-[#10B981] border-[#10B981] text-white'
-                          : 'bg-white border-gray-200 hover:border-blue-500 hover:bg-blue-50 hover:shadow-md'
-                        }
-                        `}
-                    >
-                      <div className={`text-xl font-bold mb-0.5 flex items-center gap-1.5 ${grupo.completado ? 'text-white' : 'text-gray-900'}`}>
-                        {grupo.nombre}
-                        {grupo.completado && (
-                          <div className="bg-white rounded-full flex items-center justify-center w-5 h-5">
-                            <CheckCircle className="w-4 h-4 text-[#10B981]" />
-                          </div>
-                        )}
-                      </div>
-                      <div className={`text-xs ${grupo.completado ? 'text-green-100' : 'text-gray-500'}`}>
-                        {grupo.grado} • {grupo.estudiantes} estudiantes
-                      </div>
-
-                      {/* Status badge */}
-                      <div className={`mt-2 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${grupo.completado
-                        ? 'bg-white/20 text-white'
-                        : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                        {grupo.completado ? 'Completado' : 'Pendiente'}
-                      </div>
-                    </button>
-                  ))}
-                {gruposReales.length === 0 && (
-                  <div className="col-span-3 text-center py-8 text-gray-500">
-                    No se encontraron grupos para esta sede.
-                  </div>
-                )}
+                {gruposReales.map(grupo => (
+                  <button
+                    key={grupo.id}
+                    onClick={() => handleGrupoSelect(grupo)}
+                    className={`rounded-lg p-3 shadow-sm border transition-all text-center flex flex-col items-center justify-center min-h-[100px] relative overflow-hidden group
+                      ${grupo.completado ? 'bg-[#10B981] border-[#10B981] text-white' : 'bg-white border-gray-200 hover:border-blue-500 hover:bg-blue-50 hover:shadow-md'}
+                    `}
+                  >
+                    <div className={`text-xl font-bold mb-0.5 flex items-center gap-1.5 ${grupo.completado ? 'text-white' : 'text-gray-900'}`}>
+                      {grupo.nombre}
+                      {grupo.completado && (
+                        <div className="bg-white rounded-full flex items-center justify-center w-5 h-5">
+                          <CheckCircle className="w-4 h-4 text-[#10B981]" />
+                        </div>
+                      )}
+                    </div>
+                    <div className={`text-xs ${grupo.completado ? 'text-green-100' : 'text-gray-500'}`}>
+                      {grupo.grado} • {grupo.estudiantes} estudiantes
+                    </div>
+                    <div className={`mt-2 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${grupo.completado ? 'bg-white/20 text-white' : 'bg-yellow-100 text-yellow-700'}`}>
+                      {grupo.completado ? 'Completado' : 'Pendiente'}
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
           </div>
         )}
 
-        {/* Registro de Asistencia */}
         {step === 'registro' && grupoSeleccionado && (
           <div>
-            {/* Buscador - Now Scrolling (below sticky) to match typical behaviors or put sticky? User requested sticky cards+buttons. */}
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Buscar estudiante..." className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm mb-6" />
-
-            {/* Lista */}
-            <div className="space-y-4 pt-2">
-              {estudiantesFiltrados.length === 0 ? (
-                <div className="text-center py-10 text-gray-500">
-                  No se encontraron estudiantes
-                </div>
-              ) : (
-                estudiantesFiltrados.map(estudiante => (
-                  <div key={estudiante.id} className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 transition-all ${estudiante.estado === 'inactivo' ? 'opacity-60 grayscale' : ''} ${asistencias[estudiante.id] === 'recibio' ? 'border-l-4 border-l-green-500' : asistencias[estudiante.id] === 'no_recibio' ? 'border-l-4 border-l-red-500' : asistencias[estudiante.id] === 'ausente' ? 'opacity-75 border-l-4 border-l-gray-400' : 'border-l-4 border-l-yellow-400'}`}>
+            {loadingGrupos ? (
+              <div className="space-y-4">
+                <div className="h-12 bg-gray-100 rounded-xl mb-6 animate-pulse" />
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl text-white ${['bg-purple-200 text-purple-700', 'bg-blue-200 text-blue-700', 'bg-pink-200 text-pink-700'][estudiante.nombre.length % 3]}`}>
-                          {estudiante.nombre.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="font-bold text-gray-900 leading-tight">{estudiante.nombre}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{estudiante.matricula} • {estudiante.grupo}</div>
-                          {/* Removed "Pendiente" badge, as default 'recibio' or actual status will be shown */}
+                        <Skeleton className="w-12 h-12 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-40" />
+                          <Skeleton className="h-3 w-24" />
                         </div>
                       </div>
-
-                      {/* Toggle Activo/Inactivo */}
-                      <button onClick={() => handleToggleEstado(estudiante)} className="flex flex-col items-center gap-1 group">
-                        <div className={`w-11 h-6 rounded-full p-1 transition-colors duration-200 ${estudiante.estado !== 'inactivo' ? 'bg-[#00BFA5]' : 'bg-gray-300'}`}>
-                          <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ${estudiante.estado !== 'inactivo' ? 'translate-x-5' : 'translate-x-0'}`} />
-                        </div>
-                        <span className="text-[10px] text-gray-400 font-medium group-hover:text-gray-600">
-                          {estudiante.estado !== 'inactivo' ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </button>
+                      <Skeleton className="w-11 h-6 rounded-full" />
                     </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <Skeleton className="h-12 rounded-xl" />
+                      <Skeleton className="h-12 rounded-xl" />
+                      <Skeleton className="h-12 rounded-xl" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar estudiante..."
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm mb-6"
+                />
 
-                    {/* Attendance Buttons (Hidden if Inactive) */}
-                    {estudiante.estado !== 'inactivo' && (
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-3 gap-3">
-                          <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'recibio' })} className={`py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'recibio' ? 'bg-white border-2 border-[#10B981] text-[#10B981] shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                            <CheckCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'recibio' ? 'fill-current' : ''}`} />
-                            <span>Recibió</span>
-                          </button>
-                          <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'no_recibio' })} className={`py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'no_recibio' ? 'bg-red-500 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                            <XCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'no_recibio' ? 'fill-current' : ''}`} />
-                            <span>No Recibió</span>
-                          </button>
-                          <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'ausente' })} className={`py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'ausente' ? 'bg-gray-700 text-white' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                            <UserX className="w-5 h-5" />
-                            <span>No Asistió</span>
+                <div className="space-y-4 pt-2">
+                  {estudiantesFiltrados.length === 0 ? (
+                    <div className="text-center py-10 text-gray-500">No se encontraron estudiantes</div>
+                  ) : (
+                    estudiantesFiltrados.map(estudiante => (
+                      <div
+                        key={estudiante.id}
+                        className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 transition-all ${estudiante.estado === 'inactivo' ? 'opacity-60 grayscale' : ''} ${asistencias[estudiante.id] === 'recibio' ? 'border-l-4 border-l-green-500' : asistencias[estudiante.id] === 'no_recibio' ? 'border-l-4 border-l-red-500' : asistencias[estudiante.id] === 'ausente' ? 'opacity-75 border-l-4 border-l-gray-400' : 'border-l-4 border-l-yellow-400'}`}
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl text-white ${['bg-purple-200 text-purple-700', 'bg-blue-200 text-blue-700', 'bg-pink-200 text-pink-700'][estudiante.nombre.length % 3]}`}>
+                              {estudiante.nombre.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="font-bold text-gray-900 leading-tight">{estudiante.nombre}</div>
+                              <div className="text-xs text-gray-500 mt-0.5">{estudiante.matricula} • {estudiante.grupo}</div>
+                            </div>
+                          </div>
+
+                          <button onClick={() => handleToggleEstado(estudiante)} className="flex flex-col items-center gap-1 group">
+                            <div className={`w-11 h-6 rounded-full p-1 transition-colors duration-200 ${estudiante.estado !== 'inactivo' ? 'bg-[#00BFA5]' : 'bg-gray-300'}`}>
+                              <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ${estudiante.estado !== 'inactivo' ? 'translate-x-5' : 'translate-x-0'}`} />
+                            </div>
+                            <span className="text-[10px] text-gray-400 font-medium group-hover:text-gray-600">
+                              {estudiante.estado !== 'inactivo' ? 'Activo' : 'Inactivo'}
+                            </span>
                           </button>
                         </div>
 
-                        {/* Botón Registrar Novedad (Solo si No Recibió) */}
-                        {asistencias[estudiante.id] === 'no_recibio' && (
-                          <button
-                            onClick={() => openNovedadModal(estudiante)}
-                            className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors border border-yellow-200"
-                          >
-                            <AlertCircle className="w-5 h-5" />
-                            Registrar Novedad
-                            {novedades[estudiante.id] && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1" />}
-                          </button>
+                        {estudiante.estado !== 'inactivo' && (
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-3 gap-3">
+                              <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'recibio' })} className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'recibio' ? 'bg-white border-2 border-[#10B981] text-[#10B981] shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                                <CheckCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'recibio' ? 'fill-current' : ''}`} />
+                                <span>Recibió</span>
+                              </button>
+                              <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'no_recibio' })} className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'no_recibio' ? 'bg-red-500 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                                <XCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'no_recibio' ? 'fill-current' : ''}`} />
+                                <span>No Recibió</span>
+                              </button>
+                              <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'ausente' })} className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'ausente' ? 'bg-gray-700 text-white' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                                <UserX className="w-5 h-5" />
+                                <span>No Asistió</span>
+                              </button>
+                            </div>
+
+                            {asistencias[estudiante.id] === 'no_recibio' && (
+                              <button
+                                onClick={() => openNovedadModal(estudiante)}
+                                className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors border border-yellow-200"
+                              >
+                                <AlertCircle className="w-5 h-5" />
+                                Registrar Novedad
+                                {novedades[estudiante.id] && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1" />}
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -12,6 +12,7 @@ import {
   XCircle,
   UserX
 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -43,7 +44,10 @@ export default function DashboardPage() {
     router.push('/');
   };
 
+  const [loading, setLoading] = useState(true);
+
   const fetchStats = async () => {
+    setLoading(true);
     try {
       const now = new Date();
       const offset = now.getTimezoneOffset() * 60000;
@@ -83,9 +87,10 @@ export default function DashboardPage() {
         noRecibieron,
         ausentes: ausentesCalculados
       });
-
     } catch (error) {
       console.error('Error cargando estadísticas:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -144,7 +149,11 @@ export default function DashboardPage() {
             <div className="flex justify-between items-start mb-2">
               <div>
                 <div className="text-2xl md:text-3xl font-bold text-blue-600 tracking-tight">
-                  {stats.totalEstudiantes.toLocaleString()}
+                  {loading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    stats.totalEstudiantes.toLocaleString()
+                  )}
                 </div>
                 <div className="text-gray-500 text-[10px] md:text-xs font-bold uppercase mt-1">TOTAL</div>
               </div>
@@ -152,7 +161,11 @@ export default function DashboardPage() {
                 <Users className="w-5 h-5 text-blue-600" />
               </div>
             </div>
-            <div className="text-[10px] text-blue-400 font-semibold truncate">En las 3 sedes</div>
+            {loading ? (
+              <Skeleton className="h-3 w-20" />
+            ) : (
+              <div className="text-[10px] text-blue-400 font-semibold truncate">En las 3 sedes</div>
+            )}
           </div>
 
           {/* Recibieron */}
@@ -160,7 +173,11 @@ export default function DashboardPage() {
             <div className="flex justify-between items-start mb-2">
               <div>
                 <div className="text-2xl md:text-3xl font-bold text-emerald-500 tracking-tight">
-                  {stats.recibieron.toLocaleString()}
+                  {loading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    stats.recibieron.toLocaleString()
+                  )}
                 </div>
                 <div className="text-gray-500 text-[10px] md:text-xs font-bold uppercase mt-1">RECIBIERON</div>
               </div>
@@ -168,7 +185,11 @@ export default function DashboardPage() {
                 <CheckCircle className="w-5 h-5 text-emerald-500" />
               </div>
             </div>
-            <div className="text-[10px] text-emerald-600 font-semibold truncate">PAE Entregado</div>
+            {loading ? (
+              <Skeleton className="h-3 w-24" />
+            ) : (
+              <div className="text-[10px] text-emerald-600 font-semibold truncate">PAE Entregado</div>
+            )}
           </div>
 
           {/* No Recibieron */}
@@ -176,7 +197,11 @@ export default function DashboardPage() {
             <div className="flex justify-between items-start mb-2">
               <div>
                 <div className="text-2xl md:text-3xl font-bold text-yellow-500 tracking-tight">
-                  {stats.noRecibieron.toLocaleString()}
+                  {loading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    stats.noRecibieron.toLocaleString()
+                  )}
                 </div>
                 <div className="text-gray-500 text-[10px] md:text-xs font-bold uppercase mt-1">NO RECIBIERON</div>
               </div>
@@ -184,7 +209,11 @@ export default function DashboardPage() {
                 <XCircle className="w-5 h-5 text-yellow-600" />
               </div>
             </div>
-            <div className="text-[10px] text-yellow-600 font-semibold truncate">Sin alimentación</div>
+            {loading ? (
+              <Skeleton className="h-3 w-28" />
+            ) : (
+              <div className="text-[10px] text-yellow-600 font-semibold truncate">Sin alimentación</div>
+            )}
           </div>
 
           {/* No Asistieron (Ausentes) */}
@@ -192,7 +221,11 @@ export default function DashboardPage() {
             <div className="flex justify-between items-start mb-2">
               <div>
                 <div className="text-2xl md:text-3xl font-bold text-red-500 tracking-tight">
-                  {stats.ausentes.toLocaleString()}
+                  {loading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    stats.ausentes.toLocaleString()
+                  )}
                 </div>
                 <div className="text-gray-500 text-[10px] md:text-xs font-bold uppercase mt-1">NO ASISTIERON</div>
               </div>
@@ -200,9 +233,13 @@ export default function DashboardPage() {
                 <UserX className="w-5 h-5 text-red-500" />
               </div>
             </div>
-            <div className="text-[10px] text-red-600 font-semibold truncate">
-              {stats.totalEstudiantes > 0 ? ((stats.ausentes / stats.totalEstudiantes * 100).toFixed(1)) : 0}% inasistencia
-            </div>
+            {loading ? (
+              <Skeleton className="h-3 w-32" />
+            ) : (
+              <div className="text-[10px] text-red-600 font-semibold truncate">
+                {stats.totalEstudiantes > 0 ? ((stats.ausentes / stats.totalEstudiantes * 100).toFixed(1)) : 0}% inasistencia
+              </div>
+            )}
           </div>
         </div>
       </div>

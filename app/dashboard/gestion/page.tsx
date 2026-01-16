@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { ArrowLeft, Search, Eye, FileDown, Users } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface Estudiante {
   id: string;
@@ -377,12 +378,14 @@ export default function GestionPage() {
         {/* Estadísticas */}
         <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-            <div className="text-3xl font-bold text-blue-600">{estudiantesFiltrados.length}</div>
+            <div className="text-3xl font-bold text-blue-600">
+              {loading ? <Skeleton className="h-9 w-12" /> : estudiantesFiltrados.length}
+            </div>
             <div className="text-sm text-gray-600">Estudiantes</div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
             <div className="text-3xl font-bold text-green-600">
-              {attendancePercentage}%
+              {loading ? <Skeleton className="h-9 w-16" /> : `${attendancePercentage}%`}
             </div>
             <div className="text-sm text-gray-600">Asistencia Real (30d)</div>
           </div>
@@ -390,8 +393,23 @@ export default function GestionPage() {
 
         {/* Lista de estudiantes */}
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+          <div className="space-y-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                <div className="flex items-start gap-3">
+                  <Skeleton className="w-12 h-12 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-3 w-20" />
+                    <div className="flex gap-2 mt-3">
+                      <Skeleton className="h-9 flex-1 rounded-lg" />
+                      <Skeleton className="h-9 flex-1 rounded-lg" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="space-y-3">
