@@ -498,12 +498,12 @@ export default function ReportesPage() {
             dates.forEach(d => {
               const estado = studentMatrix[student.id]?.[d];
               if (estado === 'recibio') {
-                row.push('✅');
+                row.push('✅ Recibió');
                 totalRecibio++;
               } else if (estado === 'no_recibio') {
-                row.push('❌');
+                row.push('❌ No recibió');
               } else if (estado === 'ausente') {
-                row.push('⚪');
+                row.push('⚪ Ausente');
               } else {
                 row.push('-');
               }
@@ -569,17 +569,17 @@ export default function ReportesPage() {
       // Create worksheet and workbook
       const ws = XLSX.utils.aoa_to_sheet(excelData);
 
-      // Set column widths
-      ws['!cols'] = [
-        { wch: 20 },  // Grupo/Sede
-        { wch: 18 },  // Sede/Total
-        { wch: 15 },  // Total/Recibieron
-        { wch: 15 },  // Recibieron/No Recibieron
-        { wch: 18 },  // No Recibieron/No Asistieron
-        { wch: 15 },  // % Asistencia
-        { wch: 15 },  // Estado
-        { wch: 12 }   // Extra
-      ];
+      // Set column widths dynamically based on content
+      const colWidths = excelData.reduce((acc: any[], row: any[]) => {
+        row.forEach((cell, i) => {
+          const w = cell ? cell.toString().length + 2 : 10;
+          if (!acc[i] || acc[i].wch < w) {
+            acc[i] = { wch: Math.min(w, 30) }; // Cap at 30
+          }
+        });
+        return acc;
+      }, []);
+      ws['!cols'] = colWidths;
 
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Reporte de Asistencia');
