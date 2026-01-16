@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Search, Eye, FileDown, Users } from 'lucide-react';
+import { ArrowLeft, Search, Eye, FileDown, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -476,7 +476,15 @@ export default function GestionPage() {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header del modal */}
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-6 border-b border-gray-200 relative">
+                <button
+                  onClick={() => setSelectedStudent(null)}
+                  className="absolute right-6 top-6 p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Cerrar"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-blue-600 font-bold text-2xl">
