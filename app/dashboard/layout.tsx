@@ -31,8 +31,9 @@ export default function DashboardLayout({
             }
             setUsuario({
                 ...session.user,
-                nombre: session.user.user_metadata?.nombre || 'Usuario',
-                rol: session.user.user_metadata?.rol || 'docente'
+                nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
+                rol: session.user.user_metadata?.rol || 'docente',
+                foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
             });
         };
         checkUser();
@@ -98,8 +99,12 @@ export default function DashboardLayout({
 
                 <div className="p-4 border-t border-gray-100 bg-gray-50/50">
                     <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200 mb-3 shadow-sm">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-                            {usuario.nombre.charAt(0)}
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold overflow-hidden">
+                            {usuario.foto ? (
+                                <img src={usuario.foto} alt={usuario.nombre} className="w-full h-full object-cover" />
+                            ) : (
+                                usuario.nombre.charAt(0)
+                            )}
                         </div>
                         <div className="flex flex-col min-w-0">
                             <span className="text-xs font-bold text-gray-900 truncate">{usuario.nombre}</span>
@@ -151,9 +156,13 @@ export default function DashboardLayout({
                     {/* User Capsule on the right */}
                     <div className="flex items-center bg-white/20 backdrop-blur-md rounded-full pl-1 pr-3 py-1 gap-2 border border-white/20">
                         <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center overflow-hidden border border-white/40">
-                            <span className="text-[#00A3E0] font-bold text-xs">
-                                {usuario.nombre.charAt(0)}
-                            </span>
+                            {usuario.foto ? (
+                                <img src={usuario.foto} alt={usuario.nombre} className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-[#00A3E0] font-bold text-xs">
+                                    {usuario.nombre.charAt(0)}
+                                </span>
+                            )}
                         </div>
                         <div className="flex flex-col">
                             <span className="text-[8px] font-extrabold text-blue-100 uppercase tracking-widest leading-none mb-0.5">

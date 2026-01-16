@@ -101,9 +101,10 @@ function RegistroContent() {
       }
       setUsuario({
         email: session.user.email,
-        nombre: session.user.user_metadata?.nombre || 'Usuario',
+        nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
         rol: session.user.user_metadata?.rol || 'docente',
-        id: session.user.id
+        id: session.user.id,
+        foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
       });
     };
     checkUser();
