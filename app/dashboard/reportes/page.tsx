@@ -216,6 +216,31 @@ export default function ReportesPage() {
         reportDate = selectedDate;
       }
 
+      // Calculate analysis date for header
+      const [pYear, pMonth, pDay] = reportDate.split('-').map(Number);
+      const analysisDate = new Date(pYear, pMonth - 1, pDay);
+
+      // Range calculation for multi-day reports
+      let startDate = reportDate;
+      let endDate = reportDate;
+
+      if (periodo === 'semana') {
+        const d = new Date(analysisDate);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const start = new Date(d.getFullYear(), d.getMonth(), diff);
+        const end = new Date(d.getFullYear(), d.getMonth(), diff + 6);
+
+        startDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        endDate = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      } else if (periodo === 'mes') {
+        const start = new Date(analysisDate.getFullYear(), analysisDate.getMonth(), 1);
+        const end = new Date(analysisDate.getFullYear(), analysisDate.getMonth() + 1, 0);
+
+        startDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        endDate = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      }
+
       // Fetch ALL students to calculate totals per sede and grupo
       const sedeMap: Record<string, string> = {
         'principal': 'Principal',
@@ -275,14 +300,16 @@ export default function ReportesPage() {
             .from('asistencia_pae')
             .select('estado')
             .in('estudiante_id', studentIds)
-            .eq('fecha', reportDate);
+            .gte('fecha', startDate)
+            .lte('fecha', endDate);
 
           recibieron = (attendanceData || []).filter(a => a.estado === 'recibio').length;
           noRecibieron = (attendanceData || []).filter(a => a.estado === 'no_recibio').length;
           ausentes = (attendanceData || []).filter(a => a.estado === 'ausente').length;
         }
 
-        const porcentaje = students.length > 0 ? ((recibieron / students.length) * 100).toFixed(1) : '0.0';
+        const totalExpected = students.length * (periodo === 'hoy' || periodo === 'fecha' ? 1 : (periodo === 'semana' ? 7 : 30));
+        const porcentaje = totalExpected > 0 ? ((recibieron / totalExpected) * 100).toFixed(1) : '0.0';
 
         sedeStats.push({
           sede,
@@ -304,12 +331,14 @@ export default function ReportesPage() {
           .from('asistencia_pae')
           .select('estado')
           .in('estudiante_id', studentIds)
-          .eq('fecha', reportDate);
+          .gte('fecha', startDate)
+          .lte('fecha', endDate);
 
         const recibieron = (attendanceData || []).filter(a => a.estado === 'recibio').length;
         const noRecibieron = (attendanceData || []).filter(a => a.estado === 'no_recibio').length;
         const ausentes = (attendanceData || []).filter(a => a.estado === 'ausente').length;
-        const porcentaje = students.length > 0 ? ((recibieron / students.length) * 100) : 0;
+        const totalExpected = students.length * (periodo === 'hoy' || periodo === 'fecha' ? 1 : (periodo === 'semana' ? 7 : 30));
+        const porcentaje = totalExpected > 0 ? ((recibieron / totalExpected) * 100) : 0;
 
         // Determine estado based on percentage
         let estado = 'Crítico';
@@ -339,11 +368,6 @@ export default function ReportesPage() {
         return a.grupo.localeCompare(b.grupo);
       });
 
-      // Prepare Excel data
-      // For analysis date, parse manually to avoid timezone shift
-      const [year, month, day] = reportDate.split('-').map(Number);
-      const analysisDate = new Date(year, month - 1, day);
-
       const excelData: any[][] = [
         ['REPORTE DE ASISTENCIA PAE BARROBLANCO'],
         ['Fecha de Análisis:', analysisDate.toLocaleDateString('es-CO', {
@@ -352,14 +376,15 @@ export default function ReportesPage() {
           month: 'long',
           day: 'numeric'
         }), '← La fecha que se está reportando'],
+        ['Período del Reporte:', `${startDate} al ${endDate}`],
         ['Fecha de Generación:', new Date().toLocaleDateString('es-CO', {
           year: 'numeric',
           month: '2-digit',
           day: '2-digit'
         }), '← Cuándo se descargó el archivo'],
         [''],
-        ['RESUMEN POR SEDE'],
-        ['Sede', 'Total Estudiantes', 'Recibieron', 'No Recibieron', 'No Asistieron', '% Asistencia']
+        ['RESUMEN POR SEDE (Consolidado Período)'],
+        ['Sede', 'Estudiantes Únicos', 'Total Raciones Recibidas', 'Total No Recibieron', 'Total Ausentes', '% Asistencia']
       ];
 
       // Add sede statistics (always show all 3 sedes)
@@ -376,8 +401,8 @@ export default function ReportesPage() {
 
       excelData.push(
         [''],
-        ['DETALLE POR GRUPO'],
-        ['Grupo', 'Sede', 'Total', 'Recibieron', 'No Recibieron', 'No Asistieron', '% Asistencia', 'Estado']
+        ['DETALLE POR GRUPO (Consolidado Período)'],
+        ['Grupo', 'Sede', 'Total Estudiantes', 'Recibieron (Total)', 'No Recibieron', 'No Asistieron', '% Asistencia', 'Estado']
       );
 
       // Add grupo statistics
@@ -394,15 +419,83 @@ export default function ReportesPage() {
         ]);
       });
 
-      // NEW: If a specific group is selected, add a detailed student list
-      if (grupoFilter !== 'todos') {
+      // NEW: If a specific group is selected, add MATRIX for week/month OR detailed list for day
+      if (grupoFilter !== 'todos' && (periodo === 'semana' || periodo === 'mes')) {
+        const selectedSedeLabel = sedeFilter === 'todas' ? '' : sedeMap[sedeFilter];
+        const grupoKey = Object.keys(studentsByGrupo).find(key =>
+          key.startsWith(`${grupoFilter}-`) && (selectedSedeLabel ? key.endsWith(`-${selectedSedeLabel}`) : true)
+        );
+
+        if (grupoKey) {
+          const studentsInGroup = studentsByGrupo[grupoKey];
+          const studentIds = studentsInGroup.map(s => s.id);
+
+          // Fetch all attendance for range
+          const { data: rangeAttendance } = await supabase
+            .from('asistencia_pae')
+            .select('estudiante_id, estado, fecha')
+            .in('estudiante_id', studentIds)
+            .gte('fecha', startDate)
+            .lte('fecha', endDate);
+
+          // Generate date list for header
+          const dates: string[] = [];
+          let current = new Date(startDate + 'T00:00:00');
+          const end = new Date(endDate + 'T00:00:00');
+          while (current <= end) {
+            dates.push(current.toISOString().split('T')[0]);
+            current.setDate(current.getDate() + 1);
+          }
+
+          excelData.push(
+            [''],
+            [`MATRIZ DE ASISTENCIA DIARIA - GRUPO ${grupoFilter}`],
+            ['Estudiante', ...dates.map(d => {
+              const dateObj = new Date(d + 'T00:00:00');
+              const dayName = dateObj.toLocaleDateString('es-CO', { weekday: 'short' });
+              return `${dayName} ${dateObj.getDate()}`;
+            }), 'Días Recibidos']
+          );
+
+          const studentMatrix: Record<string, Record<string, string>> = {};
+          (rangeAttendance || []).forEach(record => {
+            if (!studentMatrix[record.estudiante_id]) studentMatrix[record.estudiante_id] = {};
+            studentMatrix[record.estudiante_id][record.fecha] = record.estado;
+          });
+
+          // Sort students by name
+          const sortedStudents = [...studentsInGroup].sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+          sortedStudents.forEach(student => {
+            const row: any[] = [student.nombre];
+            let totalRecibio = 0;
+
+            dates.forEach(d => {
+              const estado = studentMatrix[student.id]?.[d];
+              if (estado === 'recibio') {
+                row.push('✅');
+                totalRecibio++;
+              } else if (estado === 'no_recibio') {
+                row.push('❌');
+              } else if (estado === 'ausente') {
+                row.push('⚪');
+              } else {
+                row.push('-');
+              }
+            });
+
+            row.push(totalRecibio);
+            excelData.push(row);
+          });
+        }
+      } else if (grupoFilter !== 'todos') {
+        // Single day detailed list
         excelData.push(
           [''],
           [`DETALLE DE ESTUDIANTES - GRUPO ${grupoFilter}`],
           ['Estudiante', 'Estado', 'Novedad', 'Descripción']
         );
 
-        // Find students for this group
         const selectedSedeLabel = sedeFilter === 'todas' ? '' : sedeMap[sedeFilter];
         const grupoKey = Object.keys(studentsByGrupo).find(key =>
           key.startsWith(`${grupoFilter}-`) && (selectedSedeLabel ? key.endsWith(`-${selectedSedeLabel}`) : true)
@@ -423,9 +516,7 @@ export default function ReportesPage() {
             attendanceMap[record.estudiante_id] = record;
           });
 
-          // Sort students by name
           const sortedStudents = [...studentsInGroup].sort((a, b) => a.nombre.localeCompare(b.nombre));
-
           sortedStudents.forEach(student => {
             const record = attendanceMap[student.id];
             let estadoLabel = 'No Registrado';
@@ -433,13 +524,7 @@ export default function ReportesPage() {
               estadoLabel = record.estado === 'recibio' ? 'Recibió' :
                 record.estado === 'no_recibio' ? 'No Recibió' : 'Ausente';
             }
-
-            excelData.push([
-              student.nombre,
-              estadoLabel,
-              record?.novedad_tipo || '-',
-              record?.novedad_descripcion || '-'
-            ]);
+            excelData.push([student.nombre, estadoLabel, record?.novedad_tipo || '-', record?.novedad_descripcion || '-']);
           });
         }
       }
