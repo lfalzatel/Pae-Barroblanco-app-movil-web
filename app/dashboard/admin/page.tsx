@@ -326,7 +326,7 @@ export default function AdminPage() {
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 border-b border-gray-200">
                                 <tr>
-                                    <th className="px-6 py-4">
+                                    <th className="px-3 py-3 w-10">
                                         <input
                                             type="checkbox"
                                             onChange={(e) => {
@@ -336,9 +336,8 @@ export default function AdminPage() {
                                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
                                         />
                                     </th>
-                                    <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase">Estudiante</th>
-                                    <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase">Grupo Actual</th>
-                                    <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase">Sede</th>
+                                    <th className="px-2 py-3 text-[10px] font-bold text-gray-500 uppercase">Estudiante</th>
+                                    <th className="px-2 py-3 text-[10px] font-bold text-gray-500 uppercase text-right">Información</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -348,7 +347,7 @@ export default function AdminPage() {
                                         className={`hover:bg-blue-50/50 transition-colors cursor-pointer ${selectedStudents.includes(est.id) ? 'bg-blue-50' : ''}`}
                                         onClick={() => toggleSelect(est.id)}
                                     >
-                                        <td className="px-6 py-4">
+                                        <td className="px-3 py-3">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedStudents.includes(est.id)}
@@ -356,17 +355,19 @@ export default function AdminPage() {
                                                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
                                             />
                                         </td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className={`font-medium ${est.estado === 'inactivo' ? 'text-gray-400' : 'text-gray-900'}`}>{est.nombre}</div>
+                                        <td className="px-2 py-3 min-w-0">
+                                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                                <div className={`font-bold text-xs ${est.estado === 'inactivo' ? 'text-gray-400' : 'text-gray-900'} truncate`}>{est.nombre}</div>
                                                 {est.estado === 'inactivo' && (
-                                                    <span className="bg-gray-100 text-gray-500 text-[8px] font-bold px-1 py-0.5 rounded">INACTIVO</span>
+                                                    <span className="bg-gray-100 text-gray-500 text-[7px] font-black px-1 py-0.5 rounded leading-none">INACTIVO</span>
                                                 )}
                                             </div>
-                                            <div className="text-xs text-gray-500">{est.matricula}</div>
+                                            <div className="text-[10px] text-gray-500">{est.matricula}</div>
                                         </td>
-                                        <td className={`px-4 py-4 text-sm ${est.estado === 'inactivo' ? 'text-gray-400' : 'text-gray-600'}`}>{est.grupo}</td>
-                                        <td className={`px-4 py-4 text-sm ${est.estado === 'inactivo' ? 'text-gray-400' : 'text-gray-600'}`}>{est.sede}</td>
+                                        <td className="px-2 py-3 text-right">
+                                            <div className={`text-[10px] font-bold ${est.estado === 'inactivo' ? 'text-gray-300' : 'text-blue-600'}`}>{est.grupo}</div>
+                                            <div className={`text-[9px] ${est.estado === 'inactivo' ? 'text-gray-300' : 'text-gray-500'}`}>{est.sede}</div>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
