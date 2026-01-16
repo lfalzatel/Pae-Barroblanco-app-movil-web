@@ -51,10 +51,16 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
+      // Intentar obtener el origin de forma más robusta para evitar el error "null" en móviles
+      let origin = window.location.origin;
+      if (!origin || origin === 'null') {
+        origin = `${window.location.protocol}//${window.location.host}`;
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${origin}/dashboard`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
