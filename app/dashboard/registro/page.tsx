@@ -507,9 +507,11 @@ function RegistroContent() {
     inactivos: estudiantes.filter(e => e.estado === 'inactivo').length
   };
 
-  const dateTitle = new Date(selectedDate + 'T12:00:00')
+  const fullDateStr = new Date(selectedDate + 'T12:00:00')
     .toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'long' })
-    .replace(' De ', ' de ');
+    .toLowerCase();
+
+  const dateTitle = fullDateStr.charAt(0).toUpperCase() + fullDateStr.slice(1);
 
   if (!usuario) return null;
 
@@ -595,7 +597,7 @@ function RegistroContent() {
                   {step === 'grupo' && 'Seleccionar Grupo'}
                   {step === 'registro' && 'Registro de Asistencia'}
                 </h1>
-                <p className="text-sm text-gray-600 mt-1 capitalize">
+                <p className="text-sm text-gray-600 mt-1">
                   {step === 'registro' ? `Grupo ${grupoSeleccionado?.nombre} • ${dateTitle}` : dateTitle}
                 </p>
               </div>
