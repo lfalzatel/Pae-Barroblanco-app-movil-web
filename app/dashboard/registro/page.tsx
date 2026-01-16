@@ -164,68 +164,57 @@ function RegistroContent() {
   };
 
   const fetchGruposReales = async () => {
+    if (!sedeSeleccionada) return;
     setLoadingGrupos(true);
     try {
       const today = selectedDate;
+      const sedeDbName = sedeSeleccionada.id === 'principal' ? 'Principal' :
+        sedeSeleccionada.id === 'primaria' ? 'Primaria' :
+          'Maria Inmaculada';
 
-      // 1. Obtener grupos únicos de estudiantes
-      const { data: gruposData, error: gruposError } = await supabase
+      // 1. Obtener todos los estudiantes de la sede de una sola vez
+      const { data: allStudents, error: studentsError } = await supabase
         .from('estudiantes')
-        .select('grupo, grado')
-        .eq('sede', 'Principal') // Ajustar si es necesario para otras sedes
-        .order('grado', { ascending: true }); // Ordenar por grado para consistencia
+        .select('grupo, grado, estado')
+        .eq('sede', sedeDbName);
 
-      if (gruposError) throw gruposError;
+      if (studentsError) throw studentsError;
 
-      // Agrupar y limpiar duplicados
+      // 2. Agrupar y contar estudiantes (Totales y Activos) en memoria
       const gruposMap = new Map();
-      gruposData?.forEach((item: any) => {
+      allStudents?.forEach((item: any) => {
         if (!gruposMap.has(item.grupo)) {
           gruposMap.set(item.grupo, {
             id: item.grupo,
             nombre: item.grupo,
             grado: item.grado,
             estudiantes: 0,
+            estudiantesActivos: 0,
             completado: false
           });
+        }
+        const g = gruposMap.get(item.grupo);
+        g.estudiantes++;
+        if (item.estado === 'activo' || !item.estado) {
+          g.estudiantesActivos++;
         }
       });
 
       const gruposUnicos: GrupoConEstado[] = Array.from(gruposMap.values());
 
-      // 2. Contar estudiantes por grupo (Totales y Activos)
-      for (let grupo of gruposUnicos) {
-        const { count: total } = await supabase
-          .from('estudiantes')
-          .select('*', { count: 'exact', head: true })
-          .eq('grupo', grupo.nombre);
-
-        const { count: activos } = await supabase
-          .from('estudiantes')
-          .select('*', { count: 'exact', head: true })
-          .eq('grupo', grupo.nombre)
-          .or('estado.eq.activo,estado.is.null'); // Considerar null como activo
-
-        grupo.estudiantes = total || 0;
-        grupo.estudiantesActivos = activos || 0;
-      }
-
-      // 3. Verificar completitud (si ya se registró asistencia hoy)
+      // 3. Verificar completitud (asistencia registrada hoy)
       const { data: asistenciaData } = await supabase
         .from('asistencia_pae')
         .select('estudiante_id, estudiantes!inner(grupo)')
         .eq('fecha', today);
 
-      const gruposCompletados = new Set();
       if (asistenciaData) {
-        // Agrupar asistencias por grupo
         const conteoPorGrupo: Record<string, number> = {};
         asistenciaData.forEach((a: any) => {
           const g = a.estudiantes.grupo;
           conteoPorGrupo[g] = (conteoPorGrupo[g] || 0) + 1;
         });
 
-        // Si el conteo de asistencia >= estudiantes ACTIVOS del grupo, marcar como completado
         gruposUnicos.forEach(g => {
           const threshold = (g as any).estudiantesActivos;
           if (conteoPorGrupo[g.nombre] && conteoPorGrupo[g.nombre] >= threshold && threshold > 0) {
@@ -234,7 +223,7 @@ function RegistroContent() {
         });
       }
 
-      // Ordenar: primero por grado numérico, luego por letra de grupo
+      // 4. Ordenar: grado y luego nombre
       gruposUnicos.sort((a, b) => {
         const gradeA = parseInt(a.grado) || 0;
         const gradeB = parseInt(b.grado) || 0;
