@@ -20,10 +20,12 @@ import {
   School,
   GraduationCap,
   Users,
-  Home
+  Home,
+  UploadCloud
 } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { OfflineService, PendingAttendance } from '@/lib/offlineService';
 
 // Extendemos la interfaz de Grupo para incluir el estado de completado
 interface GrupoConEstado extends Grupo {
@@ -65,6 +67,28 @@ function RegistroContent() {
   const [novedades, setNovedades] = useState<Record<string, { tipo: string; descripcion: string }>>({});
   const [modalNovedad, setModalNovedad] = useState<{ open: boolean; estudianteId: string; nombre: string } | null>(null);
   const [tempNovedad, setTempNovedad] = useState({ tipo: '', descripcion: '' });
+  const [isOnline, setIsOnline] = useState(true);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const updateStatus = () => {
+      setIsOnline(OfflineService.isOnline());
+      setPendingCount(OfflineService.getPending().length);
+    };
+
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+    updateStatus();
+
+    // Polling opcional para actualizar contador de pendientes si cambia en otro lado (o tras sync)
+    const interval = setInterval(updateStatus, 5000);
+
+    return () => {
+      window.removeEventListener('online', updateStatus);
+      window.removeEventListener('offline', updateStatus);
+      clearInterval(interval);
+    };
+  }, []);
 
   // 1. Cargar Usuario
   useEffect(() => {
@@ -83,6 +107,45 @@ function RegistroContent() {
     };
     checkUser();
   }, [router]);
+
+  // Sincronización automática al volver a estar online
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('App is online. Attempting sync...');
+      syncPendingRecords();
+    };
+
+    window.addEventListener('online', handleOnline);
+    // Intentar sincronizar al cargar la página si hay algo pendiente
+    syncPendingRecords();
+
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
+
+  const syncPendingRecords = async () => {
+    const pending = OfflineService.getPending();
+    if (pending.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from('asistencia_pae')
+        .upsert(pending, { onConflict: 'estudiante_id,fecha' });
+
+      if (error) throw error;
+
+      OfflineService.clearPending();
+      showToast('Sincronización completada con éxito', 'success');
+
+      // Si estamos en la vista de registro, recargar para ver datos frescos
+      if (step === 'registro' && grupoSeleccionado) {
+        handleGrupoSelect(grupoSeleccionado, false);
+      } else if (step === 'grupo') {
+        fetchGruposReales();
+      }
+    } catch (error) {
+      console.error('Error durante la sincronización:', error);
+    }
+  };
 
   // 2. Cargar conteo general (solo una vez)
   useEffect(() => {
@@ -354,7 +417,7 @@ function RegistroContent() {
     if (!usuario?.id) return;
     setSaving(true);
     try {
-      const updates = Object.entries(asistencias).map(([estudianteId, estado]) => ({
+      const updates: PendingAttendance[] = Object.entries(asistencias).map(([estudianteId, estado]) => ({
         estudiante_id: estudianteId,
         fecha: selectedDate,
         estado,
@@ -363,12 +426,24 @@ function RegistroContent() {
         novedad_descripcion: novedades[estudianteId]?.descripcion || null
       }));
 
+      if (!OfflineService.isOnline()) {
+        OfflineService.savePending(updates);
+        showToast('Sin internet. Guardado localmente para sincronizar después.', 'success');
+        handleBack();
+        return;
+      }
+
+      // Si hay registros pendientes de antes, incluirlos en el upsert
+      const pending = OfflineService.getPending();
+      const allUpdates = [...pending, ...updates];
+
       const { error } = await supabase
         .from('asistencia_pae')
-        .upsert(updates, { onConflict: 'estudiante_id,fecha' });
+        .upsert(allUpdates, { onConflict: 'estudiante_id,fecha' });
 
       if (error) throw error;
 
+      OfflineService.clearPending();
       showToast(`Asistencia guardada para el ${selectedDate}`, 'success');
       handleBack();
     } catch (error: any) {
@@ -498,12 +573,29 @@ function RegistroContent() {
                 </p>
               </div>
             </div>
-            {(step === 'grupo' || step === 'registro') && (
-              <div className="relative">
-                <button className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Calendar className="w-6 h-6" /></button>
-                <input type="date" value={selectedDate} onChange={(e) => handleDateChange(e.target.value)} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
-              </div>
-            )}
+            <div className="flex gap-2">
+              {!isOnline && (
+                <div className="flex items-center gap-1 bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-gray-500"></span>
+                  </span>
+                  OFFLINE
+                </div>
+              )}
+              {pendingCount > 0 && (
+                <div className="flex items-center gap-1 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold border border-blue-100 animate-pulse">
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  {pendingCount} PENDIENTES
+                </div>
+              )}
+              {(step === 'grupo' || step === 'registro') && (
+                <div className="relative">
+                  <button className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Calendar className="w-6 h-6" /></button>
+                  <input type="date" value={selectedDate} onChange={(e) => handleDateChange(e.target.value)} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
+                </div>
+              )}
+            </div>
             {step === 'sede' && (
               <div className="p-2">
                 <Calendar className="w-6 h-6 text-gray-400" />

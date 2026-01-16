@@ -46,8 +46,8 @@ export default function DashboardPage() {
 
   const [loading, setLoading] = useState(true);
 
-  const fetchStats = async () => {
-    setLoading(true);
+  const fetchStats = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const now = new Date();
       const offset = now.getTimezoneOffset() * 60000;
@@ -90,9 +90,32 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error cargando estadísticas:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Escuchar cambios en tiempo real en la tabla de asistencia
+    const channel = supabase
+      .channel('attendance_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'asistencia_pae'
+        },
+        () => {
+          // Recargar estadísticas silenciosamente cuando hay cambios externos
+          fetchStats(true);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const [stats, setStats] = useState({
     totalEstudiantes: 0,
