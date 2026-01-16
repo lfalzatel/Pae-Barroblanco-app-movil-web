@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Search, Eye, FileDown, Users, X } from 'lucide-react';
+import { ArrowLeft, Search, Eye, FileDown, Users, X, AlertCircle, UserPlus, UserMinus } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -49,8 +49,9 @@ export default function GestionPage() {
 
       setUsuario({
         email: session.user.email,
-        nombre: session.user.user_metadata?.nombre || 'Usuario',
+        nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
         rol: session.user.user_metadata?.rol || 'docente',
+        foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
       });
     };
 
@@ -132,26 +133,48 @@ export default function GestionPage() {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      // Get all attendance records for filtered students in last 30 days
       const studentIds = estudiantesFiltrados.map(e => e.id);
-
       if (studentIds.length === 0) return 0;
 
       const { data, error } = await supabase
         .from('asistencia_pae')
         .select('estado')
         .in('estudiante_id', studentIds)
-        .gte('fecha', new Date(thirtyDaysAgo.getTime() - thirtyDaysAgo.getTimezoneOffset() * 60000).toISOString().split('T')[0]);
+        .gte(
+          'fecha',
+          new Date(thirtyDaysAgo.getTime() - thirtyDaysAgo.getTimezoneOffset() * 60000)
+            .toISOString()
+            .split('T')[0]
+        );
 
       if (error) throw error;
-
       if (!data || data.length === 0) return 0;
 
-      const recibieron = data.filter(a => a.estado === 'recibio').length;
+      const recibieron = data.filter((a: any) => a.estado === 'recibio').length;
       return ((recibieron / data.length) * 100).toFixed(1);
     } catch (error) {
-      console.error('Error calculating attendance:', error);
+      console.error('Error calculando asistencia:', error);
       return 0;
+    }
+  };
+
+  const handleToggleEstado = async (estudiante: Estudiante) => {
+    const newState = estudiante.estado === 'activo' ? 'inactivo' : 'activo';
+
+    setEstudiantes((prev) =>
+      prev.map((e) => (e.id === estudiante.id ? { ...e, estado: newState } : e))
+    );
+
+    const { error } = await supabase
+      .from('estudiantes')
+      .update({ estado: newState })
+      .eq('id', estudiante.id);
+
+    if (error) {
+      console.error('Error updating status:', error);
+      setEstudiantes((prev) =>
+        prev.map((e) => (e.id === estudiante.id ? { ...e, estado: estudiante.estado } : e))
+      );
     }
   };
 
@@ -419,15 +442,20 @@ export default function GestionPage() {
                 key={estudiante.id}
                 className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
               >
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-blue-600 font-bold text-lg">
+                <div className={`flex items-start gap-3 ${estudiante.estado === 'inactivo' ? 'opacity-50 grayscale' : ''}`}>
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${['bg-purple-100 text-purple-600', 'bg-blue-100 text-blue-600', 'bg-pink-100 text-pink-600'][estudiante.nombre.length % 3]}`}>
+                    <span className="font-bold text-lg">
                       {estudiante.nombre.charAt(0)}
                     </span>
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-900 text-sm leading-tight mb-1">{estudiante.nombre}</div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="font-semibold text-gray-900 text-sm leading-tight truncate">{estudiante.nombre}</div>
+                      {estudiante.estado === 'inactivo' && (
+                        <span className="bg-gray-100 text-gray-500 text-[8px] font-bold px-1 py-0.5 rounded">Inactivo</span>
+                      )}
+                    </div>
                     <div className="text-xs text-gray-600">
                       {estudiante.matricula}
                     </div>
@@ -448,9 +476,20 @@ export default function GestionPage() {
                       <button
                         onClick={() => handleGenerateReport(estudiante)}
                         className="flex-1 px-3 py-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-sm"
+                        title="Generar Excel"
                       >
                         <FileDown className="w-4 h-4" />
-                        Reporte
+                      </button>
+
+                      <button
+                        onClick={() => handleToggleEstado(estudiante)}
+                        className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-sm ${estudiante.estado === 'inactivo'
+                          ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+                          : 'bg-red-50 text-red-600 hover:bg-red-100'
+                          }`}
+                        title={estudiante.estado === 'inactivo' ? 'Activar Estudiante' : 'Inactivar Estudiante'}
+                      >
+                        {estudiante.estado === 'inactivo' ? <UserPlus className="w-4 h-4" /> : <UserMinus className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
@@ -632,6 +671,11 @@ export default function GestionPage() {
                                 });
                               })()}
                             </span>
+                            {(asistencia.novedad_tipo || asistencia.novedad_descripcion) && (
+                              <div className="bg-yellow-100 p-1 rounded-full" title="Tiene novedad registrada">
+                                <AlertCircle className="w-3 h-3 text-yellow-600" />
+                              </div>
+                            )}
                           </div>
                           <span className={`text-[11px] font-bold uppercase ${asistencia.estado === 'recibio' ? 'text-green-600' :
                             asistencia.estado === 'no_recibio' ? 'text-red-600' :

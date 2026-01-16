@@ -60,6 +60,11 @@ function RegistroContent() {
   const [gruposReales, setGruposReales] = useState<GrupoConEstado[]>([]);
   const [loadingGrupos, setLoadingGrupos] = useState(false);
   const [duenos, setDuenos] = useState<Record<string, string>>({});
+  const [countsBySede, setCountsBySede] = useState<Record<string, number>>({
+    principal: 0,
+    primaria: 0,
+    maria: 0
+  });
 
   // Estado para toast personalizado
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | null } | null>(null);
@@ -149,14 +154,27 @@ function RegistroContent() {
     }
   };
 
-  // 2. Cargar conteo general (solo una vez)
+  // 2. Cargar conteo general por sedes
   useEffect(() => {
     const fetchCounts = async () => {
-      const { count } = await supabase
-        .from('estudiantes')
-        .select('*', { count: 'exact', head: true });
+      try {
+        const { data, error } = await supabase
+          .from('estudiantes')
+          .select('sede');
 
-      if (count !== null) setTotalEstudiantesPrincipal(count);
+        if (error) throw error;
+
+        const counts = {
+          principal: data.filter(e => e.sede === 'Principal').length,
+          primaria: data.filter(e => e.sede === 'Primaria').length,
+          maria: data.filter(e => e.sede === 'Maria Inmaculada').length,
+        };
+
+        setCountsBySede(counts);
+        setTotalEstudiantesPrincipal(counts.principal); // Mantener por compatibilidad si se usa en otro lado
+      } catch (err) {
+        console.error('Error fetching sede counts:', err);
+      }
     };
     fetchCounts();
   }, []);
@@ -665,7 +683,7 @@ function RegistroContent() {
                     <h3 className="text-xl font-bold leading-tight">{sede.nombre}</h3>
                     <p className="text-gray-200 text-sm mb-1">{sede.id === 'principal' ? 'Grados 6° - 11°' : 'Educación Primaria'}</p>
                     <div className="inline-flex bg-white/20 px-3 py-1 rounded-full backdrop-blur-md items-center gap-1.5 pt-0.5">
-                      <span className="font-bold text-xs">{sede.id === 'principal' ? totalEstudiantesPrincipal : 0} Estudiantes</span>
+                      <span className="font-bold text-xs">{countsBySede[sede.id] || 0} Estudiantes</span>
                       <Users className="w-3 h-3" />
                     </div>
                   </div>
