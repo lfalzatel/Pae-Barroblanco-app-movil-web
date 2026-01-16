@@ -8,7 +8,6 @@ import {
   Users,
   UploadCloud,
   FileSpreadsheet,
-  Search,
   CheckCircle,
   XCircle,
   UserX
@@ -17,7 +16,6 @@ import {
 export default function DashboardPage() {
   const router = useRouter();
   const [usuario, setUsuario] = useState<any | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const checkUser = async () => {
@@ -136,19 +134,6 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="mb-6">
-        <div className="relative shadow-sm">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar estudiante por nombre o matrícula..."
-            className="w-full pl-12 pr-4 py-3 bg-white border-0 ring-1 ring-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600 shadow-sm"
-          />
-        </div>
-      </div>
 
       {/* Statistics */}
       <div>
