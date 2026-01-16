@@ -137,32 +137,38 @@ export default function DashboardLayout({
 
             {/* Mobile Top Header for User Profile */}
             <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#00A3E0] flex items-center justify-between px-4 z-50">
-                {/* User Capsule */}
-                <div className="flex items-center bg-white/20 backdrop-blur-md rounded-full pl-1 pr-4 py-1 gap-3 border border-white/20">
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border-2 border-white/40">
-                        {/* Placeholder for photo or initial */}
-                        <span className="text-[#00A3E0] font-bold text-lg">
-                            {usuario.nombre.charAt(0)}
-                        </span>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-extrabold text-blue-100 uppercase tracking-wider leading-none mb-0.5">
-                            {usuario.rol === 'admin' ? 'Administrador' : 'Docente'}
-                        </span>
-                        <span className="text-white font-bold text-sm leading-none">
-                            {usuario.nombre.split(' ')[0]}
-                        </span>
-                    </div>
-                </div>
+                {/* Title on the left */}
+                <h1 className="text-xl font-black text-white tracking-tight">
+                    Sistema PAE
+                </h1>
 
-                {/* Circular Logout Button */}
-                <button
-                    onClick={handleLogout}
-                    className="w-10 h-10 bg-white/20 backdrop-blur-md hover:bg-white/30 text-white rounded-full flex items-center justify-center transition-all border border-white/20 active:scale-90"
-                    aria-label="Cerrar Sesión"
-                >
-                    <LogOut className="w-5 h-5 ml-0.5" />
-                </button>
+                <div className="flex items-center gap-2">
+                    {/* User Capsule on the right */}
+                    <div className="flex items-center bg-white/20 backdrop-blur-md rounded-full pl-1 pr-3 py-1 gap-2 border border-white/20">
+                        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center overflow-hidden border border-white/40">
+                            <span className="text-[#00A3E0] font-bold text-xs">
+                                {usuario.nombre.charAt(0)}
+                            </span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[8px] font-extrabold text-blue-100 uppercase tracking-widest leading-none mb-0.5">
+                                {usuario.rol === 'admin' ? 'Admin' : 'Docente'}
+                            </span>
+                            <span className="text-white font-bold text-xs leading-none">
+                                {usuario.nombre.split(' ')[0]}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Circular Logout Button */}
+                    <button
+                        onClick={handleLogout}
+                        className="w-10 h-10 bg-white/20 backdrop-blur-md hover:bg-white/30 text-white rounded-full flex items-center justify-center transition-all border border-white/20 active:scale-90"
+                        aria-label="Cerrar Sesión"
+                    >
+                        <LogOut className="w-5 h-5 ml-0.5" />
+                    </button>
+                </div>
             </div>
 
             {/* Spacer for Mobile Header */}
