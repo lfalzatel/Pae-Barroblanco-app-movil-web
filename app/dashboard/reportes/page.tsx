@@ -439,7 +439,7 @@ export default function ReportesPage() {
           year: 'numeric',
           month: 'long',
           day: 'numeric'
-        }), '← La fecha que se está reportando'],
+        }).replace(' De ', ' de '), '← La fecha que se está reportando'],
         ['Período del Reporte:', `${startDate} al ${endDate}`],
         ['Fecha de Generación:', new Date().toLocaleDateString('es-CO', {
           year: 'numeric',
@@ -1097,7 +1097,8 @@ export default function ReportesPage() {
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                       labelFormatter={(val) => {
                         const d = new Date(val + 'T12:00:00');
-                        return d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+                        return d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })
+                          .replace(' De ', ' de ');
                       }}
                     />
                     <Bar dataKey="recibio" name="Recibieron" fill="#10B981" radius={[4, 4, 0, 0]} barSize={20} />

@@ -225,7 +225,7 @@ export default function GestionPage() {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
-            }),
+            }).replace(' De ', ' de '),
             record.estado === 'recibio' ? 'Recibió' :
               record.estado === 'no_recibio' ? 'No Recibió' :
                 'Ausente',

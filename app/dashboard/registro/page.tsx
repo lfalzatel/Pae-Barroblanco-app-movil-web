@@ -507,7 +507,9 @@ function RegistroContent() {
     inactivos: estudiantes.filter(e => e.estado === 'inactivo').length
   };
 
-  const dateTitle = new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'long' });
+  const dateTitle = new Date(selectedDate + 'T12:00:00')
+    .toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'long' })
+    .replace(' De ', ' de ');
 
   if (!usuario) return null;
 
