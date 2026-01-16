@@ -9,7 +9,8 @@ import {
     ClipboardList,
     Users,
     BarChart3,
-    LogOut
+    LogOut,
+    Settings
 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -48,6 +49,10 @@ export default function DashboardLayout({
         { href: '/dashboard/gestion', label: 'Gestión', icon: Users },
         { href: '/dashboard/reportes', label: 'Reportes', icon: BarChart3 },
     ];
+
+    if (usuario?.rol === 'admin') {
+        navItems.push({ href: '/dashboard/admin', label: 'Admin', icon: Settings });
+    }
 
     if (!usuario) {
         return (

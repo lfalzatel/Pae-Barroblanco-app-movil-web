@@ -7,6 +7,8 @@ import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
 import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   PieChart, Pie, Cell,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -642,10 +644,104 @@ export default function ReportesPage() {
 
       // Close export menu
       setShowExportMenu(false);
-
     } catch (error) {
       console.error('Error generating Excel report:', error);
       alert('Error al generar el reporte Excel. Por favor, intenta de nuevo.');
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const todayStr = new Date().toLocaleDateString('es-CO');
+
+      // 1. Título y Cabecera
+      doc.setFontSize(18);
+      doc.setTextColor(22, 101, 52); // Verde esmeralda
+      doc.text('REPORTE DE ASISTENCIA PAE', pageWidth / 2, 20, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text('Institución Educativa Barroblanco', pageWidth / 2, 28, { align: 'center' });
+      doc.text(`Generado el: ${todayStr}`, pageWidth / 2, 34, { align: 'center' });
+
+      // Info de Filtros
+      doc.setFontSize(11);
+      doc.setTextColor(0);
+      doc.text(`Periodo: ${periodo === 'fecha' ? selectedDate : periodo.toUpperCase()}`, 14, 45);
+      doc.text(`Sede: ${sedeFilter === 'todas' ? 'Todas las Sedes' : sedeFilter.toUpperCase()}`, 14, 51);
+      doc.text(`Grupo: ${grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter}`, 14, 57);
+
+      // 2. Tabla Resumen
+      doc.setFontSize(13);
+      doc.text('Resumen General', 14, 70);
+
+      autoTable(doc, {
+        startY: 75,
+        head: [['Concepto', 'Total']],
+        body: [
+          ['Total Estudiantes', stats.totalEstudiantes.toString()],
+          ['Recibieron Ración', stats.recibieron.toString()],
+          ['No Recibieron', stats.noRecibieron.toString()],
+          ['Ausentes', stats.ausentes.toString()],
+          ['% Asistencia', `${((stats.recibieron / (stats.totalEstudiantes || 1)) * 100).toFixed(1)}%`]
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [22, 101, 52] }
+      });
+
+      // 3. Detalle de Registros
+      const finalY = (doc as any).lastAutoTable.finalY || 75;
+      doc.setFontSize(13);
+      doc.text('Detalle de Asistencia Reciente', 14, finalY + 15);
+
+      const tableData = registros.map(r => [
+        r.estudiantes?.nombre || '-',
+        r.estudiantes?.grupo || '-',
+        r.estado === 'recibio' ? 'Recibió' : r.estado === 'no_recibio' ? 'No Recibió' : 'Ausente',
+        new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        new Date(r.created_at).toLocaleDateString('es-CO')
+      ]);
+
+      autoTable(doc, {
+        startY: finalY + 20,
+        head: [['Estudiante', 'Grupo', 'Estado', 'Hora', 'Fecha']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [37, 99, 235] }, // Blue-600
+        styles: { fontSize: 8 },
+        columnStyles: {
+          0: { cellWidth: 70 },
+          1: { cellWidth: 25 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 25 },
+          4: { cellWidth: 30 }
+        }
+      });
+
+      // Pie de página con numeración
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(
+          `Página ${i} de ${pageCount} - PAE Barroblanco Digital`,
+          pageWidth / 2,
+          doc.internal.pageSize.height - 10,
+          { align: 'center' }
+        );
+      }
+
+      // Descargar
+      const filename = `Reporte_PAE_${sedeFilter}_${periodo}_${selectedDate}.pdf`;
+      doc.save(filename);
+      setShowExportMenu(false);
+
+    } catch (error: any) {
+      console.error('Error exporting PDF:', error);
+      alert('Error al generar el archivo PDF.');
     }
   };
 
@@ -695,7 +791,10 @@ export default function ReportesPage() {
                       >
                         <span className="text-green-600 font-bold">XLS</span> Descargar Excel
                       </button>
-                      <button className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 border-t border-gray-100">
+                      <button
+                        onClick={handleExportPDF}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 border-t border-gray-100"
+                      >
                         <span className="text-red-500 font-bold">PDF</span> Descargar PDF
                       </button>
                     </div>

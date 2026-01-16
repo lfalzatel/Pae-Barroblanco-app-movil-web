@@ -97,14 +97,15 @@ export default function GestionPage() {
       if (!selectedStudent) return;
 
       try {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        // Obtenemos los últimos 90 días para tener un historial más robusto
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
         const { data, error } = await supabase
           .from('asistencia_pae')
           .select('*')
           .eq('estudiante_id', selectedStudent.id)
-          .gte('fecha', new Date(thirtyDaysAgo.getTime() - thirtyDaysAgo.getTimezoneOffset() * 60000).toISOString().split('T')[0])
+          .gte('fecha', new Date(ninetyDaysAgo.getTime() - ninetyDaysAgo.getTimezoneOffset() * 60000).toISOString().split('T')[0])
           .order('fecha', { ascending: false });
 
         if (error) throw error;
@@ -498,49 +499,148 @@ export default function GestionPage() {
               </div>
 
               {/* Contenido del modal */}
-              <div className="p-6 overflow-y-auto max-h-96">
-                <div className="space-y-2">
-                  {studentHistory.length > 0 ? (
-                    studentHistory.map((asistencia, index) => (
-                      <div
-                        key={index}
-                        className={`p-3 rounded-lg flex items-center justify-between ${asistencia.estado === 'recibio' ? 'bg-green-50' :
-                          asistencia.estado === 'no_recibio' ? 'bg-red-50' :
-                            'bg-gray-50'
-                          }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-2 h-2 rounded-full ${asistencia.estado === 'recibio' ? 'bg-green-500' :
-                            asistencia.estado === 'no_recibio' ? 'bg-red-500' :
-                              'bg-gray-400'
-                            }`}></div>
-                          <span className="text-sm font-medium text-gray-900">
-                            {(() => {
-                              const [year, month, day] = asistencia.fecha.split('-').map(Number);
-                              const dateObj = new Date(year, month - 1, day);
-                              return dateObj.toLocaleDateString('es-CO', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              });
-                            })()}
+              <div className="p-6 overflow-y-auto max-h-[60vh] md:max-h-[500px] space-y-6">
+
+                {/* Estadísticas Rápidas (Últimos 30 días) */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-green-50 p-3 rounded-xl border border-green-100 text-center">
+                    <div className="text-xl font-bold text-green-700">
+                      {studentHistory.filter(a => {
+                        const thirtyDaysAgo = new Date();
+                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                        return a.fecha >= thirtyDaysAgo.toISOString().split('T')[0] && a.estado === 'recibio';
+                      }).length}
+                    </div>
+                    <div className="text-[10px] uppercase text-green-600 font-bold">Recibidos</div>
+                  </div>
+                  <div className="bg-red-50 p-3 rounded-xl border border-red-100 text-center">
+                    <div className="text-xl font-bold text-red-700">
+                      {studentHistory.filter(a => {
+                        const thirtyDaysAgo = new Date();
+                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                        return a.fecha >= thirtyDaysAgo.toISOString().split('T')[0] && a.estado === 'no_recibio';
+                      }).length}
+                    </div>
+                    <div className="text-[10px] uppercase text-red-600 font-bold">No Recibidos</div>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 text-center">
+                    <div className="text-xl font-bold text-gray-700">
+                      {studentHistory.filter(a => {
+                        const thirtyDaysAgo = new Date();
+                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                        return a.fecha >= thirtyDaysAgo.toISOString().split('T')[0] && a.estado === 'ausente';
+                      }).length}
+                    </div>
+                    <div className="text-[10px] uppercase text-gray-600 font-bold">Ausentes</div>
+                  </div>
+                </div>
+
+                {/* Vista de Calendario (Mini Grid) */}
+                <div className="space-y-3">
+                  <h4 className="font-bold text-gray-900 border-b pb-2 flex justify-between items-center">
+                    Vista Calendario (Últimos 30 días)
+                    <span className="text-xs font-normal text-gray-500">Días escolares</span>
+                  </h4>
+                  <div className="grid grid-cols-7 gap-1">
+                    {/* Generar un grid de los últimos 35 días para que parezca un mes aproximado */}
+                    {Array.from({ length: 35 }).map((_, i) => {
+                      const d = new Date();
+                      d.setDate(d.getDate() - (34 - i));
+                      // Formatear fecha localmente sin desplazamiento UTC
+                      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                      const record = studentHistory.find(r => r.fecha === dateStr);
+                      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+                      return (
+                        <div
+                          key={i}
+                          title={dateStr}
+                          className={`aspect-square rounded-md flex items-center justify-center text-[10px] border ${isWeekend ? 'bg-gray-100 text-gray-300 border-transparent' :
+                            record ? (
+                              record.estado === 'recibio' ? 'bg-green-500 border-green-600 text-white' :
+                                record.estado === 'no_recibio' ? 'bg-red-500 border-red-600 text-white' :
+                                  'bg-gray-400 border-gray-500 text-white'
+                            ) : 'bg-white border-gray-100 text-gray-300'
+                            }`}
+                        >
+                          {d.getDate()}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex gap-4 text-[10px] justify-center pt-2">
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 bg-green-500 rounded-sm"></div> Recibió</div>
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 bg-red-500 rounded-sm"></div> No Recibió</div>
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 bg-gray-400 rounded-sm"></div> Ausente</div>
+                  </div>
+                </div>
+
+                {/* Novedades Recientes */}
+                <div className="space-y-3">
+                  <h4 className="font-bold text-gray-900 border-b pb-2">Novedades y Observaciones</h4>
+                  <div className="space-y-2">
+                    {studentHistory.filter(a => a.novedad_tipo || a.novedad_descripcion).length > 0 ? (
+                      studentHistory.filter(a => a.novedad_tipo || a.novedad_descripcion).map((a, i) => (
+                        <div key={i} className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="text-xs font-bold text-yellow-800 uppercase">{a.novedad_tipo || 'Observación'}</span>
+                            <span className="text-[10px] text-yellow-600">{a.fecha}</span>
+                          </div>
+                          <p className="text-sm text-yellow-900">{a.novedad_descripcion || 'Sin descripción detallada'}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500 italic text-center py-4">No hay novedades registradas recientemente</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Listado Detallado */}
+                <div className="space-y-3">
+                  <h4 className="font-bold text-gray-900 border-b pb-2">Registros Recientes</h4>
+                  <div className="space-y-2">
+                    {studentHistory.length > 0 ? (
+                      studentHistory.slice(0, 10).map((asistencia, index) => (
+                        <div
+                          key={index}
+                          className={`p-3 rounded-xl flex items-center justify-between border ${asistencia.estado === 'recibio' ? 'bg-white border-green-100' :
+                            asistencia.estado === 'no_recibio' ? 'bg-white border-red-100' :
+                              'bg-white border-gray-100'
+                            }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-2 h-2 rounded-full ${asistencia.estado === 'recibio' ? 'bg-green-500' :
+                              asistencia.estado === 'no_recibio' ? 'bg-red-500' :
+                                'bg-gray-400'
+                              }`}></div>
+                            <span className="text-sm font-medium text-gray-900">
+                              {(() => {
+                                const [year, month, day] = asistencia.fecha.split('-').map(Number);
+                                const dateObj = new Date(year, month - 1, day);
+                                return dateObj.toLocaleDateString('es-CO', {
+                                  weekday: 'short',
+                                  day: 'numeric',
+                                  month: 'short'
+                                });
+                              })()}
+                            </span>
+                          </div>
+                          <span className={`text-[11px] font-bold uppercase ${asistencia.estado === 'recibio' ? 'text-green-600' :
+                            asistencia.estado === 'no_recibio' ? 'text-red-600' :
+                              'text-gray-600'
+                            }`}>
+                            {asistencia.estado === 'recibio' ? 'Recibió' :
+                              asistencia.estado === 'no_recibio' ? 'No Recibió' :
+                                'Ausente'}
                           </span>
                         </div>
-                        <span className={`text-sm font-medium ${asistencia.estado === 'recibio' ? 'text-green-600' :
-                          asistencia.estado === 'no_recibio' ? 'text-red-600' :
-                            'text-gray-600'
-                          }`}>
-                          {asistencia.estado === 'recibio' ? 'Recibió' :
-                            asistencia.estado === 'no_recibio' ? 'No Recibió' :
-                              'Ausente'}
-                        </span>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        No hay registros de asistencia
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No hay registros de asistencia en los últimos 30 días
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
