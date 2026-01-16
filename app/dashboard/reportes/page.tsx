@@ -637,17 +637,23 @@ export default function ReportesPage() {
                 </button>
 
                 {showExportMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-50 py-1">
-                    <button
-                      onClick={handleExportExcel}
-                      className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
-                    >
-                      <span className="text-green-600 font-bold">XLS</span> Descargar Excel
-                    </button>
-                    <button className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 border-t border-gray-100">
-                      <span className="text-red-500 font-bold">PDF</span> Descargar PDF
-                    </button>
-                  </div>
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowExportMenu(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-50 py-1">
+                      <button
+                        onClick={handleExportExcel}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
+                      >
+                        <span className="text-green-600 font-bold">XLS</span> Descargar Excel
+                      </button>
+                      <button className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 border-t border-gray-100">
+                        <span className="text-red-500 font-bold">PDF</span> Descargar PDF
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
 
