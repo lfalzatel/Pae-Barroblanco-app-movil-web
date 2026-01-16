@@ -7,6 +7,11 @@ import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
 import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
+import {
+  PieChart, Pie, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function ReportesPage() {
   const router = useRouter();
@@ -34,6 +39,8 @@ export default function ReportesPage() {
     ausentes: 0
   });
   const [loading, setLoading] = useState(true);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [distributionData, setDistributionData] = useState<any[]>([]);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -179,6 +186,45 @@ export default function ReportesPage() {
 
         // Guardar los registros para la lista (limitado a los últimos 50 para no saturar)
         setRegistros(asistenciaData?.slice(0, 50) || []);
+
+        // 3. Procesar datos para gráficos
+        // Gráfico de Distribución (Donut)
+        setDistributionData([
+          { name: 'Recibieron', value: recibieronCount, color: '#10B981' },
+          { name: 'No Recibieron', value: noRecibieronCount, color: '#EF4444' },
+          { name: 'Ausentes', value: ausentesCount, color: '#6B7280' }
+        ]);
+
+        // Gráfico de Tendencias (Barras)
+        if (periodo === 'hoy' || periodo === 'fecha') {
+          // Si es un solo día, mostrar por hora o simplemente no mostrar tendencia temporal larga
+          setChartData([]);
+        } else {
+          const trendsMap: Record<string, any> = {};
+
+          // Inicializar fechas en el rango
+          let curr = new Date(startDate + 'T00:00:00');
+          const end = new Date(); // Hasta hoy
+          while (curr <= end) {
+            const dStr = curr.toISOString().split('T')[0];
+            const dayOfWeek = curr.getDay();
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Solo días de semana
+              trendsMap[dStr] = { fecha: dStr, recibio: 0, no_recibio: 0, ausente: 0 };
+            }
+            curr.setDate(curr.getDate() + 1);
+          }
+
+          asistenciaData?.forEach((a: any) => {
+            if (trendsMap[a.fecha]) {
+              if (a.estado === 'recibio') trendsMap[a.fecha].recibio++;
+              else if (a.estado === 'no_recibio') trendsMap[a.fecha].no_recibio++;
+              else if (a.estado === 'ausente') trendsMap[a.fecha].ausente++;
+            }
+          });
+
+          const sortedTrends = Object.values(trendsMap).sort((a: any, b: any) => a.fecha.localeCompare(b.fecha));
+          setChartData(sortedTrends);
+        }
 
       } catch (error) {
         console.error('Error fetching reports data:', error);
@@ -825,11 +871,11 @@ export default function ReportesPage() {
         {/* Estadísticas principales */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
           {/* Total */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-1">
               <div>
                 <div className="text-2xl font-bold text-blue-600 tracking-tight">
-                  {loading ? '...' : stats.totalEstudiantes}
+                  {loading ? <Skeleton className="h-8 w-12" /> : stats.totalEstudiantes}
                 </div>
                 <div className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">TOTAL</div>
               </div>
@@ -840,11 +886,11 @@ export default function ReportesPage() {
           </div>
 
           {/* Recibieron */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-1">
               <div>
                 <div className="text-2xl font-bold text-emerald-500 tracking-tight">
-                  {loading ? '...' : stats.recibieron}
+                  {loading ? <Skeleton className="h-8 w-12" /> : stats.recibieron}
                 </div>
                 <div className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">RECIBIERON</div>
               </div>
@@ -855,11 +901,11 @@ export default function ReportesPage() {
           </div>
 
           {/* No Recibieron */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-1">
               <div>
                 <div className="text-2xl font-bold text-yellow-500 tracking-tight">
-                  {loading ? '...' : stats.noRecibieron}
+                  {loading ? <Skeleton className="h-8 w-12" /> : stats.noRecibieron}
                 </div>
                 <div className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">NO RECIBIERON</div>
               </div>
@@ -870,17 +916,101 @@ export default function ReportesPage() {
           </div>
 
           {/* Ausentes */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-1">
               <div>
                 <div className="text-2xl font-bold text-red-500 tracking-tight">
-                  {loading ? '...' : stats.ausentes}
+                  {loading ? <Skeleton className="h-8 w-12" /> : stats.ausentes}
                 </div>
                 <div className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">AUSENTES</div>
               </div>
               <div className="bg-red-50 p-1.5 rounded-full">
                 <UserX className="w-5 h-5 text-red-500" />
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Análisis Visual */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Distribución de Asistencia */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-6">Distribución de Asistencia</h3>
+            <div className="h-[250px] w-full">
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="w-40 h-40 rounded-full border-8 border-gray-100 border-t-blue-500 animate-spin" />
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={distributionData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {distributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    />
+                    <Legend verticalAlign="bottom" height={36} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          {/* Tendencia Temporal */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-6">
+              {periodo === 'hoy' || periodo === 'fecha' ? 'Detalle por Sede' : 'Tendencia de Asistencia'}
+            </h3>
+            <div className="h-[250px] w-full">
+              {loading ? (
+                <div className="space-y-3 pt-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+              ) : chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="fecha"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fill: '#9ca3af' }}
+                      tickFormatter={(val) => {
+                        const d = new Date(val + 'T12:00:00');
+                        return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+                      }}
+                    />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      labelFormatter={(val) => {
+                        const d = new Date(val + 'T12:00:00');
+                        return d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+                      }}
+                    />
+                    <Bar dataKey="recibio" name="Recibieron" fill="#10B981" radius={[4, 4, 0, 0]} barSize={20} />
+                    <Bar dataKey="no_recibio" name="No Recibieron" fill="#EF4444" radius={[4, 4, 0, 0]} barSize={20} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-400">
+                  <Calendar className="w-12 h-12 mb-2 opacity-20" />
+                  <p className="text-sm">Selecciona una semana o mes para ver tendencias temporales</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
