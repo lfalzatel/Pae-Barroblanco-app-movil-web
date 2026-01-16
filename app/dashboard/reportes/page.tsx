@@ -475,6 +475,7 @@ export default function ReportesPage() {
           excelData.push(
             [''],
             [`MATRIZ DE ASISTENCIA DIARIA - GRUPO ${grupoFilter}`],
+            ['Convenciones:', '✅ Recibió', '❌ No recibió', '⚪ Ausente', '- Sin registro'],
             ['Estudiante', ...dates.map(d => {
               const dateObj = new Date(d + 'T00:00:00');
               const dayName = dateObj.toLocaleDateString('es-CO', { weekday: 'short' });
@@ -498,12 +499,12 @@ export default function ReportesPage() {
             dates.forEach(d => {
               const estado = studentMatrix[student.id]?.[d];
               if (estado === 'recibio') {
-                row.push('✅ Recibió');
+                row.push('✅');
                 totalRecibio++;
               } else if (estado === 'no_recibio') {
-                row.push('❌ No recibió');
+                row.push('❌');
               } else if (estado === 'ausente') {
-                row.push('⚪ Ausente');
+                row.push('⚪');
               } else {
                 row.push('-');
               }
