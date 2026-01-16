@@ -24,6 +24,7 @@ interface Estudiante {
     grado: string;
     grupo: string;
     sede: string;
+    estado?: string;
 }
 
 export default function AdminPage() {
@@ -208,8 +209,8 @@ export default function AdminPage() {
                                                     key={g}
                                                     onClick={() => setTargetGrupo(g)}
                                                     className={`py-2 px-1 rounded-lg text-[10px] font-bold transition-all border ${targetGrupo === g
-                                                            ? 'bg-white text-blue-600 border-white shadow-md'
-                                                            : 'bg-blue-700/50 text-blue-100 border-blue-500/30 hover:bg-blue-600'
+                                                        ? 'bg-white text-blue-600 border-white shadow-md'
+                                                        : 'bg-blue-700/50 text-blue-100 border-blue-500/30 hover:bg-blue-600'
                                                         }`}
                                                 >
                                                     {g}
@@ -245,8 +246,8 @@ export default function AdminPage() {
                                                     key={g}
                                                     onClick={() => setRenamingGrupo({ ...renamingGrupo, oldName: g })}
                                                     className={`py-2 px-1 rounded-lg text-[10px] font-bold transition-all border ${renamingGrupo.oldName === g
-                                                            ? 'bg-white text-blue-600 border-white shadow-md'
-                                                            : 'bg-blue-700/50 text-blue-100 border-blue-500/30 hover:bg-blue-600'
+                                                        ? 'bg-white text-blue-600 border-white shadow-md'
+                                                        : 'bg-blue-700/50 text-blue-100 border-blue-500/30 hover:bg-blue-600'
                                                         }`}
                                                 >
                                                     {g}
@@ -356,11 +357,16 @@ export default function AdminPage() {
                                             />
                                         </td>
                                         <td className="px-4 py-4">
-                                            <div className="font-medium text-gray-900">{est.nombre}</div>
+                                            <div className="flex items-center gap-2">
+                                                <div className={`font-medium ${est.estado === 'inactivo' ? 'text-gray-400' : 'text-gray-900'}`}>{est.nombre}</div>
+                                                {est.estado === 'inactivo' && (
+                                                    <span className="bg-gray-100 text-gray-500 text-[8px] font-bold px-1 py-0.5 rounded">INACTIVO</span>
+                                                )}
+                                            </div>
                                             <div className="text-xs text-gray-500">{est.matricula}</div>
                                         </td>
-                                        <td className="px-4 py-4 text-sm text-gray-600">{est.grupo}</td>
-                                        <td className="px-4 py-4 text-sm text-gray-600">{est.sede}</td>
+                                        <td className={`px-4 py-4 text-sm ${est.estado === 'inactivo' ? 'text-gray-400' : 'text-gray-600'}`}>{est.grupo}</td>
+                                        <td className={`px-4 py-4 text-sm ${est.estado === 'inactivo' ? 'text-gray-400' : 'text-gray-600'}`}>{est.sede}</td>
                                     </tr>
                                 ))}
                             </tbody>
