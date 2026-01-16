@@ -28,7 +28,11 @@ export default function DashboardLayout({
                 router.push('/');
                 return;
             }
-            setUsuario(session.user);
+            setUsuario({
+                ...session.user,
+                nombre: session.user.user_metadata?.nombre || 'Usuario',
+                rol: session.user.user_metadata?.rol || 'docente'
+            });
         };
         checkUser();
     }, [router]);
@@ -57,8 +61,14 @@ export default function DashboardLayout({
         <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
             {/* Desktop Sidebar */}
             <aside className="hidden md:flex w-64 flex-col fixed inset-y-0 bg-white border-r border-gray-200">
-                <div className="p-6 border-b border-gray-200 flex items-center justify-center">
-                    <h1 className="text-xl font-bold text-blue-600">Sistema PAE</h1>
+                <div className="p-6 border-b border-gray-100 flex items-center justify-start gap-3 bg-blue-50/50">
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+                        <Users className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-lg font-black text-gray-900 leading-tight">Sistema PAE</h1>
+                        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Barroblanco</p>
+                    </div>
                 </div>
 
                 <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -81,12 +91,21 @@ export default function DashboardLayout({
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-gray-200">
+                <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200 mb-3 shadow-sm">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                            {usuario.nombre.charAt(0)}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold text-gray-900 truncate">{usuario.nombre}</span>
+                            <span className="text-[10px] font-medium text-gray-500 uppercase">{usuario.rol}</span>
+                        </div>
+                    </div>
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg w-full transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-xl w-full transition-all group font-semibold text-sm"
                     >
-                        <LogOut className="w-5 h-5" />
+                        <LogOut className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                         Cerrar Sesión
                     </button>
                 </div>
@@ -116,15 +135,33 @@ export default function DashboardLayout({
                 })}
             </div>
 
-            {/* Mobile Top Header for Logout */}
-            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-40">
-                <h1 className="text-xl font-bold text-gray-900">Sistema PAE</h1>
+            {/* Mobile Top Header for User Profile */}
+            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#00A3E0] flex items-center justify-between px-4 z-50">
+                {/* User Capsule */}
+                <div className="flex items-center bg-white/20 backdrop-blur-md rounded-full pl-1 pr-4 py-1 gap-3 border border-white/20">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border-2 border-white/40">
+                        {/* Placeholder for photo or initial */}
+                        <span className="text-[#00A3E0] font-bold text-lg">
+                            {usuario.nombre.charAt(0)}
+                        </span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-extrabold text-blue-100 uppercase tracking-wider leading-none mb-0.5">
+                            {usuario.rol === 'admin' ? 'Administrador' : 'Docente'}
+                        </span>
+                        <span className="text-white font-bold text-sm leading-none">
+                            {usuario.nombre.split(' ')[0]}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Circular Logout Button */}
                 <button
                     onClick={handleLogout}
-                    className="p-2 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                    className="w-10 h-10 bg-white/20 backdrop-blur-md hover:bg-white/30 text-white rounded-full flex items-center justify-center transition-all border border-white/20 active:scale-90"
                     aria-label="Cerrar Sesión"
                 >
-                    <LogOut className="w-6 h-6" />
+                    <LogOut className="w-5 h-5 ml-0.5" />
                 </button>
             </div>
 
