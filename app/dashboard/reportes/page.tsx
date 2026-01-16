@@ -438,12 +438,16 @@ export default function ReportesPage() {
             .gte('fecha', startDate)
             .lte('fecha', endDate);
 
-          // Generate date list for header
+          // Generate date list for header (School days only: Mon-Fri)
           const dates: string[] = [];
           let current = new Date(startDate + 'T00:00:00');
           const end = new Date(endDate + 'T00:00:00');
           while (current <= end) {
-            dates.push(current.toISOString().split('T')[0]);
+            const dayOfWeek = current.getDay();
+            // 0 = Sunday, 6 = Saturday. Skip weekends.
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+              dates.push(current.toISOString().split('T')[0]);
+            }
             current.setDate(current.getDate() + 1);
           }
 
@@ -454,7 +458,7 @@ export default function ReportesPage() {
               const dateObj = new Date(d + 'T00:00:00');
               const dayName = dateObj.toLocaleDateString('es-CO', { weekday: 'short' });
               return `${dayName} ${dateObj.getDate()}`;
-            }), 'Días Recibidos']
+            }), 'Días Recibidos', '% Asistencia', 'Estado']
           );
 
           const studentMatrix: Record<string, Record<string, string>> = {};
@@ -485,6 +489,18 @@ export default function ReportesPage() {
             });
 
             row.push(totalRecibio);
+
+            // Calculate individual percentage and state
+            const totalSchoolDays = dates.length;
+            const percentage = totalSchoolDays > 0 ? (totalRecibio / totalSchoolDays) * 100 : 0;
+            row.push(`${percentage.toFixed(1)}%`);
+
+            let studentEstado = 'Crítico';
+            if (percentage >= 90) studentEstado = 'Excelente';
+            else if (percentage >= 70) studentEstado = 'Bueno';
+            else if (percentage >= 50) studentEstado = 'Regular';
+            row.push(studentEstado);
+
             excelData.push(row);
           });
         }
