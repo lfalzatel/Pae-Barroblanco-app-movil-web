@@ -47,7 +47,9 @@ export default function DashboardPage() {
 
   const fetchStats = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const offset = now.getTimezoneOffset() * 60000;
+      const today = new Date(now.getTime() - offset).toISOString().split('T')[0];
 
       // 1. Total Estudiantes
       const { count: totalEstudiantes, error: errEst } = await supabase

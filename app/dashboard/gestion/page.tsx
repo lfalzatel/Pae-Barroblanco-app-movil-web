@@ -103,7 +103,7 @@ export default function GestionPage() {
           .from('asistencia_pae')
           .select('*')
           .eq('estudiante_id', selectedStudent.id)
-          .gte('fecha', thirtyDaysAgo.toISOString().split('T')[0])
+          .gte('fecha', new Date(thirtyDaysAgo.getTime() - thirtyDaysAgo.getTimezoneOffset() * 60000).toISOString().split('T')[0])
           .order('fecha', { ascending: false });
 
         if (error) throw error;
@@ -139,7 +139,7 @@ export default function GestionPage() {
         .from('asistencia_pae')
         .select('estado')
         .in('estudiante_id', studentIds)
-        .gte('fecha', thirtyDaysAgo.toISOString().split('T')[0]);
+        .gte('fecha', new Date(thirtyDaysAgo.getTime() - thirtyDaysAgo.getTimezoneOffset() * 60000).toISOString().split('T')[0]);
 
       if (error) throw error;
 
@@ -192,8 +192,11 @@ export default function GestionPage() {
       // Add attendance records
       if (attendanceData && attendanceData.length > 0) {
         attendanceData.forEach((record: any) => {
+          const [year, month, day] = record.fecha.split('-').map(Number);
+          const dateObj = new Date(year, month - 1, day);
+
           excelData.push([
-            new Date(record.fecha).toLocaleDateString('es-CO', {
+            dateObj.toLocaleDateString('es-CO', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
@@ -241,7 +244,8 @@ export default function GestionPage() {
       XLSX.utils.book_append_sheet(wb, ws, 'Reporte de Asistencia');
 
       // Generate filename
-      const filename = `Reporte_${estudiante.nombre.replace(/ /g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      const now = new Date();
+      const filename = `Reporte_${estudiante.nombre.replace(/ /g, '_')}_${new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0]}.xlsx`;
 
       // Download file
       XLSX.writeFile(wb, filename);
@@ -493,11 +497,15 @@ export default function GestionPage() {
                               'bg-gray-400'
                             }`}></div>
                           <span className="text-sm font-medium text-gray-900">
-                            {new Date(asistencia.fecha).toLocaleDateString('es-CO', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
+                            {(() => {
+                              const [year, month, day] = asistencia.fecha.split('-').map(Number);
+                              const dateObj = new Date(year, month - 1, day);
+                              return dateObj.toLocaleDateString('es-CO', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              });
+                            })()}
                           </span>
                         </div>
                         <span className={`text-sm font-medium ${asistencia.estado === 'recibio' ? 'text-green-600' :

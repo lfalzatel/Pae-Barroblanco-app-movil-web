@@ -92,16 +92,17 @@ export default function ReportesPage() {
       setLoading(true);
       try {
         const today = new Date();
-        let startDate = today.toISOString().split('T')[0];
+        const offset = today.getTimezoneOffset() * 60000;
+        let startDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
         let isSpecificDate = false;
 
         // Calcular rango de fechas
         if (periodo === 'semana') {
           const firstDay = new Date(today.setDate(today.getDate() - today.getDay() + 1)); // Lunes
-          startDate = firstDay.toISOString().split('T')[0];
+          startDate = new Date(firstDay.getTime() - firstDay.getTimezoneOffset() * 60000).toISOString().split('T')[0];
         } else if (periodo === 'mes') {
           const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-          startDate = firstDay.toISOString().split('T')[0];
+          startDate = new Date(firstDay.getTime() - firstDay.getTimezoneOffset() * 60000).toISOString().split('T')[0];
         } else if (periodo === 'fecha') {
           startDate = selectedDate;
           isSpecificDate = true;
@@ -467,7 +468,7 @@ export default function ReportesPage() {
             const dayOfWeek = current.getDay();
             // 0 = Sunday, 6 = Saturday. Skip weekends.
             if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-              dates.push(current.toISOString().split('T')[0]);
+              dates.push(new Date(current.getTime() - current.getTimezoneOffset() * 60000).toISOString().split('T')[0]);
             }
             current.setDate(current.getDate() + 1);
           }
