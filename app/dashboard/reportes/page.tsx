@@ -294,21 +294,26 @@ export default function ReportesPage() {
         let recibieron = 0;
         let noRecibieron = 0;
         let ausentes = 0;
+        const registeredDaysSet = new Set<string>();
 
         if (studentIds.length > 0) {
           const { data: attendanceData } = await supabase
             .from('asistencia_pae')
-            .select('estado')
+            .select('estado, fecha')
             .in('estudiante_id', studentIds)
             .gte('fecha', startDate)
             .lte('fecha', endDate);
 
-          recibieron = (attendanceData || []).filter(a => a.estado === 'recibio').length;
-          noRecibieron = (attendanceData || []).filter(a => a.estado === 'no_recibio').length;
-          ausentes = (attendanceData || []).filter(a => a.estado === 'ausente').length;
+          (attendanceData || []).forEach(a => {
+            if (a.estado === 'recibio') recibieron++;
+            else if (a.estado === 'no_recibio') noRecibieron++;
+            else if (a.estado === 'ausente') ausentes++;
+            registeredDaysSet.add(a.fecha);
+          });
         }
 
-        const totalExpected = students.length * (periodo === 'hoy' || periodo === 'fecha' ? 1 : (periodo === 'semana' ? 7 : 30));
+        const totalRegisteredDays = registeredDaysSet.size;
+        const totalExpected = students.length * totalRegisteredDays;
         const porcentaje = totalExpected > 0 ? ((recibieron / totalExpected) * 100).toFixed(1) : '0.0';
 
         sedeStats.push({
@@ -329,15 +334,25 @@ export default function ReportesPage() {
 
         const { data: attendanceData } = await supabase
           .from('asistencia_pae')
-          .select('estado')
+          .select('estado, fecha')
           .in('estudiante_id', studentIds)
           .gte('fecha', startDate)
           .lte('fecha', endDate);
 
-        const recibieron = (attendanceData || []).filter(a => a.estado === 'recibio').length;
-        const noRecibieron = (attendanceData || []).filter(a => a.estado === 'no_recibio').length;
-        const ausentes = (attendanceData || []).filter(a => a.estado === 'ausente').length;
-        const totalExpected = students.length * (periodo === 'hoy' || periodo === 'fecha' ? 1 : (periodo === 'semana' ? 7 : 30));
+        let recibieron = 0;
+        let noRecibieron = 0;
+        let ausentes = 0;
+        const registeredDaysSet = new Set<string>();
+
+        (attendanceData || []).forEach(a => {
+          if (a.estado === 'recibio') recibieron++;
+          else if (a.estado === 'no_recibio') noRecibieron++;
+          else if (a.estado === 'ausente') ausentes++;
+          registeredDaysSet.add(a.fecha);
+        });
+
+        const totalRegisteredDays = registeredDaysSet.size;
+        const totalExpected = students.length * totalRegisteredDays;
         const porcentaje = totalExpected > 0 ? ((recibieron / totalExpected) * 100) : 0;
 
         // Determine estado based on percentage
@@ -438,6 +453,12 @@ export default function ReportesPage() {
             .gte('fecha', startDate)
             .lte('fecha', endDate);
 
+          // Identify days that have at least one record for this group
+          const registeredDaysSetForGroup = new Set<string>();
+          (rangeAttendance || []).forEach(record => {
+            registeredDaysSetForGroup.add(record.fecha);
+          });
+
           // Generate date list for header (School days only: Mon-Fri)
           const dates: string[] = [];
           let current = new Date(startDate + 'T00:00:00');
@@ -490,9 +511,9 @@ export default function ReportesPage() {
 
             row.push(totalRecibio);
 
-            // Calculate individual percentage and state
-            const totalSchoolDays = dates.length;
-            const percentage = totalSchoolDays > 0 ? (totalRecibio / totalSchoolDays) * 100 : 0;
+            // Calculate individual percentage based ONLY on registered days for the group
+            const totalGroupRegisteredDays = registeredDaysSetForGroup.size;
+            const percentage = totalGroupRegisteredDays > 0 ? (totalRecibio / totalGroupRegisteredDays) * 100 : 0;
             row.push(`${percentage.toFixed(1)}%`);
 
             let studentEstado = 'Crítico';
