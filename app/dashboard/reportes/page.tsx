@@ -1041,7 +1041,7 @@ export default function ReportesPage() {
                   <div className="w-40 h-40 rounded-full border-8 border-gray-100 border-t-blue-500 animate-spin" />
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <PieChart>
                     <Pie
                       data={distributionData}
@@ -1079,7 +1079,7 @@ export default function ReportesPage() {
                   <Skeleton className="h-4 w-full" />
                 </div>
               ) : chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                     <XAxis
