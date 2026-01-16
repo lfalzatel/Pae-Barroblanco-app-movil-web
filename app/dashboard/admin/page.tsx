@@ -201,15 +201,21 @@ export default function AdminPage() {
 
                                 <div className="flex flex-col md:flex-row gap-4">
                                     <div className="flex-1">
-                                        <label className="block text-xs font-bold uppercase mb-1 opacity-80">Grupo de Destino</label>
-                                        <select
-                                            value={targetGrupo}
-                                            onChange={(e) => setTargetGrupo(e.target.value)}
-                                            className="w-full bg-blue-700 border-none rounded-xl px-4 py-3 text-white placeholder-blue-300 focus:ring-2 focus:ring-white"
-                                        >
-                                            <option value="">Seleccione grupo...</option>
-                                            {allGrupos.map(g => <option key={g} value={g}>{g}</option>)}
-                                        </select>
+                                        <label className="block text-xs font-bold uppercase mb-2 opacity-80">Seleccione Grupo de Destino</label>
+                                        <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-40 p-1 bg-blue-700/30 rounded-xl">
+                                            {allGrupos.map(g => (
+                                                <button
+                                                    key={g}
+                                                    onClick={() => setTargetGrupo(g)}
+                                                    className={`py-2 px-1 rounded-lg text-[10px] font-bold transition-all border ${targetGrupo === g
+                                                            ? 'bg-white text-blue-600 border-white shadow-md'
+                                                            : 'bg-blue-700/50 text-blue-100 border-blue-500/30 hover:bg-blue-600'
+                                                        }`}
+                                                >
+                                                    {g}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <button
                                         onClick={handleMoveStudents}
@@ -232,15 +238,21 @@ export default function AdminPage() {
 
                                 <div className="flex flex-col md:flex-row gap-4">
                                     <div className="flex-1">
-                                        <label className="block text-xs font-bold uppercase mb-1 opacity-80">Grupo Original</label>
-                                        <select
-                                            value={renamingGrupo.oldName}
-                                            onChange={(e) => setRenamingGrupo({ ...renamingGrupo, oldName: e.target.value })}
-                                            className="w-full bg-blue-700 border-none rounded-xl px-4 py-3 text-white placeholder-blue-300 focus:ring-2 focus:ring-white"
-                                        >
-                                            <option value="">Seleccione grupo...</option>
-                                            {allGrupos.map(g => <option key={g} value={g}>{g}</option>)}
-                                        </select>
+                                        <label className="block text-xs font-bold uppercase mb-2 opacity-80">Seleccione Grupo Original</label>
+                                        <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-40 p-1 bg-blue-700/30 rounded-xl">
+                                            {allGrupos.map(g => (
+                                                <button
+                                                    key={g}
+                                                    onClick={() => setRenamingGrupo({ ...renamingGrupo, oldName: g })}
+                                                    className={`py-2 px-1 rounded-lg text-[10px] font-bold transition-all border ${renamingGrupo.oldName === g
+                                                            ? 'bg-white text-blue-600 border-white shadow-md'
+                                                            : 'bg-blue-700/50 text-blue-100 border-blue-500/30 hover:bg-blue-600'
+                                                        }`}
+                                                >
+                                                    {g}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div className="flex-1">
                                         <label className="block text-xs font-bold uppercase mb-1 opacity-80">Nuevo Nombre</label>
