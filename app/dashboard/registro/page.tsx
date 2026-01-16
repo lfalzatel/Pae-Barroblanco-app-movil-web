@@ -59,6 +59,7 @@ function RegistroContent() {
   // Nuevos estados para grupos dinámicos
   const [gruposReales, setGruposReales] = useState<GrupoConEstado[]>([]);
   const [loadingGrupos, setLoadingGrupos] = useState(false);
+  const [duenos, setDuenos] = useState<Record<string, string>>({});
 
   // Estado para toast personalizado
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | null } | null>(null);
@@ -323,6 +324,7 @@ function RegistroContent() {
 
       const newAsistencias: Record<string, 'recibio' | 'no_recibio' | 'ausente'> = {};
       const newNovedades: Record<string, { tipo: string; descripcion: string }> = {};
+      const newDuenos: Record<string, string> = {};
       const asistenciaMap = new Map();
 
       asistenciasData?.forEach((a: any) => {
@@ -339,6 +341,9 @@ function RegistroContent() {
               descripcion: a.novedad_descripcion || ''
             };
           }
+          if (a.registrado_por) {
+            newDuenos[est.id] = a.registrado_por;
+          }
         } else {
           const isActivo = est.estado === 'activo' || !est.estado;
           if (isActivo) {
@@ -349,6 +354,7 @@ function RegistroContent() {
 
       setAsistencias(newAsistencias);
       setNovedades(newNovedades);
+      setDuenos(newDuenos);
 
     } catch (error) {
       console.error('Error loading group details:', error);
@@ -750,63 +756,94 @@ function RegistroContent() {
                   {estudiantesFiltrados.length === 0 ? (
                     <div className="text-center py-10 text-gray-500">No se encontraron estudiantes</div>
                   ) : (
-                    estudiantesFiltrados.map(estudiante => (
-                      <div
-                        key={estudiante.id}
-                        className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 transition-all ${estudiante.estado === 'inactivo' ? 'opacity-60 grayscale' : ''} ${asistencias[estudiante.id] === 'recibio' ? 'border-l-4 border-l-green-500' : asistencias[estudiante.id] === 'no_recibio' ? 'border-l-4 border-l-red-500' : asistencias[estudiante.id] === 'ausente' ? 'opacity-75 border-l-4 border-l-gray-400' : 'border-l-4 border-l-yellow-400'}`}
-                      >
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl text-white ${['bg-purple-200 text-purple-700', 'bg-blue-200 text-blue-700', 'bg-pink-200 text-pink-700'][estudiante.nombre.length % 3]}`}>
-                              {estudiante.nombre.charAt(0)}
+                    estudiantesFiltrados.map(estudiante => {
+                      const isLocked = !!(duenos[estudiante.id] && duenos[estudiante.id] !== usuario?.id && usuario?.rol !== 'admin');
+
+                      return (
+                        <div
+                          key={estudiante.id}
+                          className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 transition-all ${estudiante.estado === 'inactivo' ? 'opacity-60 grayscale' : ''} ${asistencias[estudiante.id] === 'recibio' ? 'border-l-4 border-l-green-500' : asistencias[estudiante.id] === 'no_recibio' ? 'border-l-4 border-l-red-500' : asistencias[estudiante.id] === 'ausente' ? 'opacity-75 border-l-4 border-l-gray-400' : 'border-l-4 border-l-yellow-400'}`}
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl text-white ${['bg-purple-200 text-purple-700', 'bg-blue-200 text-blue-700', 'bg-pink-200 text-pink-700'][estudiante.nombre.length % 3]}`}>
+                                {estudiante.nombre.charAt(0)}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <div className="font-bold text-gray-900 leading-tight">{estudiante.nombre}</div>
+                                  {isLocked && (
+                                    <div
+                                      className="bg-gray-100 text-gray-500 p-1 rounded-md"
+                                      title="Registro de otro docente. Solo lectura."
+                                    >
+                                      <AlertCircle className="w-3 h-3" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-0.5">{estudiante.matricula} • {estudiante.grupo}</div>
+                              </div>
                             </div>
-                            <div>
-                              <div className="font-bold text-gray-900 leading-tight">{estudiante.nombre}</div>
-                              <div className="text-xs text-gray-500 mt-0.5">{estudiante.matricula} • {estudiante.grupo}</div>
-                            </div>
+
+                            <button
+                              onClick={() => handleToggleEstado(estudiante)}
+                              disabled={isLocked}
+                              className={`flex flex-col items-center gap-1 group disabled:opacity-50`}
+                            >
+                              <div className={`w-11 h-6 rounded-full p-1 transition-colors duration-200 ${estudiante.estado !== 'inactivo' ? 'bg-[#00BFA5]' : 'bg-gray-300'}`}>
+                                <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ${estudiante.estado !== 'inactivo' ? 'translate-x-5' : 'translate-x-0'}`} />
+                              </div>
+                              <span className="text-[10px] text-gray-400 font-medium group-hover:text-gray-600">
+                                {estudiante.estado !== 'inactivo' ? 'Activo' : 'Inactivo'}
+                              </span>
+                            </button>
                           </div>
 
-                          <button onClick={() => handleToggleEstado(estudiante)} className="flex flex-col items-center gap-1 group">
-                            <div className={`w-11 h-6 rounded-full p-1 transition-colors duration-200 ${estudiante.estado !== 'inactivo' ? 'bg-[#00BFA5]' : 'bg-gray-300'}`}>
-                              <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ${estudiante.estado !== 'inactivo' ? 'translate-x-5' : 'translate-x-0'}`} />
+                          {estudiante.estado !== 'inactivo' && (
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-3 gap-3">
+                                <button
+                                  onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'recibio' })}
+                                  disabled={isLocked}
+                                  className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${asistencias[estudiante.id] === 'recibio' ? 'bg-white border-2 border-[#10B981] text-[#10B981] shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                                >
+                                  <CheckCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'recibio' ? 'fill-current' : ''}`} />
+                                  <span>Recibió</span>
+                                </button>
+                                <button
+                                  onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'no_recibio' })}
+                                  disabled={isLocked}
+                                  className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${asistencias[estudiante.id] === 'no_recibio' ? 'bg-red-500 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                                >
+                                  <XCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'no_recibio' ? 'fill-current' : ''}`} />
+                                  <span>No Recibió</span>
+                                </button>
+                                <button
+                                  onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'ausente' })}
+                                  disabled={isLocked}
+                                  className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${asistencias[estudiante.id] === 'ausente' ? 'bg-gray-700 text-white' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                                >
+                                  <UserX className="w-5 h-5" />
+                                  <span>No Asistió</span>
+                                </button>
+                              </div>
+
+                              {asistencias[estudiante.id] === 'no_recibio' && (
+                                <button
+                                  onClick={() => openNovedadModal(estudiante)}
+                                  disabled={isLocked}
+                                  className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors border border-yellow-200 disabled:opacity-50"
+                                >
+                                  <AlertCircle className="w-5 h-5" />
+                                  Registrar Novedad
+                                  {novedades[estudiante.id] && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1" />}
+                                </button>
+                              )}
                             </div>
-                            <span className="text-[10px] text-gray-400 font-medium group-hover:text-gray-600">
-                              {estudiante.estado !== 'inactivo' ? 'Activo' : 'Inactivo'}
-                            </span>
-                          </button>
+                          )}
                         </div>
-
-                        {estudiante.estado !== 'inactivo' && (
-                          <div className="space-y-3">
-                            <div className="grid grid-cols-3 gap-3">
-                              <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'recibio' })} className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'recibio' ? 'bg-white border-2 border-[#10B981] text-[#10B981] shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                                <CheckCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'recibio' ? 'fill-current' : ''}`} />
-                                <span>Recibió</span>
-                              </button>
-                              <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'no_recibio' })} className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'no_recibio' ? 'bg-red-500 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                                <XCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'no_recibio' ? 'fill-current' : ''}`} />
-                                <span>No Recibió</span>
-                              </button>
-                              <button onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'ausente' })} className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${asistencias[estudiante.id] === 'ausente' ? 'bg-gray-700 text-white' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                                <UserX className="w-5 h-5" />
-                                <span>No Asistió</span>
-                              </button>
-                            </div>
-
-                            {asistencias[estudiante.id] === 'no_recibio' && (
-                              <button
-                                onClick={() => openNovedadModal(estudiante)}
-                                className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors border border-yellow-200"
-                              >
-                                <AlertCircle className="w-5 h-5" />
-                                Registrar Novedad
-                                {novedades[estudiante.id] && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1" />}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </>

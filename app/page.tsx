@@ -47,9 +47,25 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Solo visual por ahora, como solicitado
-    setError('El inicio de sesión con Google estará disponible pronto.');
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || 'Error al conectar con Google');
+      setLoading(false);
+    }
   };
 
   return (
