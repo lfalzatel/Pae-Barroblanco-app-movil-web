@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
-import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown } from 'lucide-react';
+import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -34,12 +34,18 @@ export default function ReportesPage() {
   const [showExportMenu, setShowExportMenu] = useState(false);
 
   const [registros, setRegistros] = useState<any[]>([]);
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<any>({
     totalEstudiantes: 0,
     recibieron: 0,
     noRecibieron: 0,
-    ausentes: 0
+    ausentes: 0,
+    inactivos: 0,
+    groupDetails: { noRecibieron: [], ausentes: [], inactivos: [] }
   });
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalCategory, setModalCategory] = useState<{ title: string, color: string, icon: any } | null>(null);
+  const [modalData, setModalData] = useState<{ grupo: string, count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState<any[]>([]);
   const [distributionData, setDistributionData] = useState<any[]>([]);
@@ -179,16 +185,50 @@ export default function ReportesPage() {
         const { data: asistenciaData, error: errorAsist } = await queryAsistencia;
         if (errorAsist) throw errorAsist;
 
+        // 3. Consultar Inactivos y Datos de Grupos
+        let queryEst = supabase.from('estudiantes').select('id, grupo, estado');
+        if (sedeFilter !== 'todas') {
+          queryEst = queryEst.eq('sede', sedeMap[sedeFilter] || 'Principal');
+        }
+        const { data: todosEst } = await queryEst;
+        const ests = todosEst || [];
+
         // Calcular contadores
         const recibieronCount = asistenciaData?.filter((a: any) => a.estado === 'recibio').length || 0;
         const noRecibieronCount = asistenciaData?.filter((a: any) => a.estado === 'no_recibio').length || 0;
         const ausentesCount = asistenciaData?.filter((a: any) => a.estado === 'ausente').length || 0;
+        const inactivosCount = ests.filter(e => e.estado === 'inactivo').length;
+
+        // Agregación por Grupos para Modales
+        const groupAgg = {
+          noRecibieron: {} as Record<string, number>,
+          ausentes: {} as Record<string, number>,
+          inactivos: {} as Record<string, number>
+        };
+
+        ests.filter(e => e.estado === 'inactivo').forEach(e => {
+          groupAgg.inactivos[e.grupo] = (groupAgg.inactivos[e.grupo] || 0) + 1;
+        });
+
+        asistenciaData?.forEach((a: any) => {
+          if (a.estado === 'no_recibio') {
+            groupAgg.noRecibieron[a.estudiantes.grupo] = (groupAgg.noRecibieron[a.estudiantes.grupo] || 0) + 1;
+          } else if (a.estado === 'ausente') {
+            groupAgg.ausentes[a.estudiantes.grupo] = (groupAgg.ausentes[a.estudiantes.grupo] || 0) + 1;
+          }
+        });
 
         setStats({
           totalEstudiantes: totalCount || 0,
           recibieron: recibieronCount,
           noRecibieron: noRecibieronCount,
-          ausentes: ausentesCount
+          ausentes: ausentesCount,
+          inactivos: inactivosCount,
+          groupDetails: {
+            noRecibieron: Object.entries(groupAgg.noRecibieron).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
+            ausentes: Object.entries(groupAgg.ausentes).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
+            inactivos: Object.entries(groupAgg.inactivos).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count)
+          }
         });
 
         // Guardar los registros para la lista (limitado a los últimos 50 para no saturar)
@@ -749,10 +789,89 @@ export default function ReportesPage() {
     }
   };
 
+  const openGroupModal = (category: string) => {
+    let title = "";
+    let data = [];
+    let color = "";
+    let Icon = null;
+
+    if (category === 'noRecibieron') {
+      title = "No Recibieron Ración";
+      data = stats.groupDetails.noRecibieron;
+      color = "text-amber-600 bg-amber-50";
+      Icon = XCircle;
+    } else if (category === 'ausentes') {
+      title = "Estudiantes Ausentes";
+      data = stats.groupDetails.ausentes;
+      color = "text-rose-600 bg-rose-50";
+      Icon = UserX;
+    } else if (category === 'inactivos') {
+      title = "Estudiantes Inactivos";
+      data = stats.groupDetails.inactivos;
+      color = "text-blue-700 bg-blue-50";
+      Icon = UserMinus;
+    }
+
+    if (data.length > 0) {
+      setModalCategory({ title, color, icon: Icon });
+      setModalData(data);
+      setModalOpen(true);
+    }
+  };
+
   if (!usuario) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
+      {/* Modal de Detalle por Grupo */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)}></div>
+          <div className="bg-white rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+            <div className={`p-6 flex items-center justify-between border-b ${modalCategory?.color.split(' ')[1]}`}>
+              <div className="flex items-center gap-3">
+                <div className={`${modalCategory?.color} p-2 rounded-xl`}>
+                  {modalCategory?.icon && <modalCategory.icon className="w-6 h-6" />}
+                </div>
+                <h3 className="font-black text-gray-900 leading-tight">{modalCategory?.title}</h3>
+              </div>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="p-2 hover:bg-black/5 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">DISTRIBUCIÓN ACUMULADA</p>
+              <div className="space-y-3">
+                {modalData.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-blue-200 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white px-3 py-1 rounded-lg text-sm font-black text-gray-700 shadow-sm border border-gray-100">
+                        {item.grupo}
+                      </div>
+                      <span className="text-sm font-medium text-gray-600">Número de estudiantes</span>
+                    </div>
+                    <span className="text-xl font-black text-gray-900">{item.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 flex justify-center">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="w-full py-3 bg-gray-900 text-white rounded-2xl font-black hover:bg-gray-800 transition-colors"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -973,66 +1092,128 @@ export default function ReportesPage() {
         </div>
 
         {/* Estadísticas principales */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-          {/* Total */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-full">
-            <div className="flex justify-between items-start mb-1">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+          {/* Total Estudiantes */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
+            <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl font-bold text-blue-600 tracking-tight">
-                  {loading ? <Skeleton className="h-8 w-12" /> : stats.totalEstudiantes}
+                <div className="text-2xl md:text-3xl font-black text-blue-600 tracking-tighter">
+                  {loading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    stats.totalEstudiantes.toLocaleString()
+                  )}
                 </div>
-                <div className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">TOTAL</div>
+                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">TOTAL</div>
               </div>
-              <div className="bg-blue-50 p-1.5 rounded-full">
+              <div className="bg-blue-50 p-2 rounded-xl">
                 <Users className="w-5 h-5 text-blue-600" />
               </div>
+            </div>
+            <div className="text-[10px] text-blue-400 font-bold">
+              En sedes filtradas
             </div>
           </div>
 
           {/* Recibieron */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-full">
-            <div className="flex justify-between items-start mb-1">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
+            <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl font-bold text-emerald-500 tracking-tight">
-                  {loading ? <Skeleton className="h-8 w-12" /> : stats.recibieron}
+                <div className="text-2xl md:text-3xl font-black text-emerald-500 tracking-tighter">
+                  {loading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    stats.recibieron.toLocaleString()
+                  )}
                 </div>
-                <div className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">RECIBIERON</div>
+                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">RECIBIERON</div>
               </div>
-              <div className="bg-emerald-50 p-1.5 rounded-full">
+              <div className="bg-emerald-50 p-2 rounded-xl">
                 <CheckCircle className="w-5 h-5 text-emerald-500" />
               </div>
+            </div>
+            <div className="text-[10px] text-emerald-600 font-bold">
+              Periodo: {periodo}
             </div>
           </div>
 
           {/* No Recibieron */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-full">
-            <div className="flex justify-between items-start mb-1">
+          <button
+            onClick={() => openGroupModal('noRecibieron')}
+            disabled={stats.noRecibieron === 0}
+            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-amber-400 hover:shadow-lg hover:shadow-amber-50 transition-all text-left"
+          >
+            <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl font-bold text-yellow-500 tracking-tight">
-                  {loading ? <Skeleton className="h-8 w-12" /> : stats.noRecibieron}
+                <div className="text-2xl md:text-3xl font-black text-amber-500 tracking-tighter">
+                  {loading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    stats.noRecibieron.toLocaleString()
+                  )}
                 </div>
-                <div className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">NO RECIBIERON</div>
+                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">NO RECIBIERON</div>
               </div>
-              <div className="bg-yellow-100 p-1.5 rounded-full">
-                <XCircle className="w-5 h-5 text-yellow-600" />
+              <div className="bg-amber-50 p-2 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
+                <XCircle className="w-5 h-5 text-amber-600 group-hover:text-white transition-colors" />
               </div>
             </div>
-          </div>
+            <div className="text-[10px] text-amber-600 font-bold flex items-center gap-1">
+              Ver grupos <Info className="w-3 h-3" />
+            </div>
+          </button>
 
-          {/* Ausentes */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-full">
-            <div className="flex justify-between items-start mb-1">
+          {/* No Asistieron (Ausentes) */}
+          <button
+            onClick={() => openGroupModal('ausentes')}
+            disabled={stats.ausentes === 0}
+            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-rose-400 hover:shadow-lg hover:shadow-rose-50 transition-all text-left"
+          >
+            <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl font-bold text-red-500 tracking-tight">
-                  {loading ? <Skeleton className="h-8 w-12" /> : stats.ausentes}
+                <div className="text-2xl md:text-3xl font-black text-rose-500 tracking-tighter">
+                  {loading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    stats.ausentes.toLocaleString()
+                  )}
                 </div>
-                <div className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">AUSENTES</div>
+                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">NO ASISTIERON</div>
               </div>
-              <div className="bg-red-50 p-1.5 rounded-full">
-                <UserX className="w-5 h-5 text-red-500" />
+              <div className="bg-rose-50 p-2 rounded-xl group-hover:bg-rose-500 group-hover:text-white transition-colors duration-300">
+                <UserX className="w-5 h-5 text-rose-500 group-hover:text-white transition-colors" />
               </div>
             </div>
-          </div>
+            <div className="text-[10px] text-rose-600 font-bold flex items-center gap-1">
+              Ver grupos <Info className="w-3 h-3" />
+            </div>
+          </button>
+
+          {/* Inactivos (Renunciaron) */}
+          <button
+            onClick={() => openGroupModal('inactivos')}
+            disabled={stats.inactivos === 0}
+            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-blue-400 hover:shadow-lg hover:shadow-blue-50 transition-all text-left"
+          >
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-2xl md:text-3xl font-black text-gray-700 tracking-tighter">
+                  {loading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    stats.inactivos.toLocaleString()
+                  )}
+                </div>
+                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">INACTIVOS</div>
+              </div>
+              <div className="bg-gray-100 p-2 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                <UserMinus className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+              </div>
+            </div>
+            <div className="text-[10px] text-gray-500 font-bold flex items-center gap-1">
+              Ver detalles <Info className="w-3 h-3" />
+            </div>
+          </button>
         </div>
 
         {/* Análisis Visual */}
