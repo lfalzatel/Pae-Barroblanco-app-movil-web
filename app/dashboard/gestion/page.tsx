@@ -340,7 +340,7 @@ export default function GestionPage() {
               <ArrowLeft className="w-6 h-6" />
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Gestión de Estudiantes</h1>
+              <h1 className="text-xl font-bold text-gray-900">Gestión del Sistema</h1>
               <p className="text-sm text-gray-600">Historial de asistencia y reportes</p>
             </div>
           </div>
@@ -348,9 +348,8 @@ export default function GestionPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Título y Pestañas */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Gestión del Sistema</h1>
+        {/* Pestañas */}
+        <div className="flex flex-col md:flex-row md:items-center justify-end gap-4 mb-8">
           {usuario?.rol === 'admin' && (
             <div className="bg-gray-100 p-1 rounded-xl flex gap-1">
               <button
@@ -674,20 +673,61 @@ export default function GestionPage() {
                 <h3 className="font-bold text-xl">{selectedDocente.nombre}</h3>
                 <button onClick={() => setSelectedDocente(null)} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6" /></button>
               </div>
-              <div className="p-6 overflow-y-auto space-y-4">
-                {docenteHistory.map((h, i) => (
-                  <div key={i} className="p-4 border rounded-xl bg-white shadow-sm">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-bold text-blue-600 flex items-center gap-2"><Calendar className="w-4 h-4" />{h.fecha}</span>
-                      <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">{h.grupos.length} Grupos</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {h.grupos.map((g: string, idx: number) => (
-                        <span key={idx} className="bg-green-50 text-green-700 text-[10px] font-bold px-2 py-1 rounded-md border border-green-100">{g}</span>
-                      ))}
-                    </div>
+              <div className="p-6 overflow-y-auto space-y-6">
+                {/* Vista de Calendario (Mini Grid Historial Docente) */}
+                <div className="space-y-3">
+                  <h4 className="font-bold text-gray-900 border-b pb-2 flex justify-between items-center">
+                    Actividad de Registro (Últimos 30 días)
+                    <span className="text-xs font-normal text-gray-500">Días con registros</span>
+                  </h4>
+                  <div className="grid grid-cols-7 gap-1">
+                    {Array.from({ length: 35 }).map((_, i) => {
+                      const d = new Date();
+                      d.setDate(d.getDate() - (34 - i));
+                      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                      const record = docenteHistory.find(r => r.fecha === dateStr);
+                      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+                      return (
+                        <div
+                          key={i}
+                          title={dateStr + (record ? ` - ${record.grupos.length} grupos` : '')}
+                          className={`aspect-square rounded-md flex items-center justify-center text-[10px] border ${isWeekend ? 'bg-gray-50 text-gray-300 border-transparent' :
+                            record ? 'bg-blue-600 border-blue-700 text-white font-bold' : 'bg-white border-gray-100 text-gray-300'
+                            }`}
+                        >
+                          {d.getDate()}
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
+                  <div className="flex gap-4 text-[10px] justify-center pt-2">
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-600 rounded-sm"></div> Día con registros</div>
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 bg-white border border-gray-100 rounded-sm"></div> Sin registros</div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-bold text-gray-900 border-b pb-2">Historial Detallado</h4>
+                  <div className="space-y-4">
+                    {docenteHistory.map((h, i) => (
+                      <div key={i} className="p-4 border rounded-xl bg-white shadow-sm hover:border-blue-200 transition-colors">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-bold text-blue-600 flex items-center gap-2"><Calendar className="w-4 h-4" />{h.fecha}</span>
+                          <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-full uppercase tracking-wider">{h.grupos.length} Grupos</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {h.grupos.map((g: string, idx: number) => (
+                            <span key={idx} className="bg-green-50 text-green-700 text-[10px] font-bold px-2 py-1 rounded-md border border-green-100">{g}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {docenteHistory.length === 0 && (
+                      <div className="text-center py-8 text-gray-500 text-sm italic">No se encontraron registros de actividad para este docente</div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
