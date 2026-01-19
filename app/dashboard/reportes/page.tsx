@@ -866,53 +866,69 @@ export default function ReportesPage() {
       {/* Modal de Detalle por Grupo */}
       {modalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)}></div>
-          <div className="bg-white rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
-            <div className={`p-6 flex items-center justify-between border-b ${modalCategory?.color.split(' ')[1]}`}>
-              <div className="flex items-center gap-3">
-                <div className={`${modalCategory?.color} p-2 rounded-xl`}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setModalOpen(false)}></div>
+          <div className="bg-white/90 backdrop-blur-2xl rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden border border-white/20 ring-1 ring-black/5">
+            <div className="p-6 flex items-center justify-between border-b border-gray-100/50 bg-white/40">
+              <div className="flex items-center gap-4">
+                <div className={`${modalCategory?.color.split(' ')[0].replace('text-', 'bg-').replace('600', '100').replace('700', '100')} ${modalCategory?.color.split(' ')[0]} p-3 rounded-2xl shadow-sm ring-1 ring-black/5`}>
                   {modalCategory?.icon && <modalCategory.icon className="w-6 h-6" />}
                 </div>
-                <h3 className="font-black text-gray-900 leading-tight">{modalCategory?.title}</h3>
+                <div>
+                  <h3 className="font-black text-gray-900 leading-tight text-lg">{modalCategory?.title}</h3>
+                  <p className="text-xs font-medium text-gray-500 mt-0.5">Desglose por grupos</p>
+                </div>
               </div>
               <button
                 onClick={() => setModalOpen(false)}
-                className="p-2 hover:bg-black/5 rounded-full transition-colors"
+                className="p-2.5 hover:bg-black/5 rounded-full transition-all duration-200 text-gray-400 hover:text-gray-900 hover:rotate-90"
               >
-                <X className="w-5 h-5 text-gray-400" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 max-h-[60vh] overflow-y-auto">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">DISTRIBUCIÓN ACUMULADA</p>
-              <div className="space-y-3">
+            <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar relative">
+              <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-white/40 to-transparent z-10 pointer-events-none" />
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 px-1 flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                Distribución Acumulada
+              </p>
+              <div className="space-y-3 pb-2">
                 {modalData.map((item, idx) => (
                   <button
                     key={idx}
                     onClick={() => openDeepDetail(item.grupo)}
-                    className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-blue-400 hover:bg-blue-50/30 transition-all text-left"
+                    className="w-full flex items-center justify-between p-4 rounded-2xl border border-gray-100/80 hover:border-blue-300/50 hover:bg-blue-50/40 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 text-left bg-white/60 backdrop-blur-sm group animate-in slide-in-from-bottom-2 fade-in fill-mode-both"
+                    style={{ animationDelay: `${idx * 50}ms` }}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="bg-white px-3 py-1 rounded-lg text-sm font-black text-gray-700 shadow-sm border border-gray-100 group-hover:border-blue-200">
-                        {item.grupo}
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 flex items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200/60 shadow-inner text-sm font-black text-gray-700 group-hover:from-blue-500 group-hover:to-blue-600 group-hover:text-white group-hover:border-blue-500 group-hover:shadow-blue-200 transition-all duration-300">
+                        {item.grupo.replace('Grado ', '')}
                       </div>
-                      <span className="text-sm font-medium text-gray-600">Número de estudiantes</span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-gray-900 group-hover:text-blue-700 transition-colors">{item.grupo}</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] font-medium text-gray-500 bg-gray-100/80 px-1.5 py-0.5 rounded-md group-hover:bg-blue-100/50 group-hover:text-blue-600 transition-colors">Ver estudiantes</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl font-black text-gray-900">{item.count}</span>
-                      <ChevronDown className="w-4 h-4 text-gray-300 -rotate-90 group-hover:text-blue-500 transition-colors" />
+                    <div className="flex items-center gap-3 pr-1">
+                      <span className="text-2xl font-black text-gray-900 tracking-tight group-hover:scale-110 transition-transform duration-300">{item.count}</span>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-blue-100 group-hover:text-blue-600 text-gray-300 transition-all duration-300">
+                        <ChevronDown className="w-5 h-5 -rotate-90 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
                     </div>
                   </button>
                 ))}
               </div>
+              <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white/60 to-transparent z-10 pointer-events-none" />
             </div>
 
-            <div className="p-4 bg-gray-50 flex justify-center">
+            <div className="p-4 bg-gray-50/80 backdrop-blur-md border-t border-gray-100/50 flex justify-center">
               <button
                 onClick={() => setModalOpen(false)}
-                className="w-full py-3 bg-gray-900 text-white rounded-2xl font-black hover:bg-gray-800 transition-colors"
+                className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold shadow-xl shadow-gray-200 hover:bg-black hover:shadow-2xl hover:shadow-gray-300 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
               >
-                Entendido
+                Cerrar Vista
               </button>
             </div>
           </div>
