@@ -60,6 +60,7 @@ function RegistroContent() {
   const [gruposReales, setGruposReales] = useState<GrupoConEstado[]>([]);
   const [loadingGrupos, setLoadingGrupos] = useState(false);
   const [duenos, setDuenos] = useState<Record<string, string>>({});
+  const [mapaNombres, setMapaNombres] = useState<Record<string, string>>({});
   const [countsBySede, setCountsBySede] = useState<Record<string, number>>({
     principal: 0,
     primaria: 0,
@@ -374,6 +375,23 @@ function RegistroContent() {
       setAsistencias(newAsistencias);
       setNovedades(newNovedades);
       setDuenos(newDuenos);
+
+      // Cargar nombres de los responsables desde perfiles_publicos
+      const uniqueUids = Array.from(new Set(Object.values(newDuenos)));
+      if (uniqueUids.length > 0) {
+        const { data: perfiles } = await supabase
+          .from('perfiles_publicos')
+          .select('id, nombre')
+          .in('id', uniqueUids);
+
+        if (perfiles) {
+          const m: Record<string, string> = {};
+          perfiles.forEach(p => { m[p.id] = p.nombre; });
+          setMapaNombres(m);
+        }
+      } else {
+        setMapaNombres({});
+      }
 
     } catch (error) {
       console.error('Error loading group details:', error);
@@ -772,8 +790,23 @@ function RegistroContent() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Buscar estudiante..."
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm mb-6"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                 />
+
+                {/* Info de responsable */}
+                {Object.keys(duenos).length > 0 && (
+                  <div className="mt-2 px-1 flex items-center gap-2 text-[10px] text-gray-500 font-medium">
+                    <Users className="w-3 h-3 text-blue-500" />
+                    <span>
+                      Registrado por: {' '}
+                      <span className="text-blue-600 font-bold">
+                        {Array.from(new Set(Object.values(duenos)))
+                          .map(uid => mapaNombres[uid] || 'Cargando...')
+                          .join(', ')}
+                      </span>
+                    </span>
+                  </div>
+                )}
 
                 <div className="space-y-4 pt-2">
                   {estudiantesFiltrados.length === 0 ? (
