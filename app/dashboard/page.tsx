@@ -337,7 +337,7 @@ export default function DashboardPage() {
                       <div className="bg-white px-3 py-1 rounded-lg text-sm font-black text-gray-700 shadow-sm border border-gray-100">
                         {item.grupo}
                       </div>
-                      <span className="text-sm font-medium text-gray-600">Estudiantes afectados</span>
+                      <span className="text-sm font-medium text-gray-600">Número de estudiantes</span>
                     </div>
                     <span className="text-xl font-black text-gray-900">{item.count}</span>
                   </div>
