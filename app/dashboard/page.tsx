@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { Usuario, calcularEstadisticasHoy } from '../data/demoData';
@@ -10,13 +10,27 @@ import {
   FileSpreadsheet,
   CheckCircle,
   XCircle,
-  UserX
+  UserX,
+  UserMinus,
+  LayoutGrid,
+  Info,
+  Calendar,
+  X
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import * as XLSX from 'xlsx';
 
 export default function DashboardPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [usuario, setUsuario] = useState<any | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [notif, setNotif] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
+
+  // Estados para Modal de Detalle
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalCategory, setModalCategory] = useState<{ title: string, color: string, icon: any } | null>(null);
+  const [modalData, setModalData] = useState<{ grupo: string, count: number }[]>([]);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -53,44 +67,176 @@ export default function DashboardPage() {
       const offset = now.getTimezoneOffset() * 60000;
       const today = new Date(now.getTime() - offset).toISOString().split('T')[0];
 
-      // 1. Total Estudiantes
-      const { count: totalEstudiantes, error: errEst } = await supabase
+      // 1. Obtener todos los estudiantes para agrupar
+      const { data: todosEstudiantes, error: errEst } = await supabase
         .from('estudiantes')
-        .select('*', { count: 'exact', head: true });
+        .select('id, grupo, estado');
 
       if (errEst) throw errEst;
 
       // 2. Asistencias de Hoy
       const { data: asistencias, error: errAsist } = await supabase
         .from('asistencia_pae')
-        .select('estado')
+        .select('estudiante_id, estado')
         .eq('fecha', today);
 
       if (errAsist) throw errAsist;
 
-      const total = totalEstudiantes || 0;
+      const estudiantes = todosEstudiantes || [];
       const asistenciasHoy = asistencias || [];
+
+      // Diccionario de asistencia para acceso rápido
+      const asistMap: Record<string, string> = {};
+      asistenciasHoy.forEach(a => {
+        asistMap[a.estudiante_id] = a.estado;
+      });
+
+      // Cálculos globales
+      const inactivos = estudiantes.filter(e => e.estado === 'inactivo');
+      const activos = estudiantes.filter(e => e.estado === 'activo');
 
       const recibieron = asistenciasHoy.filter(a => a.estado === 'recibio').length;
       const noRecibieron = asistenciasHoy.filter(a => a.estado === 'no_recibio').length;
-      const ausentesRegistrados = asistenciasHoy.filter(a => a.estado === 'ausente').length;
 
-      const presentesHoy = recibieron + noRecibieron;
-      const ausentesCalculados = total - presentesHoy;
-      const porcentaje = total > 0 ? ((presentesHoy / total) * 100).toFixed(1) : '0';
+      // Ausentes: Activos que tienen record como 'ausente' O no tienen record
+      const ausentes = activos.filter(e => {
+        const estadoAsist = asistMap[e.id];
+        return estadoAsist === 'ausente' || !estadoAsist;
+      }).length;
+
+      // Agregación por Grupos para Modales
+      const groupAgg = {
+        noRecibieron: {} as Record<string, number>,
+        ausentes: {} as Record<string, number>,
+        inactivos: {} as Record<string, number>
+      };
+
+      // Llenar inactivos por grupo
+      inactivos.forEach(e => {
+        groupAgg.inactivos[e.grupo] = (groupAgg.inactivos[e.grupo] || 0) + 1;
+      });
+
+      // Llenar no recibieron por grupo
+      asistenciasHoy.filter(a => a.estado === 'no_recibio').forEach(a => {
+        const est = estudiantes.find(e => e.id === a.estudiante_id);
+        if (est) groupAgg.noRecibieron[est.grupo] = (groupAgg.noRecibieron[est.grupo] || 0) + 1;
+      });
+
+      // Llenar ausentes por grupo
+      activos.forEach(e => {
+        const estadoAsist = asistMap[e.id];
+        if (estadoAsist === 'ausente' || !estadoAsist) {
+          groupAgg.ausentes[e.grupo] = (groupAgg.ausentes[e.grupo] || 0) + 1;
+        }
+      });
 
       setStats({
-        totalEstudiantes: total,
-        presentesHoy,
-        porcentajeAsistencia: parseFloat(porcentaje),
+        totalEstudiantes: estudiantes.length,
+        activos: activos.length,
+        inactivos: inactivos.length,
         recibieron,
         noRecibieron,
-        ausentes: ausentesCalculados
+        ausentes,
+        porcentajeAsistencia: activos.length > 0 ? (((activos.length - ausentes) / activos.length) * 100).toFixed(1) : '0',
+        groupDetails: {
+          noRecibieron: Object.entries(groupAgg.noRecibieron).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
+          ausentes: Object.entries(groupAgg.ausentes).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
+          inactivos: Object.entries(groupAgg.inactivos).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count)
+        }
       });
     } catch (error) {
       console.error('Error cargando estadísticas:', error);
     } finally {
       if (!silent) setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setNotif(null);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData: any[] = XLSX.utils.sheet_to_json(firstSheet);
+
+          if (jsonData.length === 0) {
+            throw new Error('El archivo está vacío');
+          }
+
+          // Validar columnas necesarias (Nombres, Apellidos, Matricula, Grado, Grupo, Sede)
+          const firstRow = jsonData[0];
+          const hasRequired = ['Apellidos', 'Nombres', 'Matrícula', 'Grado', 'Grupo', 'Sede'].every(col =>
+            Object.keys(firstRow).some(key => key.toLowerCase().includes(col.toLowerCase()))
+          );
+
+          if (!hasRequired) {
+            throw new Error('El archivo no tiene las columnas requeridas: Apellidos, Nombres, Matrícula, Grado, Grupo, Sede');
+          }
+
+          const studentsToUpsert = jsonData.map(row => {
+            // Buscar claves ignorando mayúsculas/minúsculas y tildes
+            const findKey = (name: string) => Object.keys(row).find(k =>
+              k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") ===
+              name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            ) || name;
+
+            const apellidos = row[findKey('Apellidos')] || '';
+            const nombres = row[findKey('Nombres')] || '';
+            const matricula = String(row[findKey('Matrícula')] || '');
+            const grado = String(row[findKey('Grado')] || '');
+            const grupo = String(row[findKey('Grupo')] || '');
+            const sede = String(row[findKey('Sede')] || '').trim();
+
+            return {
+              nombre: `${apellidos.toUpperCase()} ${nombres.toUpperCase()}`.trim(),
+              matricula,
+              grado,
+              grupo,
+              sede: sede.charAt(0).toUpperCase() + sede.slice(1).toLowerCase()
+            };
+          }).filter(s => s.matricula && s.nombre);
+
+          // Subida masiva por lotes (de a 100 para evitar límites)
+          const batchSize = 100;
+          let errors = 0;
+
+          for (let i = 0; i < studentsToUpsert.length; i += batchSize) {
+            const batch = studentsToUpsert.slice(i, i + batchSize);
+            const { error: upsertError } = await supabase
+              .from('estudiantes')
+              .upsert(batch, { onConflict: 'matricula' });
+
+            if (upsertError) {
+              console.error('Error in batch:', upsertError);
+              errors++;
+            }
+          }
+
+          if (errors === 0) {
+            setNotif({ type: 'success', msg: `¡Éxito! Se procesaron ${studentsToUpsert.length} estudiantes correctamente.` });
+            fetchStats();
+          } else {
+            setNotif({ type: 'error', msg: 'Se procesaron algunos datos pero hubo errores en la base de datos.' });
+          }
+        } catch (err: any) {
+          setNotif({ type: 'error', msg: err.message || 'Error al procesar el Excel' });
+        } finally {
+          setUploading(false);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      setUploading(false);
+      setNotif({ type: 'error', msg: 'Error al leer el archivo' });
     }
   };
 
@@ -117,153 +263,306 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<any>({
     totalEstudiantes: 0,
-    presentesHoy: 0,
-    porcentajeAsistencia: 0,
+    activos: 0,
+    inactivos: 0,
     recibieron: 0,
     noRecibieron: 0,
-    ausentes: 0
+    ausentes: 0,
+    porcentajeAsistencia: 0,
+    groupDetails: { noRecibieron: [], ausentes: [], inactivos: [] }
   });
+
+  const openGroupModal = (category: string) => {
+    let title = "";
+    let data = [];
+    let color = "";
+    let Icon = null;
+
+    if (category === 'noRecibieron') {
+      title = "No Recibieron Ración";
+      data = stats.groupDetails.noRecibieron;
+      color = "text-amber-600 bg-amber-50";
+      Icon = XCircle;
+    } else if (category === 'ausentes') {
+      title = "Estudiantes Ausentes";
+      data = stats.groupDetails.ausentes;
+      color = "text-rose-600 bg-rose-50";
+      Icon = UserX;
+    } else if (category === 'inactivos') {
+      title = "Estudiantes Inactivos";
+      data = stats.groupDetails.inactivos;
+      color = "text-blue-700 bg-blue-50";
+      Icon = UserMinus;
+    }
+
+    if (data.length > 0) {
+      setModalCategory({ title, color, icon: Icon });
+      setModalData(data);
+      setModalOpen(true);
+    }
+  };
 
   if (!usuario) return null;
 
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto pb-24 md:pb-8">
+      {/* Modal de Detalle por Grupo */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)}></div>
+          <div className="bg-white rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+            <div className={`p-6 flex items-center justify-between border-b ${modalCategory?.color.split(' ')[1]}`}>
+              <div className="flex items-center gap-3">
+                <div className={`${modalCategory?.color} p-2 rounded-xl`}>
+                  {modalCategory?.icon && <modalCategory.icon className="w-6 h-6" />}
+                </div>
+                <h3 className="font-black text-gray-900 leading-tight">{modalCategory?.title}</h3>
+              </div>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="p-2 hover:bg-black/5 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">DISTRIBUCIÓN POR GRUPO</p>
+              <div className="space-y-3">
+                {modalData.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-blue-200 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white px-3 py-1 rounded-lg text-sm font-black text-gray-700 shadow-sm border border-gray-100">
+                        {item.grupo}
+                      </div>
+                      <span className="text-sm font-medium text-gray-600">Estudiantes afectados</span>
+                    </div>
+                    <span className="text-xl font-black text-gray-900">{item.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 flex justify-center">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="w-full py-3 bg-gray-900 text-white rounded-2xl font-black hover:bg-gray-800 transition-colors"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dynamic Notification */}
+      {notif && (
+        <div className={`mb-4 p-4 rounded-xl flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-4 duration-300 ${notif.type === 'success' ? 'bg-emerald-50 border border-emerald-100 text-emerald-800' : 'bg-red-50 border border-red-100 text-red-800'
+          }`}>
+          <div className="flex items-center gap-3">
+            {notif.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+            <span className="text-sm font-medium">{notif.msg}</span>
+          </div>
+          <button onClick={() => setNotif(null)} className="opacity-50 hover:opacity-100">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      )}
+
       {/* Header Image */}
       <div className="mb-4 -mx-4 lg:mx-0">
-        <div className="h-40 md:h-64 relative overflow-hidden lg:rounded-2xl">
+        <div className="h-40 md:h-64 relative overflow-hidden lg:rounded-2xl shadow-md border border-white/20">
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: 'url("/hero-cafeteria.jpg")' }}
           >
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
           </div>
-          <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white pb-6">
-            <h1 className="text-2xl md:text-3xl font-bold leading-tight mb-1">
-              Sistema de Asistencia PAE
+          <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+            <span className="text-[10px] font-black text-white tracking-widest uppercase">Versión v1.2</span>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 text-white pb-6">
+            <h1 className="text-2xl md:text-4xl font-black leading-tight mb-2 tracking-tight">
+              Sistema PAE Barroblanco
             </h1>
-            <p className="text-xs md:text-base text-gray-100 opacity-90 line-clamp-1 md:line-clamp-none">
-              Gestión integral del Programa de Alimentación Escolar en Barroblanco Institución
+            <p className="text-xs md:text-lg text-gray-200 opacity-95 max-w-2xl leading-relaxed font-medium">
+              Gestión integral y seguimiento del Programa de Alimentación Escolar en tiempo real.
             </p>
           </div>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <button className="bg-orange-400 hover:bg-orange-500 text-white rounded-xl py-3 px-2 flex flex-row items-center justify-center gap-2 font-bold shadow-sm transition-colors cursor-not-allowed opacity-90">
-          <UploadCloud className="w-6 h-6" />
-          <span className="text-sm">Migrar Local</span>
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <button
+          onClick={() => router.push('/dashboard/horario')}
+          className="bg-orange-500 hover:bg-orange-600 text-white rounded-2xl py-4 px-2 flex flex-col md:flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-orange-200 transition-all active:scale-95 group"
+        >
+          <div className="bg-white/20 p-2 rounded-xl group-hover:scale-110 transition-transform">
+            <Calendar className="w-6 h-6" />
+          </div>
+          <span className="text-sm md:text-base">Ver Horario</span>
         </button>
-        <button className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-3 px-2 flex flex-row items-center justify-center gap-2 font-bold shadow-sm transition-colors cursor-not-allowed opacity-90">
-          <FileSpreadsheet className="w-6 h-6" />
-          <span className="text-sm">Cargar Excel</span>
+
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          accept=".xlsx, .xls"
+          className="hidden"
+        />
+
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className={`bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl py-4 px-2 flex flex-col md:flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-emerald-200 transition-all active:scale-95 group ${uploading ? 'opacity-70 cursor-wait' : ''
+            }`}
+        >
+          <div className="bg-white/20 p-2 rounded-xl group-hover:scale-110 transition-transform">
+            {uploading ? (
+              <div className="w-6 h-6 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+            ) : (
+              <FileSpreadsheet className="w-6 h-6" />
+            )}
+          </div>
+          <span className="text-sm md:text-base">{uploading ? 'Cargando...' : 'Cargar Excel'}</span>
         </button>
       </div>
 
 
       {/* Statistics */}
       <div>
-        <h3 className="text-xl font-extrabold text-gray-900 mb-4">Estadísticas de Hoy</h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-black text-gray-900 tracking-tight">Estadísticas de Hoy</h3>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-md flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            ACTUALIZADO EN VIVO
+          </div>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           {/* Total Estudiantes */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-bold text-blue-600 tracking-tight">
+                <div className="text-2xl md:text-3xl font-black text-blue-600 tracking-tighter">
                   {loading ? (
                     <Skeleton className="h-8 w-16 mb-1" />
                   ) : (
                     stats.totalEstudiantes.toLocaleString()
                   )}
                 </div>
-                <div className="text-gray-500 text-[10px] md:text-xs font-bold uppercase mt-1">TOTAL</div>
+                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">TOTAL</div>
               </div>
-              <div className="bg-blue-50 p-1.5 rounded-full">
+              <div className="bg-blue-50 p-2 rounded-xl">
                 <Users className="w-5 h-5 text-blue-600" />
               </div>
             </div>
-            {loading ? (
-              <Skeleton className="h-3 w-20" />
-            ) : (
-              <div className="text-[10px] text-blue-400 font-semibold truncate">En las 3 sedes</div>
-            )}
+            <div className="text-[10px] text-blue-400 font-bold">
+              {stats.activos} Activos
+            </div>
           </div>
 
           {/* Recibieron */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-bold text-emerald-500 tracking-tight">
+                <div className="text-2xl md:text-3xl font-black text-emerald-500 tracking-tighter">
                   {loading ? (
                     <Skeleton className="h-8 w-16 mb-1" />
                   ) : (
                     stats.recibieron.toLocaleString()
                   )}
                 </div>
-                <div className="text-gray-500 text-[10px] md:text-xs font-bold uppercase mt-1">RECIBIERON</div>
+                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">RECIBIERON</div>
               </div>
-              <div className="bg-emerald-50 p-1.5 rounded-full">
+              <div className="bg-emerald-50 p-2 rounded-xl">
                 <CheckCircle className="w-5 h-5 text-emerald-500" />
               </div>
             </div>
-            {loading ? (
-              <Skeleton className="h-3 w-24" />
-            ) : (
-              <div className="text-[10px] text-emerald-600 font-semibold truncate">PAE Entregado</div>
-            )}
+            <div className="text-[10px] text-emerald-600 font-bold">
+              {stats.porcentajeAsistencia}% Asistencia
+            </div>
           </div>
 
           {/* No Recibieron */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+          <button
+            onClick={() => openGroupModal('noRecibieron')}
+            disabled={stats.noRecibieron === 0}
+            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-amber-400 hover:shadow-lg hover:shadow-amber-50 transition-all text-left"
+          >
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-bold text-yellow-500 tracking-tight">
+                <div className="text-2xl md:text-3xl font-black text-amber-500 tracking-tighter">
                   {loading ? (
                     <Skeleton className="h-8 w-16 mb-1" />
                   ) : (
                     stats.noRecibieron.toLocaleString()
                   )}
                 </div>
-                <div className="text-gray-500 text-[10px] md:text-xs font-bold uppercase mt-1">NO RECIBIERON</div>
+                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">NO RECIBIERON</div>
               </div>
-              <div className="bg-yellow-100 p-1.5 rounded-full">
-                <XCircle className="w-5 h-5 text-yellow-600" />
+              <div className="bg-amber-50 p-2 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
+                <XCircle className="w-5 h-5 text-amber-600 group-hover:text-white transition-colors" />
               </div>
             </div>
-            {loading ? (
-              <Skeleton className="h-3 w-28" />
-            ) : (
-              <div className="text-[10px] text-yellow-600 font-semibold truncate">Sin alimentación</div>
-            )}
-          </div>
+            <div className="text-[10px] text-amber-600 font-bold flex items-center gap-1">
+              Ver grupos <Info className="w-3 h-3" />
+            </div>
+          </button>
 
           {/* No Asistieron (Ausentes) */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full">
+          <button
+            onClick={() => openGroupModal('ausentes')}
+            disabled={stats.ausentes === 0}
+            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-rose-400 hover:shadow-lg hover:shadow-rose-50 transition-all text-left"
+          >
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-bold text-red-500 tracking-tight">
+                <div className="text-2xl md:text-3xl font-black text-rose-500 tracking-tighter">
                   {loading ? (
                     <Skeleton className="h-8 w-16 mb-1" />
                   ) : (
                     stats.ausentes.toLocaleString()
                   )}
                 </div>
-                <div className="text-gray-500 text-[10px] md:text-xs font-bold uppercase mt-1">NO ASISTIERON</div>
+                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">NO ASISTIERON</div>
               </div>
-              <div className="bg-red-50 p-1.5 rounded-full">
-                <UserX className="w-5 h-5 text-red-500" />
+              <div className="bg-rose-50 p-2 rounded-xl group-hover:bg-rose-500 group-hover:text-white transition-colors duration-300">
+                <UserX className="w-5 h-5 text-rose-500 group-hover:text-white transition-colors" />
               </div>
             </div>
-            {loading ? (
-              <Skeleton className="h-3 w-32" />
-            ) : (
-              <div className="text-[10px] text-red-600 font-semibold truncate">
-                {stats.totalEstudiantes > 0 ? ((stats.ausentes / stats.totalEstudiantes * 100).toFixed(1)) : 0}% inasistencia
+            <div className="text-[10px] text-rose-600 font-bold flex items-center gap-1">
+              Ver grupos <Info className="w-3 h-3" />
+            </div>
+          </button>
+
+          {/* Inactivos (Renunciaron) */}
+          <button
+            onClick={() => openGroupModal('inactivos')}
+            disabled={stats.inactivos === 0}
+            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-blue-400 hover:shadow-lg hover:shadow-blue-50 transition-all text-left"
+          >
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-2xl md:text-3xl font-black text-gray-700 tracking-tighter">
+                  {loading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    stats.inactivos.toLocaleString()
+                  )}
+                </div>
+                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">INACTIVOS</div>
               </div>
-            )}
-          </div>
+              <div className="bg-gray-100 p-2 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                <UserMinus className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+              </div>
+            </div>
+            <div className="text-[10px] text-gray-500 font-bold flex items-center gap-1">
+              Ver detalles <Info className="w-3 h-3" />
+            </div>
+          </button>
         </div>
       </div>
     </div>

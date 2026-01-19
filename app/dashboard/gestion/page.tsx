@@ -172,15 +172,19 @@ export default function GestionPage() {
 
         if (error) throw error;
 
-        const dailyActivity: Record<string, Set<string>> = {};
+        const dailyActivity: Record<string, { grupos: Set<string>, total: number }> = {};
         data?.forEach((a: any) => {
-          if (!dailyActivity[a.fecha]) dailyActivity[a.fecha] = new Set();
-          dailyActivity[a.fecha].add(`${a.estudiantes.grado}-${a.estudiantes.grupo}`);
+          if (!dailyActivity[a.fecha]) {
+            dailyActivity[a.fecha] = { grupos: new Set(), total: 0 };
+          }
+          dailyActivity[a.fecha].grupos.add(`${a.estudiantes.grado}-${a.estudiantes.grupo}`);
+          dailyActivity[a.fecha].total += 1;
         });
 
-        const historyArray = Object.entries(dailyActivity).map(([fecha, grupos]) => ({
+        const historyArray = Object.entries(dailyActivity).map(([fecha, activity]) => ({
           fecha,
-          grupos: Array.from(grupos)
+          grupos: Array.from(activity.grupos),
+          total: activity.total
         }));
 
         setDocenteHistory(historyArray);
@@ -240,16 +244,77 @@ export default function GestionPage() {
     updateStats();
   }, [estudiantesFiltrados]);
 
-  const handleGenerateDocenteReport = (docente: Docente) => {
-    const data = docenteHistory.map(h => ({
-      'Fecha': h.fecha,
-      'Grupos Atendidos': h.grupos.join(', ')
-    }));
+  const handleGenerateDocenteReport = async (docente: Docente) => {
+    try {
+      // 1. Fetch activity history for this teacher
+      const { data, error } = await supabase
+        .from('asistencia_pae')
+        .select(`
+          fecha,
+          estudiantes!inner(grupo, grado)
+        `)
+        .eq('registrado_por', docente.id)
+        .order('fecha', { ascending: false });
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Historial Docente');
-    XLSX.writeFile(wb, `Reporte_Trabajo_${docente.nombre.replace(/\s+/g, '_')}.xlsx`);
+      if (error) throw error;
+
+      // 2. Process data: count records and group by date
+      const dailyActivity: Record<string, { grupos: Set<string>, total: number }> = {};
+      data?.forEach((a: any) => {
+        if (!dailyActivity[a.fecha]) {
+          dailyActivity[a.fecha] = { grupos: new Set(), total: 0 };
+        }
+        dailyActivity[a.fecha].grupos.add(`${a.estudiantes.grado}-${a.estudiantes.grupo}`);
+        dailyActivity[a.fecha].total += 1;
+      });
+
+      const historyArray = Object.entries(dailyActivity).map(([fecha, activity]) => ({
+        fecha,
+        grupos: Array.from(activity.grupos),
+        total: activity.total
+      }));
+
+      // 3. Generate Excel
+      const excelData: any[][] = [
+        ['REPORTE DE ACTIVIDAD DOCENTE - PAE BARROBLANCO'],
+        [''],
+        ['Información del Docente'],
+        ['Nombre:', docente.nombre],
+        ['Email:', docente.email],
+        ['Rol:', docente.rol.charAt(0).toUpperCase() + docente.rol.slice(1)],
+        [''],
+        ['Historial de Actividad'],
+        ['Fecha', 'Grupos Atendidos', 'Total Registros'],
+      ];
+
+      if (historyArray.length > 0) {
+        historyArray.forEach(h => {
+          const [year, month, day] = h.fecha.split('-').map(Number);
+          const dateObj = new Date(year, month - 1, day);
+
+          excelData.push([
+            dateObj.toLocaleDateString('es-CO', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }).toLowerCase(),
+            h.grupos.join(', '),
+            h.total
+          ]);
+        });
+      } else {
+        excelData.push(['No se encontró actividad registrada', '', '']);
+      }
+
+      const ws = XLSX.utils.aoa_to_sheet(excelData);
+      ws['!cols'] = [{ wch: 25 }, { wch: 40 }, { wch: 15 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Historial Docente');
+      XLSX.writeFile(wb, `Reporte_Trabajo_${docente.nombre.replace(/\s+/g, '_')}.xlsx`);
+
+    } catch (error) {
+      console.error('Error generating teacher report:', error);
+    }
   };
 
   const handleToggleEstado = async (estudiante: Estudiante) => {

@@ -43,6 +43,11 @@ export default function ReportesPage() {
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState<any[]>([]);
   const [distributionData, setDistributionData] = useState<any[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -433,20 +438,20 @@ export default function ReportesPage() {
       });
 
       const excelData: any[][] = [
-        ['REPORTE DE ASISTENCIA PAE BARROBLANCO'],
+        ['REPORTE DE ASISTENCIA PAE BARROBLANCO', '', '', '', 'CONVENCIONES:'],
         ['Fecha de Análisis:', analysisDate.toLocaleDateString('es-CO', {
           weekday: 'long',
           year: 'numeric',
           month: 'long',
           day: 'numeric'
-        }).toLowerCase(), '← La fecha que se está reportando'],
-        ['Período del Reporte:', `${startDate} al ${endDate}`],
+        }).toLowerCase(), '← La fecha reportada', '', '✅ Recibió'],
+        ['Período del Reporte:', `${startDate} al ${endDate}`, '', '', '❌ No recibió'],
         ['Fecha de Generación:', new Date().toLocaleDateString('es-CO', {
           year: 'numeric',
           month: '2-digit',
           day: '2-digit'
-        }), '← Cuándo se descargó el archivo'],
-        [''],
+        }), '← Cuándo se descargó', '', '⚪ Ausente'],
+        ['', '', '', '', '- Sin registro'],
         ['RESUMEN POR SEDE (Consolidado Período)'],
         ['Sede', 'Estudiantes Únicos', 'Total Raciones Recibidas', 'Total No Recibieron', 'Total Ausentes', '% Asistencia']
       ];
@@ -524,12 +529,11 @@ export default function ReportesPage() {
           excelData.push(
             [''],
             [`MATRIZ DE ASISTENCIA DIARIA - GRUPO ${grupoFilter}`],
-            ['Convenciones:', '✅ Recibió', '❌ No recibió', '⚪ Ausente', '- Sin registro'],
             ['Estudiante', ...dates.map(d => {
               const dateObj = new Date(d + 'T00:00:00');
               const dayName = dateObj.toLocaleDateString('es-CO', { weekday: 'short' });
               return `${dayName} ${dateObj.getDate()}`;
-            }), 'Días Recibidos', '% Asistencia', 'Estado']
+            }), 'Registrados', '% Asistencia', 'Estado']
           );
 
           const studentMatrix: Record<string, Record<string, string>> = {};
@@ -759,6 +763,7 @@ export default function ReportesPage() {
               </Link>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Reportes</h1>
+                <p className="text-[10px] text-gray-400 font-mono">ESTABLE v1.1</p>
                 <p className="text-sm text-gray-600">
                   {periodo === 'fecha'
                     ? `Datos del ${selectedDate}`
@@ -1036,7 +1041,7 @@ export default function ReportesPage() {
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-6">Distribución de Asistencia</h3>
             <div className="h-[250px] w-full">
-              {loading ? (
+              {loading || !isMounted ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="w-40 h-40 rounded-full border-8 border-gray-100 border-t-blue-500 animate-spin" />
                 </div>
@@ -1072,7 +1077,7 @@ export default function ReportesPage() {
               {periodo === 'hoy' || periodo === 'fecha' ? 'Detalle por Sede' : 'Tendencia de Asistencia'}
             </h3>
             <div className="h-[250px] w-full">
-              {loading ? (
+              {loading || !isMounted ? (
                 <div className="space-y-3 pt-4">
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-20 w-full" />

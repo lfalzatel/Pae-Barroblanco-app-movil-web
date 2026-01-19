@@ -1,0 +1,41 @@
+
+> sistema-pae-barroblanco@1.0.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.3
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ Ô£ô (pwa) Compiling for server...
+ Ô£ô (pwa) Compiling for server...
+ Ô£ô (pwa) Compiling for client (static)...
+ Ôùï (pwa) Service worker: C:\6. Viaje a san andres\3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App (PWA)\public\sw.js
+ Ôùï (pwa)   URL: /sw.js
+ Ôùï (pwa)   Scope: /
+ Ô£ô Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/9) ...
+   Generating static pages (2/9) 
+   Generating static pages (4/9) 
+   Generating static pages (6/9) 
+ Ô£ô Generating static pages (9/9)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+Ôöî Ôùï /                                    2.89 kB         143 kB
+Ôö£ Ôùï /_not-found                          876 B          90.5 kB
+Ôö£ Ôùï /dashboard                           3.06 kB         143 kB
+Ôö£ Ôùï /dashboard/admin                     4.05 kB         151 kB
+Ôö£ Ôùï /dashboard/gestion                   6.4 kB          246 kB
+Ôö£ Ôùï /dashboard/registro                  8.49 kB         148 kB
+Ôöö Ôùï /dashboard/reportes                  256 kB          496 kB
++ First Load JS shared by all            89.6 kB
+  Ôö£ chunks/190-e106a0745e735ab6.js       33.9 kB
+  Ôö£ chunks/fd9d1056-981e55b00fe756b2.js  53.6 kB
+  Ôöö other shared chunks (total)          2.1 kB
+
+
+Ôùï  (Static)  prerendered as static content
+
