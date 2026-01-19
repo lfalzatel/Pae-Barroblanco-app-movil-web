@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
-import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X } from 'lucide-react';
+import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -44,8 +44,15 @@ export default function ReportesPage() {
   });
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalCategory, setModalCategory] = useState<{ title: string, color: string, icon: any } | null>(null);
+  const [modalCategory, setModalCategory] = useState<any>(null);
   const [modalData, setModalData] = useState<{ grupo: string, count: number }[]>([]);
+
+  // Estados para Detalle Premium (Segundo nivel)
+  const [allPeriodRecords, setAllPeriodRecords] = useState<any[]>([]);
+  const [allStudents, setAllStudents] = useState<any[]>([]);
+  const [deepDetailOpen, setDeepDetailOpen] = useState(false);
+  const [deepDetailTitle, setDeepDetailTitle] = useState("");
+  const [deepDetailData, setDeepDetailData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState<any[]>([]);
   const [distributionData, setDistributionData] = useState<any[]>([]);
@@ -230,6 +237,9 @@ export default function ReportesPage() {
             inactivos: Object.entries(groupAgg.inactivos).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count)
           }
         });
+
+        setAllPeriodRecords(asistenciaData || []);
+        setAllStudents(ests);
 
         // Guardar los registros para la lista (limitado a los últimos 50 para no saturar)
         setRegistros(asistenciaData?.slice(0, 50) || []);
@@ -813,10 +823,40 @@ export default function ReportesPage() {
     }
 
     if (data.length > 0) {
-      setModalCategory({ title, color, icon: Icon });
+      setModalCategory({ id: category, title, color, icon: Icon });
       setModalData(data);
       setModalOpen(true);
     }
+  };
+
+  const openDeepDetail = (grupo: string) => {
+    const category = modalCategory?.id;
+    let records: any[] = [];
+    let title = `${grupo} - ${modalCategory?.title}`;
+
+    if (category === 'inactivos') {
+      records = allStudents
+        .filter(e => e.grupo === grupo && e.estado === 'inactivo')
+        .map(e => ({
+          nombre: e.nombre,
+          fecha: 'Estado Actual',
+          id: e.id
+        }));
+    } else {
+      const state = category === 'noRecibieron' ? 'no_recibio' : 'ausente';
+      records = allPeriodRecords
+        .filter(a => a.estudiantes.grupo === grupo && a.estado === state)
+        .map(a => ({
+          nombre: a.estudiantes.nombre,
+          fecha: a.fecha,
+          id: a.id
+        }))
+        .sort((a, b) => b.fecha.localeCompare(a.fecha));
+    }
+
+    setDeepDetailTitle(title);
+    setDeepDetailData(records);
+    setDeepDetailOpen(true);
   };
 
   if (!usuario) return null;
@@ -847,15 +887,22 @@ export default function ReportesPage() {
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">DISTRIBUCIÓN ACUMULADA</p>
               <div className="space-y-3">
                 {modalData.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-blue-200 transition-colors">
+                  <button
+                    key={idx}
+                    onClick={() => openDeepDetail(item.grupo)}
+                    className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-blue-400 hover:bg-blue-50/30 transition-all text-left"
+                  >
                     <div className="flex items-center gap-3">
-                      <div className="bg-white px-3 py-1 rounded-lg text-sm font-black text-gray-700 shadow-sm border border-gray-100">
+                      <div className="bg-white px-3 py-1 rounded-lg text-sm font-black text-gray-700 shadow-sm border border-gray-100 group-hover:border-blue-200">
                         {item.grupo}
                       </div>
                       <span className="text-sm font-medium text-gray-600">Número de estudiantes</span>
                     </div>
-                    <span className="text-xl font-black text-gray-900">{item.count}</span>
-                  </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl font-black text-gray-900">{item.count}</span>
+                      <ChevronDown className="w-4 h-4 text-gray-300 -rotate-90 group-hover:text-blue-500 transition-colors" />
+                    </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -866,6 +913,69 @@ export default function ReportesPage() {
                 className="w-full py-3 bg-gray-900 text-white rounded-2xl font-black hover:bg-gray-800 transition-colors"
               >
                 Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Premium de Detalle Estudiante (Segundo Nivel) */}
+      {deepDetailOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-md" onClick={() => setDeepDetailOpen(false)}></div>
+          <div className="bg-white/90 backdrop-blur-xl rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in slide-in-from-bottom-5 duration-300 overflow-hidden border border-white/20">
+            <div className="p-6 flex items-center justify-between border-b border-gray-100 bg-white/50">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setDeepDetailOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400 hover:text-gray-900"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <h3 className="font-black text-gray-900 leading-tight">{deepDetailTitle}</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setDeepDetailOpen(false);
+                  setModalOpen(false);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 max-h-[65vh] overflow-y-auto">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">LISTADO DETALLADO</p>
+              <div className="space-y-4">
+                {deepDetailData.length > 0 ? (
+                  deepDetailData.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
+                      style={{ animationDelay: `${idx * 50}ms` }}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-black text-blue-600/70">{item.fecha}</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500/20" />
+                      </div>
+                      <p className="font-bold text-gray-900 uppercase text-sm leading-tight">{item.nombre}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-20 text-center">
+                    <p className="text-gray-400 font-medium">No hay registros detallados</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50/50 border-t border-gray-100 flex justify-center">
+              <button
+                onClick={() => setDeepDetailOpen(false)}
+                className="w-full py-4 bg-white text-gray-900 border border-gray-200 rounded-2xl font-black hover:bg-gray-50 transition-colors shadow-sm"
+              >
+                Volver al resumen
               </button>
             </div>
           </div>
