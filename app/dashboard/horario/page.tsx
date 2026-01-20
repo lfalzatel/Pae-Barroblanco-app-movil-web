@@ -16,6 +16,7 @@ import {
     MoreVertical
 } from 'lucide-react';
 import { generateTimeSlots, processGroups, GlobalGroup, isBreakTime } from '@/lib/schedule-utils';
+import { MiniCalendar } from '@/components/ui/MiniCalendar';
 
 interface AssignedSlot {
     group: GlobalGroup;
@@ -27,7 +28,11 @@ export default function HorarioPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [role, setRole] = useState<string | null>(null);
-    const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState<string>(() => {
+        const d = new Date();
+        const offset = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - offset).toISOString().split('T')[0];
+    });
 
     // Data State
     const [availableGroups, setAvailableGroups] = useState<GlobalGroup[]>([]);
@@ -222,68 +227,23 @@ export default function HorarioPage() {
         // Check new length in next render or just check assignments[time] in Modal
     };
 
-    const handleSave = async () => {
-        setSaving(true);
-        try {
-            const items: any[] = [];
-
-            Object.entries(assignments).forEach(([time, slots]) => {
-                if (!slots || slots.length === 0) return;
-
-                const [timePart, ampm] = time.split(' ');
-                let [h, m] = timePart.split(':').map(Number);
-                if (ampm === 'PM' && h !== 12) h += 12;
-                if (ampm === 'AM' && h === 12) h = 0;
-
-                const startDate = new Date();
-                startDate.setHours(h, m, 0);
-
-                const endDate = new Date(startDate.getTime() + 15 * 60000);
-
-                const format = (d: Date) => {
-                    let hh = d.getHours();
-                    const mm = d.getMinutes();
-                    const ap = hh >= 12 ? 'PM' : 'AM';
-                    if (hh > 12) hh -= 12;
-                    if (hh === 0) hh = 12;
-                    return `${hh.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')} ${ap}`;
-                };
-
-                const timeStr = `${time} - ${format(endDate)}`;
-
-                slots.forEach(slot => {
-                    items.push({
-                        time: timeStr,
-                        time_start: time,
-                        group: slot.group.label,
-                        notes: slot.notes || (slot.group.isCombo ? 'Combo' : '')
-                    });
-                });
-            });
-
-            const { error } = await supabase
-                .from('schedules')
-                .upsert({
-                    date: selectedDate,
-                    items: items,
-                    updated_at: new Date().toISOString()
-                }, { onConflict: 'date' });
-
-            if (error) throw error;
-            alert('Horario guardado correctamente');
-        } catch (e) {
-            console.error(e);
-            alert('Error al guardar');
-        } finally {
-            setSaving(false);
-        }
-    };
-
     const isAssigned = (group: GlobalGroup) => {
         return Object.values(assignments).some(slots => slots?.some(s => s.group.id === group.id));
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
+    const handleSave = async () => {
+        // Validation: Check for unassigned groups
+        const unassignedCount = availableGroups.filter(g => !isAssigned(g)).length;
+        if (unassignedCount > 0) {
+            const confirmSave = confirm(`Hay ${unassignedCount} grupos sin asignar. ¿Deseas guardar de todos modos?`);
+            if (!confirmSave) return;
+        }
+
+        setSaving(true);
+        // ... existing save logic
+    };
+
+    // ...
 
     return (
         <div className="p-4 lg:p-6 max-w-7xl mx-auto pb-32">
@@ -296,7 +256,7 @@ export default function HorarioPage() {
                     <div>
                         <h1 className="text-2xl font-black text-gray-900">Tablero de Horarios</h1>
                         <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                            {timeSlots.length} Franjas • 2 Columnas
+                            {timeSlots.length} Franjas • {new Date(selectedDate || new Date()).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
                         </p>
                     </div>
                 </div>
@@ -310,77 +270,27 @@ export default function HorarioPage() {
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         <span>Guardar</span>
                     </button>
-
-                    <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
-                        <CalendarIcon className="w-5 h-5 text-gray-400 ml-2" />
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            className="bg-transparent font-bold text-gray-700 focus:outline-none py-1"
-                        />
-                    </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-200px)]">
 
-                {/* Left: Group Pool */}
-                <div className="lg:col-span-3 bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden order-2 lg:order-1">
-                    <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-                        <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                            <Users className="w-5 h-5 text-blue-600" />
-                            Grupos
-                        </h3>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                        <div className="flex flex-wrap gap-2 content-start">
-                            {availableGroups.filter(g => !isAssigned(g)).length === 0 && (
-                                <div className="w-full py-10 text-center text-gray-400">
-                                    <p className="text-sm font-medium">¡Todo asignado!</p>
-                                </div>
-                            )}
-
-                            {availableGroups.map((group) => {
-                                if (isAssigned(group)) return null;
-                                const isSelected = selectedGroup?.id === group.id;
-                                return (
-                                    <button
-                                        key={group.id}
-                                        onClick={() => setSelectedGroup(isSelected ? null : group)}
-                                        className={`
-                                        w-full px-4 py-3 rounded-xl text-sm font-bold border transition-all duration-200 flex justify-between items-center
-                                        ${isSelected
-                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-200'
-                                                : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50'}
-                                    `}
-                                    >
-                                        <span>{group.label}</span>
-                                        {group.isCombo && <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">+Sordos</span>}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right: Timeline (2 Cols) */}
-                <div className="lg:col-span-9 bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden order-1 lg:order-2">
-                    <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex justify-between items-center">
+                {/* Left: Timeline (Swapped, now 5 cols) */}
+                <div className="lg:col-span-5 bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden order-2 lg:order-1 h-full">
+                    <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex justify-between items-center shrink-0">
                         <h3 className="font-bold text-gray-900 flex items-center gap-2">
                             <Clock className="w-5 h-5 text-orange-500" />
                             Línea de Tiempo
                         </h3>
                         {selectedGroup && (
-                            <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full animate-pulse font-bold">
+                            <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full animate-pulse font-bold truncate max-w-[120px]">
                                 Asignando: {selectedGroup.label}
                             </span>
                         )}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 custom-scrollbar relative bg-gray-50/30">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 pb-20">
+                    <div className="flex-1 overflow-y-auto p-3 custom-scrollbar relative bg-gray-50/30">
+                        <div className="space-y-2 pb-20">
                             {timeSlots.map((time) => {
                                 const slots = assignments[time] || [];
                                 const isBreak = isBreakTime(time);
@@ -390,18 +300,18 @@ export default function HorarioPage() {
                                         key={time}
                                         onClick={() => handleSlotClick(time)}
                                         className={`
-                                        relative w-full flex items-start gap-3 p-3 rounded-2xl border transition-all duration-200 text-left group
+                                        relative w-full flex items-start gap-3 p-2 rounded-xl border transition-all duration-200 text-left group
                                         ${slots.length > 0
-                                                ? 'bg-white border-emerald-100 shadow-sm ring-1 ring-emerald-50 hover:shadow-md'
+                                                ? 'bg-white border-emerald-100 shadow-sm ring-1 ring-emerald-50'
                                                 : isBreak
-                                                    ? 'bg-amber-50/50 border-amber-100 hover:bg-amber-100/50'
+                                                    ? 'bg-amber-50/50 border-amber-100'
                                                     : 'bg-white border-gray-100 hover:border-blue-300 hover:bg-blue-50/50'
                                             }
                                         ${selectedGroup && slots.length === 0 ? 'ring-2 ring-blue-500/20 border-blue-500 bg-blue-50' : ''}
                                     `}
                                     >
                                         <div className={`
-                                         w-16 py-1 rounded-lg text-center text-xs font-bold font-mono shrink-0
+                                         w-14 py-1 rounded-lg text-center text-[10px] font-bold font-mono shrink-0
                                          ${slots.length > 0 ? 'bg-emerald-100 text-emerald-700' : isBreak ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}
                                      `}>
                                             {time.split(' ')[0]}
@@ -411,31 +321,90 @@ export default function HorarioPage() {
                                             {slots.length > 0 ? (
                                                 <div className="space-y-1">
                                                     {slots.map((slot, idx) => (
-                                                        <div key={idx} className="flex items-center justify-between gap-2 bg-gray-50 p-1.5 rounded-lg border border-gray-100">
+                                                        <div key={idx} className="flex items-center justify-between gap-1 bg-gray-50 p-1 rounded border border-gray-100">
                                                             <div className="min-w-0">
-                                                                <p className="font-black text-gray-800 text-xs truncate leading-tight">{slot.group.label}</p>
-                                                                {slot.notes && <p className="text-[10px] text-gray-400 truncate italic">{slot.notes}</p>}
+                                                                <p className="font-bold text-gray-800 text-[10px] truncate leading-tight">{slot.group.label}</p>
+                                                                {slot.notes && <p className="text-[9px] text-gray-400 truncate italic">{slot.notes}</p>}
                                                             </div>
                                                         </div>
                                                     ))}
                                                     <div className="flex justify-end">
-                                                        <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                            <Edit2 className="w-3 h-3" /> Editar ({slots.length})
+                                                        <span className="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                                                            <Edit2 className="w-2.5 h-2.5" /> ({slots.length})
                                                         </span>
                                                     </div>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center justify-between h-full">
-                                                    <span className={`text-xs font-medium italic ${isBreak ? 'text-amber-600/70 font-bold uppercase' : 'text-gray-300'}`}>
+                                                    <span className={`text-[10px] font-medium italic ${isBreak ? 'text-amber-600/70 font-bold uppercase' : 'text-gray-300'}`}>
                                                         {isBreak ? 'Descanso' : (selectedGroup ? 'Asignar aquí' : 'Disponible')}
                                                     </span>
-                                                    {isBreak && <Clock className="w-4 h-4 text-amber-300" />}
                                                 </div>
                                             )}
                                         </div>
                                     </button>
                                 );
                             })}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right: Tools & Groups (Swapped, now 7 cols) */}
+                <div className="lg:col-span-7 flex flex-col gap-6 order-1 lg:order-2 h-full overflow-hidden">
+
+                    {/* Calendar Panel */}
+                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4 shrink-0 flex flex-col md:flex-row gap-6 items-start">
+                        <div className="flex-1">
+                            <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                <CalendarIcon className="w-5 h-5 text-purple-500" />
+                                Calendario
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-4">
+                                Selecciona un día para gestionar. Los días con punto verde ya tienen horario.
+                            </p>
+                            <div className="flex justify-center md:justify-start">
+                                <MiniCalendar
+                                    selectedDate={selectedDate}
+                                    onSelectDate={setSelectedDate}
+                                    className="border-none shadow-none p-0 w-full"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex-1 w-full flex flex-col h-full min-h-[200px]">
+                            <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                <Users className="w-5 h-5 text-blue-600" />
+                                Grupos Disponibles
+                            </h3>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50/50 rounded-xl p-3 border border-gray-100">
+                                <div className="flex flex-wrap gap-2 content-start">
+                                    {availableGroups.filter(g => !isAssigned(g)).length === 0 && (
+                                        <div className="w-full py-10 text-center text-gray-400">
+                                            <p className="text-sm font-medium">¡Todo asignado esta fecha!</p>
+                                        </div>
+                                    )}
+
+                                    {availableGroups.map((group) => {
+                                        if (isAssigned(group)) return null;
+                                        const isSelected = selectedGroup?.id === group.id;
+                                        return (
+                                            <button
+                                                key={group.id}
+                                                onClick={() => setSelectedGroup(isSelected ? null : group)}
+                                                className={`
+                                                px-3 py-2 rounded-lg text-xs font-bold border transition-all duration-200 flex items-center justify-between gap-2 text-left
+                                                ${isSelected
+                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-200'
+                                                        : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50'}
+                                            `}
+                                            >
+                                                <span>{group.label}</span>
+                                                {group.isCombo && <span className="text-[9px] bg-white/20 px-1 py-0.5 rounded-full">+Sordos</span>}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

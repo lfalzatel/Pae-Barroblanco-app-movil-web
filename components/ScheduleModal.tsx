@@ -1,5 +1,8 @@
-import { X, Calendar, Download, Clock, Users, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Calendar, Download, Clock, Users, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { generateSchedulePDF } from '../lib/pdf-generator';
+import { supabase } from '@/lib/supabase';
+import { MiniCalendar } from './ui/MiniCalendar';
 
 interface ScheduleItem {
     time: string;
@@ -10,16 +13,66 @@ interface ScheduleItem {
 interface ScheduleModalProps {
     isOpen: boolean;
     onClose: () => void;
-    date: string;
-    schedule: ScheduleItem[];
 }
 
-export default function ScheduleModal({ isOpen, onClose, date, schedule }: ScheduleModalProps) {
-    if (!isOpen) return null;
+export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
+    const [date, setDate] = useState<string>('');
+    const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [showCalendar, setShowCalendar] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            // Default to tomorrow
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const offset = tomorrow.getTimezoneOffset() * 60000;
+            setDate(new Date(tomorrow.getTime() - offset).toISOString().split('T')[0]);
+            setShowCalendar(false);
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (date) {
+            fetchSchedule(date);
+        }
+    }, [date]);
+
+    const fetchSchedule = async (dateStr: string) => {
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('schedules')
+                .select('items')
+                .eq('date', dateStr)
+                .single();
+
+            if (data?.items) {
+                // Ensure items match ScheduleItem interface
+                setSchedule(data.items.map((i: any) => ({
+                    time: i.time || i.time_start, // Fallback
+                    group: i.group,
+                    notes: i.notes
+                })));
+            } else {
+                setSchedule([]);
+            }
+        } catch (err) {
+            console.error("Error fetching schedule", err);
+            setSchedule([]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleDownload = () => {
         generateSchedulePDF(schedule, date);
     };
+
+    if (!isOpen) return null;
+
+    const formattedDate = date ? new Date(date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -30,52 +83,77 @@ export default function ScheduleModal({ isOpen, onClose, date, schedule }: Sched
             />
 
             {/* Modal Content */}
-            <div className="bg-white/95 backdrop-blur-2xl rounded-3xl w-full max-w-lg relative z-10 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden border border-white/20 ring-1 ring-black/5">
+            <div className="bg-white/95 backdrop-blur-2xl rounded-3xl w-full max-w-lg relative z-10 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden border border-white/20 ring-1 ring-black/5 flex flex-col max-h-[85vh]">
 
                 {/* Header */}
-                <div className="p-6 flex items-center justify-between border-b border-gray-100/50 bg-gradient-to-r from-cyan-50 to-white">
-                    <div className="flex items-center gap-4">
-                        <div className="bg-cyan-100 text-cyan-700 p-3 rounded-2xl shadow-sm ring-1 ring-cyan-500/10">
-                            <Calendar className="w-6 h-6" />
+                <div className="p-6 border-b border-gray-100/50 bg-gradient-to-r from-cyan-50 to-white shrink-0">
+                    <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-cyan-100 text-cyan-700 p-3 rounded-2xl shadow-sm ring-1 ring-cyan-500/10">
+                                <Calendar className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-gray-900 leading-tight text-lg">Horario</h3>
+                                <button
+                                    onClick={() => setShowCalendar(!showCalendar)}
+                                    className="text-xs font-bold text-cyan-600 mt-0.5 capitalize flex items-center gap-1 hover:text-cyan-800 transition-colors bg-cyan-50 px-2 py-1 rounded-lg"
+                                >
+                                    {formattedDate}
+                                    {showCalendar ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                </button>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="font-black text-gray-900 leading-tight text-lg">Horario de Mañana</h3>
-                            <p className="text-xs font-medium text-cyan-600 mt-0.5 capitalize">{date}</p>
-                        </div>
+                        <button
+                            onClick={onClose}
+                            className="p-2.5 hover:bg-black/5 rounded-full transition-all duration-200 text-gray-400 hover:text-gray-900 hover:rotate-90"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2.5 hover:bg-black/5 rounded-full transition-all duration-200 text-gray-400 hover:text-gray-900 hover:rotate-90"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
+
+                    {/* Calendar Collapse */}
+                    {showCalendar && (
+                        <div className="mt-4 animate-in slide-in-from-top-2 fade-in duration-200 flex justify-center">
+                            <MiniCalendar
+                                selectedDate={date}
+                                onSelectDate={(d) => { setDate(d); setShowCalendar(false); }}
+                                className="border border-cyan-100 shadow-lg"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Body */}
-                <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
-
-                    {schedule.length > 0 ? (
+                <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/30">
+                    {loading ? (
+                        <div className="py-20 flex justify-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
+                        </div>
+                    ) : schedule.length > 0 ? (
                         <div className="space-y-3">
                             {schedule.map((item, idx) => (
                                 <div
                                     key={idx}
-                                    className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-gray-100 hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-100/50 transition-all duration-300 group"
+                                    className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-gray-100 hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-100/50 transition-all duration-300 group"
                                 >
-                                    <div className="flex flex-col items-center justify-center w-16 bg-gray-50 rounded-xl p-2 border border-gray-100 group-hover:bg-cyan-50 group-hover:border-cyan-100 transition-colors">
+                                    <div className="flex flex-col items-center justify-center w-20 bg-gray-50 rounded-xl p-2 border border-gray-100 group-hover:bg-cyan-50 group-hover:border-cyan-100 transition-colors shrink-0">
                                         <Clock className="w-4 h-4 text-gray-400 group-hover:text-cyan-600 mb-1" />
-                                        <span className="text-xs font-bold text-gray-700 group-hover:text-cyan-800 text-center leading-tight">{item.time}</span>
+                                        <span className="text-[10px] font-black text-gray-700 group-hover:text-cyan-800 text-center leading-tight">
+                                            {item.time.split(' - ')[0]}
+                                        </span>
                                     </div>
 
-                                    <div className="flex-1">
+                                    <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <Users className="w-4 h-4 text-gray-400" />
-                                            <span className="font-bold text-gray-900">{item.group}</span>
+                                            <span className="font-black text-lg text-gray-900 truncate">{item.group}</span>
                                         </div>
-                                        {item.notes && (
-                                            <div className="flex items-start gap-2 text-xs text-gray-500 mt-1 pl-6">
-                                                <FileText className="w-3 h-3 mt-0.5 opacity-50" />
-                                                <span>{item.notes}</span>
+                                        {item.notes ? (
+                                            <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 inline-flex max-w-full">
+                                                <FileText className="w-3 h-3 shrink-0" />
+                                                <span className="font-medium truncate">{item.notes}</span>
                                             </div>
+                                        ) : (
+                                            <div className="h-6"></div> // Spacer logic if needed, or null
                                         )}
                                     </div>
                                 </div>
@@ -84,14 +162,13 @@ export default function ScheduleModal({ isOpen, onClose, date, schedule }: Sched
                     ) : (
                         <div className="text-center py-10 opacity-60">
                             <Calendar className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                            <p className="text-gray-500 font-medium">No hay horario programado para mañana.</p>
+                            <p className="text-gray-500 font-medium">No hay horario programado para esta fecha.</p>
                         </div>
                     )}
-
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 bg-gray-50/80 backdrop-blur-md border-t border-gray-100/50 flex gap-3">
+                <div className="p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 flex gap-3 shrink-0">
                     <button
                         onClick={handleDownload}
                         disabled={schedule.length === 0}

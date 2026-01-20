@@ -45,40 +45,6 @@ export default function DashboardPage() {
 
   // Estado para Modal de Horario
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
-  const [scheduleData, setScheduleData] = useState<any[]>([]);
-  const [scheduleDateStr, setScheduleDateStr] = useState<string>('');
-
-  useEffect(() => {
-    // Calcular fecha de mañana
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dateStr = tomorrow.toISOString().split('T')[0];
-
-    // Formatear para mostrar bonito (ej: "Miércoles, 22 de Enero")
-    const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
-    setScheduleDateStr(tomorrow.toLocaleDateString('es-ES', options));
-
-    const fetchSchedule = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('schedules')
-          .select('items')
-          .eq('date', dateStr)
-          .single();
-
-        if (data) {
-          setScheduleData(data.items);
-        } else {
-          setScheduleData([]);
-        }
-      } catch (err) {
-        console.error("Error fetching schedule", err);
-      }
-    };
-
-    fetchSchedule();
-  }, []);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -491,8 +457,6 @@ export default function DashboardPage() {
       <ScheduleModal
         isOpen={scheduleModalOpen}
         onClose={() => setScheduleModalOpen(false)}
-        date={scheduleDateStr}
-        schedule={scheduleData}
       />
 
       {/* Modal Premium de Detalle Estudiante (Nivel 2) */}
