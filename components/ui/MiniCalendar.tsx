@@ -114,9 +114,9 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
                 ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-1 justify-items-center">
+            <div className="grid grid-cols-7 gap-2 justify-items-center">
                 {days.map((day, idx) => {
-                    if (!day) return <div key={idx} className="w-8 h-8" />;
+                    if (!day) return <div key={idx} className="w-full aspect-square" />;
 
                     const dateStr = generateIsoDate(day);
                     const isSelected = selectedDate === dateStr;
@@ -128,18 +128,18 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
                             key={idx}
                             onClick={() => onSelectDate(dateStr)}
                             className={`
-                                relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200
+                                relative w-full aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-200
                                 ${isSelected
-                                    ? 'bg-blue-600 text-white shadow-md scale-105'
+                                    ? 'bg-blue-600 text-white shadow-md scale-105 z-10'
                                     : hasSchedule
-                                        ? 'bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100'
-                                        : 'text-gray-700 hover:bg-gray-100'}
-                                ${isToday && !isSelected ? 'ring-1 ring-blue-600 text-blue-600 font-bold' : ''}
+                                        ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100'
+                                        : 'text-gray-700 hover:bg-gray-50 border border-transparent hover:border-gray-100'}
+                                ${isToday && !isSelected ? 'ring-2 ring-blue-600 border-transparent text-blue-600' : ''}
                             `}
                         >
-                            {day}
+                            <span className={isSelected || hasSchedule ? 'text-lg' : 'text-base'}>{day}</span>
                             {hasSchedule && !isSelected && (
-                                <div className="absolute bottom-1 w-1 h-1 rounded-full bg-emerald-500"></div>
+                                <div className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                             )}
                         </button>
                     );

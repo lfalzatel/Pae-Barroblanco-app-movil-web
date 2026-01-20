@@ -10,11 +10,12 @@ import {
     Users,
     Save,
     Loader2,
-    X,
     Edit2,
     Trash2,
     MoreVertical,
-    Info
+    Info,
+    ChevronDown,
+    X
 } from 'lucide-react';
 import { generateTimeSlots, processGroups, GlobalGroup, isBreakTime } from '@/lib/schedule-utils';
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
@@ -287,62 +288,68 @@ export default function HorarioPage() {
                         <button onClick={() => router.push('/dashboard')} className="p-2 hover:bg-white rounded-full text-gray-500 shadow-sm border border-transparent hover:border-gray-200 transition-all">
                             <ChevronLeft className="w-5 h-5" />
                         </button>
-                        <h1 className="text-xl lg:text-3xl font-black text-gray-900 tracking-tight">Tablero de Horarios</h1>
-                        <button
-                            onClick={() => setShowInstructions(true)}
-                            className="bg-blue-50 hover:bg-blue-100 text-blue-600 p-2 rounded-full transition-colors"
-                            title="Ver Instrucciones"
-                        >
-                            <Info className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-xl lg:text-3xl font-black text-gray-900 tracking-tight">Tablero de Horarios</h1>
+                            <button
+                                onClick={() => setShowInstructions(true)}
+                                className="bg-white hover:bg-blue-50 text-gray-400 hover:text-blue-600 p-1.5 rounded-full transition-colors border border-gray-100 shadow-sm"
+                                title="Ver Instrucciones"
+                            >
+                                <Info className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                {/* Controls Row */}
-                <div className="flex items-center justify-between gap-2 mt-2">
+                {/* Toolbar Container */}
+                <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-2 mt-2 relative z-20">
+
+                    {/* Calendar Trigger */}
                     <div className="relative">
                         <button
                             onClick={() => setShowCalendar(!showCalendar)}
-                            className="flex items-center gap-3 bg-white px-4 py-2.5 rounded-xl border border-gray-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all active:scale-95"
+                            className="flex items-center gap-3 hover:bg-gray-50 px-3 py-2 rounded-xl transition-all group"
                         >
-                            <div className="bg-blue-50 p-1.5 rounded-lg text-blue-600">
-                                <CalendarIcon className="w-5 h-5" />
+                            <div className="bg-blue-50 p-2 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors">
+                                <CalendarIcon className="w-6 h-6" />
                             </div>
                             <div className="text-left">
                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider leading-none mb-0.5">Editando</p>
-                                <p className="text-sm font-black text-gray-900 leading-none capitalize">
+                                <p className="text-base font-black text-gray-900 leading-none capitalize">
                                     {new Date(selectedDate || new Date()).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
                                 </p>
                             </div>
+                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showCalendar ? 'rotate-180' : ''}`} />
                         </button>
 
-                        {/* Calendar Popover - Wider */}
+                        {/* Calendar Popover */}
                         {showCalendar && (
-                            <div className="absolute top-16 left-0 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
+                            <div className="absolute top-full left-0 mt-2 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {/* Backdrop for mobile close */}
-                                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden" onClick={() => setShowCalendar(false)}></div>
+                                <div className="fixed inset-0 bg-black/5 backdrop-blur-[1px] z-40 lg:hidden" onClick={() => setShowCalendar(false)}></div>
 
                                 <MiniCalendar
                                     selectedDate={selectedDate}
                                     onSelectDate={(d) => { setSelectedDate(d); setShowCalendar(false); }}
-                                    className="relative z-50 border border-blue-100 shadow-2xl w-[90vw] max-w-sm"
+                                    className="relative z-50 border border-gray-100 shadow-2xl w-[90vw] max-w-[360px]"
                                 />
                             </div>
                         )}
                     </div>
 
-                    <div className="flex flex-col items-end gap-1">
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-medium text-gray-400 hidden lg:inline-block text-right leading-tight">
+                            Recuerda guardar<br />tus cambios
+                        </span>
                         <button
                             onClick={handleSave}
                             disabled={saving || !Object.keys(assignments).length}
-                            className="bg-gray-900 hover:bg-black text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-gray-200 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none"
+                            className="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none"
                         >
                             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                             <span>Guardar</span>
                         </button>
-                        <span className="text-[10px] font-medium text-gray-400 hidden lg:inline-block">
-                            Guarda tus cambios frecuentemente
-                        </span>
                     </div>
                 </div>
             </div>
