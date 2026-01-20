@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Search, Eye, FileDown, Users, X, AlertCircle, UserPlus, UserMinus, Calendar } from 'lucide-react';
+import { ArrowLeft, Search, Eye, FileDown, Users, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -44,10 +44,10 @@ export default function GestionPage() {
   const [grupoDropdownOpen, setGrupoDropdownOpen] = useState(false);
   const [selectedDateActivity, setSelectedDateActivity] = useState<{
     fecha: string;
-    grupos: { name: string; count: number }[];
+    grupos: { name: string; count: number; timestamp: string }[];
     total: number;
-    firstRegister: string;
-    lastRegister: string;
+    firstRegister?: string;
+    lastRegister?: string;
   } | null>(null);
 
   const sedes = [
@@ -181,36 +181,38 @@ export default function GestionPage() {
         if (error) throw error;
 
         const dailyActivity: Record<string, {
-          grupos: Map<string, number>,
-          total: number,
-          timestamps: string[]
+          grupos: Map<string, { count: number, timestamp: string }>,
+          total: number
         }> = {};
 
         data?.forEach((a: any) => {
           if (!dailyActivity[a.fecha]) {
             dailyActivity[a.fecha] = {
               grupos: new Map(),
-              total: 0,
-              timestamps: []
+              total: 0
             };
           }
           const groupKey = `${a.estudiantes.grado}-${a.estudiantes.grupo}`;
-          const currentCount = dailyActivity[a.fecha].grupos.get(groupKey) || 0;
-          dailyActivity[a.fecha].grupos.set(groupKey, currentCount + 1);
+          const currentData = dailyActivity[a.fecha].grupos.get(groupKey) || { count: 0, timestamp: a.created_at };
+
+          // Use the EARLIEST timestamp found for the group to represent "start time"
+          // Since we are iterating, we check if the new 'a.created_at' is older (smaller) than valid stored timestamp
+          const olderTimestamp = new Date(currentData.timestamp) < new Date(a.created_at) ? currentData.timestamp : a.created_at;
+
+          dailyActivity[a.fecha].grupos.set(groupKey, {
+            count: currentData.count + 1,
+            timestamp: olderTimestamp
+          });
           dailyActivity[a.fecha].total += 1;
-          dailyActivity[a.fecha].timestamps.push(a.created_at);
         });
 
         const historyArray = Object.entries(dailyActivity).map(([fecha, activity]) => {
-          // Sort timestamps to find first and last
-          const sortedTimes = activity.timestamps.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-
           return {
             fecha,
-            grupos: Array.from(activity.grupos.entries()).map(([name, count]) => ({ name, count })),
-            total: activity.total,
-            firstRegister: sortedTimes[0],
-            lastRegister: sortedTimes[sortedTimes.length - 1]
+            grupos: Array.from(activity.grupos.entries())
+              .map(([name, data]) => ({ name, count: data.count, timestamp: data.timestamp }))
+              .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()),
+            total: activity.total
           };
         });
 
@@ -865,34 +867,27 @@ export default function GestionPage() {
                     </div>
 
                     <div className="p-6 space-y-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                          <p className="text-xs text-blue-600 font-bold uppercase mb-1">Primer Registro</p>
-                          <p className="text-2xl font-black text-blue-900">
-                            {selectedDateActivity.firstRegister ? new Date(selectedDateActivity.firstRegister).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                          </p>
-                        </div>
-                        <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100">
-                          <p className="text-xs text-purple-600 font-bold uppercase mb-1">Último Registro</p>
-                          <p className="text-2xl font-black text-purple-900">
-                            {selectedDateActivity.lastRegister ? new Date(selectedDateActivity.lastRegister).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                          </p>
-                        </div>
-                      </div>
 
+                      {/* Detailed Group List with Timestamps */}
                       <div>
                         <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                           <Users className="w-4 h-4 text-gray-400" />
                           Grupos Atendidos
                         </h4>
-                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                           {selectedDateActivity.grupos.map((g, idx) => (
                             <div key={idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-xs">
                               <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600 text-xs text-transform uppercase">
                                   {g.name.split('-')[0]}
                                 </div>
-                                <span className="font-bold text-gray-700">Grupo {g.name.split('-')[1] || g.name}</span>
+                                <div className="flex flex-col">
+                                  <span className="font-bold text-gray-700 text-sm">Grupo {g.name.split('-')[1] || g.name}</span>
+                                  <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {new Date(g.timestamp).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
                               </div>
                               <span className="bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-lg">
                                 {g.count}
