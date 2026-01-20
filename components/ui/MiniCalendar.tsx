@@ -93,20 +93,20 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
     };
 
     return (
-        <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-4 w-full max-w-sm ${className}`}>
+        <div className={`bg-white rounded-3xl shadow-sm border border-gray-100 p-4 w-full ${className}`}>
             <div className="flex items-center justify-between mb-4">
-                <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded-full">
+                <button onClick={handlePrevMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                     <ChevronLeft className="w-5 h-5 text-gray-500" />
                 </button>
-                <div className="font-bold text-gray-800 capitalize">
+                <div className="font-bold text-gray-900 capitalize text-base">
                     {monthNames[month]} {year}
                 </div>
-                <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded-full">
+                <button onClick={handleNextMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                     <ChevronRight className="w-5 h-5 text-gray-500" />
                 </button>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 mb-2">
+            <div className="grid grid-cols-7 gap-2 mb-2">
                 {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map(d => (
                     <div key={d} className="text-center text-xs font-bold text-gray-400">
                         {d}
@@ -114,7 +114,7 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
                 ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-2">
                 {days.map((day, idx) => {
                     if (!day) return <div key={idx} />;
 
@@ -128,29 +128,34 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
                             key={idx}
                             onClick={() => onSelectDate(dateStr)}
                             className={`
-                                relative h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium transition-all
+                                aspect-square rounded-xl flex flex-col items-center justify-center relative border transition-all duration-200
                                 ${isSelected
-                                    ? 'bg-blue-600 text-white shadow-md'
-                                    : 'hover:bg-gray-100 text-gray-700'}
-                                ${isToday && !isSelected ? 'ring-1 ring-blue-600 text-blue-600' : ''}
+                                    ? 'bg-blue-600 border-blue-600 text-white shadow-md scale-105 z-10'
+                                    : hasSchedule
+                                        ? 'bg-emerald-50 border-emerald-100 text-emerald-900 hover:border-emerald-300 hover:shadow-sm'
+                                        : 'bg-white border-gray-100 text-gray-700 hover:border-gray-300 hover:bg-gray-50'}
+                                ${isToday && !isSelected ? 'ring-2 ring-blue-500 border-blue-500' : ''}
                             `}
                         >
-                            {day}
+                            <span className="text-sm font-bold">{day}</span>
                             {hasSchedule && !isSelected && (
-                                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-emerald-500"></span>
+                                <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                            )}
+                            {isSelected && hasSchedule && (
+                                <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-white/70"></div>
                             )}
                         </button>
                     );
                 })}
             </div>
 
-            <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-gray-400">
-                <div className="flex items-center gap-1">
+            <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-gray-400 border-t border-gray-100 pt-3">
+                <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span>Con Horario</span>
                 </div>
-                <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full ring-1 ring-blue-600"></div>
+                <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full ring-2 ring-blue-600"></div>
                     <span>Hoy</span>
                 </div>
             </div>
