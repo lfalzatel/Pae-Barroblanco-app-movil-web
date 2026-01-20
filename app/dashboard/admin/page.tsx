@@ -13,9 +13,11 @@ import {
     Search,
     School,
     CheckCircle,
-    UserX
+    UserX,
+    Database
 } from 'lucide-react';
 import Link from 'next/link';
+import * as XLSX from 'xlsx';
 
 interface Estudiante {
     id: string;
@@ -37,7 +39,7 @@ export default function AdminPage() {
     const [targetGrupo, setTargetGrupo] = useState('');
     const [allGrupos, setAllGrupos] = useState<string[]>([]);
     const [renamingGrupo, setRenamingGrupo] = useState({ oldName: '', newName: '' });
-    const [activeTab, setActiveTab] = useState<'move' | 'rename' | 'status'>('move');
+    const [activeTab, setActiveTab] = useState<'move' | 'rename' | 'status' | 'backup'>('move');
 
     useEffect(() => {
         const checkAdmin = async () => {
@@ -138,6 +140,42 @@ export default function AdminPage() {
         }
     };
 
+    const handleBackup = async () => {
+        if (!confirm('¿Generar y descargar una copia completa de la base de datos?')) return;
+        setLoading(true);
+        try {
+            // Fetch Estudiantes
+            const { data: estData } = await supabase.from('estudiantes').select('*');
+            // Fetch Schedules
+            const { data: schedData } = await supabase.from('schedules').select('*');
+
+            // Create Workbook
+            const wb = XLSX.utils.book_new();
+
+            // Add Sheets
+            if (estData) {
+                const wsEst = XLSX.utils.json_to_sheet(estData);
+                XLSX.utils.book_append_sheet(wb, wsEst, "Estudiantes");
+            }
+            if (schedData) {
+                const wsSched = XLSX.utils.json_to_sheet(schedData.map(s => ({
+                    ...s,
+                    items: JSON.stringify(s.items)
+                })));
+                XLSX.utils.book_append_sheet(wb, wsSched, "Horarios");
+            }
+
+            // Export
+            XLSX.writeFile(wb, `Respaldo_PAE_${new Date().toISOString().split('T')[0]}.xlsx`);
+            alert('Respaldo generado correctamente');
+        } catch (e) {
+            console.error(e);
+            alert('Error al generar respaldo');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const filteredEstudiantes = estudiantes.filter(e =>
         e.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
         e.matricula.includes(searchQuery) ||
@@ -186,6 +224,12 @@ export default function AdminPage() {
                         className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all ${activeTab === 'status' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
                     >
                         Gestión de Estados
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('backup')}
+                        className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all ${activeTab === 'backup' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                    >
+                        Respaldo
                     </button>
                 </div>
 
@@ -300,6 +344,29 @@ export default function AdminPage() {
                                     >
                                         <UserX className="w-5 h-5" />
                                         Marcar INACTIVOS ({selectedStudents.length})
+                                    </button>
+                                </div>
+                            </>
+                        )}
+
+                        {activeTab === 'backup' && (
+                            <>
+                                <h2 className="text-lg font-bold mb-2 flex items-center gap-2">
+                                    <Database className="w-5 h-5" />
+                                    Copia de Seguridad y Exportación
+                                </h2>
+                                <p className="text-blue-100 text-sm mb-6">Descarga todos los datos del sistema en formato Excel para respaldo seguro.</p>
+
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={handleBackup}
+                                        className="w-full bg-white text-blue-600 hover:bg-blue-50 px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-colors shadow-lg"
+                                    >
+                                        <Database className="w-6 h-6" />
+                                        <div className="text-left">
+                                            <div className="text-sm">GENERAR RESPALDO COMPLETO</div>
+                                            <div className="text-[10px] opacity-70 font-normal">Estudiantes, Grupos y Horarios (.xlsx)</div>
+                                        </div>
                                     </button>
                                 </div>
                             </>

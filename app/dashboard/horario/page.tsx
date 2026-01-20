@@ -15,7 +15,7 @@ import {
     Trash2,
     MoreVertical
 } from 'lucide-react';
-import { generateTimeSlots, processGroups, GlobalGroup } from '@/lib/schedule-utils';
+import { generateTimeSlots, processGroups, GlobalGroup, isBreakTime } from '@/lib/schedule-utils';
 
 interface AssignedSlot {
     group: GlobalGroup;
@@ -32,7 +32,7 @@ export default function HorarioPage() {
     // Data State
     const [availableGroups, setAvailableGroups] = useState<GlobalGroup[]>([]);
     const [timeSlots, setTimeSlots] = useState<string[]>([]);
-    const [assignments, setAssignments] = useState<Record<string, AssignedSlot | null>>({});
+    const [assignments, setAssignments] = useState<Record<string, AssignedSlot[]>>({});
 
     // Selection State
     const [selectedGroup, setSelectedGroup] = useState<GlobalGroup | null>(null);
@@ -88,7 +88,7 @@ export default function HorarioPage() {
                 .eq('date', selectedDate)
                 .single();
 
-            const currentAssignments: Record<string, AssignedSlot | null> = {};
+            const currentAssignments: Record<string, AssignedSlot[]> = {};
 
             if (schedData?.items) {
                 schedData.items.forEach((item: any) => {
@@ -96,10 +96,13 @@ export default function HorarioPage() {
                     const start = item.time_start || (item.time ? item.time.split(' - ')[0] : null);
 
                     if (found && start && slots.includes(start)) {
-                        currentAssignments[start] = {
+                        if (!currentAssignments[start]) {
+                            currentAssignments[start] = [];
+                        }
+                        currentAssignments[start].push({
                             group: found,
                             notes: item.notes
-                        };
+                        });
                     }
                 });
             }
@@ -115,52 +118,79 @@ export default function HorarioPage() {
     };
 
     const handleSlotClick = (time: string) => {
-        const existing = assignments[time];
+        const existing = assignments[time] || [];
 
         // Case 1: Placing a selected group
         if (selectedGroup) {
+            // Prevent duplicates in same slot
+            if (existing.some(slot => slot.group.id === selectedGroup.id)) {
+                alert('Este grupo ya está asignado a esta franja.');
+                return;
+            }
+
             setAssignments(prev => ({
                 ...prev,
-                [time]: { group: selectedGroup, notes: selectedGroup.isCombo ? 'Combo con Sordos' : 'Regular' }
+                [time]: [...(prev[time] || []), { group: selectedGroup }]
             }));
-            setSelectedGroup(null); // Deselect after placing
+
+            // Allow multiple assignments, so we don't clear selectedGroup immediately?
+            // User UX: probably want to place same group in multiple slots? 
+            // Or place multiple groups in same slot?
+            // Let's keep selectedGroup active for rapid assignment to other slots?
+            // The prompt says "Assign multiple groups per time slot".
+            // If I click a slot with a group selected, I add it.
+            // If I want to add another, I select another group and click the slot again.
+            setSelectedGroup(null);
             return;
         }
 
         // Case 2: Clicking an existing slot to edit -> Open Modal
-        if (existing) {
+        if (existing.length > 0) {
             setEditingSlot(time);
-            setEditNote(existing.notes || '');
+            // setEditNote is complicated now because we have multiple groups
+            // We'll handle edit notes inside the modal for each item
         }
     };
 
-    const saveEdit = () => {
+    const saveEdit = (groupIndex: number, newNote: string) => {
         if (!editingSlot) return;
         setAssignments(prev => {
-            const current = prev[editingSlot];
-            if (!current) return prev;
+            const current = [...(prev[editingSlot] || [])];
+            if (!current[groupIndex]) return prev;
+
+            current[groupIndex] = { ...current[groupIndex], notes: newNote };
+
             return {
                 ...prev,
-                [editingSlot]: { ...current, notes: editNote }
+                [editingSlot]: current
             };
         });
-        setEditingSlot(null);
     };
 
-    const deleteAssignment = (time: string) => {
+    const deleteAssignment = (time: string, groupIndex: number) => {
         setAssignments(prev => {
+            const current = [...(prev[time] || [])];
+            current.splice(groupIndex, 1);
+
             const next = { ...prev };
-            delete next[time];
+            if (current.length === 0) {
+                delete next[time];
+            } else {
+                next[time] = current;
+            }
             return next;
         });
-        setEditingSlot(null);
+        // If empty, close modal?
+        // Check new length in next render or just check assignments[time] in Modal
     };
 
     const handleSave = async () => {
         setSaving(true);
         try {
-            const items = Object.entries(assignments).map(([time, slot]) => {
-                if (!slot) return null;
+            const items: any[] = [];
+
+            Object.entries(assignments).forEach(([time, slots]) => {
+                if (!slots || slots.length === 0) return;
 
                 const [timePart, ampm] = time.split(' ');
                 let [h, m] = timePart.split(':').map(Number);
@@ -183,13 +213,15 @@ export default function HorarioPage() {
 
                 const timeStr = `${time} - ${format(endDate)}`;
 
-                return {
-                    time: timeStr,
-                    time_start: time,
-                    group: slot.group.label,
-                    notes: slot.notes || (slot.group.isCombo ? 'Combo' : '')
-                };
-            }).filter(Boolean);
+                slots.forEach(slot => {
+                    items.push({
+                        time: timeStr,
+                        time_start: time,
+                        group: slot.group.label,
+                        notes: slot.notes || (slot.group.isCombo ? 'Combo' : '')
+                    });
+                });
+            });
 
             const { error } = await supabase
                 .from('schedules')
@@ -210,7 +242,7 @@ export default function HorarioPage() {
     };
 
     const isAssigned = (group: GlobalGroup) => {
-        return Object.values(assignments).some(slot => slot?.group.id === group.id);
+        return Object.values(assignments).some(slots => slots?.some(s => s.group.id === group.id));
     };
 
     if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
@@ -301,46 +333,55 @@ export default function HorarioPage() {
                     <div className="flex-1 overflow-y-auto p-4 custom-scrollbar relative bg-gray-50/30">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 pb-20">
                             {timeSlots.map((time) => {
-                                const assignment = assignments[time];
-                                // Check if this time slot represents a break point visually?
-                                // 8:50 is break start. 8:40 is last slot.
-                                // if time > "08:40 AM" && time < "11:00 AM". Simple index check might be better but grid flows well.
+                                const slots = assignments[time] || [];
+                                const isBreak = isBreakTime(time);
 
                                 return (
                                     <button
                                         key={time}
                                         onClick={() => handleSlotClick(time)}
                                         className={`
-                                        relative w-full flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200 text-left group
-                                        ${assignment
+                                        relative w-full flex items-start gap-3 p-3 rounded-2xl border transition-all duration-200 text-left group
+                                        ${slots.length > 0
                                                 ? 'bg-white border-emerald-100 shadow-sm ring-1 ring-emerald-50 hover:shadow-md'
-                                                : 'bg-white border-gray-100 hover:border-blue-300 hover:bg-blue-50/50'}
-                                        ${selectedGroup && !assignment ? 'ring-2 ring-blue-500/20 border-blue-500 bg-blue-50' : ''}
+                                                : isBreak
+                                                    ? 'bg-amber-50/50 border-amber-100 hover:bg-amber-100/50'
+                                                    : 'bg-white border-gray-100 hover:border-blue-300 hover:bg-blue-50/50'
+                                            }
+                                        ${selectedGroup && slots.length === 0 ? 'ring-2 ring-blue-500/20 border-blue-500 bg-blue-50' : ''}
                                     `}
                                     >
                                         <div className={`
-                                         w-16 py-1 rounded-lg text-center text-xs font-bold font-mono
-                                         ${assignment ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}
+                                         w-16 py-1 rounded-lg text-center text-xs font-bold font-mono shrink-0
+                                         ${slots.length > 0 ? 'bg-emerald-100 text-emerald-700' : isBreak ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}
                                      `}>
                                             {time.split(' ')[0]}
                                         </div>
 
                                         <div className="flex-1 min-w-0">
-                                            {assignment ? (
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <div className="min-w-0">
-                                                        <p className="font-black text-gray-800 text-sm truncate leading-tight">{assignment.group.label}</p>
-                                                        {assignment.group.isCombo && <p className="text-[10px] text-emerald-600 font-bold">Incluye Sordos</p>}
-                                                        {assignment.notes && <p className="text-[10px] text-gray-400 truncate italic">{assignment.notes}</p>}
-                                                    </div>
-                                                    <div className="p-1.5 rounded-full hover:bg-gray-100 text-gray-300 group-hover:text-blue-500 transition-colors">
-                                                        <Edit2 className="w-4 h-4" />
+                                            {slots.length > 0 ? (
+                                                <div className="space-y-1">
+                                                    {slots.map((slot, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between gap-2 bg-gray-50 p-1.5 rounded-lg border border-gray-100">
+                                                            <div className="min-w-0">
+                                                                <p className="font-black text-gray-800 text-xs truncate leading-tight">{slot.group.label}</p>
+                                                                {slot.notes && <p className="text-[10px] text-gray-400 truncate italic">{slot.notes}</p>}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    <div className="flex justify-end">
+                                                        <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                            <Edit2 className="w-3 h-3" /> Editar ({slots.length})
+                                                        </span>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <span className="text-gray-300 text-xs font-medium italic">
-                                                    {selectedGroup ? 'Asignar aquí' : 'Disponible'}
-                                                </span>
+                                                <div className="flex items-center justify-between h-full">
+                                                    <span className={`text-xs font-medium italic ${isBreak ? 'text-amber-600/70 font-bold uppercase' : 'text-gray-300'}`}>
+                                                        {isBreak ? 'Descanso' : (selectedGroup ? 'Asignar aquí' : 'Disponible')}
+                                                    </span>
+                                                    {isBreak && <Clock className="w-4 h-4 text-amber-300" />}
+                                                </div>
                                             )}
                                         </div>
                                     </button>
@@ -364,44 +405,58 @@ export default function HorarioPage() {
             </div>
 
             {/* Edit Modal */}
-            {editingSlot && assignments[editingSlot] && (
+            {editingSlot && (assignments[editingSlot]?.length || 0) > 0 && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditingSlot(null)}></div>
-                    <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6">
+                    <div className="bg-white rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6">
                         <div className="flex justify-between items-start mb-4">
                             <div>
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{editingSlot}</p>
-                                <h3 className="text-xl font-black text-gray-900">{assignments[editingSlot]?.group.label}</h3>
+                                <h3 className="text-xl font-black text-gray-900">Gestionar Grupos</h3>
+                                <p className="text-sm text-gray-500">
+                                    {assignments[editingSlot]?.length} grupos asignados
+                                </p>
                             </div>
                             <button onClick={() => setEditingSlot(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="mb-6">
-                            <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Notas / Observaciones</label>
-                            <textarea
-                                value={editNote}
-                                onChange={(e) => setEditNote(e.target.value)}
-                                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none text-sm font-medium"
-                                rows={3}
-                                placeholder="Ej: Menú especial, Salida anticipada..."
-                            />
+                        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                            {assignments[editingSlot]?.map((slot, index) => (
+                                <div key={`${slot.group.id}-${index}`} className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span className="font-bold text-gray-900 bg-white px-2 py-1 rounded-lg border border-gray-200">
+                                            {slot.group.label}
+                                        </span>
+                                        <button
+                                            onClick={() => deleteAssignment(editingSlot!, index)}
+                                            className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Nota</label>
+                                        <input
+                                            type="text"
+                                            value={slot.notes || ''}
+                                            onChange={(e) => saveEdit(index, e.target.value)}
+                                            placeholder="Agregar nota..."
+                                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
                         </div>
 
-                        <div className="flex gap-3">
+                        <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
                             <button
-                                onClick={() => deleteAssignment(editingSlot)}
-                                className="flex-1 py-3 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                                onClick={() => setEditingSlot(null)}
+                                className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
                             >
-                                <Trash2 className="w-4 h-4" />
-                                Quitar
-                            </button>
-                            <button
-                                onClick={saveEdit}
-                                className="flex-[2] py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
-                            >
-                                Guardar Cambios
+                                Listo
                             </button>
                         </div>
                     </div>
