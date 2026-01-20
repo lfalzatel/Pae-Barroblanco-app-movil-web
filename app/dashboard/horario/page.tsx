@@ -312,7 +312,7 @@ export default function HorarioPage() {
                             <h1 className="text-xl lg:text-3xl font-black text-gray-900 tracking-tight">Tablero de Horarios</h1>
                             <button
                                 onClick={() => setShowInstructions(true)}
-                                className="bg-white hover:bg-blue-50 text-gray-400 hover:text-blue-600 p-1.5 rounded-full transition-colors border border-gray-100 shadow-sm"
+                                className="bg-blue-50 hover:bg-blue-100 text-blue-600 p-2 rounded-full transition-all hover:scale-110 ring-2 ring-blue-100 animate-pulse"
                                 title="Ver Instrucciones"
                             >
                                 <Info className="w-5 h-5" />
@@ -391,7 +391,7 @@ export default function HorarioPage() {
                             )}
                         </div>
                         <p className="text-[10px] text-gray-400 font-medium">
-                            Tip: Puedes asignar múltiples grupos por hora
+                            Tip: Puedes asignar múltiples grupos en la misma hora
                         </p>
                     </div>
 
@@ -417,22 +417,23 @@ export default function HorarioPage() {
                                     `}
                                     >
                                         <div className={`
-                                         w-10 lg:w-16 py-0.5 lg:py-1 rounded text-center text-[9px] lg:text-[10px] leading-tight font-bold font-mono shrink-0 flex flex-col items-center justify-center
+                                         w-16 lg:w-20 py-1 rounded text-center text-[10px] lg:text-xs font-bold font-mono shrink-0 flex items-center justify-center
                                          ${slots.length > 0 ? 'bg-emerald-100 text-emerald-700' : isBreak ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}
                                      `}>
-                                            <span>{time.split(' ')[0]}</span>
-                                            <span className="text-[8px] opacity-75">{time.split(' ')[1]}</span>
+                                            {time}
                                         </div>
 
                                         <div className="flex-1 min-w-0">
                                             {slots.length > 0 ? (
-                                                <div className="space-y-0.5 lg:space-y-1">
+                                                <div className="space-y-1">
                                                     {slots.map((slot, idx) => (
-                                                        <div key={idx} className="flex flex-col lg:flex-row lg:items-center justify-between gap-0.5 bg-gray-50 p-1 rounded border border-gray-100/50">
-                                                            <div className="min-w-0 flex items-center gap-2">
-                                                                <p className="font-bold text-gray-800 text-[9px] lg:text-[10px] truncate">{slot.group.label}</p>
-                                                                {slot.group.studentCount && (
-                                                                    <span className="text-[8px] bg-gray-200 text-gray-600 px-1 rounded-full">{slot.group.studentCount} est.</span>
+                                                        <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-gray-50 p-1.5 rounded border border-gray-100/50">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <p className="font-bold text-gray-900 text-xs">{slot.group.label}</p>
+                                                                {slot.group.studentCount !== undefined && (
+                                                                    <span className="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-md font-medium">
+                                                                        {slot.group.studentCount} estudiantes
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                         </div>

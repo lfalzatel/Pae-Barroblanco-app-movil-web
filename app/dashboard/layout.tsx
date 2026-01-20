@@ -144,7 +144,7 @@ export default function DashboardLayout({
                             </div>
                             <div className="flex flex-col min-w-0 flex-1">
                                 <span className="text-xs font-bold text-gray-900 truncate">{usuario.nombre}</span>
-                                <span className="text-[10px] font-medium text-gray-500 uppercase">{usuario.rol}</span>
+                                <span className="text-[10px] font-medium text-gray-500 uppercase">{usuario.rol === 'coordinador_pae' ? 'Coordinador' : usuario.rol}</span>
                             </div>
                             <ChevronUp className={`w-4 h-4 text-gray-400 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
                         </button>
@@ -221,7 +221,7 @@ export default function DashboardLayout({
                         </div>
                         <div className="flex flex-col items-start">
                             <span className="text-[8px] font-extrabold text-blue-100 uppercase tracking-widest leading-none mb-0.5">
-                                {usuario.rol === 'admin' ? 'Admin' : 'Docente'}
+                                {usuario.rol === 'admin' ? 'Admin' : usuario.rol === 'coordinador_pae' ? 'Coord' : 'Docente'}
                             </span>
                             <span className="text-white font-bold text-xs leading-none max-w-[80px] truncate">
                                 {usuario.nombre.split(' ')[0]}
