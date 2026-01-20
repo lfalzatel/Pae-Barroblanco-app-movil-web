@@ -282,15 +282,24 @@ export default function HorarioPage() {
             {/* Header Area */}
             <div className="flex flex-col gap-4 mb-4 px-2 shrink-0">
                 {/* Title Row */}
-                <div className="flex items-center gap-3">
-                    <button onClick={() => router.push('/dashboard')} className="p-2 hover:bg-white rounded-full text-gray-500 shadow-sm border border-transparent hover:border-gray-200 transition-all">
-                        <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <h1 className="text-xl lg:text-3xl font-black text-gray-900 tracking-tight">Tablero de Horarios</h1>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => router.push('/dashboard')} className="p-2 hover:bg-white rounded-full text-gray-500 shadow-sm border border-transparent hover:border-gray-200 transition-all">
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <h1 className="text-xl lg:text-3xl font-black text-gray-900 tracking-tight">Tablero de Horarios</h1>
+                        <button
+                            onClick={() => setShowInstructions(true)}
+                            className="bg-blue-50 hover:bg-blue-100 text-blue-600 p-2 rounded-full transition-colors"
+                            title="Ver Instrucciones"
+                        >
+                            <Info className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Controls Row */}
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 mt-2">
                     <div className="relative">
                         <button
                             onClick={() => setShowCalendar(!showCalendar)}
@@ -307,7 +316,7 @@ export default function HorarioPage() {
                             </div>
                         </button>
 
-                        {/* Calendar Popover - Larger Size */}
+                        {/* Calendar Popover - Wider */}
                         {showCalendar && (
                             <div className="absolute top-16 left-0 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {/* Backdrop for mobile close */}
@@ -316,7 +325,7 @@ export default function HorarioPage() {
                                 <MiniCalendar
                                     selectedDate={selectedDate}
                                     onSelectDate={(d) => { setSelectedDate(d); setShowCalendar(false); }}
-                                    className="relative z-50 border border-blue-100 shadow-2xl w-[320px] md:w-[350px]"
+                                    className="relative z-50 border border-blue-100 shadow-2xl w-[90vw] max-w-sm"
                                 />
                             </div>
                         )}
@@ -331,13 +340,9 @@ export default function HorarioPage() {
                             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                             <span>Guardar</span>
                         </button>
-                        <button
-                            onClick={() => setShowInstructions(true)}
-                            className="text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-full"
-                        >
-                            <MoreVertical className="w-3 h-3" />
-                            <span>Instrucciones</span>
-                        </button>
+                        <span className="text-[10px] font-medium text-gray-400 hidden lg:inline-block">
+                            Guarda tus cambios frecuentemente
+                        </span>
                     </div>
                 </div>
             </div>
@@ -347,16 +352,21 @@ export default function HorarioPage() {
 
                 {/* Left: Timeline (Col 7 - Wider) */}
                 <div className="col-span-7 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
-                    <div className="p-2 lg:p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex justify-between items-center shrink-0">
-                        <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
-                            <Clock className="w-4 h-4 text-orange-500" />
-                            <span className="hidden lg:inline">Línea de </span>Tiempo
-                        </h3>
-                        {selectedGroup && (
-                            <span className="text-[9px] lg:text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full animate-pulse font-bold truncate max-w-[80px] lg:max-w-[120px]">
-                                Asig: {selectedGroup.label}
-                            </span>
-                        )}
+                    <div className="p-2 lg:p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex flex-col justify-between items-start shrink-0 gap-1">
+                        <div className="flex justify-between items-center w-full">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
+                                <Clock className="w-4 h-4 text-orange-500" />
+                                <span className="hidden lg:inline">Línea de </span>Tiempo
+                            </h3>
+                            {selectedGroup && (
+                                <span className="text-[9px] lg:text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full animate-pulse font-bold truncate max-w-[80px] lg:max-w-[120px]">
+                                    Asig: {selectedGroup.label}
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-[10px] text-gray-400 font-medium">
+                            Tip: Puedes asignar múltiples grupos por hora
+                        </p>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-1 lg:p-3 custom-scrollbar bg-gray-50/30">

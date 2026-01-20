@@ -93,7 +93,7 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
     };
 
     return (
-        <div className={`bg-white rounded-2xl shadow-xl border border-gray-100 p-4 w-full max-w-[320px] ${className}`}>
+        <div className={`bg-white rounded-2xl shadow-xl border border-gray-100 p-4 w-full ${className}`}>
             <div className="flex items-center justify-between mb-4 px-2">
                 <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-900">
                     <ChevronLeft className="w-5 h-5" />
