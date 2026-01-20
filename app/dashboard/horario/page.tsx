@@ -376,8 +376,8 @@ export default function HorarioPage() {
             {/* Main Content - 2 Columns mobile friendly */}
             <div className="grid grid-cols-12 gap-2 lg:gap-6 flex-1 overflow-hidden pb-4 px-1">
 
-                {/* Left: Timeline (Col 7 - Wider) */}
-                <div className="col-span-7 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
+                {/* Left: Timeline (Col 8 - Wider for text) */}
+                <div className="col-span-8 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
                     <div className="p-2 lg:p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex flex-col justify-between items-start shrink-0 gap-1">
                         <div className="flex justify-between items-center w-full">
                             <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
@@ -433,7 +433,7 @@ export default function HorarioPage() {
                                                                     {slot.group.label}
                                                                     {slot.group.studentCount !== undefined && (
                                                                         <span className="ml-2 text-[10px] font-normal text-gray-500">
-                                                                            ({slot.group.studentCount} est)
+                                                                            ({slot.group.studentCount} estudiantes)
                                                                         </span>
                                                                     )}
                                                                 </p>
@@ -456,8 +456,8 @@ export default function HorarioPage() {
                     </div>
                 </div>
 
-                {/* Right: Groups (Col 5 - Narrower, Single Column List) */}
-                <div className="col-span-5 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
+                {/* Right: Groups (Col 4 - Narrower, Single Column List) */}
+                <div className="col-span-4 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
                     <div className="p-2 lg:p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
                         <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
                             <Users className="w-4 h-4 text-blue-600" />
