@@ -205,6 +205,34 @@ export default function LoginPage() {
             </svg>
             Google
           </button>
+
+          {/* Botón Huella */}
+          <button
+            type="button"
+            onClick={async () => {
+              setError('');
+              if (!email) {
+                setError('Ingresa tu correo arriba primero para usar huella');
+                return;
+              }
+              setLoading(true);
+              try {
+                const { data, error } = await (supabase.auth as any).signInWithWebAuthn({
+                  email,
+                });
+                if (error) throw error;
+                // Supabase handles the rest
+              } catch (e: any) {
+                setError(e.message || 'Error al validar huella');
+                setLoading(false);
+              }
+            }}
+            disabled={loading}
+            className="w-full mt-3 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold py-3 px-4 rounded-xl border border-purple-100 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
+          >
+            <span className="text-xl">👆</span>
+            Ingresar con Huella
+          </button>
         </form>
       </div>
     </div>

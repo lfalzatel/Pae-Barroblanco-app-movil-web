@@ -152,6 +152,27 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
+                {/* Security Section (WebAuthn) */}
+                <div className="flex justify-end">
+                    <button
+                        onClick={async () => {
+                            try {
+                                const { data, error } = await supabase.auth.mfa.enroll({
+                                    factorType: 'webauthn',
+                                });
+                                if (error) throw error;
+                                alert('¡Sigue las instrucciones de tu navegador para registrar tu huella/FaceID!');
+                            } catch (e: any) {
+                                alert('Error: ' + e.message + '. Asegúrate de que Passkeys estén habilitados en Supabase.');
+                            }
+                        }}
+                        className="flex items-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-4 py-2 rounded-xl transition-colors text-sm"
+                    >
+                        <span className="text-xl">👆</span>
+                        Vincular Huella / FaceID
+                    </button>
+                </div>
+
                 {/* Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-blue-200 transition-colors">
