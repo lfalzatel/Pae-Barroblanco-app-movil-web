@@ -1,6 +1,8 @@
 'use client';
 
+
 import { useEffect, useState, useRef } from 'react';
+import ScheduleModal from '../../components/ScheduleModal'; // Importar Modal
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { Usuario, calcularEstadisticasHoy } from '../data/demoData';
@@ -40,6 +42,43 @@ export default function DashboardPage() {
   const [deepDetailTitle, setDeepDetailTitle] = useState("");
   const [deepDetailData, setDeepDetailData] = useState<any[]>([]);
   const [modalData, setModalData] = useState<{ grupo: string, count: number }[]>([]);
+
+  // Estado para Modal de Horario
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [scheduleData, setScheduleData] = useState<any[]>([]);
+  const [scheduleDateStr, setScheduleDateStr] = useState<string>('');
+
+  useEffect(() => {
+    // Calcular fecha de mañana
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateStr = tomorrow.toISOString().split('T')[0];
+
+    // Formatear para mostrar bonito (ej: "Miércoles, 22 de Enero")
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
+    setScheduleDateStr(tomorrow.toLocaleDateString('es-ES', options));
+
+    const fetchSchedule = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('schedules')
+          .select('items')
+          .eq('date', dateStr)
+          .single();
+
+        if (data) {
+          setScheduleData(data.items);
+        } else {
+          setScheduleData([]);
+        }
+      } catch (err) {
+        console.error("Error fetching schedule", err);
+      }
+    };
+
+    fetchSchedule();
+  }, []);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -448,6 +487,14 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Modal de Horario (Mañana) */}
+      <ScheduleModal
+        isOpen={scheduleModalOpen}
+        onClose={() => setScheduleModalOpen(false)}
+        date={scheduleDateStr}
+        schedule={scheduleData}
+      />
+
       {/* Modal Premium de Detalle Estudiante (Nivel 2) */}
       {deepDetailOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -552,7 +599,7 @@ export default function DashboardPage() {
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <button
-          onClick={() => router.push('/dashboard/horario')}
+          onClick={() => setScheduleModalOpen(true)}
           className="bg-orange-500 hover:bg-orange-600 text-white rounded-2xl py-4 px-2 flex flex-col md:flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-orange-200 transition-all active:scale-95 group"
         >
           <div className="bg-white/20 p-2 rounded-xl group-hover:scale-110 transition-transform">
