@@ -42,6 +42,7 @@ export default function GestionPage() {
   const [docenteHistory, setDocenteHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [grupoDropdownOpen, setGrupoDropdownOpen] = useState(false);
+  const [selectedDateActivity, setSelectedDateActivity] = useState<{ fecha: string, grupos: string[], total: number } | null>(null);
 
   const sedes = [
     { id: 'todas', nombre: 'Todas' },
@@ -759,15 +760,17 @@ export default function GestionPage() {
                       const isWeekend = d.getDay() === 0 || d.getDay() === 6;
 
                       return (
-                        <div
+                        <button
                           key={i}
+                          onClick={() => record && setSelectedDateActivity(record)}
+                          disabled={!record}
                           title={dateStr + (record ? ` - ${record.grupos.length} grupos` : '')}
-                          className={`aspect-square rounded-md flex items-center justify-center text-[10px] border ${isWeekend ? 'bg-gray-50 text-gray-300 border-transparent' :
-                            record ? 'bg-blue-600 border-blue-700 text-white font-bold' : 'bg-white border-gray-100 text-gray-300'
+                          className={`aspect-square rounded-md flex items-center justify-center text-[10px] border transition-transform ${isWeekend ? 'bg-gray-50 text-gray-300 border-transparent' :
+                            record ? 'bg-blue-600 border-blue-700 text-white font-bold cursor-pointer hover:scale-110 shadow-sm' : 'bg-white border-gray-100 text-gray-300'
                             }`}
                         >
                           {d.getDate()}
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -799,6 +802,47 @@ export default function GestionPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Modal de Segundo Nivel: Detalle del Día Docente */}
+              {selectedDateActivity && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-in fade-in duration-200">
+                  <div
+                    className="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-gray-200 overflow-hidden animate-in zoom-in-95 duration-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="p-4 border-b bg-blue-50 flex justify-between items-center">
+                      <div>
+                        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Actividad del Día</p>
+                        <h3 className="font-black text-lg text-gray-900">{selectedDateActivity.fecha}</h3>
+                      </div>
+                      <button
+                        onClick={() => setSelectedDateActivity(null)}
+                        className="p-1.5 hover:bg-blue-100 text-blue-700 rounded-full transition-colors"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <div className="p-5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-600">Total Grupos</span>
+                        <span className="text-2xl font-black text-blue-600">{selectedDateActivity.total}</span>
+                      </div>
+
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Grupos Atendidos</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedDateActivity.grupos.map((g, idx) => (
+                            <span key={idx} className="bg-white border border-gray-200 text-gray-700 text-sm font-bold px-3 py-1.5 rounded-lg shadow-sm">
+                              {g}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

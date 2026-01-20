@@ -11,14 +11,33 @@ import {
     CheckCircle2,
     TrendingUp,
     Award,
-    Clock
+    Clock,
+    X,
+    CalendarDays,
+    Users
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+
+interface GroupDetail {
+    grupo: string;
+    grado: string;
+    count: number;
+}
+
+interface DayDetail {
+    date: string;
+    firstRegister: string;
+    lastRegister: string;
+    groups: GroupDetail[];
+    total: number;
+}
 
 export default function ProfilePage() {
     const router = useRouter();
     const [usuario, setUsuario] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
+    const [history, setHistory] = useState<any[]>([]);
+    const [selectedDate, setSelectedDate] = useState<DayDetail | null>(null);
     const [stats, setStats] = useState({
         totalRegistros: 0,
         diasActivos: 0,
@@ -44,14 +63,16 @@ export default function ProfilePage() {
 
             setUsuario(user);
 
-            // Fetch Stats
+            // Fetch Stats & History
             try {
                 const { data, error } = await supabase
                     .from('asistencia_pae')
-                    .select('fecha, estudiantes(grupo)')
+                    .select('fecha, created_at, estudiantes(grupo, grado)')
                     .eq('registrado_por', user.id);
 
                 if (!error && data) {
+                    setHistory(data);
+
                     const uniqueDays = new Set(data.map(d => d.fecha));
                     const uniqueGroups = new Set();
                     data.forEach(d => {
@@ -187,7 +208,158 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
+                {/* Calendar Section */}
+                <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                            <CalendarDays className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900">Tu Actividad Reciente</h2>
+                            <p className="text-sm text-gray-500">Últimos 35 días de gestión</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-2 md:gap-4 mb-2">
+                        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
+                            <div key={day} className="text-center text-xs font-bold text-gray-400 uppercase tracking-wider py-2">
+                                {day}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-2 md:gap-4">
+                        {Array.from({ length: 35 }).map((_, i) => {
+                            const d = new Date();
+                            d.setDate(d.getDate() - (34 - i));
+                            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+                            // Find records for this date
+                            const records = history.filter(h => h.fecha === dateStr);
+                            const hasActivity = records.length > 0;
+                            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+                            return (
+                                <button
+                                    key={i}
+                                    onClick={() => {
+                                        if (hasActivity) {
+                                            // Prepare detail data
+                                            const sorted = records.sort((a, b) => (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+                                            const first = sorted[0]?.created_at ? new Date(sorted[0].created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                                            const last = sorted[sorted.length - 1]?.created_at ? new Date(sorted[sorted.length - 1].created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+
+                                            // Group counts
+                                            const groupsMap = new Map<string, GroupDetail>();
+                                            records.forEach(r => {
+                                                const est = r.estudiantes as any;
+                                                const g = Array.isArray(est) ? est[0] : est;
+                                                const key = `${g.grado}-${g.grupo}`;
+                                                if (!groupsMap.has(key)) {
+                                                    groupsMap.set(key, { grado: g.grado, grupo: g.grupo, count: 0 });
+                                                }
+                                                groupsMap.get(key)!.count++;
+                                            });
+
+                                            setSelectedDate({
+                                                date: d.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+                                                firstRegister: first,
+                                                lastRegister: last,
+                                                groups: Array.from(groupsMap.values()),
+                                                total: records.length
+                                            });
+                                        }
+                                    }}
+                                    disabled={!hasActivity}
+                                    className={`
+                                        aspect-square rounded-2xl flex flex-col items-center justify-center border transition-all duration-200
+                                        ${hasActivity
+                                            ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 hover:scale-110 cursor-pointer'
+                                            : isWeekend
+                                                ? 'bg-gray-50 border-transparent text-gray-300'
+                                                : 'bg-white border-gray-100 text-gray-300'
+                                        }
+                                    `}
+                                >
+                                    <span className={`text-sm md:text-lg font-bold ${hasActivity ? 'text-white' : ''}`}>
+                                        {d.getDate()}
+                                    </span>
+                                    {hasActivity && (
+                                        <span className="text-[10px] md:text-xs font-medium opacity-80 mt-1">
+                                            {records.length}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Detail Modal */}
+                {selectedDate && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div
+                            className="bg-white/90 backdrop-blur-xl rounded-3xl w-full max-w-md shadow-2xl border border-white/50 overflow-hidden animate-in zoom-in-95 duration-300"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="p-6 border-b border-gray-100 bg-white/50 flex justify-between items-center">
+                                <div>
+                                    <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">Detalle del Día</p>
+                                    <h3 className="text-xl font-black text-gray-900 capitalize">{selectedDate.date}</h3>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedDate(null)}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                    <X className="w-5 h-5 text-gray-500" />
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                                        <p className="text-xs text-blue-600 font-bold uppercase mb-1">Primer Registro</p>
+                                        <p className="text-2xl font-black text-blue-900">{selectedDate.firstRegister}</p>
+                                    </div>
+                                    <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                                        <p className="text-xs text-purple-600 font-bold uppercase mb-1">Último Registro</p>
+                                        <p className="text-2xl font-black text-purple-900">{selectedDate.lastRegister}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                        <Users className="w-4 h-4 text-gray-400" />
+                                        Grupos Atendidos
+                                    </h4>
+                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                        {selectedDate.groups.map((g, idx) => (
+                                            <div key={idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-xs">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600 text-xs">
+                                                        {g.grado}
+                                                    </div>
+                                                    <span className="font-bold text-gray-700">Grupo {g.grupo}</span>
+                                                </div>
+                                                <span className="bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-lg">
+                                                    {g.count}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-gray-100 text-center">
+                                    <p className="text-sm text-gray-500">
+                                        Total procesado: <b className="text-gray-900">{selectedDate.total} estudiantes</b>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
 }
+
