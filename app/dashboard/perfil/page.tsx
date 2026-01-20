@@ -22,12 +22,11 @@ interface GroupDetail {
     grupo: string;
     grado: string;
     count: number;
+    timestamp: string;
 }
 
 interface DayDetail {
     date: string;
-    firstRegister: string;
-    lastRegister: string;
     groups: GroupDetail[];
     total: number;
 }
@@ -224,28 +223,37 @@ export default function ProfilePage() {
                                     key={i}
                                     onClick={() => {
                                         if (hasActivity) {
-                                            // Prepare detail data
-                                            const sorted = records.sort((a, b) => (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
-                                            const first = sorted[0]?.created_at ? new Date(sorted[0].created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
-                                            const last = sorted[sorted.length - 1]?.created_at ? new Date(sorted[sorted.length - 1].created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
-
-                                            // Group counts
+                                            // Group counts with timestamps
                                             const groupsMap = new Map<string, GroupDetail>();
                                             records.forEach(r => {
                                                 const est = r.estudiantes as any;
                                                 const g = Array.isArray(est) ? est[0] : est;
                                                 const key = `${g.grado}-${g.grupo}`;
+
                                                 if (!groupsMap.has(key)) {
-                                                    groupsMap.set(key, { grado: g.grado, grupo: g.grupo, count: 0 });
+                                                    groupsMap.set(key, {
+                                                        grado: g.grado,
+                                                        grupo: g.grupo,
+                                                        count: 0,
+                                                        timestamp: r.created_at
+                                                    });
                                                 }
-                                                groupsMap.get(key)!.count++;
+
+                                                const group = groupsMap.get(key)!;
+                                                group.count++;
+                                                // Keep earliest timestamp
+                                                if (new Date(r.created_at) < new Date(group.timestamp)) {
+                                                    group.timestamp = r.created_at;
+                                                }
                                             });
+
+                                            // Sort groups by timestamp
+                                            const sortedGroups = Array.from(groupsMap.values())
+                                                .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
                                             setSelectedDate({
                                                 date: d.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-                                                firstRegister: first,
-                                                lastRegister: last,
-                                                groups: Array.from(groupsMap.values()),
+                                                groups: sortedGroups,
                                                 total: records.length
                                             });
                                         }
@@ -316,30 +324,25 @@ export default function ProfilePage() {
                             </div>
 
                             <div className="p-6 space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                                        <p className="text-xs text-blue-600 font-bold uppercase mb-1">Primer Registro</p>
-                                        <p className="text-2xl font-black text-blue-900">{selectedDate.firstRegister}</p>
-                                    </div>
-                                    <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100">
-                                        <p className="text-xs text-purple-600 font-bold uppercase mb-1">Último Registro</p>
-                                        <p className="text-2xl font-black text-purple-900">{selectedDate.lastRegister}</p>
-                                    </div>
-                                </div>
-
                                 <div>
                                     <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                                         <Users className="w-4 h-4 text-gray-400" />
                                         Grupos Atendidos
                                     </h4>
-                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                    <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                                         {selectedDate.groups.map((g, idx) => (
                                             <div key={idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-xs">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600 text-xs">
+                                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600 text-xs text-transform uppercase">
                                                         {g.grado}
                                                     </div>
-                                                    <span className="font-bold text-gray-700">Grupo {g.grupo}</span>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-gray-700 text-sm">Grupo {g.grupo}</span>
+                                                        <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                                            <Clock className="w-3 h-3" />
+                                                            {new Date(g.timestamp).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 <span className="bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-lg">
                                                     {g.count}
