@@ -322,17 +322,16 @@ export default function HorarioPage() {
                             <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showCalendar ? 'rotate-180' : ''}`} />
                         </button>
 
-                        {/* Calendar Popover */}
+                        {/* Calendar Modal */}
                         {showCalendar && (
-                            <div className="absolute top-full left-0 mt-2 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
-                                {/* Backdrop for mobile close */}
-                                <div className="fixed inset-0 bg-black/5 backdrop-blur-[1px] z-40 lg:hidden" onClick={() => setShowCalendar(false)}></div>
-
-                                <MiniCalendar
-                                    selectedDate={selectedDate}
-                                    onSelectDate={(d) => { setSelectedDate(d); setShowCalendar(false); }}
-                                    className="relative z-50 border border-gray-100 shadow-2xl w-[90vw] max-w-[360px]"
-                                />
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowCalendar(false)}>
+                                <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm animate-in zoom-in-95 duration-200">
+                                    <MiniCalendar
+                                        selectedDate={selectedDate}
+                                        onSelectDate={(d) => { setSelectedDate(d); setShowCalendar(false); }}
+                                        className="shadow-2xl border-2 border-white/20"
+                                    />
+                                </div>
                             </div>
                         )}
                     </div>
