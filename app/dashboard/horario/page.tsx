@@ -109,8 +109,17 @@ export default function HorarioPage() {
 
             if (estError) throw estError;
 
+            // Calculate student counts
+            const counts: Record<string, number> = {};
+            estData?.forEach(e => {
+                if (e.grupo) counts[e.grupo] = (counts[e.grupo] || 0) + 1;
+            });
+
             const uniqueGroups = Array.from(new Set(estData?.map(e => e.grupo) || []));
-            const processed = processGroups(uniqueGroups);
+            const processed = processGroups(uniqueGroups).map(g => ({
+                ...g,
+                studentCount: counts[g.label] || 0
+            }));
 
             const { data: schedData } = await supabase
                 .from('schedules')
@@ -125,7 +134,7 @@ export default function HorarioPage() {
                     const found = processed.find(g => g.label === item.group);
                     const start = item.time_start || (item.time ? item.time.split(' - ')[0] : null);
 
-                    if (found && start && slots.includes(start)) {
+                    if (found && start && timeSlots.includes(start)) {
                         if (!currentAssignments[start]) {
                             currentAssignments[start] = [];
                         }
@@ -163,13 +172,6 @@ export default function HorarioPage() {
                 [time]: [...(prev[time] || []), { group: selectedGroup }]
             }));
 
-            // Allow multiple assignments, so we don't clear selectedGroup immediately?
-            // User UX: probably want to place same group in multiple slots? 
-            // Or place multiple groups in same slot?
-            // Let's keep selectedGroup active for rapid assignment to other slots?
-            // The prompt says "Assign multiple groups per time slot".
-            // If I click a slot with a group selected, I add it.
-            // If I want to add another, I select another group and click the slot again.
             setSelectedGroup(null);
             return;
         }
@@ -177,8 +179,6 @@ export default function HorarioPage() {
         // Case 2: Clicking an existing slot to edit -> Open Modal
         if (existing.length > 0) {
             setEditingSlot(time);
-            // setEditNote is complicated now because we have multiple groups
-            // We'll handle edit notes inside the modal for each item
         }
     };
 
@@ -248,8 +248,6 @@ export default function HorarioPage() {
             }
             return next;
         });
-        // If empty, close modal?
-        // Check new length in next render or just check assignments[time] in Modal
     };
 
     const isAssigned = (group: GlobalGroup) => {
@@ -419,10 +417,11 @@ export default function HorarioPage() {
                                     `}
                                     >
                                         <div className={`
-                                         w-10 lg:w-14 py-0.5 lg:py-1 rounded text-center text-[9px] lg:text-[10px] font-bold font-mono shrink-0
+                                         w-10 lg:w-16 py-0.5 lg:py-1 rounded text-center text-[9px] lg:text-[10px] leading-tight font-bold font-mono shrink-0 flex flex-col items-center justify-center
                                          ${slots.length > 0 ? 'bg-emerald-100 text-emerald-700' : isBreak ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}
                                      `}>
-                                            {time.split(' ')[0]}
+                                            <span>{time.split(' ')[0]}</span>
+                                            <span className="text-[8px] opacity-75">{time.split(' ')[1]}</span>
                                         </div>
 
                                         <div className="flex-1 min-w-0">
@@ -430,8 +429,11 @@ export default function HorarioPage() {
                                                 <div className="space-y-0.5 lg:space-y-1">
                                                     {slots.map((slot, idx) => (
                                                         <div key={idx} className="flex flex-col lg:flex-row lg:items-center justify-between gap-0.5 bg-gray-50 p-1 rounded border border-gray-100/50">
-                                                            <div className="min-w-0">
+                                                            <div className="min-w-0 flex items-center gap-2">
                                                                 <p className="font-bold text-gray-800 text-[9px] lg:text-[10px] truncate">{slot.group.label}</p>
+                                                                {slot.group.studentCount && (
+                                                                    <span className="text-[8px] bg-gray-200 text-gray-600 px-1 rounded-full">{slot.group.studentCount} est.</span>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     ))}

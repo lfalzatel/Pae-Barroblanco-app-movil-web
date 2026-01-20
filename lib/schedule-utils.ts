@@ -2,6 +2,7 @@ export interface GlobalGroup {
     id: string; // "6A", "6B+604", etc.
     label: string;
     isCombo: boolean;
+    studentCount?: number;
 }
 
 export const generateTimeSlots = (intervalMinutes: number = 10) => {
