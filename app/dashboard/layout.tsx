@@ -221,7 +221,7 @@ export default function DashboardLayout({
                         </div>
                         <div className="flex flex-col items-start">
                             <span className="text-[8px] font-extrabold text-blue-100 uppercase tracking-widest leading-none mb-0.5">
-                                {usuario.rol === 'admin' ? 'Admin' : usuario.rol === 'coordinador_pae' ? 'Coord' : 'Docente'}
+                                {usuario.rol === 'admin' ? 'Admin' : usuario.rol === 'coordinador_pae' ? 'Coordinador PAE' : 'Docente'}
                             </span>
                             <span className="text-white font-bold text-xs leading-none max-w-[80px] truncate">
                                 {usuario.nombre.split(' ')[0]}

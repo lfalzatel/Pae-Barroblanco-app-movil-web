@@ -312,7 +312,7 @@ export default function HorarioPage() {
                             <h1 className="text-xl lg:text-3xl font-black text-gray-900 tracking-tight">Tablero de Horarios</h1>
                             <button
                                 onClick={() => setShowInstructions(true)}
-                                className="bg-blue-50 hover:bg-blue-100 text-blue-600 p-2 rounded-full transition-all hover:scale-110 ring-2 ring-blue-100 animate-pulse"
+                                className="bg-blue-100 hover:bg-blue-200 text-blue-700 p-2 rounded-full transition-all hover:scale-110 ring-2 ring-blue-300 animate-pulse shadow-sm"
                                 title="Ver Instrucciones"
                             >
                                 <Info className="w-5 h-5" />
@@ -428,13 +428,15 @@ export default function HorarioPage() {
                                                 <div className="space-y-1">
                                                     {slots.map((slot, idx) => (
                                                         <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-gray-50 p-1.5 rounded border border-gray-100/50">
-                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                <p className="font-bold text-gray-900 text-xs">{slot.group.label}</p>
-                                                                {slot.group.studentCount !== undefined && (
-                                                                    <span className="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-md font-medium">
-                                                                        {slot.group.studentCount} estudiantes
-                                                                    </span>
-                                                                )}
+                                                            <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                                                <p className="font-bold text-gray-900 text-xs truncate">
+                                                                    {slot.group.label}
+                                                                    {slot.group.studentCount !== undefined && (
+                                                                        <span className="ml-2 text-[10px] font-normal text-gray-500">
+                                                                            ({slot.group.studentCount} est)
+                                                                        </span>
+                                                                    )}
+                                                                </p>
                                                             </div>
                                                         </div>
                                                     ))}
