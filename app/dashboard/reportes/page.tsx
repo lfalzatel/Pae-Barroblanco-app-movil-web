@@ -193,7 +193,7 @@ export default function ReportesPage() {
         if (errorAsist) throw errorAsist;
 
         // 3. Consultar Inactivos y Datos de Grupos
-        let queryEst = supabase.from('estudiantes').select('id, grupo, estado');
+        let queryEst = supabase.from('estudiantes').select('id, nombre, grupo, estado');
         if (sedeFilter !== 'todas') {
           queryEst = queryEst.eq('sede', sedeMap[sedeFilter] || 'Principal');
         }

@@ -79,7 +79,7 @@ export default function DashboardPage() {
       // 1. Obtener todos los estudiantes para agrupar
       const { data: todosEstudiantes, error: errEst } = await supabase
         .from('estudiantes')
-        .select('id, grupo, estado');
+        .select('id, nombre, grupo, estado');
 
       if (errEst) throw errEst;
 
