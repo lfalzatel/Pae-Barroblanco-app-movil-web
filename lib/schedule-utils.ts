@@ -23,7 +23,7 @@ export const generateTimeSlots = (intervalMinutes: number = 10) => {
     };
 
     const startMins = toMins("07:10");
-    const endMins = toMins("11:00"); // End of service
+    const endMins = toMins("11:05"); // Extended to include 11:00 slot
 
     // Iterate
     let current = startMins;
@@ -44,7 +44,7 @@ export const isBreakTime = (time: string) => {
     // If a slot starts at 11:00 or 11:10, it's during break 2.
 
     // Simple string check for now as we know fixed slots
-    const breakSlots = ["08:50 AM", "09:00 AM", "11:00 AM", "11:10 AM"];
+    const breakSlots = ["08:50 AM", "09:00 AM", "11:00 AM"];
     return breakSlots.includes(time);
 };
 

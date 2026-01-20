@@ -167,6 +167,44 @@ export default function HorarioPage() {
         });
     };
 
+    const isBreakTime = (time: string) => {
+        const breakSlots = ["08:50 AM", "09:00 AM", "11:00 AM"];
+        return breakSlots.includes(time);
+    };
+
+    const moveAssignment = (groupIndex: number, newTime: string) => {
+        if (!editingSlot || newTime === editingSlot) return;
+
+        setAssignments(prev => {
+            const currentSlotGroups = [...(prev[editingSlot] || [])];
+            const groupToMove = currentSlotGroups[groupIndex];
+
+            // Remove from old slot
+            currentSlotGroups.splice(groupIndex, 1);
+
+            // Add to new slot
+            const targetSlotGroups = [...(prev[newTime] || [])];
+            targetSlotGroups.push(groupToMove);
+
+            const next = { ...prev };
+
+            // Cleanup old slot
+            if (currentSlotGroups.length === 0) {
+                delete next[editingSlot];
+            } else {
+                next[editingSlot] = currentSlotGroups;
+            }
+
+            // Update new slot
+            next[newTime] = targetSlotGroups;
+
+            return next;
+        });
+
+        // Close modal as context changed
+        setEditingSlot(null);
+    };
+
     const deleteAssignment = (time: string, groupIndex: number) => {
         setAssignments(prev => {
             const current = [...(prev[time] || [])];
@@ -263,14 +301,25 @@ export default function HorarioPage() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
-                    <CalendarIcon className="w-5 h-5 text-gray-400 ml-2" />
-                    <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className="bg-transparent font-bold text-gray-700 focus:outline-none py-1"
-                    />
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleSave}
+                        disabled={saving || !Object.keys(assignments).length}
+                        className="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-xl font-bold shadow-lg shadow-gray-200 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none text-sm"
+                    >
+                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        <span>Guardar</span>
+                    </button>
+
+                    <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
+                        <CalendarIcon className="w-5 h-5 text-gray-400 ml-2" />
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="bg-transparent font-bold text-gray-700 focus:outline-none py-1"
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -392,17 +441,7 @@ export default function HorarioPage() {
                 </div>
             </div>
 
-            {/* Footer Actions */}
-            <div className="fixed bottom-6 right-6 md:right-12 z-50">
-                <button
-                    onClick={handleSave}
-                    disabled={saving || !Object.keys(assignments).length}
-                    className="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-2xl font-bold shadow-2xl shadow-gray-400 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50 disabled:transform-none"
-                >
-                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                    <span>Guardar</span>
-                </button>
-            </div>
+
 
             {/* Edit Modal */}
             {editingSlot && (assignments[editingSlot]?.length || 0) > 0 && (
@@ -437,15 +476,29 @@ export default function HorarioPage() {
                                         </button>
                                     </div>
 
-                                    <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Nota</label>
-                                        <input
-                                            type="text"
-                                            value={slot.notes || ''}
-                                            onChange={(e) => saveEdit(index, e.target.value)}
-                                            placeholder="Agregar nota..."
-                                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
-                                        />
+                                    <div className="space-y-2">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Nota</label>
+                                            <input
+                                                type="text"
+                                                value={slot.notes || ''}
+                                                onChange={(e) => saveEdit(index, e.target.value)}
+                                                placeholder="Agregar nota..."
+                                                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Cambiar Hora</label>
+                                            <select
+                                                value={editingSlot || ''}
+                                                onChange={(e) => moveAssignment(index, e.target.value)}
+                                                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
+                                            >
+                                                {timeSlots.map(t => (
+                                                    <option key={t} value={t}>{t} {isBreakTime(t) ? '(Descanso)' : ''}</option>
+                                                ))}
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -461,7 +514,8 @@ export default function HorarioPage() {
                         </div>
                     </div>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }
