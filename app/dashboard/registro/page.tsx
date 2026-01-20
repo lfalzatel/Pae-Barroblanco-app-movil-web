@@ -603,9 +603,11 @@ function RegistroContent() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <button
-                onClick={handleBack}
-                className={`p-2 rounded-lg ${step === 'sede' ? 'text-gray-300 cursor-default' : 'hover:bg-gray-100 text-gray-700'}`}
-                disabled={step === 'sede'}
+                onClick={() => {
+                  if (step === 'sede') router.push('/dashboard');
+                  else handleBack();
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700"
               >
                 <ArrowLeft className="w-6 h-6" />
               </button>

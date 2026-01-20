@@ -209,14 +209,27 @@ export default function ProfilePage() {
 
                     <div className="grid grid-cols-7 gap-2 md:gap-4">
                         {Array.from({ length: 35 }).map((_, i) => {
-                            const d = new Date();
-                            d.setDate(d.getDate() - (34 - i));
+                            const d = (() => {
+                                const today = new Date();
+                                const currentDay = today.getDay(); // 0-6
+                                const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
+                                const startOfWeek = new Date(today);
+                                startOfWeek.setDate(today.getDate() - daysSinceMonday);
+                                const startDate = new Date(startOfWeek);
+                                startDate.setDate(startOfWeek.getDate() - 28); // Go back 4 weeks
+                                const date = new Date(startDate);
+                                date.setDate(startDate.getDate() + i);
+                                return date;
+                            })();
+
                             const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            const todayStr = new Date().toISOString().split('T')[0];
 
                             // Find records for this date
                             const records = history.filter(h => h.fecha === dateStr);
                             const hasActivity = records.length > 0;
                             const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                            const isFuture = dateStr > todayStr;
 
                             return (
                                 <button
@@ -261,11 +274,13 @@ export default function ProfilePage() {
                                     disabled={!hasActivity}
                                     className={`
                                         aspect-square rounded-2xl flex flex-col items-center justify-center border transition-all duration-200
-                                        ${hasActivity
-                                            ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 hover:scale-110 cursor-pointer'
-                                            : isWeekend
-                                                ? 'bg-gray-50 border-transparent text-gray-300'
-                                                : 'bg-white border-gray-100 text-gray-300'
+                                        ${isFuture
+                                            ? 'opacity-25 bg-gray-50 border-transparent text-gray-300 cursor-default'
+                                            : hasActivity
+                                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 hover:scale-110 cursor-pointer'
+                                                : isWeekend
+                                                    ? 'bg-gray-50 border-transparent text-gray-300'
+                                                    : 'bg-white border-gray-100 text-gray-300'
                                         }
                                     `}
                                 >

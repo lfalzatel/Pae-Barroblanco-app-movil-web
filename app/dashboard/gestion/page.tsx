@@ -703,23 +703,36 @@ export default function GestionPage() {
 
                   <div className="grid grid-cols-7 gap-1">
                     {Array.from({ length: 35 }).map((_, i) => {
-                      const d = new Date();
-                      d.setDate(d.getDate() - (34 - i));
+                      const d = (() => {
+                        const today = new Date();
+                        const currentDay = today.getDay();
+                        const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
+                        const startOfWeek = new Date(today);
+                        startOfWeek.setDate(today.getDate() - daysSinceMonday);
+                        const startDate = new Date(startOfWeek);
+                        startDate.setDate(startOfWeek.getDate() - 28);
+                        const date = new Date(startDate);
+                        date.setDate(startDate.getDate() + i);
+                        return date;
+                      })();
                       const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                      const todayStr = new Date().toISOString().split('T')[0];
                       const record = studentHistory.find(r => r.fecha === dateStr);
                       const isWeekend = d.getDay() === 0 || d.getDay() === 6;
                       const hasNovelty = record?.novedad_tipo || record?.novedad_descripcion;
+                      const isFuture = dateStr > todayStr;
 
                       return (
                         <button
                           key={i}
                           onClick={() => record && setSelectedStudentDate(record)}
                           disabled={!record}
-                          className={`aspect-square rounded-xl flex flex-col items-center justify-center relative border transition-all duration-200 ${record ? (
-                            record.estado === 'recibio' ? 'bg-green-100 border-green-200 text-green-700 hover:scale-110 shadow-sm cursor-pointer' :
-                              record.estado === 'no_recibio' ? 'bg-red-100 border-red-200 text-red-700 hover:scale-110 shadow-sm cursor-pointer' :
-                                'bg-gray-100 border-gray-200 text-gray-700 hover:scale-110 shadow-sm cursor-pointer'
-                          ) : isWeekend ? 'bg-gray-50 border-transparent text-gray-300' : 'bg-white border-gray-100 text-gray-300'
+                          className={`aspect-square rounded-xl flex flex-col items-center justify-center relative border transition-all duration-200 ${isFuture ? 'opacity-25 bg-gray-50 border-transparent text-gray-300 cursor-default' :
+                              record ? (
+                                record.estado === 'recibio' ? 'bg-green-100 border-green-200 text-green-700 hover:scale-110 shadow-sm cursor-pointer' :
+                                  record.estado === 'no_recibio' ? 'bg-red-100 border-red-200 text-red-700 hover:scale-110 shadow-sm cursor-pointer' :
+                                    'bg-gray-100 border-gray-200 text-gray-700 hover:scale-110 shadow-sm cursor-pointer'
+                              ) : isWeekend ? 'bg-gray-50 border-transparent text-gray-300' : 'bg-white border-gray-100 text-gray-300'
                             }`}
                         >
                           <span className="text-xs font-bold">{d.getDate()}</span>
@@ -883,11 +896,23 @@ export default function GestionPage() {
 
                   <div className="grid grid-cols-7 gap-1">
                     {Array.from({ length: 35 }).map((_, i) => {
-                      const d = new Date();
-                      d.setDate(d.getDate() - (34 - i));
+                      const d = (() => {
+                        const today = new Date();
+                        const currentDay = today.getDay();
+                        const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
+                        const startOfWeek = new Date(today);
+                        startOfWeek.setDate(today.getDate() - daysSinceMonday);
+                        const startDate = new Date(startOfWeek);
+                        startDate.setDate(startOfWeek.getDate() - 28);
+                        const date = new Date(startDate);
+                        date.setDate(startDate.getDate() + i);
+                        return date;
+                      })();
                       const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                      const todayStr = new Date().toISOString().split('T')[0];
                       const record = docenteHistory.find(r => r.fecha === dateStr);
                       const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                      const isFuture = dateStr > todayStr;
 
                       return (
                         <button
@@ -896,12 +921,13 @@ export default function GestionPage() {
                           disabled={!record}
                           title={dateStr + (record ? ` - ${record.total} registros` : '')}
                           className={`aspect-square rounded-xl flex flex-col items-center justify-center border transition-all duration-200
-                          ${record
-                              ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 hover:scale-110 cursor-pointer'
-                              : isWeekend
-                                ? 'bg-gray-50 border-transparent text-gray-300'
-                                : 'bg-white border-gray-100 text-gray-300'
-                            }
+                          ${isFuture ? 'opacity-25 bg-gray-50 border-transparent text-gray-300 cursor-default' :
+                              record
+                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 hover:scale-110 cursor-pointer'
+                                : isWeekend
+                                  ? 'bg-gray-50 border-transparent text-gray-300'
+                                  : 'bg-white border-gray-100 text-gray-300'
+                            }  }
                       `}
                         >
                           <span className={`text-xs md:text-sm font-bold ${record ? 'text-white' : ''}`}>
