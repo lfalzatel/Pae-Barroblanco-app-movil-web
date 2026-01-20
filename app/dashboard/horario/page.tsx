@@ -248,47 +248,55 @@ export default function HorarioPage() {
 
     return (
         <div className="p-2 lg:p-6 max-w-7xl mx-auto pb-0 h-screen flex flex-col overflow-hidden bg-gray-50/50">
-            {/* Header */}
-            <div className="flex items-center justify-between gap-2 mb-4 px-2 shrink-0">
-                <div className="flex items-center gap-2">
+            {/* Header Area */}
+            <div className="flex flex-col gap-4 mb-4 px-2 shrink-0">
+                {/* Title Row */}
+                <div className="flex items-center gap-3">
                     <button onClick={() => router.push('/dashboard')} className="p-2 hover:bg-white rounded-full text-gray-500 shadow-sm border border-transparent hover:border-gray-200 transition-all">
                         <ChevronLeft className="w-5 h-5" />
                     </button>
+                    <h1 className="text-xl lg:text-3xl font-black text-gray-900 tracking-tight">Tablero de Horarios</h1>
+                </div>
+
+                {/* Controls Row */}
+                <div className="flex items-center justify-between gap-2">
                     <div className="relative">
                         <button
                             onClick={() => setShowCalendar(!showCalendar)}
-                            className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-sm hover:border-blue-300 transition-all"
+                            className="flex items-center gap-3 bg-white px-4 py-2.5 rounded-xl border border-gray-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all active:scale-95"
                         >
-                            <CalendarIcon className="w-4 h-4 text-blue-600" />
+                            <div className="bg-blue-50 p-1.5 rounded-lg text-blue-600">
+                                <CalendarIcon className="w-5 h-5" />
+                            </div>
                             <div className="text-left">
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider leading-none">Viendo</p>
-                                <p className="text-xs font-black text-gray-900 leading-none capitalize">
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider leading-none mb-0.5">Editando</p>
+                                <p className="text-sm font-black text-gray-900 leading-none capitalize">
                                     {new Date(selectedDate || new Date()).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
                                 </p>
                             </div>
                         </button>
 
-                        {/* Calendar Popover */}
+                        {/* Calendar Popover - Larger Size */}
                         {showCalendar && (
-                            <div className="absolute top-12 left-0 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
+                            <div className="absolute top-16 left-0 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
+                                {/* Backdrop for mobile close */}
                                 <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden" onClick={() => setShowCalendar(false)}></div>
+
                                 <MiniCalendar
                                     selectedDate={selectedDate}
                                     onSelectDate={(d) => { setSelectedDate(d); setShowCalendar(false); }}
-                                    className="relative z-50 border border-blue-100 shadow-xl w-[280px]"
+                                    className="relative z-50 border border-blue-100 shadow-2xl w-[320px] md:w-[350px]"
                                 />
                             </div>
                         )}
                     </div>
-                </div>
 
-                <div className="flex items-center gap-3">
                     <button
                         onClick={handleSave}
                         disabled={saving || !Object.keys(assignments).length}
-                        className="bg-gray-900 hover:bg-black text-white px-3 py-2 rounded-xl font-bold shadow-lg shadow-gray-200 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none text-xs"
+                        className="bg-gray-900 hover:bg-black text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-gray-200 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none"
                     >
-                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                         <span>Guardar</span>
                     </button>
                 </div>
