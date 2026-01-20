@@ -14,7 +14,8 @@ import {
     ChevronUp,
     ChevronDown,
     User,
-    Menu
+    Menu,
+    Calendar // Import Calendar icon
 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -77,6 +78,10 @@ export default function DashboardLayout({
         { href: '/dashboard/gestion', label: 'Gestión', icon: Users },
         { href: '/dashboard/reportes', label: 'Reportes', icon: BarChart3 },
     ];
+
+    if (usuario?.rol === 'admin' || usuario?.rol === 'coordinador_pae') {
+        navItems.push({ href: '/dashboard/horario', label: 'Horario', icon: Calendar });
+    }
 
     if (usuario?.rol === 'admin') {
         navItems.push({ href: '/dashboard/admin', label: 'Admin', icon: Settings });
