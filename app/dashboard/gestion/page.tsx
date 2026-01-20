@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Search, Eye, FileDown, Users, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock } from 'lucide-react';
+import { ArrowLeft, Search, Eye, FileDown, Users, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -49,6 +49,7 @@ export default function GestionPage() {
     firstRegister?: string;
     lastRegister?: string;
   } | null>(null);
+  const [selectedStudentDate, setSelectedStudentDate] = useState<any | null>(null);
 
   const sedes = [
     { id: 'todas', nombre: 'Todas' },
@@ -685,10 +686,21 @@ export default function GestionPage() {
 
                 {/* Vista de Calendario (Mini Grid) */}
                 <div className="space-y-3">
-                  <h4 className="font-bold text-gray-900 border-b pb-2 flex justify-between items-center">
-                    Vista Calendario (Últimos 30 días)
-                    <span className="text-xs font-normal text-gray-500">Días escolares</span>
-                  </h4>
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-bold text-gray-900 flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-blue-500" />
+                      Asistencia
+                    </h4>
+                    <span className="text-xs text-gray-400">Clic para detalles</span>
+                  </div>
+
+                  {/* Headers */}
+                  <div className="grid grid-cols-7 gap-1 mb-1">
+                    {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => (
+                      <div key={d} className="text-center text-[10px] font-bold text-gray-400">{d}</div>
+                    ))}
+                  </div>
+
                   <div className="grid grid-cols-7 gap-1">
                     {Array.from({ length: 35 }).map((_, i) => {
                       const d = new Date();
@@ -696,28 +708,32 @@ export default function GestionPage() {
                       const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                       const record = studentHistory.find(r => r.fecha === dateStr);
                       const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                      const hasNovelty = record?.novedad_tipo || record?.novedad_descripcion;
 
                       return (
-                        <div
+                        <button
                           key={i}
-                          title={dateStr}
-                          className={`aspect-square rounded-md flex items-center justify-center text-[10px] border ${isWeekend ? 'bg-gray-100 text-gray-300 border-transparent' :
-                            record ? (
-                              record.estado === 'recibio' ? 'bg-green-500 border-green-600 text-white' :
-                                record.estado === 'no_recibio' ? 'bg-red-500 border-red-600 text-white' :
-                                  'bg-gray-400 border-gray-500 text-white'
-                            ) : 'bg-white border-gray-100 text-gray-300'
+                          onClick={() => record && setSelectedStudentDate(record)}
+                          disabled={!record}
+                          className={`aspect-square rounded-xl flex flex-col items-center justify-center relative border transition-all duration-200 ${record ? (
+                            record.estado === 'recibio' ? 'bg-green-100 border-green-200 text-green-700 hover:scale-110 shadow-sm cursor-pointer' :
+                              record.estado === 'no_recibio' ? 'bg-red-100 border-red-200 text-red-700 hover:scale-110 shadow-sm cursor-pointer' :
+                                'bg-gray-100 border-gray-200 text-gray-700 hover:scale-110 shadow-sm cursor-pointer'
+                          ) : isWeekend ? 'bg-gray-50 border-transparent text-gray-300' : 'bg-white border-gray-100 text-gray-300'
                             }`}
                         >
-                          {d.getDate()}
-                        </div>
+                          <span className="text-xs font-bold">{d.getDate()}</span>
+                          {hasNovelty && (
+                            <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
+                          )}
+                        </button>
                       );
                     })}
                   </div>
                   <div className="flex gap-4 text-[10px] justify-center pt-2">
-                    <div className="flex items-center gap-1"><div className="w-2 h-2 bg-green-500 rounded-sm"></div> Recibió</div>
-                    <div className="flex items-center gap-1"><div className="w-2 h-2 bg-red-500 rounded-sm"></div> No Recibió</div>
-                    <div className="flex items-center gap-1"><div className="w-2 h-2 bg-gray-400 rounded-sm"></div> Ausente</div>
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 bg-green-500 rounded-full"></div> Recibió</div>
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 bg-red-500 rounded-full"></div> No Recibió</div>
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 bg-yellow-500 rounded-full"></div> Con Novedad</div>
                   </div>
                 </div>
 
@@ -759,6 +775,82 @@ export default function GestionPage() {
                     )}
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Detalle Día Estudiante */}
+        {selectedStudentDate && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+            <div
+              className="bg-white/90 backdrop-blur-xl rounded-3xl w-full max-w-sm shadow-2xl border border-white/50 overflow-hidden animate-in zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-gray-100 bg-white/50 flex justify-between items-center">
+                <div>
+                  <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">Detalle de Asistencia</p>
+                  <h3 className="text-xl font-black text-gray-900 capitalize">{new Date(selectedStudentDate.fecha + 'T00:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+                </div>
+                <button
+                  onClick={() => setSelectedStudentDate(null)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Status Badge */}
+                <div className={`p-4 rounded-2xl flex items-center gap-4 ${selectedStudentDate.estado === 'recibio' ? 'bg-green-50 border border-green-100' :
+                  selectedStudentDate.estado === 'no_recibio' ? 'bg-red-50 border border-red-100' :
+                    'bg-gray-50 border border-gray-100'
+                  }`}>
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm ${selectedStudentDate.estado === 'recibio' ? 'bg-green-100 text-green-600' :
+                    selectedStudentDate.estado === 'no_recibio' ? 'bg-red-100 text-red-600' :
+                      'bg-gray-200 text-gray-600'
+                    }`}>
+                    {selectedStudentDate.estado === 'recibio' && <CheckCircle2 className="w-6 h-6" />}
+                    {selectedStudentDate.estado === 'no_recibio' && <X className="w-6 h-6" />}
+                    {selectedStudentDate.estado === 'ausente' && <AlertCircle className="w-6 h-6" />}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold uppercase opacity-60 mb-0.5">Estado</p>
+                    <p className={`text-lg font-black uppercase ${selectedStudentDate.estado === 'recibio' ? 'text-green-700' :
+                      selectedStudentDate.estado === 'no_recibio' ? 'text-red-700' :
+                        'text-gray-700'
+                      }`}>
+                      {selectedStudentDate.estado.replace('_', ' ')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Time Info */}
+                <div className="flex items-center gap-3 p-3 bg-blue-50/50 rounded-xl">
+                  <Clock className="w-5 h-5 text-blue-500" />
+                  <div>
+                    <p className="text-xs font-bold text-blue-600 uppercase">Hora de Registro</p>
+                    <p className="text-sm font-bold text-gray-700">
+                      {new Date(selectedStudentDate.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Novelties */}
+                {(selectedStudentDate.novedad_tipo || selectedStudentDate.novedad_descripcion) && (
+                  <div className="bg-yellow-50 p-4 rounded-2xl border border-yellow-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="w-4 h-4 text-yellow-600" />
+                      <p className="text-xs font-bold text-yellow-700 uppercase">Novedad / Observación</p>
+                    </div>
+                    {selectedStudentDate.novedad_tipo && (
+                      <p className="font-bold text-yellow-900 mb-1">{selectedStudentDate.novedad_tipo}</p>
+                    )}
+                    {selectedStudentDate.novedad_descripcion && (
+                      <p className="text-sm text-yellow-800 italic">"{selectedStudentDate.novedad_descripcion}"</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
