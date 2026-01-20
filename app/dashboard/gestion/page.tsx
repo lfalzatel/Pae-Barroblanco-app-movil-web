@@ -728,11 +728,11 @@ export default function GestionPage() {
                           onClick={() => record && setSelectedStudentDate(record)}
                           disabled={!record}
                           className={`aspect-square rounded-xl flex flex-col items-center justify-center relative border transition-all duration-200 ${isFuture ? 'opacity-25 bg-gray-50 border-transparent text-gray-300 cursor-default' :
-                              record ? (
-                                record.estado === 'recibio' ? 'bg-green-100 border-green-200 text-green-700 hover:scale-110 shadow-sm cursor-pointer' :
-                                  record.estado === 'no_recibio' ? 'bg-red-100 border-red-200 text-red-700 hover:scale-110 shadow-sm cursor-pointer' :
-                                    'bg-gray-100 border-gray-200 text-gray-700 hover:scale-110 shadow-sm cursor-pointer'
-                              ) : isWeekend ? 'bg-gray-50 border-transparent text-gray-300' : 'bg-white border-gray-100 text-gray-300'
+                            record ? (
+                              record.estado === 'recibio' ? 'bg-green-100 border-green-200 text-green-700 hover:scale-110 shadow-sm cursor-pointer' :
+                                record.estado === 'no_recibio' ? 'bg-red-100 border-red-200 text-red-700 hover:scale-110 shadow-sm cursor-pointer' :
+                                  'bg-gray-100 border-gray-200 text-gray-700 hover:scale-110 shadow-sm cursor-pointer'
+                            ) : isWeekend ? 'bg-gray-50 border-transparent text-gray-300' : 'bg-white border-gray-100 text-gray-300'
                             }`}
                         >
                           <span className="text-xs font-bold">{d.getDate()}</span>
@@ -933,6 +933,11 @@ export default function GestionPage() {
                           <span className={`text-xs md:text-sm font-bold ${record ? 'text-white' : ''}`}>
                             {d.getDate()}
                           </span>
+                          {record && (
+                            <span className="text-[10px] font-medium opacity-80 mt-1">
+                              {record.total}
+                            </span>
+                          )}
                         </button>
                       );
                     })}

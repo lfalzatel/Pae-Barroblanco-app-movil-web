@@ -173,41 +173,6 @@ export default function ProfilePage() {
                     </button>
                 </div>
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-blue-200 transition-colors">
-                        <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-3">
-                            <CheckCircle2 className="w-5 h-5" />
-                        </div>
-                        <span className="text-3xl font-black text-gray-900">{stats.totalRegistros}</span>
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Registros Totales</span>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-blue-200 transition-colors">
-                        <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-3">
-                            <Calendar className="w-5 h-5" />
-                        </div>
-                        <span className="text-3xl font-black text-gray-900">{stats.diasActivos}</span>
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Días Activos</span>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-blue-200 transition-colors">
-                        <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mb-3">
-                            <TrendingUp className="w-5 h-5" />
-                        </div>
-                        <span className="text-3xl font-black text-gray-900">{stats.gruposAtendidos}</span>
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Grupos Gestionados</span>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-blue-200 transition-colors">
-                        <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3">
-                            <Clock className="w-5 h-5" />
-                        </div>
-                        <span className="text-lg font-bold text-gray-900 mt-1">{stats.ultimoRegistro}</span>
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-2">Última Actividad</span>
-                    </div>
-                </div>
-
                 {/* Calendar Section */}
                 <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
                     <div className="flex items-center gap-3 mb-6">
@@ -316,6 +281,41 @@ export default function ProfilePage() {
                                 </button>
                             );
                         })}
+                    </div>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-blue-200 transition-colors">
+                        <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-3">
+                            <CheckCircle2 className="w-5 h-5" />
+                        </div>
+                        <span className="text-3xl font-black text-gray-900">{stats.totalRegistros}</span>
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Registros Totales</span>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-blue-200 transition-colors">
+                        <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-3">
+                            <Calendar className="w-5 h-5" />
+                        </div>
+                        <span className="text-3xl font-black text-gray-900">{stats.diasActivos}</span>
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Días Activos</span>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-blue-200 transition-colors">
+                        <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mb-3">
+                            <TrendingUp className="w-5 h-5" />
+                        </div>
+                        <span className="text-3xl font-black text-gray-900">{stats.gruposAtendidos}</span>
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Grupos Gestionados</span>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-blue-200 transition-colors">
+                        <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <span className="text-lg font-bold text-gray-900 mt-1">{stats.ultimoRegistro}</span>
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-2">Última Actividad</span>
                     </div>
                 </div>
 
