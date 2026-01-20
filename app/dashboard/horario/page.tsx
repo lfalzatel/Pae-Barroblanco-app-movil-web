@@ -13,7 +13,8 @@ import {
     X,
     Edit2,
     Trash2,
-    MoreVertical
+    MoreVertical,
+    Info
 } from 'lucide-react';
 import { generateTimeSlots, processGroups, GlobalGroup, isBreakTime } from '@/lib/schedule-utils';
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
@@ -241,10 +242,40 @@ export default function HorarioPage() {
         }
 
         setSaving(true);
-        // ... existing save logic
+        try {
+            // Transform assignments to storage format
+            const itemsToSave: any[] = [];
+            Object.entries(assignments).forEach(([time, slots]) => {
+                slots.forEach(slot => {
+                    itemsToSave.push({
+                        time: time,
+                        time_start: time,
+                        group: slot.group.label,
+                        notes: slot.notes || ''
+                    });
+                });
+            });
+
+            const { error } = await supabase
+                .from('schedules')
+                .upsert({
+                    date: selectedDate,
+                    items: itemsToSave,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'date' });
+
+            if (error) throw error;
+
+            alert('Horario guardado correctamente.');
+        } catch (error) {
+            console.error('Error saving schedule:', error);
+            alert('Error al guardar el horario.');
+        } finally {
+            setSaving(false);
+        }
     };
 
-    // ...
+    const [showInstructions, setShowInstructions] = useState(false);
 
     return (
         <div className="p-2 lg:p-6 max-w-7xl mx-auto pb-0 h-screen flex flex-col overflow-hidden bg-gray-50/50">
@@ -291,14 +322,23 @@ export default function HorarioPage() {
                         )}
                     </div>
 
-                    <button
-                        onClick={handleSave}
-                        disabled={saving || !Object.keys(assignments).length}
-                        className="bg-gray-900 hover:bg-black text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-gray-200 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none"
-                    >
-                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                        <span>Guardar</span>
-                    </button>
+                    <div className="flex flex-col items-end gap-1">
+                        <button
+                            onClick={handleSave}
+                            disabled={saving || !Object.keys(assignments).length}
+                            className="bg-gray-900 hover:bg-black text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-gray-200 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none"
+                        >
+                            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                            <span>Guardar</span>
+                        </button>
+                        <button
+                            onClick={() => setShowInstructions(true)}
+                            className="text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-full"
+                        >
+                            <MoreVertical className="w-3 h-3" />
+                            <span>Instrucciones</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -490,8 +530,49 @@ export default function HorarioPage() {
                         </div>
                     </div>
                 </div>
-            )
-            }
+            )}
+
+            {/* Instructions Modal */}
+            {showInstructions && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowInstructions(false)}></div>
+                    <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6 overflow-hidden">
+                        <div className="p-4 bg-blue-50 -mx-6 -mt-6 mb-6 flex items-center justify-between">
+                            <h3 className="font-black text-blue-900 text-lg flex items-center gap-2">
+                                <Info className="w-5 h-5" />
+                                Instrucciones
+                            </h3>
+                            <button onClick={() => setShowInstructions(false)} className="p-1 hover:bg-blue-100 rounded-full text-blue-400">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="space-y-4 text-sm text-gray-600">
+                            <div className="flex gap-3">
+                                <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">1</div>
+                                <p><span className="font-bold text-gray-900">Selecciona un Grupo:</span> Toca un grupo disponible de la lista derecha. Se pondrá azul.</p>
+                            </div>
+                            <div className="flex gap-3">
+                                <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">2</div>
+                                <p><span className="font-bold text-gray-900">Asigna Hora:</span> Toca una franja horaria en la izquierda para asignar el grupo seleccionado.</p>
+                            </div>
+                            <div className="flex gap-3">
+                                <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">3</div>
+                                <p><span className="font-bold text-gray-900">Editar/Desasignar:</span> Toca una franja ya ocupada para ver detalles, agregar notas o eliminar la asignación.</p>
+                            </div>
+                            <div className="flex gap-3">
+                                <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">4</div>
+                                <p><span className="font-bold text-gray-900">Guardar:</span> ¡No olvides tocar el botón "Guardar" en la parte superior para aplicar los cambios!</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setShowInstructions(false)}
+                            className="w-full mt-6 py-3 bg-gray-900 text-white rounded-xl font-bold"
+                        >
+                            Entendido
+                        </button>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

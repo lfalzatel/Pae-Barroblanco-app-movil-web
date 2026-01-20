@@ -93,30 +93,30 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
     };
 
     return (
-        <div className={`bg-white rounded-3xl shadow-sm border border-gray-100 p-4 w-full ${className}`}>
-            <div className="flex items-center justify-between mb-4">
-                <button onClick={handlePrevMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                    <ChevronLeft className="w-5 h-5 text-gray-500" />
+        <div className={`bg-white rounded-2xl shadow-xl border border-gray-100 p-4 w-full max-w-[320px] ${className}`}>
+            <div className="flex items-center justify-between mb-4 px-2">
+                <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-900">
+                    <ChevronLeft className="w-5 h-5" />
                 </button>
-                <div className="font-bold text-gray-900 capitalize text-base">
+                <div className="font-bold text-gray-900 capitalize text-sm">
                     {monthNames[month]} {year}
                 </div>
-                <button onClick={handleNextMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                    <ChevronRight className="w-5 h-5 text-gray-500" />
+                <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-900">
+                    <ChevronRight className="w-5 h-5" />
                 </button>
             </div>
 
-            <div className="grid grid-cols-7 gap-2 mb-2">
+            <div className="grid grid-cols-7 gap-1 mb-2">
                 {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map(d => (
-                    <div key={d} className="text-center text-xs font-bold text-gray-400">
+                    <div key={d} className="text-center text-[10px] font-bold text-gray-400 uppercase">
                         {d}
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1 justify-items-center">
                 {days.map((day, idx) => {
-                    if (!day) return <div key={idx} />;
+                    if (!day) return <div key={idx} className="w-8 h-8" />;
 
                     const dateStr = generateIsoDate(day);
                     const isSelected = selectedDate === dateStr;
@@ -128,21 +128,18 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
                             key={idx}
                             onClick={() => onSelectDate(dateStr)}
                             className={`
-                                aspect-square rounded-xl flex flex-col items-center justify-center relative border transition-all duration-200
+                                relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200
                                 ${isSelected
-                                    ? 'bg-blue-600 border-blue-600 text-white shadow-md scale-105 z-10'
+                                    ? 'bg-blue-600 text-white shadow-md scale-105'
                                     : hasSchedule
-                                        ? 'bg-emerald-50 border-emerald-100 text-emerald-900 hover:border-emerald-300 hover:shadow-sm'
-                                        : 'bg-white border-gray-100 text-gray-700 hover:border-gray-300 hover:bg-gray-50'}
-                                ${isToday && !isSelected ? 'ring-2 ring-blue-500 border-blue-500' : ''}
+                                        ? 'bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100'
+                                        : 'text-gray-700 hover:bg-gray-100'}
+                                ${isToday && !isSelected ? 'ring-1 ring-blue-600 text-blue-600 font-bold' : ''}
                             `}
                         >
-                            <span className="text-sm font-bold">{day}</span>
+                            {day}
                             {hasSchedule && !isSelected && (
-                                <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                            )}
-                            {isSelected && hasSchedule && (
-                                <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-white/70"></div>
+                                <div className="absolute bottom-1 w-1 h-1 rounded-full bg-emerald-500"></div>
                             )}
                         </button>
                     );
@@ -151,11 +148,11 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
 
             <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-gray-400 border-t border-gray-100 pt-3">
                 <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                     <span>Con Horario</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full ring-2 ring-blue-600"></div>
+                    <div className="w-1.5 h-1.5 rounded-full ring-1 ring-blue-600"></div>
                     <span>Hoy</span>
                 </div>
             </div>
