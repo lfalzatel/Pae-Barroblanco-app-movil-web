@@ -30,10 +30,32 @@ export default function HorarioPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [role, setRole] = useState<string | null>(null);
-    const [selectedDate, setSelectedDate] = useState<string>(() => {
+
+    // Initialize with "Smart Tomorrow" logic
+    // If today is Friday/Saturday -> Default to Monday
+    // Else -> Default to Tomorrow
+    const getSmartDefaultDate = () => {
         const d = new Date();
-        const offset = d.getTimezoneOffset() * 60000;
-        return new Date(d.getTime() - offset).toISOString().split('T')[0];
+        const day = d.getDay();
+        if (day === 5) d.setDate(d.getDate() + 3); // Friday -> Monday
+        else if (day === 6) d.setDate(d.getDate() + 2); // Saturday -> Monday
+        else d.setDate(d.getDate() + 1); // Others -> Next Day
+        return d;
+    };
+
+    const formatDateLabel = (dateStr: string) => {
+        if (!dateStr) return '';
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const date = new Date(y, m - 1, d);
+        const options: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' };
+        const str = date.toLocaleDateString('es-CO', options);
+        return str.charAt(0).toUpperCase() + str.slice(1).replace('.', '');
+    };
+
+    const [selectedDate, setSelectedDate] = useState<string>(() => {
+        const smartDate = getSmartDefaultDate();
+        const offset = smartDate.getTimezoneOffset() * 60000;
+        return new Date(smartDate.getTime() - offset).toISOString().split('T')[0];
     });
 
     // Data State
@@ -315,8 +337,8 @@ export default function HorarioPage() {
                             </div>
                             <div className="text-left">
                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider leading-none mb-0.5">Editando</p>
-                                <p className="text-base font-black text-gray-900 leading-none capitalize">
-                                    {new Date(selectedDate || new Date()).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                <p className="text-sm font-black text-gray-900 leading-none">
+                                    {selectedDate ? formatDateLabel(selectedDate) : <span className="animate-pulse">Calculando...</span>}
                                 </p>
                             </div>
                             <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showCalendar ? 'rotate-180' : ''}`} />
