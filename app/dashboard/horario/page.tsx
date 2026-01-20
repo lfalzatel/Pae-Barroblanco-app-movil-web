@@ -58,6 +58,15 @@ export default function HorarioPage() {
         return new Date(smartDate.getTime() - offset).toISOString().split('T')[0];
     });
 
+    // Force refresh on mount to ensure we see latest data (fix for navigation cache)
+    useEffect(() => {
+        const handleFocus = () => {
+            if (role) initData();
+        };
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, [role, selectedDate]);
+
     // Data State
     const [availableGroups, setAvailableGroups] = useState<GlobalGroup[]>([]);
     const [timeSlots, setTimeSlots] = useState<string[]>([]);
