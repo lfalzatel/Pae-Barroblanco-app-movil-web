@@ -305,8 +305,8 @@ export default function HorarioPage() {
             {/* Main Content - 2 Columns mobile friendly */}
             <div className="grid grid-cols-12 gap-2 lg:gap-6 flex-1 overflow-hidden pb-4 px-1">
 
-                {/* Left: Timeline (Col 5) */}
-                <div className="col-span-5 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
+                {/* Left: Timeline (Col 7 - Wider) */}
+                <div className="col-span-7 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
                     <div className="p-2 lg:p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex justify-between items-center shrink-0">
                         <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
                             <Clock className="w-4 h-4 text-orange-500" />
@@ -373,8 +373,8 @@ export default function HorarioPage() {
                     </div>
                 </div>
 
-                {/* Right: Groups (Col 7) */}
-                <div className="col-span-7 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
+                {/* Right: Groups (Col 5 - Narrower, Single Column List) */}
+                <div className="col-span-5 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
                     <div className="p-2 lg:p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
                         <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
                             <Users className="w-4 h-4 text-blue-600" />
@@ -386,7 +386,7 @@ export default function HorarioPage() {
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-2 lg:p-3 custom-scrollbar bg-gray-50/20">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 lg:gap-2 content-start">
+                        <div className="grid grid-cols-1 gap-1.5 lg:gap-2 content-start">
                             {availableGroups.filter(g => !isAssigned(g)).length === 0 && (
                                 <div className="col-span-full py-10 text-center text-gray-400">
                                     <p className="text-xs font-medium">¡Todo asignado!</p>
