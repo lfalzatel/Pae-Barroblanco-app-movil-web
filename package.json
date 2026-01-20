@@ -4,9 +4,11 @@
   "description": "Sistema de Asistencia PAE - Barroblanco Institución Educativa",
   "scripts": {
     "dev": "next dev",
+    "predev": "npm run clean-pwa",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "clean-pwa": "node -e \"const fs = require('fs'); try { fs.unlinkSync('public/sw.js'); } catch (e) {} try { const files = fs.readdirSync('public').filter(f => f.startsWith('workbox-')); files.forEach(f => fs.unlinkSync('public/'+f)); } catch(e) {}\""
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",

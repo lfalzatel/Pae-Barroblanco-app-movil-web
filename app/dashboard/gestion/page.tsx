@@ -575,7 +575,12 @@ export default function GestionPage() {
                   <div key={docente.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                     <div className="flex items-center gap-4">
                       {docente.avatar_url ? (
-                        <img src={docente.avatar_url} alt={docente.nombre} className="w-12 h-12 rounded-full border border-gray-100" />
+                        <img
+                          src={docente.avatar_url}
+                          alt={docente.nombre}
+                          className="w-12 h-12 rounded-full border border-gray-100"
+                          referrerPolicy="no-referrer"
+                        />
                       ) : (
                         <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center font-bold text-blue-700">
                           {docente.nombre.charAt(0)}
