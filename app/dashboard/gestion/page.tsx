@@ -42,7 +42,13 @@ export default function GestionPage() {
   const [docenteHistory, setDocenteHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [grupoDropdownOpen, setGrupoDropdownOpen] = useState(false);
-  const [selectedDateActivity, setSelectedDateActivity] = useState<{ fecha: string, grupos: string[], total: number } | null>(null);
+  const [selectedDateActivity, setSelectedDateActivity] = useState<{
+    fecha: string;
+    grupos: { name: string; count: number }[];
+    total: number;
+    firstRegister: string;
+    lastRegister: string;
+  } | null>(null);
 
   const sedes = [
     { id: 'todas', nombre: 'Todas' },
@@ -166,6 +172,7 @@ export default function GestionPage() {
           .from('asistencia_pae')
           .select(`
             fecha,
+            created_at,
             estudiantes!inner(grupo, grado)
           `)
           .eq('registrado_por', selectedDocente.id)
@@ -173,20 +180,39 @@ export default function GestionPage() {
 
         if (error) throw error;
 
-        const dailyActivity: Record<string, { grupos: Set<string>, total: number }> = {};
+        const dailyActivity: Record<string, {
+          grupos: Map<string, number>,
+          total: number,
+          timestamps: string[]
+        }> = {};
+
         data?.forEach((a: any) => {
           if (!dailyActivity[a.fecha]) {
-            dailyActivity[a.fecha] = { grupos: new Set(), total: 0 };
+            dailyActivity[a.fecha] = {
+              grupos: new Map(),
+              total: 0,
+              timestamps: []
+            };
           }
-          dailyActivity[a.fecha].grupos.add(`${a.estudiantes.grado}-${a.estudiantes.grupo}`);
+          const groupKey = `${a.estudiantes.grado}-${a.estudiantes.grupo}`;
+          const currentCount = dailyActivity[a.fecha].grupos.get(groupKey) || 0;
+          dailyActivity[a.fecha].grupos.set(groupKey, currentCount + 1);
           dailyActivity[a.fecha].total += 1;
+          dailyActivity[a.fecha].timestamps.push(a.created_at);
         });
 
-        const historyArray = Object.entries(dailyActivity).map(([fecha, activity]) => ({
-          fecha,
-          grupos: Array.from(activity.grupos),
-          total: activity.total
-        }));
+        const historyArray = Object.entries(dailyActivity).map(([fecha, activity]) => {
+          // Sort timestamps to find first and last
+          const sortedTimes = activity.timestamps.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+          return {
+            fecha,
+            grupos: Array.from(activity.grupos.entries()).map(([name, count]) => ({ name, count })),
+            total: activity.total,
+            firstRegister: sortedTimes[0],
+            lastRegister: sortedTimes[sortedTimes.length - 1]
+          };
+        });
 
         setDocenteHistory(historyArray);
       } catch (error) {
@@ -748,9 +774,19 @@ export default function GestionPage() {
                 {/* Vista de Calendario (Mini Grid Historial Docente) */}
                 <div className="space-y-3">
                   <h4 className="font-bold text-gray-900 border-b pb-2 flex justify-between items-center">
-                    Actividad de Registro (Últimos 30 días)
+                    Actividad de Registro (Últimos 35 días)
                     <span className="text-xs font-normal text-gray-500">Días con registros</span>
                   </h4>
+
+                  {/* Day Headers */}
+                  <div className="grid grid-cols-7 gap-1 mb-1">
+                    {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
+                      <div key={day} className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+
                   <div className="grid grid-cols-7 gap-1">
                     {Array.from({ length: 35 }).map((_, i) => {
                       const d = new Date();
@@ -764,19 +800,22 @@ export default function GestionPage() {
                           key={i}
                           onClick={() => record && setSelectedDateActivity(record)}
                           disabled={!record}
-                          title={dateStr + (record ? ` - ${record.grupos.length} grupos` : '')}
-                          className={`aspect-square rounded-md flex items-center justify-center text-[10px] border transition-transform ${isWeekend ? 'bg-gray-50 text-gray-300 border-transparent' :
-                            record ? 'bg-blue-600 border-blue-700 text-white font-bold cursor-pointer hover:scale-110 shadow-sm' : 'bg-white border-gray-100 text-gray-300'
-                            }`}
+                          title={dateStr + (record ? ` - ${record.total} registros` : '')}
+                          className={`aspect-square rounded-xl flex flex-col items-center justify-center border transition-all duration-200
+                          ${record
+                              ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 hover:scale-110 cursor-pointer'
+                              : isWeekend
+                                ? 'bg-gray-50 border-transparent text-gray-300'
+                                : 'bg-white border-gray-100 text-gray-300'
+                            }
+                      `}
                         >
-                          {d.getDate()}
+                          <span className={`text-xs md:text-sm font-bold ${record ? 'text-white' : ''}`}>
+                            {d.getDate()}
+                          </span>
                         </button>
                       );
                     })}
-                  </div>
-                  <div className="flex gap-4 text-[10px] justify-center pt-2">
-                    <div className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-600 rounded-sm"></div> Día con registros</div>
-                    <div className="flex items-center gap-1"><div className="w-2 h-2 bg-white border border-gray-100 rounded-sm"></div> Sin registros</div>
                   </div>
                 </div>
 
@@ -790,8 +829,10 @@ export default function GestionPage() {
                           <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-full uppercase tracking-wider">{h.grupos.length} Grupos</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {h.grupos.map((g: string, idx: number) => (
-                            <span key={idx} className="bg-green-50 text-green-700 text-[10px] font-bold px-2 py-1 rounded-md border border-green-100">{g}</span>
+                          {h.grupos.map((g: any, idx: number) => (
+                            <span key={idx} className="bg-green-50 text-green-700 text-[10px] font-bold px-2 py-1 rounded-md border border-green-100">
+                              {g.name} ({g.count})
+                            </span>
                           ))}
                         </div>
                       </div>
@@ -805,39 +846,66 @@ export default function GestionPage() {
 
               {/* Modal de Segundo Nivel: Detalle del Día Docente */}
               {selectedDateActivity && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                   <div
-                    className="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-gray-200 overflow-hidden animate-in zoom-in-95 duration-200"
+                    className="bg-white/90 backdrop-blur-xl rounded-3xl w-full max-w-md shadow-2xl border border-white/50 overflow-hidden animate-in zoom-in-95 duration-300"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="p-4 border-b bg-blue-50 flex justify-between items-center">
+                    <div className="p-6 border-b border-gray-100 bg-white/50 flex justify-between items-center">
                       <div>
-                        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Actividad del Día</p>
-                        <h3 className="font-black text-lg text-gray-900">{selectedDateActivity.fecha}</h3>
+                        <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">Detalle del Día</p>
+                        <h3 className="text-xl font-black text-gray-900 capitalize">{new Date(selectedDateActivity.fecha).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
                       </div>
                       <button
                         onClick={() => setSelectedDateActivity(null)}
-                        className="p-1.5 hover:bg-blue-100 text-blue-700 rounded-full transition-colors"
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                       >
-                        <X className="w-5 h-5" />
+                        <X className="w-5 h-5 text-gray-500" />
                       </button>
                     </div>
 
-                    <div className="p-5 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-600">Total Grupos</span>
-                        <span className="text-2xl font-black text-blue-600">{selectedDateActivity.total}</span>
+                    <div className="p-6 space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                          <p className="text-xs text-blue-600 font-bold uppercase mb-1">Primer Registro</p>
+                          <p className="text-2xl font-black text-blue-900">
+                            {selectedDateActivity.firstRegister ? new Date(selectedDateActivity.firstRegister).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                          </p>
+                        </div>
+                        <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                          <p className="text-xs text-purple-600 font-bold uppercase mb-1">Último Registro</p>
+                          <p className="text-2xl font-black text-purple-900">
+                            {selectedDateActivity.lastRegister ? new Date(selectedDateActivity.lastRegister).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                          </p>
+                        </div>
                       </div>
 
                       <div>
-                        <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Grupos Atendidos</h4>
-                        <div className="flex flex-wrap gap-2">
+                        <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                          <Users className="w-4 h-4 text-gray-400" />
+                          Grupos Atendidos
+                        </h4>
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                           {selectedDateActivity.grupos.map((g, idx) => (
-                            <span key={idx} className="bg-white border border-gray-200 text-gray-700 text-sm font-bold px-3 py-1.5 rounded-lg shadow-sm">
-                              {g}
-                            </span>
+                            <div key={idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-xs">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600 text-xs text-transform uppercase">
+                                  {g.name.split('-')[0]}
+                                </div>
+                                <span className="font-bold text-gray-700">Grupo {g.name.split('-')[1] || g.name}</span>
+                              </div>
+                              <span className="bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-lg">
+                                {g.count}
+                              </span>
+                            </div>
                           ))}
                         </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-gray-100 text-center">
+                        <p className="text-sm text-gray-500">
+                          Total procesado: <b className="text-gray-900">{selectedDateActivity.total} registros</b>
+                        </p>
                       </div>
                     </div>
                   </div>

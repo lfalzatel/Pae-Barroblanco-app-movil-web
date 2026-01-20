@@ -188,26 +188,6 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
-                {/* Motivational / Extra Info Card */}
-                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white relative overflow-hidden">
-                    <div className="relative z-10 max-w-2xl">
-                        <div className="flex items-center gap-3 mb-4">
-                            <Award className="w-8 h-8 text-yellow-300" />
-                            <h3 className="text-xl font-bold">¡Gracias por tu labor!</h3>
-                        </div>
-                        <p className="text-blue-100 leading-relaxed">
-                            Tu compromiso con el Programa de Alimentación Escolar garantiza el bienestar de nuestros estudiantes.
-                            Cada registro cuenta para mantener la transparencia y calidad del servicio en la Institución Educativa Barroblanco.
-                        </p>
-                    </div>
-                    {/* Shapes */}
-                    <div className="absolute right-0 bottom-0 opacity-10">
-                        <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
-                            <circle cx="150" cy="150" r="100" fill="white" />
-                        </svg>
-                    </div>
-                </div>
-
                 {/* Calendar Section */}
                 <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
                     <div className="flex items-center gap-3 mb-6">
@@ -295,6 +275,26 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
+                {/* Motivational / Extra Info Card */}
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white relative overflow-hidden">
+                    <div className="relative z-10 max-w-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <Award className="w-8 h-8 text-yellow-300" />
+                            <h3 className="text-xl font-bold">¡Gracias por tu labor!</h3>
+                        </div>
+                        <p className="text-blue-100 leading-relaxed">
+                            Tu compromiso con el Programa de Alimentación Escolar garantiza el bienestar de nuestros estudiantes.
+                            Cada registro cuenta para mantener la transparencia y calidad del servicio en la Institución Educativa Barroblanco.
+                        </p>
+                    </div>
+                    {/* Shapes */}
+                    <div className="absolute right-0 bottom-0 opacity-10">
+                        <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+                            <circle cx="150" cy="150" r="100" fill="white" />
+                        </svg>
+                    </div>
+                </div>
+
                 {/* Detail Modal */}
                 {selectedDate && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -362,4 +362,3 @@ export default function ProfilePage() {
         </div>
     );
 }
-
