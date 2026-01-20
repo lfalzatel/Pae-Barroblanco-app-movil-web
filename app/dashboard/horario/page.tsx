@@ -45,6 +45,7 @@ export default function HorarioPage() {
     // Edit Modal State
     const [editingSlot, setEditingSlot] = useState<string | null>(null);
     const [editNote, setEditNote] = useState('');
+    const [showCalendar, setShowCalendar] = useState(false);
 
     useEffect(() => {
         checkAccess();
@@ -246,18 +247,38 @@ export default function HorarioPage() {
     // ...
 
     return (
-        <div className="p-4 lg:p-6 max-w-7xl mx-auto pb-32">
+        <div className="p-2 lg:p-6 max-w-7xl mx-auto pb-0 h-screen flex flex-col overflow-hidden bg-gray-50/50">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => router.push('/dashboard')} className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
-                        <ChevronLeft />
+            <div className="flex items-center justify-between gap-2 mb-4 px-2 shrink-0">
+                <div className="flex items-center gap-2">
+                    <button onClick={() => router.push('/dashboard')} className="p-2 hover:bg-white rounded-full text-gray-500 shadow-sm border border-transparent hover:border-gray-200 transition-all">
+                        <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900">Tablero de Horarios</h1>
-                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                            {timeSlots.length} Franjas • {new Date(selectedDate || new Date()).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
-                        </p>
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowCalendar(!showCalendar)}
+                            className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-sm hover:border-blue-300 transition-all"
+                        >
+                            <CalendarIcon className="w-4 h-4 text-blue-600" />
+                            <div className="text-left">
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider leading-none">Viendo</p>
+                                <p className="text-xs font-black text-gray-900 leading-none capitalize">
+                                    {new Date(selectedDate || new Date()).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                </p>
+                            </div>
+                        </button>
+
+                        {/* Calendar Popover */}
+                        {showCalendar && (
+                            <div className="absolute top-12 left-0 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
+                                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden" onClick={() => setShowCalendar(false)}></div>
+                                <MiniCalendar
+                                    selectedDate={selectedDate}
+                                    onSelectDate={(d) => { setSelectedDate(d); setShowCalendar(false); }}
+                                    className="relative z-50 border border-blue-100 shadow-xl w-[280px]"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -265,7 +286,7 @@ export default function HorarioPage() {
                     <button
                         onClick={handleSave}
                         disabled={saving || !Object.keys(assignments).length}
-                        className="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-xl font-bold shadow-lg shadow-gray-200 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none text-sm"
+                        className="bg-gray-900 hover:bg-black text-white px-3 py-2 rounded-xl font-bold shadow-lg shadow-gray-200 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none text-xs"
                     >
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         <span>Guardar</span>
@@ -273,24 +294,25 @@ export default function HorarioPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-200px)]">
+            {/* Main Content - 2 Columns mobile friendly */}
+            <div className="grid grid-cols-12 gap-2 lg:gap-6 flex-1 overflow-hidden pb-4 px-1">
 
-                {/* Left: Timeline (Swapped, now 5 cols) */}
-                <div className="lg:col-span-5 bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden order-2 lg:order-1 h-full">
-                    <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex justify-between items-center shrink-0">
-                        <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                            <Clock className="w-5 h-5 text-orange-500" />
-                            Línea de Tiempo
+                {/* Left: Timeline (Col 5) */}
+                <div className="col-span-5 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
+                    <div className="p-2 lg:p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex justify-between items-center shrink-0">
+                        <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
+                            <Clock className="w-4 h-4 text-orange-500" />
+                            <span className="hidden lg:inline">Línea de </span>Tiempo
                         </h3>
                         {selectedGroup && (
-                            <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full animate-pulse font-bold truncate max-w-[120px]">
-                                Asignando: {selectedGroup.label}
+                            <span className="text-[9px] lg:text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full animate-pulse font-bold truncate max-w-[80px] lg:max-w-[120px]">
+                                Asig: {selectedGroup.label}
                             </span>
                         )}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-3 custom-scrollbar relative bg-gray-50/30">
-                        <div className="space-y-2 pb-20">
+                    <div className="flex-1 overflow-y-auto p-1 lg:p-3 custom-scrollbar bg-gray-50/30">
+                        <div className="space-y-1.5 lg:space-y-2 pb-20">
                             {timeSlots.map((time) => {
                                 const slots = assignments[time] || [];
                                 const isBreak = isBreakTime(time);
@@ -300,7 +322,7 @@ export default function HorarioPage() {
                                         key={time}
                                         onClick={() => handleSlotClick(time)}
                                         className={`
-                                        relative w-full flex items-start gap-3 p-2 rounded-xl border transition-all duration-200 text-left group
+                                        relative w-full flex items-start gap-1 lg:gap-3 p-1.5 lg:p-2 rounded-lg lg:rounded-xl border transition-all duration-200 text-left group
                                         ${slots.length > 0
                                                 ? 'bg-white border-emerald-100 shadow-sm ring-1 ring-emerald-50'
                                                 : isBreak
@@ -311,7 +333,7 @@ export default function HorarioPage() {
                                     `}
                                     >
                                         <div className={`
-                                         w-14 py-1 rounded-lg text-center text-[10px] font-bold font-mono shrink-0
+                                         w-10 lg:w-14 py-0.5 lg:py-1 rounded text-center text-[9px] lg:text-[10px] font-bold font-mono shrink-0
                                          ${slots.length > 0 ? 'bg-emerald-100 text-emerald-700' : isBreak ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}
                                      `}>
                                             {time.split(' ')[0]}
@@ -319,25 +341,19 @@ export default function HorarioPage() {
 
                                         <div className="flex-1 min-w-0">
                                             {slots.length > 0 ? (
-                                                <div className="space-y-1">
+                                                <div className="space-y-0.5 lg:space-y-1">
                                                     {slots.map((slot, idx) => (
-                                                        <div key={idx} className="flex items-center justify-between gap-1 bg-gray-50 p-1 rounded border border-gray-100">
+                                                        <div key={idx} className="flex flex-col lg:flex-row lg:items-center justify-between gap-0.5 bg-gray-50 p-1 rounded border border-gray-100/50">
                                                             <div className="min-w-0">
-                                                                <p className="font-bold text-gray-800 text-[10px] truncate leading-tight">{slot.group.label}</p>
-                                                                {slot.notes && <p className="text-[9px] text-gray-400 truncate italic">{slot.notes}</p>}
+                                                                <p className="font-bold text-gray-800 text-[9px] lg:text-[10px] truncate">{slot.group.label}</p>
                                                             </div>
                                                         </div>
                                                     ))}
-                                                    <div className="flex justify-end">
-                                                        <span className="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                                                            <Edit2 className="w-2.5 h-2.5" /> ({slots.length})
-                                                        </span>
-                                                    </div>
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center justify-between h-full">
-                                                    <span className={`text-[10px] font-medium italic ${isBreak ? 'text-amber-600/70 font-bold uppercase' : 'text-gray-300'}`}>
-                                                        {isBreak ? 'Descanso' : (selectedGroup ? 'Asignar aquí' : 'Disponible')}
+                                                <div className="flex items-center h-full">
+                                                    <span className={`text-[8px] lg:text-[10px] font-medium italic ${isBreak ? 'text-amber-600/70' : 'text-gray-300'}`}>
+                                                        {isBreak ? 'Descanso' : (selectedGroup ? 'Asignar' : 'Libre')}
                                                     </span>
                                                 </div>
                                             )}
@@ -349,62 +365,45 @@ export default function HorarioPage() {
                     </div>
                 </div>
 
-                {/* Right: Tools & Groups (Swapped, now 7 cols) */}
-                <div className="lg:col-span-7 flex flex-col gap-6 order-1 lg:order-2 h-full overflow-hidden">
-
-                    {/* Calendar Panel */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4 shrink-0 flex flex-col md:flex-row gap-6 items-start">
-                        <div className="flex-1">
-                            <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                                <CalendarIcon className="w-5 h-5 text-purple-500" />
-                                Calendario
-                            </h3>
-                            <p className="text-xs text-slate-500 mb-4">
-                                Selecciona un día para gestionar. Los días con punto verde ya tienen horario.
-                            </p>
-                            <div className="flex justify-center md:justify-start">
-                                <MiniCalendar
-                                    selectedDate={selectedDate}
-                                    onSelectDate={setSelectedDate}
-                                    className="border-none shadow-none p-0 w-full"
-                                />
-                            </div>
+                {/* Right: Groups (Col 7) */}
+                <div className="col-span-7 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
+                    <div className="p-2 lg:p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
+                        <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
+                            <Users className="w-4 h-4 text-blue-600" />
+                            Grupos
+                        </h3>
+                        <div className="text-[10px] text-gray-400 font-bold">
+                            {availableGroups.filter(g => !isAssigned(g)).length} rest
                         </div>
+                    </div>
 
-                        <div className="flex-1 w-full flex flex-col h-full min-h-[200px]">
-                            <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                                <Users className="w-5 h-5 text-blue-600" />
-                                Grupos Disponibles
-                            </h3>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50/50 rounded-xl p-3 border border-gray-100">
-                                <div className="flex flex-wrap gap-2 content-start">
-                                    {availableGroups.filter(g => !isAssigned(g)).length === 0 && (
-                                        <div className="w-full py-10 text-center text-gray-400">
-                                            <p className="text-sm font-medium">¡Todo asignado esta fecha!</p>
-                                        </div>
-                                    )}
-
-                                    {availableGroups.map((group) => {
-                                        if (isAssigned(group)) return null;
-                                        const isSelected = selectedGroup?.id === group.id;
-                                        return (
-                                            <button
-                                                key={group.id}
-                                                onClick={() => setSelectedGroup(isSelected ? null : group)}
-                                                className={`
-                                                px-3 py-2 rounded-lg text-xs font-bold border transition-all duration-200 flex items-center justify-between gap-2 text-left
-                                                ${isSelected
-                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-200'
-                                                        : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50'}
-                                            `}
-                                            >
-                                                <span>{group.label}</span>
-                                                {group.isCombo && <span className="text-[9px] bg-white/20 px-1 py-0.5 rounded-full">+Sordos</span>}
-                                            </button>
-                                        );
-                                    })}
+                    <div className="flex-1 overflow-y-auto p-2 lg:p-3 custom-scrollbar bg-gray-50/20">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 lg:gap-2 content-start">
+                            {availableGroups.filter(g => !isAssigned(g)).length === 0 && (
+                                <div className="col-span-full py-10 text-center text-gray-400">
+                                    <p className="text-xs font-medium">¡Todo asignado!</p>
                                 </div>
-                            </div>
+                            )}
+
+                            {availableGroups.map((group) => {
+                                if (isAssigned(group)) return null;
+                                const isSelected = selectedGroup?.id === group.id;
+                                return (
+                                    <button
+                                        key={group.id}
+                                        onClick={() => setSelectedGroup(isSelected ? null : group)}
+                                        className={`
+                                        p-2 lg:px-3 lg:py-2 rounded-lg text-[10px] lg:text-xs font-bold border transition-all duration-200 flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-1 text-center lg:text-left
+                                        ${isSelected
+                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-1 ring-blue-200'
+                                                : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50'}
+                                    `}
+                                    >
+                                        <span>{group.label}</span>
+                                        {group.isCombo && <span className="text-[8px] bg-white/20 px-1 py-0.5 rounded-full">+Sord</span>}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
