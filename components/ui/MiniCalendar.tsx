@@ -8,18 +8,28 @@ interface MiniCalendarProps {
     selectedDate: string;
     onSelectDate: (date: string) => void;
     className?: string;
+    highlightedDates?: string[]; // Optional: provide dates to highlight externally
+    mode?: 'schedules' | 'attendance' | 'manual'; // Default is schedules
 }
 
-export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: MiniCalendarProps) {
-    const [currentDate, setCurrentDate] = useState(new Date()); // For month view navigation
-    const [assignedDates, setAssignedDates] = useState<string[]>([]);
-    const [loading, setLoading] = useState(true);
+export function MiniCalendar({
+    selectedDate,
+    onSelectDate,
+    className = '',
+    highlightedDates: externalDates,
+    mode = 'schedules'
+}: MiniCalendarProps) {
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [internalDates, setInternalDates] = useState<string[]>([]);
+    const [loading, setLoading] = useState(mode !== 'manual');
 
     useEffect(() => {
-        fetchAssignedDates();
-    }, [currentDate.getMonth(), currentDate.getFullYear()]);
+        if (mode === 'schedules') {
+            fetchSchedules();
+        }
+    }, [currentDate.getMonth(), currentDate.getFullYear(), mode]);
 
-    const fetchAssignedDates = async () => {
+    const fetchSchedules = async () => {
         setLoading(true);
         try {
             const year = currentDate.getFullYear();
@@ -40,7 +50,7 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
                 .lte('date', endStr);
 
             if (data) {
-                setAssignedDates(data.map(d => d.date));
+                setInternalDates(data.map(d => d.date));
             }
         } catch (error) {
             console.error('Error fetching dates:', error);
@@ -48,6 +58,8 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
             setLoading(false);
         }
     };
+
+    const activeDates = mode === 'manual' || mode === 'attendance' ? (externalDates || []) : internalDates;
 
     const getDaysInMonth = (year: number, month: number) => {
         return new Date(year, month + 1, 0).getDate();
@@ -68,20 +80,7 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
-    const firstDay = getFirstDayOfMonth(year, month); // 0 = Sunday
-
-    // Adjust for Monday start if desired, but sticking to standard Sunday=0 for simplicity usually, 
-    // but maybe user prefers Monday. Let's stick to standard 0-6.
-
-    const days = [];
-    // Padding
-    for (let i = 0; i < firstDay; i++) {
-        days.push(null);
-    }
-    // Days
-    for (let i = 1; i <= daysInMonth; i++) {
-        days.push(i);
-    }
+    const firstDay = getFirstDayOfMonth(year, month);
 
     const monthNames = [
         "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -91,6 +90,12 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
     const generateIsoDate = (day: number) => {
         return `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     };
+
+    const days = [];
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(i);
+
+    const highlightColor = mode === 'attendance' ? 'emerald' : mode === 'schedules' ? 'emerald' : 'blue';
 
     return (
         <div className={`bg-white rounded-2xl shadow-xl border border-gray-100 p-4 w-full ${className}`}>
@@ -114,13 +119,18 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
                 ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-2 justify-items-center">
+            <div className="grid grid-cols-7 gap-2 justify-items-center relative">
+                {loading && (
+                    <div className="absolute inset-0 z-20 bg-white/50 backdrop-blur-[1px] flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                    </div>
+                )}
                 {days.map((day, idx) => {
                     if (!day) return <div key={idx} className="w-full aspect-square" />;
 
                     const dateStr = generateIsoDate(day);
                     const isSelected = selectedDate === dateStr;
-                    const hasSchedule = assignedDates.includes(dateStr);
+                    const hasData = activeDates.includes(dateStr);
                     const isToday = dateStr === new Date().toISOString().split('T')[0];
 
                     return (
@@ -131,15 +141,15 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
                                 relative w-full aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-200
                                 ${isSelected
                                     ? 'bg-blue-600 text-white shadow-md scale-105 z-10'
-                                    : hasSchedule
-                                        ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100'
+                                    : hasData
+                                        ? `bg-${highlightColor}-50 text-${highlightColor}-700 hover:bg-${highlightColor}-100 border border-${highlightColor}-100`
                                         : 'text-gray-700 hover:bg-gray-50 border border-transparent hover:border-gray-100'}
                                 ${isToday && !isSelected ? 'ring-2 ring-blue-600 border-transparent text-blue-600' : ''}
                             `}
                         >
-                            <span className={isSelected || hasSchedule ? 'text-lg' : 'text-base'}>{day}</span>
-                            {hasSchedule && !isSelected && (
-                                <div className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                            <span className={isSelected || hasData ? 'text-lg' : 'text-base'}>{day}</span>
+                            {hasData && !isSelected && (
+                                <div className={`absolute bottom-1 w-1.5 h-1.5 rounded-full bg-${highlightColor}-500`}></div>
                             )}
                         </button>
                     );
@@ -148,8 +158,8 @@ export function MiniCalendar({ selectedDate, onSelectDate, className = '' }: Min
 
             <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-gray-400 border-t border-gray-100 pt-3">
                 <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                    <span>Con Horario</span>
+                    <div className={`w-1.5 h-1.5 rounded-full bg-${highlightColor}-500`}></div>
+                    <span>{mode === 'attendance' ? 'Con Asistencia' : mode === 'schedules' ? 'Con Horario' : 'Registrado'}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full ring-1 ring-blue-600"></div>

@@ -26,6 +26,7 @@ import {
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { OfflineService, PendingAttendance } from '@/lib/offlineService';
+import { MiniCalendar } from '@/components/ui/MiniCalendar';
 
 // Extendemos la interfaz de Grupo para incluir el estado de completado
 interface GrupoConEstado extends Grupo {
@@ -76,6 +77,8 @@ function RegistroContent() {
   const [tempNovedad, setTempNovedad] = useState({ tipo: '', descripcion: '' });
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [datesWithAttendance, setDatesWithAttendance] = useState<string[]>([]);
 
   useEffect(() => {
     const updateStatus = () => {
@@ -214,7 +217,44 @@ function RegistroContent() {
     }
   }, [sedeSeleccionada, selectedDate]);
 
-  // 5. Establecer grupo seleccionado si viene de la URL
+  // 5. Cargar fechas con asistencia para el calendario
+  useEffect(() => {
+    const fetchAttendanceDates = async () => {
+      try {
+        if (grupoSeleccionado) {
+          const { data } = await supabase
+            .from('asistencia_pae')
+            .select('fecha, estudiantes!inner(grupo)')
+            .eq('estudiantes.grupo', grupoSeleccionado.nombre);
+
+          if (data) {
+            setDatesWithAttendance(Array.from(new Set(data.map(d => d.fecha))));
+          }
+        } else if (sedeSeleccionada) {
+          const sedeDbName = sedeSeleccionada.id === 'principal' ? 'Principal' :
+            sedeSeleccionada.id === 'primaria' ? 'Primaria' :
+              'Maria Inmaculada';
+
+          const { data } = await supabase
+            .from('asistencia_pae')
+            .select('fecha, estudiantes!inner(sede)')
+            .eq('estudiantes.sede', sedeDbName);
+
+          if (data) {
+            setDatesWithAttendance(Array.from(new Set(data.map(d => d.fecha))));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching attendance dates:', error);
+      }
+    };
+
+    if (sedeSeleccionada || grupoSeleccionado) {
+      fetchAttendanceDates();
+    }
+  }, [sedeSeleccionada, grupoSeleccionado, selectedDate]);
+
+  // 6. Establecer grupo seleccionado si viene de la URL
   useEffect(() => {
     const grupoNombre = searchParams.get('grupo');
     if (grupoNombre && gruposReales.length > 0 && !grupoSeleccionado) {
@@ -639,15 +679,21 @@ function RegistroContent() {
                 </div>
               )}
               {(step === 'grupo' || step === 'registro') && (
-                <div className="relative">
-                  <button className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Calendar className="w-6 h-6" /></button>
-                  <input type="date" value={selectedDate} onChange={(e) => handleDateChange(e.target.value)} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={() => setShowCalendar(true)}
+                    className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors shadow-sm"
+                  >
+                    <Calendar className="w-6 h-6" />
+                  </button>
+                  <span className="text-[10px] font-bold text-blue-600 mt-1 uppercase tracking-tight">seleccionar fecha</span>
                 </div>
               )}
             </div>
             {step === 'sede' && (
-              <div className="p-2">
+              <div className="flex flex-col items-center opacity-40">
                 <Calendar className="w-6 h-6 text-gray-400" />
+                <span className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tight">seleccionar fecha</span>
               </div>
             )}
           </div>
@@ -909,6 +955,46 @@ function RegistroContent() {
           </div>
         )}
       </div>
+
+      {/* Date Picker Modal */}
+      {showCalendar && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowCalendar(false)}></div>
+          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20">
+            <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+              <h3 className="font-black text-gray-900 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-600" />
+                Seleccionar Fecha
+              </h3>
+              <button
+                onClick={() => setShowCalendar(false)}
+                className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-all hover:rotate-90"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-4 bg-gray-50/30">
+              <MiniCalendar
+                selectedDate={selectedDate}
+                onSelectDate={(date) => {
+                  handleDateChange(date);
+                  setShowCalendar(false);
+                }}
+                mode="attendance"
+                highlightedDates={datesWithAttendance}
+              />
+            </div>
+            <div className="p-4 bg-white border-t border-gray-100">
+              <button
+                onClick={() => setShowCalendar(false)}
+                className="w-full py-3.5 bg-gray-900 text-white rounded-xl font-bold shadow-lg shadow-gray-200 hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                Listo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

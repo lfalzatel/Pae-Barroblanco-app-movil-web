@@ -499,9 +499,9 @@ export default function HorarioPage() {
                                                                         )}
                                                                     </p>
                                                                     {slot.notes && (
-                                                                        <div className="flex items-center gap-1 text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-medium w-fit">
+                                                                        <div className="flex items-center gap-1 text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-medium w-fit max-w-full">
                                                                             <FileText className="w-2.5 h-2.5 shrink-0" />
-                                                                            <span>{slot.notes}</span>
+                                                                            <span className="break-words line-clamp-2 sm:line-clamp-none">{slot.notes}</span>
                                                                         </div>
                                                                     )}
                                                                 </div>

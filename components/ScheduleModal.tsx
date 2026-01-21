@@ -154,9 +154,9 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                         <span className="font-black text-lg text-gray-900 whitespace-nowrap">{item.group}</span>
 
                                         {item.notes && (
-                                            <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100 w-fit">
+                                            <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100 w-fit max-w-full overflow-hidden">
                                                 <FileText className="w-3 h-3 shrink-0" />
-                                                <span className="font-medium">{item.notes}</span>
+                                                <span className="font-medium break-words line-clamp-2 sm:line-clamp-none">{item.notes}</span>
                                             </div>
                                         )}
                                     </div>
