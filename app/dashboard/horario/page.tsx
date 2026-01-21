@@ -150,9 +150,10 @@ export default function HorarioPage() {
             if (schedData?.items) {
                 schedData.items.forEach((item: any) => {
                     const found = processed.find(g => g.label === item.group);
+                    // Use the local 'slots' variable instead of the state 'timeSlots'
                     const start = item.time_start || (item.time ? item.time.split(' - ')[0] : null);
 
-                    if (found && start && timeSlots.includes(start)) {
+                    if (found && start && slots.includes(start)) {
                         if (!currentAssignments[start]) {
                             currentAssignments[start] = [];
                         }
@@ -447,11 +448,16 @@ export default function HorarioPage() {
                                                     {slots.map((slot, idx) => (
                                                         <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-gray-50 p-1.5 rounded border border-gray-100/50">
                                                             <div className="flex items-center gap-2 flex-wrap min-w-0">
-                                                                <p className="font-bold text-gray-900 text-xs truncate">
-                                                                    {slot.group.label}
+                                                                <p className="font-bold text-gray-900 text-xs truncate flex items-center gap-2">
+                                                                    <span>{slot.group.label}</span>
                                                                     {slot.group.studentCount !== undefined && (
-                                                                        <span className="ml-2 text-[10px] font-normal text-gray-500">
-                                                                            ({slot.group.studentCount} estudiantes)
+                                                                        <span className="text-[10px] font-normal text-gray-500">
+                                                                            ({slot.group.studentCount} est)
+                                                                        </span>
+                                                                    )}
+                                                                    {slot.notes && (
+                                                                        <span className="text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-medium truncate max-w-[100px]">
+                                                                            {slot.notes}
                                                                         </span>
                                                                     )}
                                                                 </p>
