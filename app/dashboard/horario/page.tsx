@@ -71,12 +71,7 @@ export default function HorarioPage() {
         return new Date(d.getTime() - offset).toISOString().split('T')[0];
     });
 
-    // Persistence Effect
-    useEffect(() => {
-        if (selectedDate) {
-            localStorage.setItem('pae_last_schedule_date', selectedDate);
-        }
-    }, [selectedDate]);
+
 
     // Force refresh logic (kept from previous fix, good for data freshness)
     useEffect(() => {
