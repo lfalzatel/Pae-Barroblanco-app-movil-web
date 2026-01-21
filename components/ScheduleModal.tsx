@@ -156,39 +156,76 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
                         </div>
                     ) : schedule.length > 0 ? (
-                        <div className="space-y-3">
-                            {schedule.map((item, idx) => (
-                                <div
-                                    key={idx}
-                                    className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-gray-100 hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-100/50 transition-all duration-300 group"
-                                >
-                                    <div className="flex flex-col items-center justify-center w-20 bg-gray-50 rounded-xl p-2 border border-gray-100 group-hover:bg-cyan-50 group-hover:border-cyan-100 transition-colors shrink-0">
-                                        <Clock className="w-4 h-4 text-gray-400 group-hover:text-cyan-600 mb-1" />
-                                        <span className="text-[10px] font-black text-gray-700 group-hover:text-cyan-800 text-center leading-tight">
-                                            {item.time.split(' - ')[0]}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-black text-lg text-gray-900 whitespace-nowrap">{item.group}</span>
-                                            {item.studentCount !== undefined && (
-                                                <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">
-                                                    {item.studentCount} est
-                                                </span>
-                                            )}
+                        <>
+                            <div className="space-y-3">
+                                {schedule.map((item, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-gray-100 hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-100/50 transition-all duration-300 group"
+                                    >
+                                        <div className="flex flex-col items-center justify-center w-20 bg-gray-50 rounded-xl p-2 border border-gray-100 group-hover:bg-cyan-50 group-hover:border-cyan-100 transition-colors shrink-0">
+                                            <Clock className="w-4 h-4 text-gray-400 group-hover:text-cyan-600 mb-1" />
+                                            <span className="text-[10px] font-black text-gray-700 group-hover:text-cyan-800 text-center leading-tight">
+                                                {item.time.split(' - ')[0]}
+                                            </span>
                                         </div>
 
-                                        {item.notes && (
-                                            <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100 w-fit max-w-full overflow-hidden">
-                                                <FileText className="w-3 h-3 shrink-0" />
-                                                <span className="font-medium break-words line-clamp-2 sm:line-clamp-none">{item.notes}</span>
+                                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-black text-lg text-gray-900 whitespace-nowrap">{item.group}</span>
+                                                {item.studentCount !== undefined && (
+                                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">
+                                                        {item.studentCount} est
+                                                    </span>
+                                                )}
                                             </div>
-                                        )}
+
+                                            {item.notes && (
+                                                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100 w-fit max-w-full overflow-hidden">
+                                                    <FileText className="w-3 h-3 shrink-0" />
+                                                    <span className="font-medium break-words line-clamp-2 sm:line-clamp-none">{item.notes}</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
+                                ))}
+                            </div>
+
+                            {/* Standard Footer Notes */}
+                            <div className="mt-8 pt-6 border-t border-gray-100 space-y-4">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest">NOTA: ESTAR ATENTOS A LAS NOVEDADES.</p>
+                                    <p className="text-[11px] font-black text-cyan-700 uppercase">CONSEJO ACADÉMICO DE DOCENTES</p>
                                 </div>
-                            ))}
-                        </div>
+
+                                <p className="text-[10px] font-bold text-gray-600 uppercase leading-tight">
+                                    RECORDEMOS QUE EL HORARIO DE BACHILLERATO DE 7 A.M A 1.00. PM
+                                </p>
+
+                                <div className="bg-cyan-50/50 p-3 rounded-2xl border border-cyan-100/50">
+                                    <p className="text-[10px] font-black text-cyan-800 uppercase mb-2">RECUERDA</p>
+                                    <ul className="space-y-1.5">
+                                        <li className="flex items-center gap-2 text-[10px] font-bold text-gray-600 italic">
+                                            <div className="w-1 h-1 bg-cyan-400 rounded-full" />
+                                            Puntualidad
+                                        </li>
+                                        <li className="flex items-center gap-2 text-[10px] font-bold text-gray-600 italic">
+                                            <div className="w-1 h-1 bg-cyan-400 rounded-full" />
+                                            Uso adecuado del uniforme
+                                        </li>
+                                        <li className="flex items-center gap-2 text-[10px] font-bold text-gray-600 italic">
+                                            <div className="w-1 h-1 bg-cyan-400 rounded-full" />
+                                            Seguir las recomendaciones escritas en estas novedades
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div className="pt-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                    <p>Equipo directivo</p>
+                                    <p>I.E Barro Blanco</p>
+                                </div>
+                            </div>
+                        </>
                     ) : (
                         <div className="text-center py-10 opacity-60">
                             <Calendar className="w-16 h-16 mx-auto text-gray-300 mb-4" />

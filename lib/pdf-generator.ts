@@ -69,11 +69,51 @@ export const generateSchedulePDF = (scheduleData: any[], date: string) => {
         }
     });
 
-    // Footer
+    // Footer (Notes & Reminders)
+    const finalY = (doc as any).lastAutoTable.finalY || 50;
+    let currentY = finalY + 15;
+
+    doc.setTextColor(0, 0, 0); // Black
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('NOTA: ESTAR ATENTOS A LAS NOVEDADES.', 20, currentY);
+    currentY += 7;
+
+    doc.setFontSize(11);
+    doc.text('CONSEJO ACADÉMICO DE DOCENTES', 20, currentY);
+    currentY += 10;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('RECORDEMOS QUE EL HORARIO DE BACHILLERATO DE 7 A.M A 1.00. PM', 20, currentY);
+    currentY += 7;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('RECUERDA', 20, currentY);
+    currentY += 6;
+
+    doc.setFont('helvetica', 'normal');
+    const reminders = [
+        '• Puntualidad',
+        '• Uso adecuado del uniforme',
+        '• Seguir las recomendaciones escritas en estas novedades'
+    ];
+    reminders.forEach(r => {
+        doc.text(r, 25, currentY);
+        currentY += 5;
+    });
+
+    currentY += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Equipo directivo', 20, currentY);
+    currentY += 5;
+    doc.text('I.E Barro Blanco', 20, currentY);
+
+    // Page Numbers
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(10);
+        doc.setFontSize(8);
         doc.setTextColor(150);
         doc.text(`Página ${i} de ${pageCount}`, 105, 287, { align: 'center' });
         doc.text(`Generado por: Sistema PAE`, 20, 287);
