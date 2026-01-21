@@ -90,6 +90,8 @@ export default function HorarioPage() {
     const [editNote, setEditNote] = useState('');
     const [showCalendar, setShowCalendar] = useState(false);
     const [notif, setNotif] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
+    const [showConfirmSave, setShowConfirmSave] = useState(false);
+    const [unassignedCount, setUnassignedCount] = useState(0);
 
     useEffect(() => {
         if (notif) {
@@ -306,14 +308,19 @@ export default function HorarioPage() {
         return Object.values(assignments).some(slots => slots?.some(s => s.group.id === group.id));
     };
 
-    const handleSave = async () => {
+    const handleSave = () => {
         // Validation: Check for unassigned groups
-        const unassignedCount = availableGroups.filter(g => !isAssigned(g)).length;
-        if (unassignedCount > 0) {
-            const confirmSave = confirm(`Hay ${unassignedCount} grupos sin asignar. ¿Deseas guardar de todos modos?`);
-            if (!confirmSave) return;
+        const unassigned = availableGroups.filter(g => !isAssigned(g)).length;
+        if (unassigned > 0) {
+            setUnassignedCount(unassigned);
+            setShowConfirmSave(true);
+            return;
         }
+        executeSave();
+    };
 
+    const executeSave = async () => {
+        setShowConfirmSave(false);
         setSaving(true);
         try {
             // Transform assignments to storage format
@@ -679,6 +686,40 @@ export default function HorarioPage() {
                         >
                             Entendido
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Premium Confirmation Modal */}
+            {showConfirmSave && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowConfirmSave(false)}></div>
+                    <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-8 text-center flex flex-col gap-6">
+                        <div className="bg-orange-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto ring-4 ring-orange-100 animate-bounce">
+                            <Info className="w-10 h-10 text-orange-500" />
+                        </div>
+
+                        <div>
+                            <h3 className="text-2xl font-black text-gray-900 mb-2">¿Guardar de todos modos?</h3>
+                            <p className="text-gray-500 text-sm leading-relaxed px-2">
+                                Detectamos que hay <span className="text-orange-600 font-bold">{unassignedCount} grupo(s)</span> sin horario asignado para esta fecha.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={executeSave}
+                                className="w-full py-4 bg-gray-900 hover:bg-black text-white rounded-2xl font-black shadow-xl shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            >
+                                Sí, guardar de todos modos
+                            </button>
+                            <button
+                                onClick={() => setShowConfirmSave(false)}
+                                className="w-full py-4 bg-white hover:bg-gray-50 text-gray-400 rounded-2xl font-bold border border-gray-100 transition-all"
+                            >
+                                Seguir editando
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
