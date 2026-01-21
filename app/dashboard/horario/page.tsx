@@ -15,7 +15,8 @@ import {
     MoreVertical,
     Info,
     ChevronDown,
-    X
+    X,
+    FileText
 } from 'lucide-react';
 import { generateTimeSlots, processGroups, GlobalGroup, isBreakTime } from '@/lib/schedule-utils';
 import { MiniCalendar } from '@/components/ui/MiniCalendar';

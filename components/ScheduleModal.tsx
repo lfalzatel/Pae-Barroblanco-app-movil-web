@@ -150,13 +150,13 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                         </span>
                                     </div>
 
-                                    <div className="flex-1 min-w-0 flex items-center gap-3">
-                                        <span className="font-black text-lg text-gray-900 truncate">{item.group}</span>
+                                    <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                                        <span className="font-black text-lg text-gray-900 whitespace-nowrap">{item.group}</span>
 
                                         {item.notes && (
-                                            <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100 shrink-0">
-                                                <FileText className="w-3 h-3" />
-                                                <span className="font-medium max-w-[150px] truncate">{item.notes}</span>
+                                            <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100 w-fit">
+                                                <FileText className="w-3 h-3 shrink-0" />
+                                                <span className="font-medium">{item.notes}</span>
                                             </div>
                                         )}
                                     </div>
