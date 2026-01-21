@@ -366,34 +366,49 @@ export default function DashboardLayout({
                         <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
                             {tomorrowSchedule.length > 0 ? (
                                 <div className="space-y-4">
-                                    <p className="text-xs font-medium text-gray-500 leading-relaxed">
-                                        Se ha publicado el <span className="font-bold text-gray-900">horario de mañana</span>. Aquí los grupos con novedades:
-                                    </p>
+                                    <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex items-center gap-3">
+                                        <div className="bg-blue-600 p-2 rounded-lg">
+                                            <Calendar className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-blue-900 leading-none">Horario Publicado</p>
+                                            <p className="text-[10px] text-blue-600 font-bold mt-1">Revisa las novedades abajo</p>
+                                        </div>
+                                    </div>
+
                                     <div className="space-y-2">
-                                        {tomorrowSchedule.map((item, idx) => (
-                                            <div key={idx} className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-start gap-4">
-                                                <div className="bg-white px-2 py-1 rounded-lg border border-gray-200 text-[10px] font-black text-blue-600 shrink-0">
-                                                    {item.time.split(' - ')[0]}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-bold text-gray-900 text-sm mb-1">{item.group}</p>
-                                                    {item.notes ? (
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Grupos con Novedades</p>
+                                        {tomorrowSchedule.filter(i => i.notes).length > 0 ? (
+                                            tomorrowSchedule.filter(i => i.notes).map((item, idx) => (
+                                                <div key={idx} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4">
+                                                    <div className="bg-white px-2 py-1 rounded-lg border border-amber-200 text-[10px] font-black text-amber-600 shrink-0">
+                                                        {item.time.split(' - ')[0]}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-bold text-gray-900 text-sm mb-1">{item.group}</p>
                                                         <div className="flex items-start gap-1.5 text-[10px] text-amber-600">
                                                             <FileText className="w-3 h-3 mt-0.5 shrink-0" />
                                                             <span className="italic font-medium">{item.notes}</span>
                                                         </div>
-                                                    ) : (
-                                                        <p className="text-[10px] text-gray-400 italic">Ingreso normal</p>
-                                                    )}
+                                                    </div>
                                                 </div>
+                                            ))
+                                        ) : (
+                                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
+                                                <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                                <p className="text-xs font-bold text-gray-500">Sin cambios reportados</p>
+                                                <p className="text-[10px] text-gray-400 italic">Todos los grupos ingresan en su horario normal.</p>
                                             </div>
-                                        ))}
+                                        )}
                                     </div>
                                 </div>
                             ) : (
                                 <div className="text-center py-10">
-                                    <Clock className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                                    <p className="text-gray-400 font-medium">No hay avisos pendientes para mañana.</p>
+                                    <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-inner">
+                                        <Clock className="w-8 h-8 text-gray-400" />
+                                    </div>
+                                    <h4 className="font-black text-gray-900 mb-1">Sin Horario</h4>
+                                    <p className="text-[10px] text-gray-400 font-medium max-w-[180px] mx-auto">Aún no se ha publicado el horario de mañana en el sistema.</p>
                                 </div>
                             )}
                         </div>

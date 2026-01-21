@@ -238,36 +238,27 @@ function RegistroContent() {
           sedeSeleccionada.id === 'primaria' ? 'Primaria' :
             'Maria Inmaculada';
 
-        const studentToGroupMap = new Map();
+        // Use Join to get group directly from student record
+        // This avoids the .in() limit with many students
+        let query = supabase
+          .from('asistencia_pae')
+          .select('fecha, estudiantes!inner(grupo)')
+          .eq('estudiantes.sede', sedeDbName)
+          .gte('fecha', startOfMonth)
+          .lte('fecha', endOfMonth);
+
         if (grupoSeleccionado) {
-          const { data: st } = await supabase
-            .from('estudiantes')
-            .select('id, grupo')
-            .eq('grupo', grupoSeleccionado.nombre);
-          st?.forEach(s => studentToGroupMap.set(s.id, s.grupo));
-        } else {
-          const { data: grpStudents } = await supabase
-            .from('estudiantes')
-            .select('id, grupo')
-            .eq('sede', sedeDbName);
-          grpStudents?.forEach(s => studentToGroupMap.set(s.id, s.grupo));
+          query = query.eq('estudiantes.grupo', grupoSeleccionado.nombre);
         }
 
-        const allStudentIds = Array.from(studentToGroupMap.keys());
-        if (allStudentIds.length === 0) return;
+        const { data, error: fetchError } = await query.limit(10000);
 
-        const { data } = await supabase
-          .from('asistencia_pae')
-          .select('fecha, estudiante_id')
-          .in('estudiante_id', allStudentIds)
-          .gte('fecha', startOfMonth)
-          .lte('fecha', endOfMonth)
-          .limit(10000); // Higher limit for full accurate count
+        if (fetchError) throw fetchError;
 
         if (data) {
           const dateToGroupsMap = new Map<string, Set<string>>();
           data.forEach((row: any) => {
-            const grupo = studentToGroupMap.get(row.estudiante_id);
+            const grupo = row.estudiantes?.grupo;
             if (grupo) {
               if (!dateToGroupsMap.has(row.fecha)) {
                 dateToGroupsMap.set(row.fecha, new Set<string>());
