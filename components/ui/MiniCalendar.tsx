@@ -10,6 +10,7 @@ interface MiniCalendarProps {
     className?: string;
     highlightedDates?: string[]; // Optional: provide dates to highlight externally
     dateData?: Record<string, number>; // Optional: provide counts/data per date
+    showCounters?: boolean; // New: whether to show numerical counters
     mode?: 'schedules' | 'attendance' | 'manual'; // Default is schedules
     onMonthChange?: (year: number, month: number) => void;
 }
@@ -25,6 +26,7 @@ export function MiniCalendar({
     className = '',
     highlightedDates: externalDates,
     dateData,
+    showCounters = true,
     mode = 'schedules',
     onMonthChange
 }: MiniCalendarProps) {
@@ -160,17 +162,17 @@ export function MiniCalendar({
                                 ${isToday && !isSelected ? 'ring-2 ring-blue-600 border-transparent text-blue-600' : ''}
                             `}
                         >
-                            <span className={`font-bold ${isSelected || hasData ? 'text-base' : 'text-sm'} ${count > 0 ? '-mt-1' : ''}`}>
+                            <span className={`font-bold ${isSelected || hasData ? 'text-base' : 'text-sm'} ${count > 0 && showCounters ? '-mt-1' : ''}`}>
                                 {day}
                             </span>
 
-                            {count > 0 && !isSelected && (
+                            {count > 0 && showCounters && !isSelected && (
                                 <span className={`text-[10px] font-black -mt-0.5 ${hasData ? `text-${highlightColor}-600` : 'text-gray-400'}`}>
                                     {count}
                                 </span>
                             )}
 
-                            {hasData && count === 0 && !isSelected && (
+                            {hasData && (!showCounters || count === 0) && !isSelected && (
                                 <div className={`absolute bottom-1 w-1.5 h-1.5 rounded-full bg-${highlightColor}-500`}></div>
                             )}
                         </button>

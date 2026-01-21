@@ -225,43 +225,56 @@ function RegistroContent() {
   useEffect(() => {
     const fetchAttendanceDates = async () => {
       if (!sedeSeleccionada && !grupoSeleccionado) return;
-      setAttendanceCounts({}); // Limpiar para evitar mostrar datos viejos
+      setAttendanceCounts({});
 
       try {
         const { year, month } = calendarView;
         const startOfMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
         const endOfMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-31`;
 
-        let query = supabase
-          .from('asistencia_pae')
-          .select('fecha, estudiantes!inner(grupo, sede)')
-          .gte('fecha', startOfMonth)
-          .lte('fecha', endOfMonth)
-          .limit(50000);
+        const sedeDbName = sedeSeleccionada.id === 'principal' ? 'Principal' :
+          sedeSeleccionada.id === 'primaria' ? 'Primaria' :
+            'Maria Inmaculada';
+
+        let representativeIds: string[] = [];
 
         if (grupoSeleccionado) {
-          query = query.eq('estudiantes.grupo', grupoSeleccionado.nombre);
-        } else if (sedeSeleccionada) {
-          const sedeDbName = sedeSeleccionada.id === 'principal' ? 'Principal' :
-            sedeSeleccionada.id === 'primaria' ? 'Primaria' :
-              'Maria Inmaculada';
-          query = query.eq('estudiantes.sede', sedeDbName);
+          const { data: st } = await supabase
+            .from('estudiantes')
+            .select('id')
+            .eq('grupo', grupoSeleccionado.nombre)
+            .limit(1);
+          if (st?.[0]) representativeIds = [st[0].id];
+        } else {
+          const { data: grpStudents } = await supabase
+            .from('estudiantes')
+            .select('id, grupo')
+            .eq('sede', sedeDbName);
+
+          if (grpStudents) {
+            const groupsMap = new Map();
+            grpStudents.forEach(s => {
+              if (!groupsMap.has(s.grupo)) groupsMap.set(s.grupo, s.id);
+            });
+            representativeIds = Array.from(groupsMap.values());
+          }
         }
 
-        const { data } = await query;
+        if (representativeIds.length === 0) return;
+
+        const { data } = await supabase
+          .from('asistencia_pae')
+          .select('fecha, estudiante_id')
+          .in('estudiante_id', representativeIds)
+          .gte('fecha', startOfMonth)
+          .lte('fecha', endOfMonth)
+          .limit(2000);
+
         if (data) {
-          // Agrupamos por fecha y contamos grupos únicos
-          const map: Record<string, Set<string>> = {};
+          const counts: Record<string, number> = {};
           data.forEach((row: any) => {
             const f = row.fecha;
-            const g = row.estudiantes.grupo;
-            if (!map[f]) map[f] = new Set();
-            map[f].add(g);
-          });
-
-          const counts: Record<string, number> = {};
-          Object.entries(map).forEach(([f, s]) => {
-            counts[f] = s.size;
+            counts[f] = (counts[f] || 0) + 1;
           });
           setAttendanceCounts(counts);
         }
@@ -1001,6 +1014,7 @@ function RegistroContent() {
                 }}
                 mode="attendance"
                 dateData={attendanceCounts}
+                showCounters={!grupoSeleccionado}
                 onMonthChange={(year, month) => {
                   setCalendarView({ year, month });
                 }}
