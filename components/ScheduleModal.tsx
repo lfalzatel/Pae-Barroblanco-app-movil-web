@@ -72,13 +72,15 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                     countsMap[s.grupo] = (countsMap[s.grupo] || 0) + 1;
                 });
 
-                // 3. Map everything together
-                setSchedule(rawItems.map((i: any) => ({
+                // 3. Map everything together and sort by time
+                const sortedItems = rawItems.map((i: any) => ({
                     time: i.time || i.time_start,
                     group: i.group,
                     notes: i.notes,
                     studentCount: countsMap[i.group] || 0
-                })));
+                })).sort((a: any, b: any) => a.time.localeCompare(b.time));
+
+                setSchedule(sortedItems);
             } else {
                 setSchedule([]);
             }

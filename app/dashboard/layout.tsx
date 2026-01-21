@@ -72,7 +72,13 @@ export default function DashboardLayout({
                 .single();
 
             if (data?.items) {
-                setTomorrowSchedule(data.items);
+                // Sort by time before setting state
+                const sorted = (data.items as any[]).sort((a, b) => {
+                    const timeA = a.time || a.time_start || "";
+                    const timeB = b.time || b.time_start || "";
+                    return timeA.localeCompare(timeB);
+                });
+                setTomorrowSchedule(sorted);
                 setHasNotification(true);
             }
         };
