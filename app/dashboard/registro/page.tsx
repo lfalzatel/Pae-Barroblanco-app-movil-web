@@ -238,45 +238,47 @@ function RegistroContent() {
           sedeSeleccionada.id === 'primaria' ? 'Primaria' :
             'Maria Inmaculada';
 
-        let representativeIds: string[] = [];
-
+        const studentToGroupMap = new Map();
         if (grupoSeleccionado) {
           const { data: st } = await supabase
             .from('estudiantes')
-            .select('id')
-            .eq('grupo', grupoSeleccionado.nombre)
-            .limit(1);
-          if (st?.[0]) representativeIds = [st[0].id];
+            .select('id, grupo')
+            .eq('grupo', grupoSeleccionado.nombre);
+          st?.forEach(s => studentToGroupMap.set(s.id, s.grupo));
         } else {
           const { data: grpStudents } = await supabase
             .from('estudiantes')
             .select('id, grupo')
             .eq('sede', sedeDbName);
-
-          if (grpStudents) {
-            const groupsMap = new Map();
-            grpStudents.forEach(s => {
-              if (!groupsMap.has(s.grupo)) groupsMap.set(s.grupo, s.id);
-            });
-            representativeIds = Array.from(groupsMap.values());
-          }
+          grpStudents?.forEach(s => studentToGroupMap.set(s.id, s.grupo));
         }
 
-        if (representativeIds.length === 0) return;
+        const allStudentIds = Array.from(studentToGroupMap.keys());
+        if (allStudentIds.length === 0) return;
 
         const { data } = await supabase
           .from('asistencia_pae')
           .select('fecha, estudiante_id')
-          .in('estudiante_id', representativeIds)
+          .in('estudiante_id', allStudentIds)
           .gte('fecha', startOfMonth)
           .lte('fecha', endOfMonth)
-          .limit(2000);
+          .limit(10000); // Higher limit for full accurate count
 
         if (data) {
-          const counts: Record<string, number> = {};
+          const dateToGroupsMap = new Map<string, Set<string>>();
           data.forEach((row: any) => {
-            const f = row.fecha;
-            counts[f] = (counts[f] || 0) + 1;
+            const grupo = studentToGroupMap.get(row.estudiante_id);
+            if (grupo) {
+              if (!dateToGroupsMap.has(row.fecha)) {
+                dateToGroupsMap.set(row.fecha, new Set<string>());
+              }
+              dateToGroupsMap.get(row.fecha)?.add(grupo);
+            }
+          });
+
+          const counts: Record<string, number> = {};
+          dateToGroupsMap.forEach((groupsSet, date) => {
+            counts[date] = groupsSet.size;
           });
           setAttendanceCounts(counts);
         }

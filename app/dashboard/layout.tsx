@@ -54,15 +54,23 @@ export default function DashboardLayout({
 
         const fetchTomorrowSchedule = async () => {
             const now = new Date();
-            const day = now.getDay();
-            const target = new Date(now);
+            // Get current Bogota date
+            const bogota = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+
+            const target = new Date(bogota);
+            const day = target.getDay();
 
             // Smart business day: Fri/Sat -> Mon, others -> +1
             if (day === 5) target.setDate(target.getDate() + 3);
             else if (day === 6) target.setDate(target.getDate() + 2);
             else target.setDate(target.getDate() + 1);
 
-            const dateStr = target.toISOString().split('T')[0];
+            // Format as YYYY-MM-DD using Bogota components
+            const y = target.getFullYear();
+            const m = (target.getMonth() + 1).toString().padStart(2, '0');
+            const d = target.getDate().toString().padStart(2, '0');
+            const dateStr = `${y}-${m}-${d}`;
+
             setTomorrowDateLabel(target.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }));
 
             const { data } = await supabase
