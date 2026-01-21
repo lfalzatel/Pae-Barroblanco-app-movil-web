@@ -225,10 +225,10 @@ function RegistroContent() {
   useEffect(() => {
     const fetchAttendanceDates = async () => {
       if (!sedeSeleccionada && !grupoSeleccionado) return;
+      setDatesWithAttendance([]); // Limpiar para evitar mostrar datos viejos mientras carga
 
       try {
         const { year, month } = calendarView;
-        // Rango ampliado para cubrir el mes actual
         const startOfMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
         const endOfMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-31`;
 
@@ -237,7 +237,7 @@ function RegistroContent() {
           .select('fecha, estudiantes!inner(grupo, sede)')
           .gte('fecha', startOfMonth)
           .lte('fecha', endOfMonth)
-          .limit(3000); // Aumentamos el límite para asegurar que no se pierdan datos
+          .limit(50000); // Aumentamos drásticamente el límite para sedes grandes
 
         if (grupoSeleccionado) {
           query = query.eq('estudiantes.grupo', grupoSeleccionado.nombre);
@@ -250,7 +250,6 @@ function RegistroContent() {
 
         const { data } = await query;
         if (data) {
-          // Usamos un Set para obtener fechas únicas y asegurar que correspondan al filtro
           const fechasUnicas = Array.from(new Set(data.map(d => d.fecha)));
           setDatesWithAttendance(fechasUnicas);
         }

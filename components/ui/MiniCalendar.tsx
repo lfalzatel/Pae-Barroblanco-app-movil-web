@@ -141,7 +141,7 @@ export function MiniCalendar({
                     const dateStr = generateIsoDate(day);
                     const isSelected = selectedDate === dateStr;
                     const hasData = activeDates.includes(dateStr);
-                    const isToday = dateStr === new Date().toISOString().split('T')[0];
+                    const isToday = dateStr === toLocalISO(new Date());
 
                     return (
                         <button
