@@ -232,6 +232,8 @@ function RegistroContent() {
         const startOfMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
         const endOfMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-31`;
 
+        if (!sedeSeleccionada) return;
+
         const sedeDbName = sedeSeleccionada.id === 'principal' ? 'Principal' :
           sedeSeleccionada.id === 'primaria' ? 'Primaria' :
             'Maria Inmaculada';
