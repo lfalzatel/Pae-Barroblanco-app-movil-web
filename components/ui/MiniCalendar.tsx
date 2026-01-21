@@ -21,11 +21,13 @@ export function MiniCalendar({
 }: MiniCalendarProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [internalDates, setInternalDates] = useState<string[]>([]);
-    const [loading, setLoading] = useState(mode !== 'manual');
+    const [loading, setLoading] = useState(mode === 'schedules');
 
     useEffect(() => {
         if (mode === 'schedules') {
             fetchSchedules();
+        } else {
+            setLoading(false);
         }
     }, [currentDate.getMonth(), currentDate.getFullYear(), mode]);
 
