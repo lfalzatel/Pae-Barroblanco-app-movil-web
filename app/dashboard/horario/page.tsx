@@ -80,6 +80,7 @@ export default function HorarioPage() {
     const [availableGroups, setAvailableGroups] = useState<GlobalGroup[]>([]);
     const [timeSlots, setTimeSlots] = useState<string[]>([]);
     const [assignments, setAssignments] = useState<Record<string, AssignedSlot[]>>({});
+    const [prevWeekAssignments, setPrevWeekAssignments] = useState<Record<string, string[]>>({});
 
     // Selection State
     const [selectedGroup, setSelectedGroup] = useState<GlobalGroup | null>(null);
@@ -120,6 +121,7 @@ export default function HorarioPage() {
             const slots = generateTimeSlots(10);
             setTimeSlots(slots);
 
+            // 1. Fetch Students/Groups
             const { data: estData, error: estError } = await supabase
                 .from('estudiantes')
                 .select('grupo')
@@ -127,7 +129,6 @@ export default function HorarioPage() {
 
             if (estError) throw estError;
 
-            // Calculate student counts
             const counts: Record<string, number> = {};
             estData?.forEach(e => {
                 if (e.grupo) counts[e.grupo] = (counts[e.grupo] || 0) + 1;
@@ -139,6 +140,7 @@ export default function HorarioPage() {
                 studentCount: counts[g.label] || 0
             }));
 
+            // 2. Fetch Current Schedule
             const { data: schedData } = await supabase
                 .from('schedules')
                 .select('items')
@@ -150,7 +152,6 @@ export default function HorarioPage() {
             if (schedData?.items) {
                 schedData.items.forEach((item: any) => {
                     const found = processed.find(g => g.label === item.group);
-                    // Use the local 'slots' variable instead of the state 'timeSlots'
                     const start = item.time_start || (item.time ? item.time.split(' - ')[0] : null);
 
                     if (found && start && slots.includes(start)) {
@@ -165,8 +166,32 @@ export default function HorarioPage() {
                 });
             }
 
+            // 3. Fetch Previous Week Schedule (7 days ago) for conflict detection
+            const [y, m, d] = selectedDate.split('-').map(Number);
+            const prevDateObj = new Date(y, m - 1, d);
+            prevDateObj.setDate(prevDateObj.getDate() - 7);
+            const prevDateStr = prevDateObj.toISOString().split('T')[0];
+
+            const { data: prevSchedData } = await supabase
+                .from('schedules')
+                .select('items')
+                .eq('date', prevDateStr)
+                .single();
+
+            const prevAssignments: Record<string, string[]> = {};
+            if (prevSchedData?.items) {
+                prevSchedData.items.forEach((item: any) => {
+                    const start = item.time_start || (item.time ? item.time.split(' - ')[0] : null);
+                    if (start) {
+                        if (!prevAssignments[start]) prevAssignments[start] = [];
+                        prevAssignments[start].push(item.group);
+                    }
+                });
+            }
+
             setAssignments(currentAssignments);
             setAvailableGroups(processed);
+            setPrevWeekAssignments(prevAssignments);
 
         } catch (e) {
             console.error(e);
@@ -461,6 +486,15 @@ export default function HorarioPage() {
                                                                         </span>
                                                                     )}
                                                                 </p>
+                                                                {/* Weekly Conflict Warning */}
+                                                                {prevWeekAssignments[time]?.includes(slot.group.label) && (
+                                                                    <div className="flex items-center gap-1 mt-0.5 animate-pulse">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                                                                        <span className="text-[9px] font-black text-red-600 uppercase tracking-tighter">
+                                                                            Mismo horario semana pasada
+                                                                        </span>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     ))}
