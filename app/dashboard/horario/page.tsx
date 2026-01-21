@@ -488,22 +488,25 @@ export default function HorarioPage() {
                                                     {slots.map((slot, idx) => (
                                                         <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-gray-50 p-1.5 rounded border border-gray-100/50">
                                                             <div className="flex items-center gap-2 flex-wrap min-w-0">
-                                                                <p className="font-bold text-gray-900 text-xs truncate flex items-center gap-2">
-                                                                    <span>{slot.group.label}</span>
-                                                                    {slot.group.studentCount !== undefined && (
-                                                                        <span className="text-[10px] font-normal text-gray-500">
-                                                                            ({slot.group.studentCount} est)
-                                                                        </span>
-                                                                    )}
+                                                                <div className="flex flex-col gap-0.5 py-0.5">
+                                                                    <p className="font-bold text-gray-900 text-xs flex items-center gap-2">
+                                                                        <span>{slot.group.label}</span>
+                                                                        {slot.group.studentCount !== undefined && (
+                                                                            <span className="text-[10px] font-normal text-gray-500 whitespace-nowrap">
+                                                                                ({slot.group.studentCount} est)
+                                                                            </span>
+                                                                        )}
+                                                                    </p>
                                                                     {slot.notes && (
-                                                                        <span className="text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-medium truncate max-w-[100px]">
-                                                                            {slot.notes}
-                                                                        </span>
+                                                                        <div className="flex items-center gap-1 text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-medium w-fit">
+                                                                            <FileText className="w-2.5 h-2.5 shrink-0" />
+                                                                            <span>{slot.notes}</span>
+                                                                        </div>
                                                                     )}
-                                                                </p>
+                                                                </div>
                                                                 {/* Weekly Conflict Warning */}
                                                                 {prevWeekAssignments[time]?.includes(slot.group.label) && (
-                                                                    <div className="flex items-center gap-1 mt-0.5 animate-pulse">
+                                                                    <div className="flex items-center gap-1 mt-0.5 animate-pulse shrink-0">
                                                                         <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
                                                                         <span className="text-[9px] font-black text-red-600 uppercase tracking-tighter">
                                                                             Mismo horario semana pasada
