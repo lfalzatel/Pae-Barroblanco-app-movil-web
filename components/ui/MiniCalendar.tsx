@@ -9,6 +9,7 @@ interface MiniCalendarProps {
     onSelectDate: (date: string) => void;
     className?: string;
     highlightedDates?: string[]; // Optional: provide dates to highlight externally
+    dateData?: Record<string, number>; // Optional: provide counts/data per date
     mode?: 'schedules' | 'attendance' | 'manual'; // Default is schedules
     onMonthChange?: (year: number, month: number) => void;
 }
@@ -23,6 +24,7 @@ export function MiniCalendar({
     onSelectDate,
     className = '',
     highlightedDates: externalDates,
+    dateData,
     mode = 'schedules',
     onMonthChange
 }: MiniCalendarProps) {
@@ -140,7 +142,8 @@ export function MiniCalendar({
 
                     const dateStr = generateIsoDate(day);
                     const isSelected = selectedDate === dateStr;
-                    const hasData = activeDates.includes(dateStr);
+                    const count = dateData?.[dateStr] || 0;
+                    const hasData = count > 0 || activeDates.includes(dateStr);
                     const isToday = dateStr === toLocalISO(new Date());
 
                     return (
@@ -148,7 +151,7 @@ export function MiniCalendar({
                             key={idx}
                             onClick={() => onSelectDate(dateStr)}
                             className={`
-                                relative w-full aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-200
+                                relative w-full aspect-square rounded-xl flex flex-col items-center justify-center transition-all duration-200
                                 ${isSelected
                                     ? 'bg-blue-600 text-white shadow-md scale-105 z-10'
                                     : hasData
@@ -157,8 +160,17 @@ export function MiniCalendar({
                                 ${isToday && !isSelected ? 'ring-2 ring-blue-600 border-transparent text-blue-600' : ''}
                             `}
                         >
-                            <span className={isSelected || hasData ? 'text-lg' : 'text-base'}>{day}</span>
-                            {hasData && !isSelected && (
+                            <span className={`font-bold ${isSelected || hasData ? 'text-base' : 'text-sm'} ${count > 0 ? '-mt-1' : ''}`}>
+                                {day}
+                            </span>
+
+                            {count > 0 && !isSelected && (
+                                <span className={`text-[10px] font-black -mt-0.5 ${hasData ? `text-${highlightColor}-600` : 'text-gray-400'}`}>
+                                    {count}
+                                </span>
+                            )}
+
+                            {hasData && count === 0 && !isSelected && (
                                 <div className={`absolute bottom-1 w-1.5 h-1.5 rounded-full bg-${highlightColor}-500`}></div>
                             )}
                         </button>

@@ -78,7 +78,7 @@ function RegistroContent() {
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [datesWithAttendance, setDatesWithAttendance] = useState<string[]>([]);
+  const [attendanceCounts, setAttendanceCounts] = useState<Record<string, number>>({});
   const [calendarView, setCalendarView] = useState({
     month: new Date(selectedDate).getMonth(),
     year: new Date(selectedDate).getFullYear()
@@ -225,7 +225,7 @@ function RegistroContent() {
   useEffect(() => {
     const fetchAttendanceDates = async () => {
       if (!sedeSeleccionada && !grupoSeleccionado) return;
-      setDatesWithAttendance([]); // Limpiar para evitar mostrar datos viejos mientras carga
+      setAttendanceCounts({}); // Limpiar para evitar mostrar datos viejos
 
       try {
         const { year, month } = calendarView;
@@ -237,7 +237,7 @@ function RegistroContent() {
           .select('fecha, estudiantes!inner(grupo, sede)')
           .gte('fecha', startOfMonth)
           .lte('fecha', endOfMonth)
-          .limit(50000); // Aumentamos drásticamente el límite para sedes grandes
+          .limit(50000);
 
         if (grupoSeleccionado) {
           query = query.eq('estudiantes.grupo', grupoSeleccionado.nombre);
@@ -250,8 +250,20 @@ function RegistroContent() {
 
         const { data } = await query;
         if (data) {
-          const fechasUnicas = Array.from(new Set(data.map(d => d.fecha)));
-          setDatesWithAttendance(fechasUnicas);
+          // Agrupamos por fecha y contamos grupos únicos
+          const map: Record<string, Set<string>> = {};
+          data.forEach((row: any) => {
+            const f = row.fecha;
+            const g = row.estudiantes.grupo;
+            if (!map[f]) map[f] = new Set();
+            map[f].add(g);
+          });
+
+          const counts: Record<string, number> = {};
+          Object.entries(map).forEach(([f, s]) => {
+            counts[f] = s.size;
+          });
+          setAttendanceCounts(counts);
         }
       } catch (error) {
         console.error('Error fetching attendance dates:', error);
@@ -988,7 +1000,7 @@ function RegistroContent() {
                   setShowCalendar(false);
                 }}
                 mode="attendance"
-                highlightedDates={datesWithAttendance}
+                dateData={attendanceCounts}
                 onMonthChange={(year, month) => {
                   setCalendarView({ year, month });
                 }}
