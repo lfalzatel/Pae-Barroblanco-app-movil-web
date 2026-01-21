@@ -52,13 +52,33 @@ export default function HorarioPage() {
         return str.charAt(0).toUpperCase() + str.slice(1).replace('.', '');
     };
 
+    // State initialization with Persistence
     const [selectedDate, setSelectedDate] = useState<string>(() => {
-        const smartDate = getSmartDefaultDate();
-        const offset = smartDate.getTimezoneOffset() * 60000;
-        return new Date(smartDate.getTime() - offset).toISOString().split('T')[0];
+        // 1. Try to recover from localStorage (Client side only)
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('pae_last_schedule_date');
+            if (saved) return saved;
+        }
+
+        // 2. Fallback to Smart Default
+        const d = new Date();
+        const day = d.getDay();
+        if (day === 5) d.setDate(d.getDate() + 3); // Fri -> Mon
+        else if (day === 6) d.setDate(d.getDate() + 2); // Sat -> Mon
+        else d.setDate(d.getDate() + 1); // Others -> Tomorrow
+
+        const offset = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - offset).toISOString().split('T')[0];
     });
 
-    // Force refresh on mount to ensure we see latest data (fix for navigation cache)
+    // Persistence Effect
+    useEffect(() => {
+        if (selectedDate) {
+            localStorage.setItem('pae_last_schedule_date', selectedDate);
+        }
+    }, [selectedDate]);
+
+    // Force refresh logic (kept from previous fix, good for data freshness)
     useEffect(() => {
         const handleFocus = () => {
             if (role) initData();
