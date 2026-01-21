@@ -252,7 +252,6 @@ export default function DashboardLayout({
 
             {/* Mobile Top Header for User Profile */}
             <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#00A3E0] flex items-center justify-between px-4 z-50 shadow-md">
-                {/* Title on the left */}
                 <h1 className="text-xl font-black text-white tracking-tight">
                     Sistema PAE
                 </h1>
@@ -328,75 +327,77 @@ export default function DashboardLayout({
                         )}
                     </div>
                 </div>
+            </div>
 
-                {/* Notification Modal */}
-                {notifModalOpen && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setNotifModalOpen(false)}></div>
-                        <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
-                            <div className="p-6 bg-gradient-to-br from-blue-600 to-blue-700 text-white relative">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="bg-white/20 p-2 rounded-xl">
-                                        <Bell className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-black text-lg">Aviso de Horario</h3>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">{tomorrowDateLabel}</p>
+            {/* Notification Modal */}
+            {notifModalOpen && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setNotifModalOpen(false)}></div>
+                    <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+                        <div className="p-6 bg-gradient-to-br from-blue-600 to-blue-700 text-white relative">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="bg-white/20 p-2 rounded-xl">
+                                    <Bell className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-lg">Aviso de Horario</h3>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">{tomorrowDateLabel}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setNotifModalOpen(false)} className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                            {tomorrowSchedule.length > 0 ? (
+                                <div className="space-y-4">
+                                    <p className="text-xs font-medium text-gray-500 leading-relaxed">
+                                        Se ha publicado el <span className="font-bold text-gray-900">horario de mañana</span>. Aquí los grupos con novedades:
+                                    </p>
+                                    <div className="space-y-2">
+                                        {tomorrowSchedule.map((item, idx) => (
+                                            <div key={idx} className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-start gap-4">
+                                                <div className="bg-white px-2 py-1 rounded-lg border border-gray-200 text-[10px] font-black text-blue-600 shrink-0">
+                                                    {item.time.split(' - ')[0]}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-bold text-gray-900 text-sm mb-1">{item.group}</p>
+                                                    {item.notes ? (
+                                                        <div className="flex items-start gap-1.5 text-[10px] text-amber-600">
+                                                            <FileText className="w-3 h-3 mt-0.5 shrink-0" />
+                                                            <span className="italic font-medium">{item.notes}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-[10px] text-gray-400 italic">Ingreso normal</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                                <button onClick={() => setNotifModalOpen(false)} className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full">
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
+                            ) : (
+                                <div className="text-center py-10">
+                                    <Clock className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                                    <p className="text-gray-400 font-medium">No hay avisos pendientes para mañana.</p>
+                                </div>
+                            )}
+                        </div>
 
-                            <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                                {tomorrowSchedule.length > 0 ? (
-                                    <div className="space-y-4">
-                                        <p className="text-xs font-medium text-gray-500 leading-relaxed">
-                                            Se ha publicado el <span className="font-bold text-gray-900">horario de mañana</span>. Aquí los grupos con novedades:
-                                        </p>
-                                        <div className="space-y-2">
-                                            {tomorrowSchedule.map((item, idx) => (
-                                                <div key={idx} className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-start gap-4">
-                                                    <div className="bg-white px-2 py-1 rounded-lg border border-gray-200 text-[10px] font-black text-blue-600 shrink-0">
-                                                        {item.time.split(' - ')[0]}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-bold text-gray-900 text-sm mb-1">{item.group}</p>
-                                                        {item.notes ? (
-                                                            <div className="flex items-start gap-1.5 text-[10px] text-amber-600">
-                                                                <FileText className="w-3 h-3 mt-0.5 shrink-0" />
-                                                                <span className="italic font-medium">{item.notes}</span>
-                                                            </div>
-                                                        ) : (
-                                                            <p className="text-[10px] text-gray-400 italic">Ingreso normal</p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-10">
-                                        <Clock className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                                        <p className="text-gray-400 font-medium">No hay avisos pendientes para mañana.</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="p-4 bg-gray-50 border-t border-gray-100">
-                                <button
-                                    onClick={() => setNotifModalOpen(false)}
-                                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg hover:bg-black transition-all active:scale-[0.98]"
-                                >
-                                    Entendido
-                                </button>
-                            </div>
+                        <div className="p-4 bg-gray-50 border-t border-gray-100">
+                            <button
+                                onClick={() => setNotifModalOpen(false)}
+                                className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg hover:bg-black transition-all active:scale-[0.98]"
+                            >
+                                Entendido
+                            </button>
                         </div>
                     </div>
-                )}
-                {/* Spacer for Mobile Header */}
-                <div className="md:hidden h-16"></div>
-            </div>
-            );
+                </div>
+            )}
+
+            {/* Spacer for Mobile Header */}
+            <div className="md:hidden h-16"></div>
+        </div>
+    );
 }
