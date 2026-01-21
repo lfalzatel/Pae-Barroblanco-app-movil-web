@@ -395,30 +395,62 @@ export default function DashboardLayout({
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Grupos con Novedades</p>
-                                        {tomorrowSchedule.filter(i => i.notes).length > 0 ? (
-                                            tomorrowSchedule.filter(i => i.notes).map((item, idx) => (
-                                                <div key={idx} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4">
-                                                    <div className="bg-white px-2 py-1 rounded-lg border border-amber-200 text-[10px] font-black text-amber-600 shrink-0">
-                                                        {item.time.split(' - ')[0]}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-bold text-gray-900 text-sm mb-1">{item.group}</p>
-                                                        <div className="flex items-start gap-1.5 text-[10px] text-amber-600">
-                                                            <FileText className="w-3 h-3 mt-0.5 shrink-0" />
-                                                            <span className="italic font-medium">{item.notes}</span>
+                                    <div className="space-y-4">
+                                        {/* 1. Groups NOT attending (No Asiste) */}
+                                        {tomorrowSchedule.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length > 0 && (
+                                            <div className="space-y-2">
+                                                <p className="text-[10px] font-black text-red-500 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                                    <X className="w-3 h-3" />
+                                                    Grupos que NO ASISTEN
+                                                </p>
+                                                {tomorrowSchedule.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').map((item, idx) => (
+                                                    <div key={`absent-${idx}`} className="bg-red-50 p-4 rounded-2xl border border-red-100 flex items-start gap-4 ring-1 ring-red-50/50 shadow-sm">
+                                                        <div className="bg-red-600 px-2 py-1 rounded-lg text-[10px] font-black text-white shrink-0 uppercase">
+                                                            No Asiste
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-bold text-red-900 text-sm mb-1">{item.group}</p>
+                                                            <div className="flex items-start gap-1.5 text-[10px] text-red-600">
+                                                                <FileText className="w-3 h-3 mt-0.5 shrink-0" />
+                                                                <span className="italic font-bold">{item.notes || 'Sin motivo especificado'}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
-                                                <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                                <p className="text-xs font-bold text-gray-500">Sin cambios reportados</p>
-                                                <p className="text-[10px] text-gray-400 italic">Todos los grupos ingresan en su horario normal.</p>
+                                                ))}
                                             </div>
                                         )}
+
+                                        {/* 2. Groups with other news/notes */}
+                                        <div className="space-y-2">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                                <Info className="w-4 h-4" />
+                                                Otras Novedades
+                                            </p>
+                                            {tomorrowSchedule.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').length > 0 ? (
+                                                tomorrowSchedule.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').map((item, idx) => (
+                                                    <div key={`note-${idx}`} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4 shadow-sm">
+                                                        <div className="bg-white px-2 py-1 rounded-lg border border-amber-200 text-[10px] font-black text-amber-600 shrink-0">
+                                                            {item.time?.split(' - ')[0] || item.time_start}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-bold text-gray-900 text-sm mb-1">{item.group}</p>
+                                                            <div className="flex items-start gap-1.5 text-[10px] text-amber-600">
+                                                                <FileText className="w-3 h-3 mt-0.5 shrink-0" />
+                                                                <span className="italic font-medium">{item.notes}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                tomorrowSchedule.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length === 0 && (
+                                                    <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
+                                                        <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                                        <p className="text-xs font-bold text-gray-500">Sin cambios reportados</p>
+                                                        <p className="text-[10px] text-gray-400 italic">Todos los grupos ingresan en su horario normal.</p>
+                                                    </div>
+                                                )
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ) : (

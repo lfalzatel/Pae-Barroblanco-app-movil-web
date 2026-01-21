@@ -94,6 +94,9 @@ export default function HorarioPage() {
     const [showConfirmSave, setShowConfirmSave] = useState(false);
     const [unassignedCount, setUnassignedCount] = useState(0);
 
+    // Extraordinary News State
+    const [absentGroups, setAbsentGroups] = useState<AssignedSlot[]>([]);
+
     useEffect(() => {
         if (notif) {
             const timer = setTimeout(() => setNotif(null), 3500);
@@ -160,12 +163,26 @@ export default function HorarioPage() {
 
             const currentAssignments: Record<string, AssignedSlot[]> = {};
 
+            const absent: AssignedSlot[] = [];
+
             if (schedData?.items) {
+                const absent: AssignedSlot[] = [];
+
                 schedData.items.forEach((item: any) => {
                     const found = processed.find(g => g.label === item.group);
+                    if (!found) return;
+
+                    if (item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE') {
+                        absent.push({
+                            group: found,
+                            notes: item.notes
+                        });
+                        return;
+                    }
+
                     const start = item.time_start || (item.time ? item.time.split(' - ')[0] : null);
 
-                    if (found && start && slots.includes(start)) {
+                    if (start && slots.includes(start)) {
                         if (!currentAssignments[start]) {
                             currentAssignments[start] = [];
                         }
@@ -175,6 +192,9 @@ export default function HorarioPage() {
                         });
                     }
                 });
+                setAbsentGroups(absent);
+            } else {
+                setAbsentGroups([]);
             }
 
             // 3. Fetch Previous Week Schedule (7 days ago) for conflict detection
@@ -209,6 +229,35 @@ export default function HorarioPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSetAbsent = () => {
+        if (!selectedGroup) return;
+
+        // Prevent duplicates
+        if (absentGroups.some(a => a.group.id === selectedGroup.id)) {
+            alert('Este grupo ya está marcado como novedad.');
+            return;
+        }
+
+        setAbsentGroups(prev => [...prev, { group: selectedGroup, notes: 'No asiste a clases / Novedad' }]);
+        setSelectedGroup(null);
+    };
+
+    const updateAbsentNote = (index: number, note: string) => {
+        setAbsentGroups(prev => {
+            const next = [...prev];
+            next[index] = { ...next[index], notes: note };
+            return next;
+        });
+    };
+
+    const removeAbsent = (index: number) => {
+        setAbsentGroups(prev => {
+            const next = [...prev];
+            next.splice(index, 1);
+            return next;
+        });
     };
 
     const handleSlotClick = (time: string) => {
@@ -306,7 +355,9 @@ export default function HorarioPage() {
     };
 
     const isAssigned = (group: GlobalGroup) => {
-        return Object.values(assignments).some(slots => slots?.some(s => s.group.id === group.id));
+        const inTimeline = Object.values(assignments).some(slots => slots?.some(s => s.group.id === group.id));
+        const inAbsent = absentGroups.some(s => s.group.id === group.id);
+        return inTimeline || inAbsent;
     };
 
     const handleSave = () => {
@@ -334,6 +385,16 @@ export default function HorarioPage() {
                         group: slot.group.label,
                         notes: slot.notes || ''
                     });
+                });
+            });
+
+            // Add absent groups
+            absentGroups.forEach(slot => {
+                itemsToSave.push({
+                    time: 'NO_ASISTE',
+                    time_start: 'NO_ASISTE',
+                    group: slot.group.label,
+                    notes: slot.notes || ''
                 });
             });
 
@@ -545,211 +606,240 @@ export default function HorarioPage() {
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-2 lg:p-3 custom-scrollbar bg-gray-50/20">
-                        <div className="grid grid-cols-1 gap-1.5 lg:gap-2 content-start">
-                            {availableGroups.filter(g => !isAssigned(g)).length === 0 && (
-                                <div className="col-span-full py-10 text-center text-gray-400">
-                                    <p className="text-xs font-medium">¡Todo asignado!</p>
-                                </div>
-                            )}
-
-                            {availableGroups.map((group) => {
-                                if (isAssigned(group)) return null;
-                                const isSelected = selectedGroup?.id === group.id;
-                                return (
-                                    <button
-                                        key={group.id}
-                                        onClick={() => setSelectedGroup(isSelected ? null : group)}
-                                        className={`
-                                        p-2 lg:px-3 lg:py-2 rounded-lg text-[10px] lg:text-xs font-bold border transition-all duration-200 flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-1 text-center lg:text-left
-                                        ${isSelected
-                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-1 ring-blue-200'
-                                                : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50'}
-                                    `}
-                                    >
-                                        <span>{group.label}</span>
-                                        {group.isCombo && <span className="text-[8px] bg-white/20 px-1 py-0.5 rounded-full">+Sord</span>}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
                 </div>
             </div>
 
+            {/* Extraordinary News Section */}
+            <div className="shrink-0 p-2 lg:p-4 border-t border-gray-100 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1">
+                        <Info className="w-3 h-3" />
+                        Novedades (No Asisten)
+                    </h4>
+                    <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-bold">
+                        {absentGroups.length} grupos
+                    </span>
+                </div>
 
+                {selectedGroup && !isAssigned(selectedGroup) && (
+                    <button
+                        onClick={handleSetAbsent}
+                        className="w-full mb-3 flex items-center justify-center gap-2 p-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl border border-red-200 border-dashed transition-all group scale-95"
+                    >
+                        <span className="text-[10px] font-black uppercase">Marcar {selectedGroup.label} como No Asiste</span>
+                    </button>
+                )}
 
-            {/* Edit Modal */}
-            {editingSlot && (assignments[editingSlot]?.length || 0) > 0 && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditingSlot(null)}></div>
-                    <div className="bg-white rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6">
-                        <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{editingSlot}</p>
-                                <h3 className="text-xl font-black text-gray-900">Gestionar Grupos</h3>
-                                <p className="text-sm text-gray-500">
-                                    {assignments[editingSlot]?.length} grupos asignados
-                                </p>
-                            </div>
-                            <button onClick={() => setEditingSlot(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                            {assignments[editingSlot]?.map((slot, index) => (
-                                <div key={`${slot.group.id}-${index}`} className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="font-bold text-gray-900 bg-white px-2 py-1 rounded-lg border border-gray-200">
-                                            {slot.group.label}
-                                        </span>
-                                        <button
-                                            onClick={() => deleteAssignment(editingSlot!, index)}
-                                            className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-colors"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Nota</label>
-                                            <input
-                                                type="text"
-                                                value={slot.notes || ''}
-                                                onChange={(e) => saveEdit(index, e.target.value)}
-                                                placeholder="Agregar nota..."
-                                                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Cambiar Hora</label>
-                                            <select
-                                                value={editingSlot || ''}
-                                                onChange={(e) => moveAssignment(index, e.target.value)}
-                                                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
-                                            >
-                                                {timeSlots.map(t => (
-                                                    <option key={t} value={t}>{t} {isBreakTime(t) ? '(Descanso)' : ''}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
+                <div className="space-y-1.5 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+                    {absentGroups.length === 0 ? (
+                        <p className="text-[10px] text-gray-400 italic text-center py-2">
+                            Ninguna novedad registrada para hoy
+                        </p>
+                    ) : (
+                        absentGroups.map((a, idx) => (
+                            <div key={idx} className="bg-red-50/50 p-2 rounded-xl border border-red-100/50">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[11px] font-black text-red-700">{a.group.label}</span>
+                                    <button onClick={() => removeAbsent(idx)} className="text-red-400 hover:text-red-600">
+                                        <X className="w-3 h-3" />
+                                    </button>
                                 </div>
-                            ))}
-                        </div>
-
-                        <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
-                            <button
-                                onClick={() => setEditingSlot(null)}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
-                            >
-                                Listo
-                            </button>
-                        </div>
-                    </div>
+                                <input
+                                    type="text"
+                                    value={a.notes}
+                                    onChange={(e) => updateAbsentNote(idx, e.target.value)}
+                                    className="w-full bg-white/80 border-none text-[10px] p-1.5 rounded-lg focus:ring-1 focus:ring-red-200 text-gray-600 font-medium"
+                                    placeholder="Motivo..."
+                                />
+                            </div>
+                        ))
+                    )}
                 </div>
-            )}
+            </div>
+        </div>
+            </div >
 
-            {/* Instructions Modal */}
-            {showInstructions && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowInstructions(false)}></div>
-                    <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6 overflow-hidden">
-                        <div className="p-4 bg-blue-50 -mx-6 -mt-6 mb-6 flex items-center justify-between">
-                            <h3 className="font-black text-blue-900 text-lg flex items-center gap-2">
-                                <Info className="w-5 h-5" />
-                                Instrucciones
-                            </h3>
-                            <button onClick={() => setShowInstructions(false)} className="p-1 hover:bg-blue-100 rounded-full text-blue-400">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="space-y-4 text-sm text-gray-600">
-                            <div className="flex gap-3">
-                                <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">1</div>
-                                <p><span className="font-bold text-gray-900">Selecciona un Grupo:</span> Toca un grupo disponible de la lista derecha. Se pondrá azul.</p>
-                            </div>
-                            <div className="flex gap-3">
-                                <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">2</div>
-                                <p><span className="font-bold text-gray-900">Asigna Hora:</span> Toca una franja horaria en la izquierda para asignar el grupo seleccionado.</p>
-                            </div>
-                            <div className="flex gap-3">
-                                <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">3</div>
-                                <p><span className="font-bold text-gray-900">Editar/Desasignar:</span> Toca una franja ya ocupada para ver detalles, agregar notas o eliminar la asignación.</p>
-                            </div>
-                            <div className="flex gap-3">
-                                <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">4</div>
-                                <p><span className="font-bold text-gray-900">Guardar:</span> ¡No olvides tocar el botón "Guardar" en la parte superior para aplicar los cambios!</p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setShowInstructions(false)}
-                            className="w-full mt-6 py-3 bg-gray-900 text-white rounded-xl font-bold"
-                        >
-                            Entendido
-                        </button>
-                    </div>
-                </div>
-            )}
 
-            {/* Premium Confirmation Modal */}
-            {showConfirmSave && (
-                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowConfirmSave(false)}></div>
-                    <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-8 text-center flex flex-col gap-6">
-                        <div className="bg-orange-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto ring-4 ring-orange-100 animate-bounce">
-                            <Info className="w-10 h-10 text-orange-500" />
-                        </div>
 
+        {/* Edit Modal */ }
+    {
+        editingSlot && (assignments[editingSlot]?.length || 0) > 0 && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditingSlot(null)}></div>
+                <div className="bg-white rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6">
+                    <div className="flex justify-between items-start mb-4">
                         <div>
-                            <h3 className="text-2xl font-black text-gray-900 mb-2">¿Guardar de todos modos?</h3>
-                            <p className="text-gray-500 text-sm leading-relaxed px-2">
-                                Detectamos que hay <span className="text-orange-600 font-bold">{unassignedCount} grupo(s)</span> sin horario asignado para esta fecha.
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{editingSlot}</p>
+                            <h3 className="text-xl font-black text-gray-900">Gestionar Grupos</h3>
+                            <p className="text-sm text-gray-500">
+                                {assignments[editingSlot]?.length} grupos asignados
                             </p>
                         </div>
-
-                        <div className="flex flex-col gap-3">
-                            <button
-                                onClick={executeSave}
-                                className="w-full py-4 bg-gray-900 hover:bg-black text-white rounded-2xl font-black shadow-xl shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                            >
-                                Sí, guardar de todos modos
-                            </button>
-                            <button
-                                onClick={() => setShowConfirmSave(false)}
-                                className="w-full py-4 bg-white hover:bg-gray-50 text-gray-400 rounded-2xl font-bold border border-gray-100 transition-all"
-                            >
-                                Seguir editando
-                            </button>
-                        </div>
+                        <button onClick={() => setEditingSlot(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400">
+                            <X className="w-5 h-5" />
+                        </button>
                     </div>
-                </div>
-            )}
 
-            {/* Premium Toast Notification */}
-            {notif && (
-                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-bottom-5 fade-in duration-300">
-                    <div className={`
-                        px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-xl border-2
-                        ${notif.type === 'success'
-                            ? 'bg-emerald-500/90 text-white border-white/20'
-                            : 'bg-red-500/90 text-white border-white/20'}
-                    `}>
-                        <div className="bg-white/20 p-2 rounded-xl">
-                            {notif.type === 'success' ? <Save className="w-5 h-5" /> : <X className="w-5 h-5" />}
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="font-black text-sm tracking-tight">{notif.msg}</span>
-                            <span className="text-[10px] opacity-80 font-bold uppercase tracking-widest mt-0.5">Sistema PAE Barroblanco</span>
-                        </div>
-                        <button onClick={() => setNotif(null)} className="ml-4 opacity-50 hover:opacity-100 transition-opacity">
-                            <X className="w-4 h-4" />
+                    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                        {assignments[editingSlot]?.map((slot, index) => (
+                            <div key={`${slot.group.id}-${index}`} className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="font-bold text-gray-900 bg-white px-2 py-1 rounded-lg border border-gray-200">
+                                        {slot.group.label}
+                                    </span>
+                                    <button
+                                        onClick={() => deleteAssignment(editingSlot!, index)}
+                                        className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Nota</label>
+                                        <input
+                                            type="text"
+                                            value={slot.notes || ''}
+                                            onChange={(e) => saveEdit(index, e.target.value)}
+                                            placeholder="Agregar nota..."
+                                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Cambiar Hora</label>
+                                        <select
+                                            value={editingSlot || ''}
+                                            onChange={(e) => moveAssignment(index, e.target.value)}
+                                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
+                                        >
+                                            {timeSlots.map(t => (
+                                                <option key={t} value={t}>{t} {isBreakTime(t) ? '(Descanso)' : ''}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
+                        <button
+                            onClick={() => setEditingSlot(null)}
+                            className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                        >
+                            Listo
                         </button>
                     </div>
                 </div>
-            )}
+            </div>
+        )
+    }
+
+    {/* Instructions Modal */ }
+    {
+        showInstructions && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowInstructions(false)}></div>
+                <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6 overflow-hidden">
+                    <div className="p-4 bg-blue-50 -mx-6 -mt-6 mb-6 flex items-center justify-between">
+                        <h3 className="font-black text-blue-900 text-lg flex items-center gap-2">
+                            <Info className="w-5 h-5" />
+                            Instrucciones
+                        </h3>
+                        <button onClick={() => setShowInstructions(false)} className="p-1 hover:bg-blue-100 rounded-full text-blue-400">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <div className="space-y-4 text-sm text-gray-600">
+                        <div className="flex gap-3">
+                            <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">1</div>
+                            <p><span className="font-bold text-gray-900">Selecciona un Grupo:</span> Toca un grupo disponible de la lista derecha. Se pondrá azul.</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">2</div>
+                            <p><span className="font-bold text-gray-900">Asigna Hora:</span> Toca una franja horaria en la izquierda para asignar el grupo seleccionado.</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">3</div>
+                            <p><span className="font-bold text-gray-900">Editar/Desasignar:</span> Toca una franja ya ocupada para ver detalles, agregar notas o eliminar la asignación.</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">4</div>
+                            <p><span className="font-bold text-gray-900">Guardar:</span> ¡No olvides tocar el botón "Guardar" en la parte superior para aplicar los cambios!</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setShowInstructions(false)}
+                        className="w-full mt-6 py-3 bg-gray-900 text-white rounded-xl font-bold"
+                    >
+                        Entendido
+                    </button>
+                </div>
+            </div>
+        )
+    }
+
+    {/* Premium Confirmation Modal */ }
+    {
+        showConfirmSave && (
+            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowConfirmSave(false)}></div>
+                <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-8 text-center flex flex-col gap-6">
+                    <div className="bg-orange-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto ring-4 ring-orange-100 animate-bounce">
+                        <Info className="w-10 h-10 text-orange-500" />
+                    </div>
+
+                    <div>
+                        <h3 className="text-2xl font-black text-gray-900 mb-2">¿Guardar de todos modos?</h3>
+                        <p className="text-gray-500 text-sm leading-relaxed px-2">
+                            Detectamos que hay <span className="text-orange-600 font-bold">{unassignedCount} grupo(s)</span> sin horario asignado para esta fecha.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={executeSave}
+                            className="w-full py-4 bg-gray-900 hover:bg-black text-white rounded-2xl font-black shadow-xl shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                        >
+                            Sí, guardar de todos modos
+                        </button>
+                        <button
+                            onClick={() => setShowConfirmSave(false)}
+                            className="w-full py-4 bg-white hover:bg-gray-50 text-gray-400 rounded-2xl font-bold border border-gray-100 transition-all"
+                        >
+                            Seguir editando
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    {/* Premium Toast Notification */ }
+    {
+        notif && (
+            <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-bottom-5 fade-in duration-300">
+                <div className={`
+                        px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-xl border-2
+                        ${notif.type === 'success'
+                        ? 'bg-emerald-500/90 text-white border-white/20'
+                        : 'bg-red-500/90 text-white border-white/20'}
+                    `}>
+                    <div className="bg-white/20 p-2 rounded-xl">
+                        {notif.type === 'success' ? <Save className="w-5 h-5" /> : <X className="w-5 h-5" />}
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="font-black text-sm tracking-tight">{notif.msg}</span>
+                        <span className="text-[10px] opacity-80 font-bold uppercase tracking-widest mt-0.5">Sistema PAE Barroblanco</span>
+                    </div>
+                    <button onClick={() => setNotif(null)} className="ml-4 opacity-50 hover:opacity-100 transition-opacity">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+        )
+    }
         </div >
     );
 }
