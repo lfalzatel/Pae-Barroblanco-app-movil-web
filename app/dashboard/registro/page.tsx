@@ -79,6 +79,10 @@ function RegistroContent() {
   const [pendingCount, setPendingCount] = useState(0);
   const [showCalendar, setShowCalendar] = useState(false);
   const [datesWithAttendance, setDatesWithAttendance] = useState<string[]>([]);
+  const [calendarView, setCalendarView] = useState({
+    month: new Date(selectedDate).getMonth(),
+    year: new Date(selectedDate).getFullYear()
+  });
 
   useEffect(() => {
     const updateStatus = () => {
@@ -220,39 +224,43 @@ function RegistroContent() {
   // 5. Cargar fechas con asistencia para el calendario
   useEffect(() => {
     const fetchAttendanceDates = async () => {
-      try {
-        if (grupoSeleccionado) {
-          const { data } = await supabase
-            .from('asistencia_pae')
-            .select('fecha, estudiantes!inner(grupo)')
-            .eq('estudiantes.grupo', grupoSeleccionado.nombre);
+      if (!sedeSeleccionada && !grupoSeleccionado) return;
 
-          if (data) {
-            setDatesWithAttendance(Array.from(new Set(data.map(d => d.fecha))));
-          }
+      try {
+        const { year, month } = calendarView;
+        // Rango ampliado para cubrir el mes actual
+        const startOfMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
+        const endOfMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-31`;
+
+        let query = supabase
+          .from('asistencia_pae')
+          .select('fecha, estudiantes!inner(grupo, sede)')
+          .gte('fecha', startOfMonth)
+          .lte('fecha', endOfMonth)
+          .limit(3000); // Aumentamos el límite para asegurar que no se pierdan datos
+
+        if (grupoSeleccionado) {
+          query = query.eq('estudiantes.grupo', grupoSeleccionado.nombre);
         } else if (sedeSeleccionada) {
           const sedeDbName = sedeSeleccionada.id === 'principal' ? 'Principal' :
             sedeSeleccionada.id === 'primaria' ? 'Primaria' :
               'Maria Inmaculada';
+          query = query.eq('estudiantes.sede', sedeDbName);
+        }
 
-          const { data } = await supabase
-            .from('asistencia_pae')
-            .select('fecha, estudiantes!inner(sede)')
-            .eq('estudiantes.sede', sedeDbName);
-
-          if (data) {
-            setDatesWithAttendance(Array.from(new Set(data.map(d => d.fecha))));
-          }
+        const { data } = await query;
+        if (data) {
+          // Usamos un Set para obtener fechas únicas y asegurar que correspondan al filtro
+          const fechasUnicas = Array.from(new Set(data.map(d => d.fecha)));
+          setDatesWithAttendance(fechasUnicas);
         }
       } catch (error) {
         console.error('Error fetching attendance dates:', error);
       }
     };
 
-    if (sedeSeleccionada || grupoSeleccionado) {
-      fetchAttendanceDates();
-    }
-  }, [sedeSeleccionada, grupoSeleccionado, selectedDate]);
+    fetchAttendanceDates();
+  }, [sedeSeleccionada, grupoSeleccionado, calendarView]);
 
   // 6. Establecer grupo seleccionado si viene de la URL
   useEffect(() => {
@@ -982,6 +990,9 @@ function RegistroContent() {
                 }}
                 mode="attendance"
                 highlightedDates={datesWithAttendance}
+                onMonthChange={(year, month) => {
+                  setCalendarView({ year, month });
+                }}
               />
             </div>
             <div className="p-4 bg-white border-t border-gray-100">

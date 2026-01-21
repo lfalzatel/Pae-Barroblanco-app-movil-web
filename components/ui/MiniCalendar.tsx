@@ -10,18 +10,31 @@ interface MiniCalendarProps {
     className?: string;
     highlightedDates?: string[]; // Optional: provide dates to highlight externally
     mode?: 'schedules' | 'attendance' | 'manual'; // Default is schedules
+    onMonthChange?: (year: number, month: number) => void;
 }
+
+const toLocalISO = (d: Date) => {
+    const offset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - offset).toISOString().split('T')[0];
+};
 
 export function MiniCalendar({
     selectedDate,
     onSelectDate,
     className = '',
     highlightedDates: externalDates,
-    mode = 'schedules'
+    mode = 'schedules',
+    onMonthChange
 }: MiniCalendarProps) {
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const [currentDate, setCurrentDate] = useState(new Date(selectedDate));
     const [internalDates, setInternalDates] = useState<string[]>([]);
     const [loading, setLoading] = useState(mode === 'schedules');
+
+    useEffect(() => {
+        if (onMonthChange) {
+            onMonthChange(currentDate.getFullYear(), currentDate.getMonth());
+        }
+    }, [currentDate.getMonth(), currentDate.getFullYear()]);
 
     useEffect(() => {
         if (mode === 'schedules') {
@@ -36,11 +49,6 @@ export function MiniCalendar({
         try {
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth();
-
-            const toLocalISO = (d: Date) => {
-                const offset = d.getTimezoneOffset() * 60000;
-                return new Date(d.getTime() - offset).toISOString().split('T')[0];
-            };
 
             const startStr = toLocalISO(new Date(year, month, 1));
             const endStr = toLocalISO(new Date(year, month + 1, 0));
