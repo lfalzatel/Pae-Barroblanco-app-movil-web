@@ -89,6 +89,14 @@ export default function HorarioPage() {
     const [editingSlot, setEditingSlot] = useState<string | null>(null);
     const [editNote, setEditNote] = useState('');
     const [showCalendar, setShowCalendar] = useState(false);
+    const [notif, setNotif] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
+
+    useEffect(() => {
+        if (notif) {
+            const timer = setTimeout(() => setNotif(null), 3500);
+            return () => clearTimeout(timer);
+        }
+    }, [notif]);
 
     useEffect(() => {
         checkAccess();
@@ -331,10 +339,10 @@ export default function HorarioPage() {
 
             if (error) throw error;
 
-            alert('Horario guardado correctamente.');
+            setNotif({ type: 'success', msg: '¡Horario guardado con éxito!' });
         } catch (error) {
             console.error('Error saving schedule:', error);
-            alert('Error al guardar el horario.');
+            setNotif({ type: 'error', msg: 'Ocurrió un error al guardar.' });
         } finally {
             setSaving(false);
         }
@@ -633,43 +641,63 @@ export default function HorarioPage() {
                 </div>
             )}
 
-            {/* Instructions Modal */}
-            {showInstructions && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowInstructions(false)}></div>
-                    <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6 overflow-hidden">
-                        <div className="p-4 bg-blue-50 -mx-6 -mt-6 mb-6 flex items-center justify-between">
-                            <h3 className="font-black text-blue-900 text-lg flex items-center gap-2">
-                                <Info className="w-5 h-5" />
-                                Instrucciones
-                            </h3>
-                            <button onClick={() => setShowInstructions(false)} className="p-1 hover:bg-blue-100 rounded-full text-blue-400">
-                                <X className="w-5 h-5" />
-                            </button>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowInstructions(false)}></div>
+                <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6 overflow-hidden">
+                    <div className="p-4 bg-blue-50 -mx-6 -mt-6 mb-6 flex items-center justify-between">
+                        <h3 className="font-black text-blue-900 text-lg flex items-center gap-2">
+                            <Info className="w-5 h-5" />
+                            Instrucciones
+                        </h3>
+                        <button onClick={() => setShowInstructions(false)} className="p-1 hover:bg-blue-100 rounded-full text-blue-400">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <div className="space-y-4 text-sm text-gray-600">
+                        <div className="flex gap-3">
+                            <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">1</div>
+                            <p><span className="font-bold text-gray-900">Selecciona un Grupo:</span> Toca un grupo disponible de la lista derecha. Se pondrá azul.</p>
                         </div>
-                        <div className="space-y-4 text-sm text-gray-600">
-                            <div className="flex gap-3">
-                                <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">1</div>
-                                <p><span className="font-bold text-gray-900">Selecciona un Grupo:</span> Toca un grupo disponible de la lista derecha. Se pondrá azul.</p>
-                            </div>
-                            <div className="flex gap-3">
-                                <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">2</div>
-                                <p><span className="font-bold text-gray-900">Asigna Hora:</span> Toca una franja horaria en la izquierda para asignar el grupo seleccionado.</p>
-                            </div>
-                            <div className="flex gap-3">
-                                <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">3</div>
-                                <p><span className="font-bold text-gray-900">Editar/Desasignar:</span> Toca una franja ya ocupada para ver detalles, agregar notas o eliminar la asignación.</p>
-                            </div>
-                            <div className="flex gap-3">
-                                <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">4</div>
-                                <p><span className="font-bold text-gray-900">Guardar:</span> ¡No olvides tocar el botón "Guardar" en la parte superior para aplicar los cambios!</p>
-                            </div>
+                        <div className="flex gap-3">
+                            <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">2</div>
+                            <p><span className="font-bold text-gray-900">Asigna Hora:</span> Toca una franja horaria en la izquierda para asignar el grupo seleccionado.</p>
                         </div>
-                        <button
-                            onClick={() => setShowInstructions(false)}
-                            className="w-full mt-6 py-3 bg-gray-900 text-white rounded-xl font-bold"
-                        >
-                            Entendido
+                        <div className="flex gap-3">
+                            <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">3</div>
+                            <p><span className="font-bold text-gray-900">Editar/Desasignar:</span> Toca una franja ya ocupada para ver detalles, agregar notas o eliminar la asignación.</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">4</div>
+                            <p><span className="font-bold text-gray-900">Guardar:</span> ¡No olvides tocar el botón "Guardar" en la parte superior para aplicar los cambios!</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setShowInstructions(false)}
+                        className="w-full mt-6 py-3 bg-gray-900 text-white rounded-xl font-bold"
+                    >
+                        Entendido
+                    </button>
+                </div>
+            </div>
+
+            {/* Premium Toast Notification */}
+            {notif && (
+                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-bottom-5 fade-in duration-300">
+                    <div className={`
+                        px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-xl border-2
+                        ${notif.type === 'success'
+                            ? 'bg-emerald-500/90 text-white border-white/20'
+                            : 'bg-red-500/90 text-white border-white/20'}
+                    `}>
+                        <div className="bg-white/20 p-2 rounded-xl">
+                            {notif.type === 'success' ? <Save className="w-5 h-5" /> : <X className="w-5 h-5" />}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="font-black text-sm tracking-tight">{notif.msg}</span>
+                            <span className="text-[10px] opacity-80 font-bold uppercase tracking-widest mt-0.5">Sistema PAE Barroblanco</span>
+                        </div>
+                        <button onClick={() => setNotif(null)} className="ml-4 opacity-50 hover:opacity-100 transition-opacity">
+                            <X className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
