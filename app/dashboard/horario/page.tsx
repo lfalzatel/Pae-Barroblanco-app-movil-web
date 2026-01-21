@@ -166,7 +166,6 @@ export default function HorarioPage() {
             const absent: AssignedSlot[] = [];
 
             if (schedData?.items) {
-                const absent: AssignedSlot[] = [];
 
                 schedData.items.forEach((item: any) => {
                     const found = processed.find(g => g.label === item.group);
@@ -420,426 +419,449 @@ export default function HorarioPage() {
     const [showInstructions, setShowInstructions] = useState(false);
 
     return (
-        <div className="p-2 lg:p-6 max-w-7xl mx-auto pb-0 h-screen flex flex-col overflow-hidden bg-gray-50/50">
-            {/* Header Area */}
-            <div className="flex flex-col gap-4 mb-4 px-2 shrink-0">
-                {/* Title Row */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => router.push('/dashboard')} className="p-2 hover:bg-white rounded-full text-gray-500 shadow-sm border border-transparent hover:border-gray-200 transition-all">
-                            <ChevronLeft className="w-5 h-5" />
-                        </button>
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-xl lg:text-3xl font-black text-gray-900 tracking-tight">Tablero de Horarios</h1>
+        <>
+            <div className="p-2 lg:p-6 max-w-7xl mx-auto pb-0 h-screen flex flex-col overflow-hidden bg-gray-50/50">
+                {/* Header Area */}
+                <div className="flex flex-col gap-4 mb-4 px-2 shrink-0">
+                    {/* Title Row */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => router.push('/dashboard')} className="p-2 hover:bg-white rounded-full text-gray-500 shadow-sm border border-transparent hover:border-gray-200 transition-all">
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-xl lg:text-3xl font-black text-gray-900 tracking-tight">Tablero de Horarios</h1>
+                                <button
+                                    onClick={() => setShowInstructions(true)}
+                                    className="bg-blue-100 hover:bg-blue-200 text-blue-700 p-2 rounded-full transition-all hover:scale-110 ring-2 ring-blue-300 animate-pulse shadow-sm"
+                                    title="Ver Instrucciones"
+                                >
+                                    <Info className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Toolbar Container */}
+                    <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-2 mt-2 relative z-20">
+
+                        {/* Calendar Trigger */}
+                        <div className="relative">
                             <button
-                                onClick={() => setShowInstructions(true)}
-                                className="bg-blue-100 hover:bg-blue-200 text-blue-700 p-2 rounded-full transition-all hover:scale-110 ring-2 ring-blue-300 animate-pulse shadow-sm"
-                                title="Ver Instrucciones"
+                                onClick={() => setShowCalendar(!showCalendar)}
+                                className="flex items-center gap-3 hover:bg-gray-50 px-3 py-2 rounded-xl transition-all group"
                             >
-                                <Info className="w-5 h-5" />
+                                <div className="bg-blue-50 p-2 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors">
+                                    <CalendarIcon className="w-6 h-6" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider leading-none mb-0.5">Editando</p>
+                                    <p className="text-sm font-black text-gray-900 leading-none">
+                                        {selectedDate ? formatDateLabel(selectedDate) : <span className="animate-pulse">Calculando...</span>}
+                                    </p>
+                                </div>
+                                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showCalendar ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {/* Calendar Modal */}
+                            {showCalendar && (
+                                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowCalendar(false)}>
+                                    <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm animate-in zoom-in-95 duration-200">
+                                        <MiniCalendar
+                                            selectedDate={selectedDate}
+                                            onSelectDate={(d) => { setSelectedDate(d); setShowCalendar(false); }}
+                                            className="shadow-2xl border-2 border-white/20"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-medium text-gray-400 hidden lg:inline-block text-right leading-tight">
+                                Recuerda guardar<br />tus cambios
+                            </span>
+                            <button
+                                onClick={handleSave}
+                                disabled={saving || !Object.keys(assignments).length}
+                                className="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none"
+                            >
+                                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                                <span>Guardar</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* Toolbar Container */}
-                <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-2 mt-2 relative z-20">
+                {/* Main Content - 2 Columns mobile friendly */}
+                <div className="grid grid-cols-12 gap-2 lg:gap-6 flex-1 overflow-hidden pb-4 px-1">
 
-                    {/* Calendar Trigger */}
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowCalendar(!showCalendar)}
-                            className="flex items-center gap-3 hover:bg-gray-50 px-3 py-2 rounded-xl transition-all group"
-                        >
-                            <div className="bg-blue-50 p-2 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors">
-                                <CalendarIcon className="w-6 h-6" />
+                    {/* Left: Timeline (Col 8 - Wider for text) */}
+                    <div className="col-span-8 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
+                        <div className="p-2 lg:p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex flex-col justify-between items-start shrink-0 gap-1">
+                            <div className="flex justify-between items-center w-full">
+                                <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
+                                    <Clock className="w-4 h-4 text-orange-500" />
+                                    <span className="hidden lg:inline">Línea de </span>Tiempo
+                                </h3>
+                                {selectedGroup && (
+                                    <span className="text-[9px] lg:text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full animate-pulse font-bold truncate max-w-[80px] lg:max-w-[120px]">
+                                        Asig: {selectedGroup.label}
+                                    </span>
+                                )}
                             </div>
-                            <div className="text-left">
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider leading-none mb-0.5">Editando</p>
-                                <p className="text-sm font-black text-gray-900 leading-none">
-                                    {selectedDate ? formatDateLabel(selectedDate) : <span className="animate-pulse">Calculando...</span>}
-                                </p>
-                            </div>
-                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showCalendar ? 'rotate-180' : ''}`} />
-                        </button>
-
-                        {/* Calendar Modal */}
-                        {showCalendar && (
-                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowCalendar(false)}>
-                                <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm animate-in zoom-in-95 duration-200">
-                                    <MiniCalendar
-                                        selectedDate={selectedDate}
-                                        onSelectDate={(d) => { setSelectedDate(d); setShowCalendar(false); }}
-                                        className="shadow-2xl border-2 border-white/20"
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-medium text-gray-400 hidden lg:inline-block text-right leading-tight">
-                            Recuerda guardar<br />tus cambios
-                        </span>
-                        <button
-                            onClick={handleSave}
-                            disabled={saving || !Object.keys(assignments).length}
-                            className="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none"
-                        >
-                            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                            <span>Guardar</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content - 2 Columns mobile friendly */}
-            <div className="grid grid-cols-12 gap-2 lg:gap-6 flex-1 overflow-hidden pb-4 px-1">
-
-                {/* Left: Timeline (Col 8 - Wider for text) */}
-                <div className="col-span-8 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
-                    <div className="p-2 lg:p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex flex-col justify-between items-start shrink-0 gap-1">
-                        <div className="flex justify-between items-center w-full">
-                            <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
-                                <Clock className="w-4 h-4 text-orange-500" />
-                                <span className="hidden lg:inline">Línea de </span>Tiempo
-                            </h3>
-                            {selectedGroup && (
-                                <span className="text-[9px] lg:text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full animate-pulse font-bold truncate max-w-[80px] lg:max-w-[120px]">
-                                    Asig: {selectedGroup.label}
-                                </span>
-                            )}
+                            <p className="text-[10px] text-gray-400 font-medium">
+                                Tip: Puedes asignar múltiples grupos en la misma hora
+                            </p>
                         </div>
-                        <p className="text-[10px] text-gray-400 font-medium">
-                            Tip: Puedes asignar múltiples grupos en la misma hora
-                        </p>
-                    </div>
 
-                    <div className="flex-1 overflow-y-auto p-1 lg:p-3 custom-scrollbar bg-gray-50/30">
-                        <div className="space-y-1.5 lg:space-y-2 pb-20">
-                            {timeSlots.map((time) => {
-                                const slots = assignments[time] || [];
-                                const isBreak = isBreakTime(time);
+                        <div className="flex-1 overflow-y-auto p-1 lg:p-3 custom-scrollbar bg-gray-50/30">
+                            <div className="space-y-1.5 lg:space-y-2 pb-20">
+                                {timeSlots.map((time) => {
+                                    const slots = assignments[time] || [];
+                                    const isBreak = isBreakTime(time);
 
-                                return (
-                                    <button
-                                        key={time}
-                                        onClick={() => handleSlotClick(time)}
-                                        className={`
+                                    return (
+                                        <button
+                                            key={time}
+                                            onClick={() => handleSlotClick(time)}
+                                            className={`
                                         relative w-full flex items-start gap-1 lg:gap-3 p-1.5 lg:p-2 rounded-lg lg:rounded-xl border transition-all duration-200 text-left group
                                         ${slots.length > 0
-                                                ? 'bg-white border-emerald-100 shadow-sm ring-1 ring-emerald-50'
-                                                : isBreak
-                                                    ? 'bg-amber-50/50 border-amber-100'
-                                                    : 'bg-white border-gray-100 hover:border-blue-300 hover:bg-blue-50/50'
-                                            }
+                                                    ? 'bg-white border-emerald-100 shadow-sm ring-1 ring-emerald-50'
+                                                    : isBreak
+                                                        ? 'bg-amber-50/50 border-amber-100'
+                                                        : 'bg-white border-gray-100 hover:border-blue-300 hover:bg-blue-50/50'
+                                                }
                                         ${selectedGroup && slots.length === 0 ? 'ring-2 ring-blue-500/20 border-blue-500 bg-blue-50' : ''}
                                     `}
-                                    >
-                                        <div className={`
+                                        >
+                                            <div className={`
                                          w-16 lg:w-20 py-1 rounded text-center text-[10px] lg:text-xs font-bold font-mono shrink-0 flex items-center justify-center
                                          ${slots.length > 0 ? 'bg-emerald-100 text-emerald-700' : isBreak ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}
                                      `}>
-                                            {time}
-                                        </div>
+                                                {time}
+                                            </div>
 
-                                        <div className="flex-1 min-w-0">
-                                            {slots.length > 0 ? (
-                                                <div className="space-y-1">
-                                                    {slots.map((slot, idx) => (
-                                                        <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-gray-50 p-1.5 rounded border border-gray-100/50">
-                                                            <div className="flex items-center gap-2 flex-wrap min-w-0">
-                                                                <div className="flex flex-col gap-0.5 py-0.5">
-                                                                    <p className="font-bold text-gray-900 text-xs flex items-center gap-2">
-                                                                        <span>{slot.group.label}</span>
-                                                                        {slot.group.studentCount !== undefined && (
-                                                                            <span className="text-[10px] font-normal text-gray-500 whitespace-nowrap">
-                                                                                ({slot.group.studentCount} est)
-                                                                            </span>
+                                            <div className="flex-1 min-w-0">
+                                                {slots.length > 0 ? (
+                                                    <div className="space-y-1">
+                                                        {slots.map((slot, idx) => (
+                                                            <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-gray-50 p-1.5 rounded border border-gray-100/50">
+                                                                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                                                    <div className="flex flex-col gap-0.5 py-0.5">
+                                                                        <p className="font-bold text-gray-900 text-xs flex items-center gap-2">
+                                                                            <span>{slot.group.label}</span>
+                                                                            {slot.group.studentCount !== undefined && (
+                                                                                <span className="text-[10px] font-normal text-gray-500 whitespace-nowrap">
+                                                                                    ({slot.group.studentCount} est)
+                                                                                </span>
+                                                                            )}
+                                                                        </p>
+                                                                        {slot.notes && (
+                                                                            <div className="flex items-center gap-1 text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-medium w-fit max-w-full">
+                                                                                <FileText className="w-2.5 h-2.5 shrink-0" />
+                                                                                <span className="break-words line-clamp-2 sm:line-clamp-none">{slot.notes}</span>
+                                                                            </div>
                                                                         )}
-                                                                    </p>
-                                                                    {slot.notes && (
-                                                                        <div className="flex items-center gap-1 text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-medium w-fit max-w-full">
-                                                                            <FileText className="w-2.5 h-2.5 shrink-0" />
-                                                                            <span className="break-words line-clamp-2 sm:line-clamp-none">{slot.notes}</span>
+                                                                    </div>
+                                                                    {/* Weekly Conflict Warning */}
+                                                                    {prevWeekAssignments[time]?.includes(slot.group.label) && (
+                                                                        <div className="flex items-center gap-1 mt-0.5 animate-pulse shrink-0">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                                                                            <span className="text-[9px] font-black text-red-600 uppercase tracking-tighter">
+                                                                                Mismo horario semana pasada
+                                                                            </span>
                                                                         </div>
                                                                     )}
                                                                 </div>
-                                                                {/* Weekly Conflict Warning */}
-                                                                {prevWeekAssignments[time]?.includes(slot.group.label) && (
-                                                                    <div className="flex items-center gap-1 mt-0.5 animate-pulse shrink-0">
-                                                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-                                                                        <span className="text-[9px] font-black text-red-600 uppercase tracking-tighter">
-                                                                            Mismo horario semana pasada
-                                                                        </span>
-                                                                    </div>
-                                                                )}
                                                             </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center h-full">
-                                                    <span className={`text-[8px] lg:text-[10px] font-medium italic ${isBreak ? 'text-amber-600/70' : 'text-gray-300'}`}>
-                                                        {isBreak ? 'Descanso' : (selectedGroup ? 'Asignar' : 'Libre')}
-                                                    </span>
-                                                </div>
-                                            )}
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center h-full">
+                                                        <span className={`text-[8px] lg:text-[10px] font-medium italic ${isBreak ? 'text-amber-600/70' : 'text-gray-300'}`}>
+                                                            {isBreak ? 'Descanso' : (selectedGroup ? 'Asignar' : 'Libre')}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right: Groups (Col 4 - Narrower, Single Column List) */}
+                    <div className="col-span-4 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
+                        <div className="p-2 lg:p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
+                                <Users className="w-4 h-4 text-blue-600" />
+                                Grupos
+                            </h3>
+                            <div className="text-[10px] text-gray-400 font-bold">
+                                {availableGroups.filter(g => !isAssigned(g)).length} rest
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-2 lg:p-4 custom-scrollbar bg-gray-50/50">
+                            <div className="grid grid-cols-1 gap-2">
+                                {availableGroups.filter(g => !isAssigned(g)).map((group) => (
+                                    <button
+                                        key={group.id}
+                                        onClick={() => setSelectedGroup(group)}
+                                        className={`
+                                        w-full p-2 lg:p-3 rounded-xl lg:rounded-2xl border text-left transition-all duration-200 group
+                                        ${selectedGroup?.id === group.id
+                                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 scale-[1.02]'
+                                                : 'bg-white border-gray-100 hover:border-blue-200 hover:shadow-md text-gray-900'}
+                                    `}
+                                    >
+                                        <p className="font-black text-sm lg:text-base leading-tight mb-1">{group.label}</p>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${selectedGroup?.id === group.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                                                {group.studentCount} est
+                                            </span>
                                         </div>
                                     </button>
-                                );
-                            })}
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Extraordinary News Section (Inside Sidebar) */}
+                        <div className="shrink-0 p-2 lg:p-4 border-t border-gray-100 bg-white">
+                            <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1">
+                                    <Info className="w-3 h-3" />
+                                    Novedades (No Asisten)
+                                </h4>
+                                <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-bold">
+                                    {absentGroups.length} grupos
+                                </span>
+                            </div>
+
+                            {selectedGroup && !isAssigned(selectedGroup) && (
+                                <button
+                                    onClick={handleSetAbsent}
+                                    className="w-full mb-3 flex items-center justify-center gap-2 p-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl border border-red-200 border-dashed transition-all group scale-95"
+                                >
+                                    <span className="text-[10px] font-black uppercase">Marcar {selectedGroup.label} como No Asiste</span>
+                                </button>
+                            )}
+
+                            <div className="space-y-1.5 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+                                {absentGroups.length === 0 ? (
+                                    <p className="text-[10px] text-gray-400 italic text-center py-2">
+                                        Ninguna novedad registrada para hoy
+                                    </p>
+                                ) : (
+                                    absentGroups.map((a, idx) => (
+                                        <div key={idx} className="bg-red-50/50 p-2 rounded-xl border border-red-100/50">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-[11px] font-black text-red-700">{a.group.label}</span>
+                                                <button onClick={() => removeAbsent(idx)} className="text-red-400 hover:text-red-600">
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={a.notes}
+                                                onChange={(e) => updateAbsentNote(idx, e.target.value)}
+                                                className="w-full bg-white/80 border-none text-[10px] p-1.5 rounded-lg focus:ring-1 focus:ring-red-200 text-gray-600 font-medium"
+                                                placeholder="Motivo..."
+                                            />
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Right: Groups (Col 4 - Narrower, Single Column List) */}
-                <div className="col-span-4 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
-                    <div className="p-2 lg:p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
-                        <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
-                            <Users className="w-4 h-4 text-blue-600" />
-                            Grupos
-                        </h3>
-                        <div className="text-[10px] text-gray-400 font-bold">
-                            {availableGroups.filter(g => !isAssigned(g)).length} rest
-                        </div>
-                    </div>
 
-                </div>
-            </div>
 
-            {/* Extraordinary News Section */}
-            <div className="shrink-0 p-2 lg:p-4 border-t border-gray-100 bg-white">
-                <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1">
-                        <Info className="w-3 h-3" />
-                        Novedades (No Asisten)
-                    </h4>
-                    <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-bold">
-                        {absentGroups.length} grupos
-                    </span>
-                </div>
-
-                {selectedGroup && !isAssigned(selectedGroup) && (
-                    <button
-                        onClick={handleSetAbsent}
-                        className="w-full mb-3 flex items-center justify-center gap-2 p-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl border border-red-200 border-dashed transition-all group scale-95"
-                    >
-                        <span className="text-[10px] font-black uppercase">Marcar {selectedGroup.label} como No Asiste</span>
-                    </button>
-                )}
-
-                <div className="space-y-1.5 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
-                    {absentGroups.length === 0 ? (
-                        <p className="text-[10px] text-gray-400 italic text-center py-2">
-                            Ninguna novedad registrada para hoy
-                        </p>
-                    ) : (
-                        absentGroups.map((a, idx) => (
-                            <div key={idx} className="bg-red-50/50 p-2 rounded-xl border border-red-100/50">
-                                <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[11px] font-black text-red-700">{a.group.label}</span>
-                                    <button onClick={() => removeAbsent(idx)} className="text-red-400 hover:text-red-600">
-                                        <X className="w-3 h-3" />
+                {/* Edit Modal */}
+                {
+                    editingSlot && (assignments[editingSlot]?.length || 0) > 0 && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditingSlot(null)}></div>
+                            <div className="bg-white rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{editingSlot}</p>
+                                        <h3 className="text-xl font-black text-gray-900">Gestionar Grupos</h3>
+                                        <p className="text-sm text-gray-500">
+                                            {assignments[editingSlot]?.length} grupos asignados
+                                        </p>
+                                    </div>
+                                    <button onClick={() => setEditingSlot(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400">
+                                        <X className="w-5 h-5" />
                                     </button>
                                 </div>
-                                <input
-                                    type="text"
-                                    value={a.notes}
-                                    onChange={(e) => updateAbsentNote(idx, e.target.value)}
-                                    className="w-full bg-white/80 border-none text-[10px] p-1.5 rounded-lg focus:ring-1 focus:ring-red-200 text-gray-600 font-medium"
-                                    placeholder="Motivo..."
-                                />
-                            </div>
-                        ))
-                    )}
-                </div>
-            </div>
-        </div>
-            </div >
 
+                                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                                    {assignments[editingSlot]?.map((slot, index) => (
+                                        <div key={`${slot.group.id}-${index}`} className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className="font-bold text-gray-900 bg-white px-2 py-1 rounded-lg border border-gray-200">
+                                                    {slot.group.label}
+                                                </span>
+                                                <button
+                                                    onClick={() => deleteAssignment(editingSlot!, index)}
+                                                    className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
 
+                                            <div className="space-y-2">
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Nota</label>
+                                                    <input
+                                                        type="text"
+                                                        value={slot.notes || ''}
+                                                        onChange={(e) => saveEdit(index, e.target.value)}
+                                                        placeholder="Agregar nota..."
+                                                        className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Cambiar Hora</label>
+                                                    <select
+                                                        value={editingSlot || ''}
+                                                        onChange={(e) => moveAssignment(index, e.target.value)}
+                                                        className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
+                                                    >
+                                                        {timeSlots.map(t => (
+                                                            <option key={t} value={t}>{t} {isBreakTime(t) ? '(Descanso)' : ''}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
 
-        {/* Edit Modal */ }
-    {
-        editingSlot && (assignments[editingSlot]?.length || 0) > 0 && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditingSlot(null)}></div>
-                <div className="bg-white rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6">
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{editingSlot}</p>
-                            <h3 className="text-xl font-black text-gray-900">Gestionar Grupos</h3>
-                            <p className="text-sm text-gray-500">
-                                {assignments[editingSlot]?.length} grupos asignados
-                            </p>
-                        </div>
-                        <button onClick={() => setEditingSlot(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400">
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                        {assignments[editingSlot]?.map((slot, index) => (
-                            <div key={`${slot.group.id}-${index}`} className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="font-bold text-gray-900 bg-white px-2 py-1 rounded-lg border border-gray-200">
-                                        {slot.group.label}
-                                    </span>
+                                <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
                                     <button
-                                        onClick={() => deleteAssignment(editingSlot!, index)}
-                                        className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-colors"
+                                        onClick={() => setEditingSlot(null)}
+                                        className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        Listo
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    )
+                }
 
-                                <div className="space-y-2">
-                                    <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Nota</label>
-                                        <input
-                                            type="text"
-                                            value={slot.notes || ''}
-                                            onChange={(e) => saveEdit(index, e.target.value)}
-                                            placeholder="Agregar nota..."
-                                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
-                                        />
+                {/* Instructions Modal */}
+                {
+                    showInstructions && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowInstructions(false)}></div>
+                            <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6 overflow-hidden">
+                                <div className="p-4 bg-blue-50 -mx-6 -mt-6 mb-6 flex items-center justify-between">
+                                    <h3 className="font-black text-blue-900 text-lg flex items-center gap-2">
+                                        <Info className="w-5 h-5" />
+                                        Instrucciones
+                                    </h3>
+                                    <button onClick={() => setShowInstructions(false)} className="p-1 hover:bg-blue-100 rounded-full text-blue-400">
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <div className="space-y-4 text-sm text-gray-600">
+                                    <div className="flex gap-3">
+                                        <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">1</div>
+                                        <p><span className="font-bold text-gray-900">Selecciona un Grupo:</span> Toca un grupo disponible de la lista derecha. Se pondrá azul.</p>
                                     </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Cambiar Hora</label>
-                                        <select
-                                            value={editingSlot || ''}
-                                            onChange={(e) => moveAssignment(index, e.target.value)}
-                                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
-                                        >
-                                            {timeSlots.map(t => (
-                                                <option key={t} value={t}>{t} {isBreakTime(t) ? '(Descanso)' : ''}</option>
-                                            ))}
-                                        </select>
+                                    <div className="flex gap-3">
+                                        <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">2</div>
+                                        <p><span className="font-bold text-gray-900">Asigna Hora:</span> Toca una franja horaria en la izquierda para asignar el grupo seleccionado.</p>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">3</div>
+                                        <p><span className="font-bold text-gray-900">Editar/Desasignar:</span> Toca una franja ya ocupada para ver detalles, agregar notas o eliminar la asignación.</p>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">4</div>
+                                        <p><span className="font-bold text-gray-900">Guardar:</span> ¡No olvides tocar el botón "Guardar" en la parte superior para aplicar los cambios!</p>
                                     </div>
                                 </div>
+                                <button
+                                    onClick={() => setShowInstructions(false)}
+                                    className="w-full mt-6 py-3 bg-gray-900 text-white rounded-xl font-bold"
+                                >
+                                    Entendido
+                                </button>
                             </div>
-                        ))}
-                    </div>
-
-                    <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
-                        <button
-                            onClick={() => setEditingSlot(null)}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
-                        >
-                            Listo
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    {/* Instructions Modal */ }
-    {
-        showInstructions && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowInstructions(false)}></div>
-                <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6 overflow-hidden">
-                    <div className="p-4 bg-blue-50 -mx-6 -mt-6 mb-6 flex items-center justify-between">
-                        <h3 className="font-black text-blue-900 text-lg flex items-center gap-2">
-                            <Info className="w-5 h-5" />
-                            Instrucciones
-                        </h3>
-                        <button onClick={() => setShowInstructions(false)} className="p-1 hover:bg-blue-100 rounded-full text-blue-400">
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-                    <div className="space-y-4 text-sm text-gray-600">
-                        <div className="flex gap-3">
-                            <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">1</div>
-                            <p><span className="font-bold text-gray-900">Selecciona un Grupo:</span> Toca un grupo disponible de la lista derecha. Se pondrá azul.</p>
                         </div>
-                        <div className="flex gap-3">
-                            <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">2</div>
-                            <p><span className="font-bold text-gray-900">Asigna Hora:</span> Toca una franja horaria en la izquierda para asignar el grupo seleccionado.</p>
+                    )
+                }
+
+                {/* Premium Confirmation Modal */}
+                {
+                    showConfirmSave && (
+                        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowConfirmSave(false)}></div>
+                            <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-8 text-center flex flex-col gap-6">
+                                <div className="bg-orange-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto ring-4 ring-orange-100 animate-bounce">
+                                    <Info className="w-10 h-10 text-orange-500" />
+                                </div>
+
+                                <div>
+                                    <h3 className="text-2xl font-black text-gray-900 mb-2">¿Guardar de todos modos?</h3>
+                                    <p className="text-gray-500 text-sm leading-relaxed px-2">
+                                        Detectamos que hay <span className="text-orange-600 font-bold">{unassignedCount} grupo(s)</span> sin horario asignado para esta fecha.
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={executeSave}
+                                        className="w-full py-4 bg-gray-900 hover:bg-black text-white rounded-2xl font-black shadow-xl shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                    >
+                                        Sí, guardar de todos modos
+                                    </button>
+                                    <button
+                                        onClick={() => setShowConfirmSave(false)}
+                                        className="w-full py-4 bg-white hover:bg-gray-50 text-gray-400 rounded-2xl font-bold border border-gray-100 transition-all"
+                                    >
+                                        Seguir editando
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex gap-3">
-                            <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">3</div>
-                            <p><span className="font-bold text-gray-900">Editar/Desasignar:</span> Toca una franja ya ocupada para ver detalles, agregar notas o eliminar la asignación.</p>
-                        </div>
-                        <div className="flex gap-3">
-                            <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">4</div>
-                            <p><span className="font-bold text-gray-900">Guardar:</span> ¡No olvides tocar el botón "Guardar" en la parte superior para aplicar los cambios!</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => setShowInstructions(false)}
-                        className="w-full mt-6 py-3 bg-gray-900 text-white rounded-xl font-bold"
-                    >
-                        Entendido
-                    </button>
-                </div>
-            </div>
-        )
-    }
+                    )
+                }
 
-    {/* Premium Confirmation Modal */ }
-    {
-        showConfirmSave && (
-            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowConfirmSave(false)}></div>
-                <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-8 text-center flex flex-col gap-6">
-                    <div className="bg-orange-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto ring-4 ring-orange-100 animate-bounce">
-                        <Info className="w-10 h-10 text-orange-500" />
-                    </div>
-
-                    <div>
-                        <h3 className="text-2xl font-black text-gray-900 mb-2">¿Guardar de todos modos?</h3>
-                        <p className="text-gray-500 text-sm leading-relaxed px-2">
-                            Detectamos que hay <span className="text-orange-600 font-bold">{unassignedCount} grupo(s)</span> sin horario asignado para esta fecha.
-                        </p>
-                    </div>
-
-                    <div className="flex flex-col gap-3">
-                        <button
-                            onClick={executeSave}
-                            className="w-full py-4 bg-gray-900 hover:bg-black text-white rounded-2xl font-black shadow-xl shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                        >
-                            Sí, guardar de todos modos
-                        </button>
-                        <button
-                            onClick={() => setShowConfirmSave(false)}
-                            className="w-full py-4 bg-white hover:bg-gray-50 text-gray-400 rounded-2xl font-bold border border-gray-100 transition-all"
-                        >
-                            Seguir editando
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    {/* Premium Toast Notification */ }
-    {
-        notif && (
-            <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-bottom-5 fade-in duration-300">
-                <div className={`
+                {/* Premium Toast Notification */}
+                {
+                    notif && (
+                        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-bottom-5 fade-in duration-300">
+                            <div className={`
                         px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-xl border-2
                         ${notif.type === 'success'
-                        ? 'bg-emerald-500/90 text-white border-white/20'
-                        : 'bg-red-500/90 text-white border-white/20'}
+                                    ? 'bg-emerald-500/90 text-white border-white/20'
+                                    : 'bg-red-500/90 text-white border-white/20'}
                     `}>
-                    <div className="bg-white/20 p-2 rounded-xl">
-                        {notif.type === 'success' ? <Save className="w-5 h-5" /> : <X className="w-5 h-5" />}
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="font-black text-sm tracking-tight">{notif.msg}</span>
-                        <span className="text-[10px] opacity-80 font-bold uppercase tracking-widest mt-0.5">Sistema PAE Barroblanco</span>
-                    </div>
-                    <button onClick={() => setNotif(null)} className="ml-4 opacity-50 hover:opacity-100 transition-opacity">
-                        <X className="w-4 h-4" />
-                    </button>
-                </div>
+                                <div className="bg-white/20 p-2 rounded-xl">
+                                    {notif.type === 'success' ? <Save className="w-5 h-5" /> : <X className="w-5 h-5" />}
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="font-black text-sm tracking-tight">{notif.msg}</span>
+                                    <span className="text-[10px] opacity-80 font-bold uppercase tracking-widest mt-0.5">Sistema PAE Barroblanco</span>
+                                </div>
+                                <button onClick={() => setNotif(null)} className="ml-4 opacity-50 hover:opacity-100 transition-opacity">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )
+                }
             </div>
-        )
-    }
-        </div >
+        </>
     );
 }
