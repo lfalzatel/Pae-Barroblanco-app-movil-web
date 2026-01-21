@@ -94,23 +94,42 @@ export default function DashboardLayout({
         initSession();
         fetchTomorrowSchedule();
 
-        // 2. Set up the listener for changes (sign in, sign out, token refresh)
+        // 2. Realtime listener for schedule changes
+        const channel = supabase
+            .channel('schedule_changes')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'schedules'
+                },
+                () => {
+                    fetchTomorrowSchedule();
+                }
+            )
+            .subscribe();
+
+        // 3. Set up the listener for changes (sign in, sign out, token refresh)
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_OUT' || !session) {
-                setUsuario(null);
-                router.push('/');
-            } else if (session) {
+            if (event === 'SIGNED_IN' && session) {
                 setUsuario({
                     ...session.user,
                     nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
                     rol: session.user.user_metadata?.rol || 'docente',
                     foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
                 });
+                fetchTomorrowSchedule(); // Refresh when user logs in
+            } else if (event === 'SIGNED_OUT') {
+                setUsuario(null);
+                setTomorrowSchedule([]);
+                setHasNotification(false);
             }
         });
 
         return () => {
             subscription.unsubscribe();
+            supabase.removeChannel(channel);
         };
     }, [router]);
 

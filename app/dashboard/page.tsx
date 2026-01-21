@@ -547,7 +547,7 @@ export default function DashboardPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
           </div>
           <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-            <span className="text-[10px] font-black text-white tracking-widest uppercase">Versión v1.4</span>
+            <span className="text-[10px] font-black text-white tracking-widest uppercase">Versión v1.5</span>
           </div>
           <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 text-white pb-6">
             <h1 className="text-2xl md:text-4xl font-black leading-tight mb-2 tracking-tight">

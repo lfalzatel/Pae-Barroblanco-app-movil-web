@@ -238,11 +238,10 @@ function RegistroContent() {
           sedeSeleccionada.id === 'primaria' ? 'Primaria' :
             'Maria Inmaculada';
 
-        // Use Join to get group directly from student record
-        // This avoids the .in() limit with many students
+        // Use explicit join to ensure PostgREST finds the relationship
         let query = supabase
           .from('asistencia_pae')
-          .select('fecha, estudiantes!inner(grupo)')
+          .select('fecha, estudiantes:estudiante_id!inner(grupo, sede)')
           .eq('estudiantes.sede', sedeDbName)
           .gte('fecha', startOfMonth)
           .lte('fecha', endOfMonth);
@@ -279,9 +278,29 @@ function RegistroContent() {
     };
 
     fetchAttendanceDates();
+
+    // 6. Realtime attendance listener
+    const channel = supabase
+      .channel('attendance_live')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'asistencia_pae'
+        },
+        () => {
+          fetchAttendanceDates();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [sedeSeleccionada, grupoSeleccionado, calendarView]);
 
-  // 6. Establecer grupo seleccionado si viene de la URL
+  // 7. Establecer grupo seleccionado si viene de la URL
   useEffect(() => {
     const grupoNombre = searchParams.get('grupo');
     if (grupoNombre && gruposReales.length > 0 && !grupoSeleccionado) {
