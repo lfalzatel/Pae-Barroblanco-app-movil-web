@@ -569,7 +569,7 @@ export default function DashboardPage() {
           <div className="bg-white/20 p-2 rounded-xl group-hover:scale-110 transition-transform">
             <Calendar className="w-6 h-6" />
           </div>
-          <span className="text-sm md:text-base">Ver Horario</span>
+          <span className="text-sm md:text-base">Horario de Mañana</span>
         </button>
 
         <input

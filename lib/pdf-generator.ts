@@ -24,6 +24,7 @@ export const generateSchedulePDF = (scheduleData: any[], date: string) => {
     const columns = [
         { header: 'Bloque / Hora', dataKey: 'time' },
         { header: 'Grupo', dataKey: 'group' },
+        { header: 'Estudiantes', dataKey: 'count' },
         { header: 'Menú / Observaciones', dataKey: 'notes' },
     ];
 
@@ -31,6 +32,7 @@ export const generateSchedulePDF = (scheduleData: any[], date: string) => {
     const rows = scheduleData.map(item => ({
         time: item.time,
         group: item.group,
+        count: item.studentCount || '-',
         notes: item.notes || '-'
     }));
 
@@ -49,7 +51,14 @@ export const generateSchedulePDF = (scheduleData: any[], date: string) => {
         },
         bodyStyles: {
             fontSize: 10,
-            textColor: 50
+            textColor: 50,
+            halign: 'center' // Center align for cleaner look
+        },
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 35 },
+            1: { halign: 'center', fontStyle: 'bold', cellWidth: 35 },
+            2: { halign: 'center', cellWidth: 30 },
+            3: { halign: 'left' } // Notes left aligned for readability
         },
         alternateRowStyles: {
             fillColor: [240, 253, 250] // Cyan-50

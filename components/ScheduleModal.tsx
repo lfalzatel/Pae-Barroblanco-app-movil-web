@@ -7,6 +7,7 @@ import { MiniCalendar } from './ui/MiniCalendar';
 interface ScheduleItem {
     time: string;
     group: string;
+    studentCount?: number;
     notes?: string;
 }
 
@@ -49,6 +50,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
     const fetchSchedule = async (dateStr: string) => {
         setLoading(true);
         try {
+            // 1. Fetch Schedule Items
             const { data, error } = await supabase
                 .from('schedules')
                 .select('items')
@@ -56,11 +58,26 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                 .single();
 
             if (data?.items) {
-                // Ensure items match ScheduleItem interface
-                setSchedule(data.items.map((i: any) => ({
-                    time: i.time || i.time_start, // Fallback
+                const rawItems = data.items;
+                const uniqueGroupsInSched = Array.from(new Set(rawItems.map((i: any) => i.group)));
+
+                // 2. Fetch Student Counts for these specific groups
+                const { data: countsData } = await supabase
+                    .from('estudiantes')
+                    .select('grupo')
+                    .in('grupo', uniqueGroupsInSched);
+
+                const countsMap: Record<string, number> = {};
+                countsData?.forEach(s => {
+                    countsMap[s.grupo] = (countsMap[s.grupo] || 0) + 1;
+                });
+
+                // 3. Map everything together
+                setSchedule(rawItems.map((i: any) => ({
+                    time: i.time || i.time_start,
                     group: i.group,
-                    notes: i.notes
+                    notes: i.notes,
+                    studentCount: countsMap[i.group] || 0
                 })));
             } else {
                 setSchedule([]);
@@ -151,7 +168,14 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                     </div>
 
                                     <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                                        <span className="font-black text-lg text-gray-900 whitespace-nowrap">{item.group}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-black text-lg text-gray-900 whitespace-nowrap">{item.group}</span>
+                                            {item.studentCount !== undefined && (
+                                                <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">
+                                                    {item.studentCount} est
+                                                </span>
+                                            )}
+                                        </div>
 
                                         {item.notes && (
                                             <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100 w-fit max-w-full overflow-hidden">
