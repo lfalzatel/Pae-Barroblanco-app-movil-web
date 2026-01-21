@@ -52,15 +52,9 @@ export default function HorarioPage() {
         return str.charAt(0).toUpperCase() + str.slice(1).replace('.', '');
     };
 
-    // State initialization with Persistence
+    // State initialization (Default to Smart Tomorrow)
     const [selectedDate, setSelectedDate] = useState<string>(() => {
-        // 1. Try to recover from localStorage (Client side only)
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('pae_last_schedule_date');
-            if (saved) return saved;
-        }
-
-        // 2. Fallback to Smart Default
+        // Smart Default: Fri/Sat -> Mon, Else -> Tomorrow
         const d = new Date();
         const day = d.getDay();
         if (day === 5) d.setDate(d.getDate() + 3); // Fri -> Mon
