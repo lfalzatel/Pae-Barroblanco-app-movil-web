@@ -463,11 +463,12 @@ export default function HorarioPage() {
                     </div>
 
                     {/* Toolbar Container */}
-                    <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4 mt-2 relative z-20">
+                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4 mt-2 relative z-20">
 
-                        <div className="flex items-center gap-2">
-                            {/* View Toggle */}
-                            <div className="bg-gray-100 p-1 rounded-xl flex items-center">
+                        {/* ROW 1: Toggle & Actions */}
+                        <div className="flex items-center justify-between gap-4">
+                            {/* Left: View Toggle */}
+                            <div className="bg-gray-100 p-1 rounded-xl flex items-center shrink-0">
                                 <button
                                     onClick={() => setViewMode('day')}
                                     className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${viewMode === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
@@ -481,147 +482,154 @@ export default function HorarioPage() {
                                     Semana
                                 </button>
                             </div>
+
+                            {/* Right: Actions (Save) */}
+                            <div className="flex items-center gap-4">
+                                <span className="text-[10px] font-bold text-gray-300 hidden sm:inline-block text-right leading-tight max-w-[100px]">
+                                    Cambios sin guardar
+                                </span>
+                                <button
+                                    onClick={handleSave}
+                                    disabled={saving || !Object.keys(assignments).length}
+                                    className="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-lg font-bold shadow-lg shadow-gray-200 transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none"
+                                >
+                                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    <span className="text-sm tracking-wide">Guardar</span>
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Calendar Trigger - Show ONLY in Day Mode */}
-                        {viewMode === 'day' && (
-                            <div className="relative">
-                                <button
-                                    onClick={() => setShowCalendar(!showCalendar)}
-                                    className="flex items-center gap-3 hover:bg-gray-50 px-3 py-1.5 rounded-xl transition-all group"
-                                >
-                                    <div className="bg-blue-50 p-2 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors border border-blue-50">
-                                        <CalendarIcon className="w-7 h-7" />
+                        {/* ROW 2: Date Selector (Centered) OR Week Widget */}
+                        <div className="w-full">
+                            {/* Calendar Trigger - Show ONLY in Day Mode */}
+                            {viewMode === 'day' && (
+                                <div className="flex justify-center w-full">
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setShowCalendar(!showCalendar)}
+                                            className="flex items-center gap-3 hover:bg-gray-50 px-6 py-2 rounded-xl transition-all group border border-transparent hover:border-gray-100"
+                                        >
+                                            <div className="bg-blue-50 p-2 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors border border-blue-50">
+                                                <CalendarIcon className="w-6 h-6" />
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none mb-1.5">EDITANDO</p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-lg font-black text-[#0A0D14] leading-none">
+                                                        {selectedDate ? formatDateLabel(selectedDate) : 'Cargando...'}
+                                                    </p>
+                                                    <ChevronDown className="w-4 h-4 text-gray-300" />
+                                                </div>
+                                            </div>
+                                        </button>
+
+                                        {/* Calendar Modal */}
+                                        {showCalendar && (
+                                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowCalendar(false)}>
+                                                <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm animate-in zoom-in-95 duration-200">
+                                                    <MiniCalendar
+                                                        selectedDate={selectedDate}
+                                                        onSelectDate={(d) => { setSelectedDate(d); setShowCalendar(false); }}
+                                                        className="shadow-2xl border-2 border-white/20"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="text-left">
-                                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none mb-1.5">EDITANDO</p>
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-base font-black text-[#0A0D14] leading-none">
-                                                {selectedDate ? formatDateLabel(selectedDate) : 'Cargando...'}
-                                            </p>
-                                            <ChevronDown className="w-4 h-4 text-gray-300" />
+                                </div>
+                            )}
+
+                            {/* Week Widget - Show ONLY in Week Mode */}
+                            {viewMode === 'week' && (
+                                <div className="flex flex-col gap-3 max-w-3xl mx-auto">
+                                    <div className="flex items-center justify-center gap-2 mb-1">
+                                        <CalendarIcon className="w-4 h-4 text-blue-600" />
+                                        <span className="text-xs font-black text-gray-900 tracking-widest uppercase">CONSULTAR SEMANA</span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Range Selector */}
+                                        <div className="bg-white border border-gray-100 p-2 rounded-2xl flex items-center justify-between shadow-sm">
+                                            <button
+                                                onClick={() => {
+                                                    const d = new Date(selectedDate);
+                                                    d.setDate(d.getDate() - 7);
+                                                    setSelectedDate(d.toISOString().split('T')[0]);
+                                                }}
+                                                className="p-2 hover:bg-gray-50 rounded-xl text-blue-600 transition-colors"
+                                            >
+                                                <ChevronLeft className="w-5 h-5" />
+                                            </button>
+
+                                            <span className="text-xs font-black text-gray-900 uppercase tracking-widest">
+                                                {(() => {
+                                                    const d = new Date(selectedDate + 'T12:00:00');
+                                                    const day = d.getDay();
+                                                    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+                                                    const start = new Date(d);
+                                                    start.setDate(diff);
+                                                    const end = new Date(start);
+                                                    end.setDate(start.getDate() + 4); // Friday
+
+                                                    const format = (date: Date) => date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }).replace('.', '').toUpperCase();
+                                                    return `${format(start)} - ${format(end)}`;
+                                                })()}
+                                            </span>
+
+                                            <button
+                                                onClick={() => {
+                                                    const d = new Date(selectedDate);
+                                                    d.setDate(d.getDate() + 7);
+                                                    setSelectedDate(d.toISOString().split('T')[0]);
+                                                }}
+                                                className="p-2 hover:bg-gray-50 rounded-xl text-blue-600 transition-colors"
+                                            >
+                                                <ChevronRight className="w-5 h-5" />
+                                            </button>
+                                        </div>
+
+                                        {/* Week Tabs (Lun-Vie) */}
+                                        <div className="flex items-center gap-1 justify-between bg-white border border-gray-100 p-1.5 rounded-2xl shadow-sm">
+                                            {(() => {
+                                                const current = new Date(selectedDate ? selectedDate + 'T12:00:00' : new Date());
+                                                const day = current.getDay();
+                                                const startOfWeek = new Date(current);
+                                                const dayOfWeek = startOfWeek.getDay();
+                                                const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                                                startOfWeek.setDate(diff);
+
+                                                const weekDays = [];
+                                                for (let i = 0; i < 5; i++) { // Mon-Fri
+                                                    const d = new Date(startOfWeek);
+                                                    d.setDate(startOfWeek.getDate() + i);
+                                                    weekDays.push(d);
+                                                }
+
+                                                return weekDays.map((dateObj, idx) => {
+                                                    const dateStr = dateObj.toISOString().split('T')[0];
+                                                    // In week view, we don't highlight specific day unless we want to indicate "today" or similar.
+                                                    // But clicking them switches to day view.
+
+                                                    return (
+                                                        <button
+                                                            key={idx}
+                                                            onClick={() => {
+                                                                setSelectedDate(dateStr);
+                                                                setViewMode('day');
+                                                            }}
+                                                            className="flex-1 py-2 rounded-xl text-center hover:bg-blue-50 transition-colors group"
+                                                        >
+                                                            <span className="text-[10px] font-black uppercase text-blue-600 group-hover:text-blue-700 block">
+                                                                {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][dateObj.getDay()]}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                });
+                                            })()}
                                         </div>
                                     </div>
-                                </button>
-
-                                {/* Calendar Modal */}
-                                {showCalendar && (
-                                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowCalendar(false)}>
-                                        <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm animate-in zoom-in-95 duration-200">
-                                            <MiniCalendar
-                                                selectedDate={selectedDate}
-                                                onSelectDate={(d) => { setSelectedDate(d); setShowCalendar(false); }}
-                                                className="shadow-2xl border-2 border-white/20"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Week Widget - Show ONLY in Week Mode */}
-                        {viewMode === 'week' && (
-                            <div className="flex-1 flex flex-col gap-3">
-                                <div className="flex items-center gap-2">
-                                    <CalendarIcon className="w-5 h-5 text-blue-600" />
-                                    <span className="text-xs font-black text-gray-900 tracking-widest uppercase">CONSULTAR SEMANA</span>
                                 </div>
-
-                                {/* Range Selector */}
-                                <div className="bg-white border border-gray-100 p-2 rounded-2xl flex items-center justify-between shadow-sm">
-                                    <button
-                                        onClick={() => {
-                                            const d = new Date(selectedDate);
-                                            d.setDate(d.getDate() - 7);
-                                            setSelectedDate(d.toISOString().split('T')[0]);
-                                        }}
-                                        className="p-2 hover:bg-gray-50 rounded-xl text-blue-600 transition-colors"
-                                    >
-                                        <ChevronLeft className="w-5 h-5" />
-                                    </button>
-
-                                    <span className="text-xs font-black text-gray-900 uppercase tracking-widest">
-                                        {(() => {
-                                            const d = new Date(selectedDate + 'T12:00:00');
-                                            const day = d.getDay();
-                                            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-                                            const start = new Date(d);
-                                            start.setDate(diff);
-                                            const end = new Date(start);
-                                            end.setDate(start.getDate() + 4); // Friday
-
-                                            const format = (date: Date) => date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }).replace('.', '').toUpperCase();
-                                            return `${format(start)} - ${format(end)}`;
-                                        })()}
-                                    </span>
-
-                                    <button
-                                        onClick={() => {
-                                            const d = new Date(selectedDate);
-                                            d.setDate(d.getDate() + 7);
-                                            setSelectedDate(d.toISOString().split('T')[0]);
-                                        }}
-                                        className="p-2 hover:bg-gray-50 rounded-xl text-blue-600 transition-colors"
-                                    >
-                                        <ChevronRight className="w-5 h-5" />
-                                    </button>
-                                </div>
-
-                                {/* Week Tabs (Lun-Vie) */}
-                                <div className="flex items-center gap-1 justify-between bg-white border border-gray-100 p-1.5 rounded-2xl shadow-sm">
-                                    {(() => {
-                                        const current = new Date(selectedDate ? selectedDate + 'T12:00:00' : new Date());
-                                        const day = current.getDay();
-                                        const startOfWeek = new Date(current);
-                                        const dayOfWeek = startOfWeek.getDay();
-                                        const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-                                        startOfWeek.setDate(diff);
-
-                                        const weekDays = [];
-                                        for (let i = 0; i < 5; i++) { // Mon-Fri
-                                            const d = new Date(startOfWeek);
-                                            d.setDate(startOfWeek.getDate() + i);
-                                            weekDays.push(d);
-                                        }
-
-                                        return weekDays.map((dateObj, idx) => {
-                                            const dateStr = dateObj.toISOString().split('T')[0];
-                                            const isSelected = selectedDate === dateStr; // Logic: highlight if matches selected? Actually, in week view, we are just viewing range. But if user clicks, they go to day view.
-                                            // Let's simplify: Just pills.
-
-                                            return (
-                                                <button
-                                                    key={idx}
-                                                    onClick={() => {
-                                                        setSelectedDate(dateStr);
-                                                        setViewMode('day');
-                                                    }}
-                                                    className="flex-1 py-2 rounded-xl text-center hover:bg-blue-50 transition-colors group"
-                                                >
-                                                    <span className="text-[10px] font-black uppercase text-blue-600 group-hover:text-blue-700 block">
-                                                        {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][dateObj.getDay()]}
-                                                    </span>
-                                                </button>
-                                            );
-                                        });
-                                    })()}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Right: Actions */}
-                        <div className="flex items-center gap-4">
-                            <span className="text-[10px] font-bold text-gray-300 hidden sm:inline-block text-right leading-tight max-w-[100px]">
-                                Cambios sin guardar
-                            </span>
-                            <button
-                                onClick={handleSave}
-                                disabled={saving || !Object.keys(assignments).length}
-                                className="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-lg font-bold shadow-lg shadow-gray-200 transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none"
-                            >
-                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                <span className="text-sm tracking-wide">Guardar</span>
-                            </button>
+                            )}
                         </div>
                     </div>
                 </div>
