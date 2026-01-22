@@ -19,6 +19,7 @@ import {
     Bell,
     Clock,
     FileText,
+    Info,
     X,
 } from 'lucide-react';
 
