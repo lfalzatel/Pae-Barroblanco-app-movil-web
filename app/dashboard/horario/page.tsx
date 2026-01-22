@@ -15,6 +15,7 @@ import {
     MoreVertical,
     Info,
     ChevronDown,
+    ChevronRight,
     X,
     FileText
 } from 'lucide-react';
@@ -31,6 +32,7 @@ export default function HorarioPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [role, setRole] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
 
     // Initialize with "Smart Tomorrow" logic
     // If today is Friday/Saturday -> Default to Monday
@@ -96,6 +98,7 @@ export default function HorarioPage() {
 
     // Extraordinary News State
     const [absentGroups, setAbsentGroups] = useState<AssignedSlot[]>([]);
+    const [weekData, setWeekData] = useState<any[]>([]);
 
     useEffect(() => {
         if (notif) {
@@ -112,7 +115,14 @@ export default function HorarioPage() {
         if (role) {
             initData();
         }
-    }, [role, selectedDate]);
+    }, [role, selectedDate, viewMode]);
+
+    useEffect(() => {
+        const query = new URLSearchParams(window.location.search);
+        if (query.get('view') === 'weekly') {
+            setViewMode('week');
+        }
+    }, []);
 
     const checkAccess = async () => {
         const { data: { session } } = await supabase.auth.getSession();
@@ -154,51 +164,68 @@ export default function HorarioPage() {
                 studentCount: counts[g.label] || 0
             }));
 
-            // 2. Fetch Current Schedule
-            const { data: schedData } = await supabase
-                .from('schedules')
-                .select('items')
-                .eq('date', selectedDate)
-                .single();
+            // 2. Fetch Current Schedule (Day or Week)
+            if (viewMode === 'day') {
+                const { data: schedData } = await supabase
+                    .from('schedules')
+                    .select('items')
+                    .eq('date', selectedDate)
+                    .single();
 
-            const currentAssignments: Record<string, AssignedSlot[]> = {};
+                const currentAssignments: Record<string, AssignedSlot[]> = {};
+                const absent: AssignedSlot[] = [];
 
-            const absent: AssignedSlot[] = [];
+                if (schedData?.items) {
+                    schedData.items.forEach((item: any) => {
+                        const found = processed.find(g => g.label === item.group);
+                        if (!found) return;
 
-            if (schedData?.items) {
-
-                schedData.items.forEach((item: any) => {
-                    const found = processed.find(g => g.label === item.group);
-                    if (!found) return;
-
-                    if (item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE') {
-                        absent.push({
-                            group: found,
-                            notes: item.notes
-                        });
-                        return;
-                    }
-
-                    const start = item.time_start || (item.time ? item.time.split(' - ')[0] : null);
-
-                    if (start && slots.includes(start)) {
-                        if (!currentAssignments[start]) {
-                            currentAssignments[start] = [];
+                        if (item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE') {
+                            absent.push({ group: found, notes: item.notes });
+                            return;
                         }
-                        currentAssignments[start].push({
-                            group: found,
-                            notes: item.notes
-                        });
-                    }
-                });
+
+                        const start = item.time_start || (item.time ? item.time.split(' - ')[0] : null);
+                        if (start && slots.includes(start)) {
+                            if (!currentAssignments[start]) currentAssignments[start] = [];
+                            currentAssignments[start].push({ group: found, notes: item.notes });
+                        }
+                    });
+                }
+                setAssignments(currentAssignments);
                 setAbsentGroups(absent);
             } else {
-                setAbsentGroups([]);
+                // Fetch for the entire week (Mon-Fri) based on selectedDate
+                const d = new Date(selectedDate + 'T12:00:00');
+                const day = d.getDay();
+                const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+                const monday = new Date(d.setDate(diff));
+
+                const dates = [];
+                for (let i = 0; i < 5; i++) {
+                    const target = new Date(monday);
+                    target.setDate(target.getDate() + i);
+                    dates.push(target.toISOString().split('T')[0]);
+                }
+
+                const { data: weeklyScheds } = await supabase
+                    .from('schedules')
+                    .select('*')
+                    .in('date', dates);
+
+                const mappedWeek = dates.map(dateStr => {
+                    const dayData = weeklyScheds?.find(s => s.date === dateStr);
+                    return {
+                        date: dateStr,
+                        items: dayData?.items || []
+                    };
+                });
+                setWeekData(mappedWeek);
             }
 
-            // 3. Fetch Previous Week Schedule (7 days ago) for conflict detection
-            const [y, m, d] = selectedDate.split('-').map(Number);
-            const prevDateObj = new Date(y, m - 1, d);
+            // 3. Fetch Previous Week Schedule (7 days ago) for conflict detection (Always for selectedDate)
+            const [y, m, d_num] = selectedDate.split('-').map(Number);
+            const prevDateObj = new Date(y, m - 1, d_num);
             prevDateObj.setDate(prevDateObj.getDate() - 7);
             const prevDateStr = prevDateObj.toISOString().split('T')[0];
 
@@ -219,7 +246,6 @@ export default function HorarioPage() {
                 });
             }
 
-            setAssignments(currentAssignments);
             setAvailableGroups(processed);
             setPrevWeekAssignments(prevAssignments);
 
@@ -285,7 +311,7 @@ export default function HorarioPage() {
         }
     };
 
-    const saveEdit = (groupIndex: number, newNote: string) => {
+    const handleSaveNote = (groupIndex: number, newNote: string) => {
         if (!editingSlot) return;
         setAssignments(prev => {
             const current = [...(prev[editingSlot] || [])];
@@ -305,37 +331,24 @@ export default function HorarioPage() {
         return breakSlots.includes(time);
     };
 
-    const moveAssignment = (groupIndex: number, newTime: string) => {
-        if (!editingSlot || newTime === editingSlot) return;
+    const handleEditSlot = (time: string, groupLabel?: string, currentNote?: string) => {
+        setEditingSlot(time);
+        setEditNote(currentNote || '');
+    };
 
+    const handleRemoveAssignment = (time: string, groupLabel: string) => {
         setAssignments(prev => {
-            const currentSlotGroups = [...(prev[editingSlot] || [])];
-            const groupToMove = currentSlotGroups[groupIndex];
-
-            // Remove from old slot
-            currentSlotGroups.splice(groupIndex, 1);
-
-            // Add to new slot
-            const targetSlotGroups = [...(prev[newTime] || [])];
-            targetSlotGroups.push(groupToMove);
+            const current = [...(prev[time] || [])];
+            const filtered = current.filter(slot => slot.group.label !== groupLabel);
 
             const next = { ...prev };
-
-            // Cleanup old slot
-            if (currentSlotGroups.length === 0) {
-                delete next[editingSlot];
+            if (filtered.length === 0) {
+                delete next[time];
             } else {
-                next[editingSlot] = currentSlotGroups;
+                next[time] = filtered;
             }
-
-            // Update new slot
-            next[newTime] = targetSlotGroups;
-
             return next;
         });
-
-        // Close modal as context changed
-        setEditingSlot(null);
     };
 
     const deleteAssignment = (time: string, groupIndex: number) => {
@@ -426,330 +439,556 @@ export default function HorarioPage() {
                     {/* Title Row */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <button onClick={() => router.push('/dashboard')} className="p-2 hover:bg-white rounded-full text-gray-500 shadow-sm border border-transparent hover:border-gray-200 transition-all">
-                                <ChevronLeft className="w-5 h-5" />
+                            <button onClick={() => router.push('/dashboard')} className="p-3 bg-white hover:bg-gray-50 rounded-full text-gray-400 shadow-sm border border-gray-100 transition-all">
+                                <ChevronLeft className="w-6 h-6" />
                             </button>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                                 <h1 className="text-xl lg:text-3xl font-black text-gray-900 tracking-tight">Tablero de Horarios</h1>
                                 <button
                                     onClick={() => setShowInstructions(true)}
-                                    className="bg-blue-100 hover:bg-blue-200 text-blue-700 p-2 rounded-full transition-all hover:scale-110 ring-2 ring-blue-300 animate-pulse shadow-sm"
-                                    title="Ver Instrucciones"
+                                    className="w-10 h-10 border-2 border-blue-100 bg-blue-50/30 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-100 transition-all shadow-sm"
                                 >
-                                    <Info className="w-5 h-5" />
+                                    <Info className="w-6 h-6" />
                                 </button>
                             </div>
                         </div>
                     </div>
 
                     {/* Toolbar Container */}
-                    <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-2 mt-2 relative z-20">
+                    <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4 mt-2 relative z-20">
 
-                        {/* Calendar Trigger */}
-                        <div className="relative">
-                            <button
-                                onClick={() => setShowCalendar(!showCalendar)}
-                                className="flex items-center gap-3 hover:bg-gray-50 px-3 py-2 rounded-xl transition-all group"
-                            >
-                                <div className="bg-blue-50 p-2 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors">
-                                    <CalendarIcon className="w-6 h-6" />
-                                </div>
-                                <div className="text-left">
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider leading-none mb-0.5">Editando</p>
-                                    <p className="text-sm font-black text-gray-900 leading-none">
-                                        {selectedDate ? formatDateLabel(selectedDate) : <span className="animate-pulse">Calculando...</span>}
-                                    </p>
-                                </div>
-                                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showCalendar ? 'rotate-180' : ''}`} />
-                            </button>
-
-                            {/* Calendar Modal */}
-                            {showCalendar && (
-                                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowCalendar(false)}>
-                                    <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm animate-in zoom-in-95 duration-200">
-                                        <MiniCalendar
-                                            selectedDate={selectedDate}
-                                            onSelectDate={(d) => { setSelectedDate(d); setShowCalendar(false); }}
-                                            className="shadow-2xl border-2 border-white/20"
-                                        />
-                                    </div>
-                                </div>
-                            )}
+                        <div className="flex items-center gap-2">
+                            {/* View Toggle */}
+                            <div className="bg-gray-100 p-1 rounded-xl flex items-center">
+                                <button
+                                    onClick={() => setViewMode('day')}
+                                    className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${viewMode === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                >
+                                    Día
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('week')}
+                                    className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${viewMode === 'week' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                >
+                                    Semana
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Actions */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-medium text-gray-400 hidden lg:inline-block text-right leading-tight">
-                                Recuerda guardar<br />tus cambios
+                        {/* Calendar Trigger - Show ONLY in Day Mode */}
+                        {viewMode === 'day' && (
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowCalendar(!showCalendar)}
+                                    className="flex items-center gap-3 hover:bg-gray-50 px-3 py-1.5 rounded-xl transition-all group"
+                                >
+                                    <div className="bg-blue-50 p-2 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors border border-blue-50">
+                                        <CalendarIcon className="w-7 h-7" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none mb-1.5">EDITANDO</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-base font-black text-[#0A0D14] leading-none">
+                                                {selectedDate ? formatDateLabel(selectedDate) : 'Cargando...'}
+                                            </p>
+                                            <ChevronDown className="w-4 h-4 text-gray-300" />
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {/* Calendar Modal */}
+                                {showCalendar && (
+                                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowCalendar(false)}>
+                                        <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm animate-in zoom-in-95 duration-200">
+                                            <MiniCalendar
+                                                selectedDate={selectedDate}
+                                                onSelectDate={(d) => { setSelectedDate(d); setShowCalendar(false); }}
+                                                className="shadow-2xl border-2 border-white/20"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Week Widget - Show ONLY in Week Mode */}
+                        {viewMode === 'week' && (
+                            <div className="flex-1 flex flex-col gap-3">
+                                <div className="flex items-center gap-2">
+                                    <CalendarIcon className="w-5 h-5 text-blue-600" />
+                                    <span className="text-xs font-black text-gray-900 tracking-widest uppercase">CONSULTAR SEMANA</span>
+                                </div>
+
+                                {/* Range Selector */}
+                                <div className="bg-white border border-gray-100 p-2 rounded-2xl flex items-center justify-between shadow-sm">
+                                    <button
+                                        onClick={() => {
+                                            const d = new Date(selectedDate);
+                                            d.setDate(d.getDate() - 7);
+                                            setSelectedDate(d.toISOString().split('T')[0]);
+                                        }}
+                                        className="p-2 hover:bg-gray-50 rounded-xl text-blue-600 transition-colors"
+                                    >
+                                        <ChevronLeft className="w-5 h-5" />
+                                    </button>
+
+                                    <span className="text-xs font-black text-gray-900 uppercase tracking-widest">
+                                        {(() => {
+                                            const d = new Date(selectedDate + 'T12:00:00');
+                                            const day = d.getDay();
+                                            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+                                            const start = new Date(d);
+                                            start.setDate(diff);
+                                            const end = new Date(start);
+                                            end.setDate(start.getDate() + 4); // Friday
+
+                                            const format = (date: Date) => date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }).replace('.', '').toUpperCase();
+                                            return `${format(start)} - ${format(end)}`;
+                                        })()}
+                                    </span>
+
+                                    <button
+                                        onClick={() => {
+                                            const d = new Date(selectedDate);
+                                            d.setDate(d.getDate() + 7);
+                                            setSelectedDate(d.toISOString().split('T')[0]);
+                                        }}
+                                        className="p-2 hover:bg-gray-50 rounded-xl text-blue-600 transition-colors"
+                                    >
+                                        <ChevronRight className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                {/* Week Tabs (Lun-Vie) */}
+                                <div className="flex items-center gap-1 justify-between bg-white border border-gray-100 p-1.5 rounded-2xl shadow-sm">
+                                    {(() => {
+                                        const current = new Date(selectedDate ? selectedDate + 'T12:00:00' : new Date());
+                                        const day = current.getDay();
+                                        const startOfWeek = new Date(current);
+                                        const dayOfWeek = startOfWeek.getDay();
+                                        const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                                        startOfWeek.setDate(diff);
+
+                                        const weekDays = [];
+                                        for (let i = 0; i < 5; i++) { // Mon-Fri
+                                            const d = new Date(startOfWeek);
+                                            d.setDate(startOfWeek.getDate() + i);
+                                            weekDays.push(d);
+                                        }
+
+                                        return weekDays.map((dateObj, idx) => {
+                                            const dateStr = dateObj.toISOString().split('T')[0];
+                                            const isSelected = selectedDate === dateStr; // Logic: highlight if matches selected? Actually, in week view, we are just viewing range. But if user clicks, they go to day view.
+                                            // Let's simplify: Just pills.
+
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => {
+                                                        setSelectedDate(dateStr);
+                                                        setViewMode('day');
+                                                    }}
+                                                    className="flex-1 py-2 rounded-xl text-center hover:bg-blue-50 transition-colors group"
+                                                >
+                                                    <span className="text-[10px] font-black uppercase text-blue-600 group-hover:text-blue-700 block">
+                                                        {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][dateObj.getDay()]}
+                                                    </span>
+                                                </button>
+                                            );
+                                        });
+                                    })()}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Right: Actions */}
+                        <div className="flex items-center gap-4">
+                            <span className="text-[10px] font-bold text-gray-300 hidden sm:inline-block text-right leading-tight max-w-[100px]">
+                                Cambios sin guardar
                             </span>
                             <button
                                 onClick={handleSave}
                                 disabled={saving || !Object.keys(assignments).length}
-                                className="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none"
+                                className="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-lg font-bold shadow-lg shadow-gray-200 transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none"
                             >
-                                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                                <span>Guardar</span>
+                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                <span className="text-sm tracking-wide">Guardar</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
                 {/* Main Content - 2 Columns mobile friendly */}
-                <div className="grid grid-cols-12 gap-2 lg:gap-6 flex-1 overflow-hidden pb-4 px-1">
+                {
+                    viewMode === 'day' ? (
+                        <div className="grid grid-cols-12 gap-2 lg:gap-6 flex-1 overflow-hidden pb-4 px-1 animate-in fade-in duration-300">
+                            {/* Left: Timeline (Col 8 - Wider for text) */}
+                            <div className="col-span-8 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
+                                <div className="p-2 lg:p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
+                                    <div className="flex justify-between items-center w-full">
+                                        <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
+                                            <Clock className="w-4 h-4 text-orange-500" />
+                                            <span className="hidden lg:inline">Línea de </span>Tiempo
+                                        </h3>
+                                        {selectedGroup && (
+                                            <span className="text-[9px] lg:text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full animate-pulse font-bold truncate max-w-[80px] lg:max-w-[120px]">
+                                                Asig: {selectedGroup.label}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-[10px] text-gray-400 font-medium">
+                                        Tip: Puedes asignar múltiples grupos en la misma hora
+                                    </p>
+                                </div>
 
-                    {/* Left: Timeline (Col 8 - Wider for text) */}
-                    <div className="col-span-8 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
-                        <div className="p-2 lg:p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex flex-col justify-between items-start shrink-0 gap-1">
-                            <div className="flex justify-between items-center w-full">
-                                <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
-                                    <Clock className="w-4 h-4 text-orange-500" />
-                                    <span className="hidden lg:inline">Línea de </span>Tiempo
-                                </h3>
-                                {selectedGroup && (
-                                    <span className="text-[9px] lg:text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full animate-pulse font-bold truncate max-w-[80px] lg:max-w-[120px]">
-                                        Asig: {selectedGroup.label}
-                                    </span>
-                                )}
-                            </div>
-                            <p className="text-[10px] text-gray-400 font-medium">
-                                Tip: Puedes asignar múltiples grupos en la misma hora
-                            </p>
-                        </div>
+                                <div className="flex-1 overflow-y-auto p-2 bg-[#F9FAFB] custom-scrollbar">
+                                    <div className="space-y-1.5 lg:space-y-2 pb-20">
+                                        {timeSlots.map((time) => {
+                                            const slots = assignments[time] || [];
+                                            const isBreak = isBreakTime(time);
 
-                        <div className="flex-1 overflow-y-auto p-1 lg:p-3 custom-scrollbar bg-gray-50/30">
-                            <div className="space-y-1.5 lg:space-y-2 pb-20">
-                                {timeSlots.map((time) => {
-                                    const slots = assignments[time] || [];
-                                    const isBreak = isBreakTime(time);
-
-                                    return (
-                                        <button
-                                            key={time}
-                                            onClick={() => handleSlotClick(time)}
-                                            className={`
-                                        relative w-full flex items-start gap-1 lg:gap-3 p-1.5 lg:p-2 rounded-lg lg:rounded-xl border transition-all duration-200 text-left group
-                                        ${slots.length > 0
-                                                    ? 'bg-white border-emerald-100 shadow-sm ring-1 ring-emerald-50'
-                                                    : isBreak
-                                                        ? 'bg-amber-50/50 border-amber-100'
-                                                        : 'bg-white border-gray-100 hover:border-blue-300 hover:bg-blue-50/50'
-                                                }
-                                        ${selectedGroup && slots.length === 0 ? 'ring-2 ring-blue-500/20 border-blue-500 bg-blue-50' : ''}
-                                    `}
-                                        >
-                                            <div className={`
-                                         w-16 lg:w-20 py-1 rounded text-center text-[10px] lg:text-xs font-bold font-mono shrink-0 flex items-center justify-center
-                                         ${slots.length > 0 ? 'bg-emerald-100 text-emerald-700' : isBreak ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}
-                                     `}>
-                                                {time}
-                                            </div>
-
-                                            <div className="flex-1 min-w-0">
-                                                {slots.length > 0 ? (
-                                                    <div className="space-y-1">
-                                                        {slots.map((slot, idx) => (
-                                                            <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-gray-50 p-1.5 rounded border border-gray-100/50">
-                                                                <div className="flex items-center gap-2 flex-wrap min-w-0">
-                                                                    <div className="flex flex-col gap-0.5 py-0.5">
-                                                                        <p className="font-bold text-gray-900 text-xs flex items-center gap-2">
-                                                                            <span>{slot.group.label}</span>
-                                                                            {slot.group.studentCount !== undefined && (
-                                                                                <span className="text-[10px] font-normal text-gray-500 whitespace-nowrap">
-                                                                                    ({slot.group.studentCount} est)
-                                                                                </span>
-                                                                            )}
-                                                                        </p>
-                                                                        {slot.notes && (
-                                                                            <div className="flex items-center gap-1 text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-medium w-fit max-w-full">
-                                                                                <FileText className="w-2.5 h-2.5 shrink-0" />
-                                                                                <span className="break-words line-clamp-2 sm:line-clamp-none">{slot.notes}</span>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                    {/* Weekly Conflict Warning */}
-                                                                    {prevWeekAssignments[time]?.includes(slot.group.label) && (
-                                                                        <div className="flex items-center gap-1 mt-0.5 animate-pulse shrink-0">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-                                                                            <span className="text-[9px] font-black text-red-600 uppercase tracking-tighter">
-                                                                                Mismo horario semana pasada
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        ))}
+                                            return (
+                                                <button
+                                                    key={time}
+                                                    onClick={() => handleSlotClick(time)}
+                                                    className={`
+                                            relative w-full flex items-start gap-1 lg:gap-3 p-1.5 lg:p-2 rounded-lg lg:rounded-xl border transition-all duration-200 text-left group
+                                            ${slots.length > 0
+                                                            ? 'bg-white border-emerald-100 shadow-sm ring-1 ring-emerald-50'
+                                                            : isBreak
+                                                                ? 'bg-amber-50/50 border-amber-100'
+                                                                : 'bg-white border-gray-100 hover:border-blue-300 hover:bg-blue-50/50'
+                                                        }
+                                            ${selectedGroup && slots.length === 0 ? 'ring-2 ring-blue-500/20 border-blue-500 bg-blue-50' : ''}
+                                        `}
+                                                >
+                                                    <div className={`
+                                             w-16 lg:w-20 py-1 rounded text-center text-[10px] lg:text-xs font-bold font-mono shrink-0 flex items-center justify-center
+                                             ${slots.length > 0 ? 'bg-emerald-100 text-emerald-700' : isBreak ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}
+                                         `}>
+                                                        {time}
                                                     </div>
-                                                ) : (
-                                                    <div className="flex items-center h-full">
-                                                        <span className={`text-[8px] lg:text-[10px] font-medium italic ${isBreak ? 'text-amber-600/70' : 'text-gray-300'}`}>
-                                                            {isBreak ? 'Descanso' : (selectedGroup ? 'Asignar' : 'Libre')}
+
+                                                    <div className="flex-1 min-w-0">
+                                                        {slots.length > 0 ? (
+                                                            <div className="flex flex-col gap-1.5">
+                                                                {slots.map((slot, idx) => (
+                                                                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white p-[6px] rounded-xl border border-gray-100 shadow-sm relative group/item">
+                                                                        <div className="flex flex-col gap-0.5 min-w-0 w-full">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="font-black text-xs text-gray-900 leading-tight mb-1">{slot.group.label}</span>
+                                                                                <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-md leading-none">({slot.group.studentCount || 0} est)</span>
+                                                                            </div>
+                                                                            {slot.notes && (
+                                                                                <div className="inline-flex items-center gap-1 bg-[#FFFBEB] text-[#B45309] px-2 py-1 rounded-lg border border-amber-100 w-full max-w-full mt-1">
+                                                                                    <FileText className="w-3 h-3 shrink-0" />
+                                                                                    <span className="text-[10px] font-bold truncate">{slot.notes}</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="h-4 lg:h-6 flex items-center">
+                                                                <p className={`text-[10px] font-medium transition-colors ${selectedGroup ? 'text-blue-500 italic' : 'text-gray-300'}`}>
+                                                                    {isBreak ? '☕ Espacio de descanso' : selectedGroup ? 'Toca para asignar grupo...' : 'Sin asignar'}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right: Sidebar (Col 4 - Groups & Absent) */}
+                            <div className="col-span-4 flex flex-col gap-2 lg:gap-4 overflow-hidden h-full">
+                                {/* Groups List */}
+                                <div className="shrink-0 max-h-[60vh] h-auto min-h-[200px] bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+                                    {(() => {
+                                        // Calculate filtered groups outside the render to use the count
+                                        const filteredAvailableGroups = availableGroups.filter(group => {
+                                            const isAssigned = Object.values(assignments).some(slots => slots.some(s => s.group.id === group.id));
+                                            const isAbsent = absentGroups.some(a => a.group.id === group.id);
+                                            return !isAssigned && !isAbsent;
+                                        });
+
+                                        return (
+                                            <>
+                                                <div className="flex flex-col gap-1 mb-2 px-1 pt-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <h3 className="font-bold text-gray-900 flex items-center gap-1.5 text-[11px] uppercase tracking-tight">
+                                                            <Users className="w-4 h-4 text-blue-600" />
+                                                            Grupos
+                                                        </h3>
+                                                        <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">
+                                                            {filteredAvailableGroups.length} <span className="text-[9px]">restantes</span>
                                                         </span>
                                                     </div>
-                                                )}
+                                                    <p className="text-[9px] text-gray-400 font-medium leading-none pl-0.5">
+                                                        Selecciona para asignar
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex-1 overflow-y-auto p-2 lg:p-3 custom-scrollbar bg-gray-50/30 border-t border-gray-50">
+                                                    <div className="grid grid-cols-1 gap-1.5 pb-2">
+                                                        {filteredAvailableGroups.map((group) => {
+                                                            const isSelected = selectedGroup?.id === group.id;
+                                                            return (
+                                                                <button
+                                                                    key={group.id}
+                                                                    onClick={() => setSelectedGroup(isSelected ? null : group)}
+                                                                    className={`
+                                                    flex flex-col p-3 rounded-xl border transition-all duration-200 text-left relative
+                                                    ${isSelected
+                                                                            ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 scale-[1.01] z-10'
+                                                                            : 'bg-white border-gray-100 hover:border-blue-200 hover:shadow-md text-gray-900'
+                                                                        }
+                                                `}
+                                                                >
+                                                                    <span className={`text-xs font-black leading-none mb-1 ${isSelected ? 'text-white' : 'text-gray-900'}`}>{group.label}</span>
+                                                                    <div className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold w-fit ${isSelected ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                                                                        {group.studentCount || 0} est
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+
+                                {/* Absent Groups Box */}
+                                <div className="flex-1 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden shrink-0">
+                                    <div className="p-4 bg-white border-b border-gray-100 flex flex-col gap-2 shrink-0">
+                                        <div className="flex items-center justify-between w-full">
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-black text-red-500 text-[10px] uppercase tracking-widest flex items-center gap-1.5">
+                                                    <Info className="w-4 h-4" />
+                                                    NOVEDADES
+                                                </h3>
+                                                <div className="bg-red-50 px-2 py-0.5 rounded-full">
+                                                    <span className="text-[10px] font-bold text-red-600">{absentGroups.length}</span>
+                                                </div>
                                             </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right: Groups (Col 4 - Narrower, Single Column List) */}
-                    <div className="col-span-4 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
-                        <div className="p-2 lg:p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
-                            <h3 className="font-bold text-gray-900 flex items-center gap-1 text-xs lg:text-base">
-                                <Users className="w-4 h-4 text-blue-600" />
-                                Grupos
-                            </h3>
-                            <div className="text-[10px] text-gray-400 font-bold">
-                                {availableGroups.filter(g => !isAssigned(g)).length} rest
-                            </div>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-2 lg:p-4 custom-scrollbar bg-gray-50/50">
-                            <div className="grid grid-cols-1 gap-2">
-                                {availableGroups.filter(g => !isAssigned(g)).map((group) => (
-                                    <button
-                                        key={group.id}
-                                        onClick={() => setSelectedGroup(group)}
-                                        className={`
-                                        w-full p-2 lg:p-3 rounded-xl lg:rounded-2xl border text-left transition-all duration-200 group
-                                        ${selectedGroup?.id === group.id
-                                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 scale-[1.02]'
-                                                : 'bg-white border-gray-100 hover:border-blue-200 hover:shadow-md text-gray-900'}
-                                    `}
-                                    >
-                                        <p className="font-black text-sm lg:text-base leading-tight mb-1">{group.label}</p>
-                                        <div className="flex items-center gap-2">
-                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${selectedGroup?.id === group.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
-                                                {group.studentCount} est
-                                            </span>
                                         </div>
-                                    </button>
+                                        {selectedGroup && (
+                                            <button
+                                                onClick={handleSetAbsent}
+                                                className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 p-2 py-3 rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-sm animate-in fade-in slide-in-from-top-2 whitespace-normal h-auto leading-tight text-center"
+                                            >
+                                                MARCAR {selectedGroup.label} COMO NO ASISTE
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto p-2 lg:p-4 custom-scrollbar">
+                                        {absentGroups.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {absentGroups.map((entry, idx) => (
+                                                    <div key={idx} className="group relative flex items-start gap-3 bg-red-50/50 p-3 rounded-xl border border-red-100">
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-black text-red-700 text-[11px] mb-0.5">{entry.group.label}</p>
+                                                            <p className="text-[10px] text-red-400 font-medium leading-tight">{entry.notes}</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => setAbsentGroups(prev => prev.filter(a => a.group.id !== entry.group.id))}
+                                                            className="p-1 hover:bg-white rounded-lg text-red-500 transition-all shadow-sm border border-red-50"
+                                                        >
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="h-full flex flex-col items-center justify-center text-center p-4">
+                                                <Info className="w-6 h-6 lg:w-8 lg:h-8 text-gray-200 mb-2" />
+                                                <p className="text-[10px] lg:text-xs text-gray-400 font-medium leading-relaxed">
+                                                    No hay grupos con novedades reportadas
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex-1 overflow-hidden pb-4 px-1 animate-in fade-in duration-300">
+                            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 h-full overflow-y-auto custom-scrollbar pb-20">
+                                {weekData.map((day, idx) => (
+                                    <div key={idx} className="flex flex-col gap-3 min-w-[200px]">
+                                        <div className={`
+                                        p-3 rounded-2xl text-center sticky top-0 z-10 transition-all
+                                        ${new Date(day.date + 'T12:00:00').toDateString() === new Date().toDateString()
+                                                ? 'bg-blue-600 shadow-md shadow-blue-200'
+                                                : 'bg-transparent hover:bg-white/50'
+                                            }
+                                    `}>
+                                            <p className={`
+                                            text-sm font-black mb-0.5 capitalize
+                                            ${new Date(day.date + 'T12:00:00').toDateString() === new Date().toDateString()
+                                                    ? 'text-white'
+                                                    : 'text-gray-400'
+                                                }
+                                        `}>
+                                                {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][new Date(day.date + 'T12:00:00').getDay()]}
+                                            </p>
+                                            {/* Remove separate numeric date if "Tab" style usually implies just the name, OR keep it subtle. 
+                                            Given the user wants "Tabs" like the image which often just has "Lun", "Mar", but for a calendar we usually need the number. 
+                                            I'll keep the number but style it to match.
+                                        */}
+                                            {/* OPTIONAL: If the user strictly wants JUST the day name like the image "Lun", "Mar", I might hide the number? 
+                                            But for a schedule the specific date is important. I will keep it but integrated.
+                                         */}
+                                            {/* Actually the image description was "Lun Mar Mié...". Let's enable the date number but make it small/integrated, or hide it if it looks cluttered. 
+                                             Let's keep it for now as it's a schedule app. 
+                                         */}
+                                            <p className={`
+                                            text-[10px] font-bold leading-none
+                                            ${new Date(day.date + 'T12:00:00').toDateString() === new Date().toDateString()
+                                                    ? 'text-blue-100'
+                                                    : 'text-gray-300'
+                                                }
+                                        `}>
+                                                {new Date(day.date + 'T12:00:00').getDate()}
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {day.items.length > 0 ? (
+                                                day.items.map((item: any, i: number) => (
+                                                    <div key={i} className={`p-3 rounded-xl border text-[10px] shadow-sm bg-white ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'border-red-100 bg-red-50/30' : 'border-gray-100'}`}>
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="font-black text-gray-900 tracking-tight">{item.group}</span>
+                                                            <span className={`px-1.5 py-0.5 rounded-md font-bold ${(item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE') ? 'bg-red-600 text-white' : 'bg-blue-50 text-blue-600'}`}>
+                                                                {(item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE') ? 'X' : (item.time?.split(' - ')[0] || item.time_start)}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-gray-500 font-medium italic line-clamp-1">
+                                                            {item.notes || 'Sin notas'}
+                                                        </p>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="h-32 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 text-gray-300 gap-2">
+                                                    <Clock className="w-6 h-6 opacity-20" />
+                                                    <span className="text-[10px] uppercase font-bold tracking-widest">Sin asignar</span>
+                                                </div>
+                                            )}
+
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedDate(day.date);
+                                                    setViewMode('day');
+                                                }}
+                                                className="w-full py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-colors"
+                                            >
+                                                Gestionar Día
+                                            </button>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         </div>
-
-                        {/* Extraordinary News Section (Inside Sidebar) */}
-                        <div className="shrink-0 p-2 lg:p-4 border-t border-gray-100 bg-white">
-                            <div className="flex items-center justify-between mb-2">
-                                <h4 className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1">
-                                    <Info className="w-3 h-3" />
-                                    Novedades (No Asisten)
-                                </h4>
-                                <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-bold">
-                                    {absentGroups.length} grupos
-                                </span>
-                            </div>
-
-                            {selectedGroup && !isAssigned(selectedGroup) && (
-                                <button
-                                    onClick={handleSetAbsent}
-                                    className="w-full mb-3 flex items-center justify-center gap-2 p-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl border border-red-200 border-dashed transition-all group scale-95"
-                                >
-                                    <span className="text-[10px] font-black uppercase">Marcar {selectedGroup.label} como No Asiste</span>
-                                </button>
-                            )}
-
-                            <div className="space-y-1.5 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
-                                {absentGroups.length === 0 ? (
-                                    <p className="text-[10px] text-gray-400 italic text-center py-2">
-                                        Ninguna novedad registrada para hoy
-                                    </p>
-                                ) : (
-                                    absentGroups.map((a, idx) => (
-                                        <div key={idx} className="bg-red-50/50 p-2 rounded-xl border border-red-100/50">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-[11px] font-black text-red-700">{a.group.label}</span>
-                                                <button onClick={() => removeAbsent(idx)} className="text-red-400 hover:text-red-600">
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                            <input
-                                                type="text"
-                                                value={a.notes}
-                                                onChange={(e) => updateAbsentNote(idx, e.target.value)}
-                                                className="w-full bg-white/80 border-none text-[10px] p-1.5 rounded-lg focus:ring-1 focus:ring-red-200 text-gray-600 font-medium"
-                                                placeholder="Motivo..."
-                                            />
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    )
+                }
 
 
-
-                {/* Edit Modal */}
+                {/* Modals and Notifications */}
                 {
-                    editingSlot && (assignments[editingSlot]?.length || 0) > 0 && (
+                    editingSlot && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditingSlot(null)}></div>
-                            <div className="bg-white rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{editingSlot}</p>
-                                        <h3 className="text-xl font-black text-gray-900">Gestionar Grupos</h3>
-                                        <p className="text-sm text-gray-500">
-                                            {assignments[editingSlot]?.length} grupos asignados
-                                        </p>
+                            <div className="bg-white rounded-3xl w-full max-w-xl relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+                                <div className="p-5 bg-white flex items-center justify-between border-b border-gray-50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-blue-50 p-2 rounded-xl">
+                                            <Clock className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-black text-gray-900 text-xl tracking-tight leading-none">Gestionar Grupos</h3>
+                                            <p className="text-xs font-bold text-gray-400 mt-1">{assignments[editingSlot]?.length || 0} asignados en {editingSlot}</p>
+                                        </div>
                                     </div>
-                                    <button onClick={() => setEditingSlot(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400">
-                                        <X className="w-5 h-5" />
+                                    <button onClick={() => setEditingSlot(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                        <X className="w-5 h-5 text-gray-400" />
                                     </button>
                                 </div>
+                                <div className="p-5 space-y-3 bg-gray-50/50">
+                                    <div className="space-y-3 max-h-[50vh] overflow-y-auto px-1 custom-scrollbar">
+                                        {assignments[editingSlot]?.map((item, idx) => (
+                                            <div key={idx} className="p-4 rounded-2xl bg-gray-50 border border-gray-100 shadow-sm relative group flex gap-4 items-start">
+                                                {/* Group Info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-black text-gray-900 text-lg">{item.group.label}</span>
+                                                            <span className="px-2 py-0.5 bg-gray-100 rounded-md text-[10px] font-bold text-gray-500">{item.group.studentCount} est</span>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => deleteAssignment(editingSlot!, idx)}
+                                                            className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
 
-                                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                                    {assignments[editingSlot]?.map((slot, index) => (
-                                        <div key={`${slot.group.id}-${index}`} className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <span className="font-bold text-gray-900 bg-white px-2 py-1 rounded-lg border border-gray-200">
-                                                    {slot.group.label}
-                                                </span>
-                                                <button
-                                                    onClick={() => deleteAssignment(editingSlot!, index)}
-                                                    className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-colors"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Nota</label>
-                                                    <input
-                                                        type="text"
-                                                        value={slot.notes || ''}
-                                                        onChange={(e) => saveEdit(index, e.target.value)}
-                                                        placeholder="Agregar nota..."
-                                                        className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
-                                                    />
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">NOTA</label>
+                                                            <input
+                                                                type="text"
+                                                                value={item.notes || ''}
+                                                                onChange={(e) => handleSaveNote(idx, e.target.value)}
+                                                                className="w-full text-sm px-3 py-2 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none bg-white font-medium text-gray-700 placeholder-gray-300"
+                                                                placeholder="Sin notas..."
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">HORA</label>
+                                                            <div className="relative">
+                                                                <select
+                                                                    className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-blue-500 transition-all cursor-pointer shadow-sm"
+                                                                    defaultValue={editingSlot}
+                                                                    onChange={(e) => {
+                                                                        const newTime = e.target.value;
+                                                                        if (newTime === editingSlot) return;
+                                                                        setAssignments(prev => {
+                                                                            const next = { ...prev };
+                                                                            const currentGroups = [...(next[editingSlot] || [])];
+                                                                            const movingGroup = currentGroups.splice(idx, 1)[0];
+                                                                            if (currentGroups.length === 0) delete next[editingSlot];
+                                                                            else next[editingSlot] = currentGroups;
+                                                                            if (!next[newTime]) next[newTime] = [];
+                                                                            next[newTime].push(movingGroup);
+                                                                            return next;
+                                                                        });
+                                                                        setEditingSlot(newTime);
+                                                                    }}
+                                                                >
+                                                                    {timeSlots.map(t => (
+                                                                        <option key={t} value={t}>{t}</option>
+                                                                    ))}
+                                                                </select>
+                                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Cambiar Hora</label>
-                                                    <select
-                                                        value={editingSlot || ''}
-                                                        onChange={(e) => moveAssignment(index, e.target.value)}
-                                                        className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition-colors"
-                                                    >
-                                                        {timeSlots.map(t => (
-                                                            <option key={t} value={t}>{t} {isBreakTime(t) ? '(Descanso)' : ''}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-
-                                <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
+                                <div className="p-5 bg-white border-t border-gray-100 flex justify-end">
                                     <button
                                         onClick={() => setEditingSlot(null)}
-                                        className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                                        className="px-8 py-2.5 bg-gray-900 text-white rounded-xl font-bold shadow-lg hover:bg-black transition-all active:scale-[0.98] text-sm tracking-wide"
                                     >
-                                        Listo
+                                        Listo, Guardar Cambios
                                     </button>
                                 </div>
                             </div>
@@ -757,79 +996,96 @@ export default function HorarioPage() {
                     )
                 }
 
-                {/* Instructions Modal */}
-                {
-                    showInstructions && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowInstructions(false)}></div>
-                            <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-6 overflow-hidden">
-                                <div className="p-4 bg-blue-50 -mx-6 -mt-6 mb-6 flex items-center justify-between">
-                                    <h3 className="font-black text-blue-900 text-lg flex items-center gap-2">
-                                        <Info className="w-5 h-5" />
-                                        Instrucciones
-                                    </h3>
-                                    <button onClick={() => setShowInstructions(false)} className="p-1 hover:bg-blue-100 rounded-full text-blue-400">
-                                        <X className="w-5 h-5" />
-                                    </button>
-                                </div>
-                                <div className="space-y-4 text-sm text-gray-600">
-                                    <div className="flex gap-3">
-                                        <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">1</div>
-                                        <p><span className="font-bold text-gray-900">Selecciona un Grupo:</span> Toca un grupo disponible de la lista derecha. Se pondrá azul.</p>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">2</div>
-                                        <p><span className="font-bold text-gray-900">Asigna Hora:</span> Toca una franja horaria en la izquierda para asignar el grupo seleccionado.</p>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">3</div>
-                                        <p><span className="font-bold text-gray-900">Editar/Desasignar:</span> Toca una franja ya ocupada para ver detalles, agregar notas o eliminar la asignación.</p>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0">4</div>
-                                        <p><span className="font-bold text-gray-900">Guardar:</span> ¡No olvides tocar el botón "Guardar" en la parte superior para aplicar los cambios!</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setShowInstructions(false)}
-                                    className="w-full mt-6 py-3 bg-gray-900 text-white rounded-xl font-bold"
-                                >
-                                    Entendido
-                                </button>
-                            </div>
-                        </div>
-                    )
-                }
-
-                {/* Premium Confirmation Modal */}
+                {/* Save Confirmation Modal */}
                 {
                     showConfirmSave && (
-                        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowConfirmSave(false)}></div>
-                            <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-8 text-center flex flex-col gap-6">
-                                <div className="bg-orange-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto ring-4 ring-orange-100 animate-bounce">
-                                    <Info className="w-10 h-10 text-orange-500" />
-                                </div>
-
-                                <div>
-                                    <h3 className="text-2xl font-black text-gray-900 mb-2">¿Guardar de todos modos?</h3>
-                                    <p className="text-gray-500 text-sm leading-relaxed px-2">
-                                        Detectamos que hay <span className="text-orange-600 font-bold">{unassignedCount} grupo(s)</span> sin horario asignado para esta fecha.
+                        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowConfirmSave(false)}></div>
+                            <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+                                <div className="p-8 text-center">
+                                    <div className="bg-amber-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 text-amber-600">
+                                        <Info className="w-10 h-10" />
+                                    </div>
+                                    <h3 className="text-xl font-black text-gray-900 mb-2">Grupos sin Asignar</h3>
+                                    <p className="text-gray-500 text-sm leading-relaxed mb-8">
+                                        Hay <span className="font-bold text-gray-900">{unassignedCount} grupos</span> que aún no tienen horario asignado. ¿Deseas guardar el horario de todas formas?
                                     </p>
+                                    <div className="flex flex-col gap-3">
+                                        <button
+                                            onClick={executeSave}
+                                            className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg hover:bg-black transition-all active:scale-[0.98]"
+                                        >
+                                            Sí, Guardar como esté
+                                        </button>
+                                        <button
+                                            onClick={() => setShowConfirmSave(false)}
+                                            className="w-full py-4 bg-white text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all border border-gray-100"
+                                        >
+                                            No, seguir editando
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
+
+                {/* Instructions Drawer/Modal */}
+                {
+                    showInstructions && (
+                        <div className="fixed inset-0 z-[120] flex items-end lg:items-center justify-center">
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowInstructions(false)}></div>
+                            <div className="bg-white rounded-[32px] w-full max-w-lg relative z-10 shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden flex flex-col">
+                                <div className="p-6 bg-white flex items-center justify-between border-b border-gray-50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-blue-50 rounded-xl">
+                                            <Info className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                        <h3 className="text-xl font-black text-gray-900 tracking-tight">Instrucciones</h3>
+                                    </div>
+                                    <button onClick={() => setShowInstructions(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                        <X className="w-6 h-6 text-blue-600" />
+                                    </button>
                                 </div>
 
-                                <div className="flex flex-col gap-3">
+                                <div className="p-8 space-y-8">
+                                    <div className="space-y-6">
+                                        <div className="flex gap-5">
+                                            <div className="bg-blue-600 text-white w-9 h-9 rounded-full flex items-center justify-center font-black shrink-0 text-sm shadow-lg shadow-blue-200">1</div>
+                                            <div className="pt-1">
+                                                <h4 className="font-black text-gray-900 text-base mb-1 tracking-tight">Selecciona un Grupo:</h4>
+                                                <p className="text-sm text-gray-500 font-medium leading-relaxed">Toca un grupo disponible de la lista derecha. Se pondrá azul.</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-5">
+                                            <div className="bg-blue-600 text-white w-9 h-9 rounded-full flex items-center justify-center font-black shrink-0 text-sm shadow-lg shadow-blue-200">2</div>
+                                            <div className="pt-1">
+                                                <h4 className="font-black text-gray-900 text-base mb-1 tracking-tight">Asigna Hora:</h4>
+                                                <p className="text-sm text-gray-500 font-medium leading-relaxed">Toca una franja horaria en la izquierda para asignar el grupo seleccionado.</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-5">
+                                            <div className="bg-blue-600 text-white w-9 h-9 rounded-full flex items-center justify-center font-black shrink-0 text-sm shadow-lg shadow-blue-200">3</div>
+                                            <div className="pt-1">
+                                                <h4 className="font-black text-gray-900 text-base mb-1 tracking-tight">Editar/Desasignar:</h4>
+                                                <p className="text-sm text-gray-500 font-medium leading-relaxed">Toca una franja ya ocupada para ver detalles, agregar notas o eliminar la asignación.</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-5">
+                                            <div className="bg-blue-600 text-white w-9 h-9 rounded-full flex items-center justify-center font-black shrink-0 text-sm shadow-lg shadow-blue-200">4</div>
+                                            <div className="pt-1">
+                                                <h4 className="font-black text-gray-900 text-base mb-1 tracking-tight">Guardar:</h4>
+                                                <p className="text-sm text-gray-500 font-medium leading-relaxed">¡No olvides tocar el botón "Guardar" en la parte superior para aplicar los cambios!</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="px-8 pb-8 pt-2">
                                     <button
-                                        onClick={executeSave}
-                                        className="w-full py-4 bg-gray-900 hover:bg-black text-white rounded-2xl font-black shadow-xl shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                        onClick={() => setShowInstructions(false)}
+                                        className="w-full py-4 bg-[#0A0D14] text-white rounded-[20px] font-black shadow-xl hover:bg-black transition-all active:scale-[0.98] tracking-wide"
                                     >
-                                        Sí, guardar de todos modos
-                                    </button>
-                                    <button
-                                        onClick={() => setShowConfirmSave(false)}
-                                        className="w-full py-4 bg-white hover:bg-gray-50 text-gray-400 rounded-2xl font-bold border border-gray-100 transition-all"
-                                    >
-                                        Seguir editando
+                                        Entendido
                                     </button>
                                 </div>
                             </div>
@@ -837,31 +1093,36 @@ export default function HorarioPage() {
                     )
                 }
 
-                {/* Premium Toast Notification */}
+                {/* Success/Error Notification Overlay */}
                 {
                     notif && (
-                        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-bottom-5 fade-in duration-300">
-                            <div className={`
-                        px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-xl border-2
-                        ${notif.type === 'success'
-                                    ? 'bg-emerald-500/90 text-white border-white/20'
-                                    : 'bg-red-500/90 text-white border-white/20'}
-                    `}>
-                                <div className="bg-white/20 p-2 rounded-xl">
-                                    {notif.type === 'success' ? <Save className="w-5 h-5" /> : <X className="w-5 h-5" />}
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="font-black text-sm tracking-tight">{notif.msg}</span>
-                                    <span className="text-[10px] opacity-80 font-bold uppercase tracking-widest mt-0.5">Sistema PAE Barroblanco</span>
-                                </div>
-                                <button onClick={() => setNotif(null)} className="ml-4 opacity-50 hover:opacity-100 transition-opacity">
-                                    <X className="w-4 h-4" />
-                                </button>
+                        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-top-4 duration-300">
+                            <div className={`px-6 py-3 rounded-2xl shadow-2xl border flex items-center gap-3 backdrop-blur-md ${notif.type === 'success' ? 'bg-emerald-500/90 text-white border-emerald-400' : 'bg-red-500/90 text-white border-red-400'}`}>
+                                {notif.type === 'success' ? <Users className="w-5 h-5" /> : <Info className="w-5 h-5" />}
+                                <span className="font-bold text-sm">{notif.msg}</span>
                             </div>
                         </div>
                     )
                 }
-            </div>
+
+            </div >
+            <style jsx global>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: #e2e8f0;
+                    border-radius: 20px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: #cbd5e1;
+                }
+            `}</style>
         </>
     );
 }
+
+

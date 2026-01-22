@@ -119,7 +119,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                 <Calendar className="w-6 h-6" />
                             </div>
                             <div>
-                                <h3 className="font-black text-gray-900 leading-tight text-lg">Horario</h3>
+                                <h3 className="font-black text-gray-900 leading-tight text-lg">Horario de mañana</h3>
                                 <button
                                     onClick={() => setShowCalendar(!showCalendar)}
                                     className="text-xs font-bold text-cyan-600 mt-0.5 capitalize flex items-center gap-1 hover:text-cyan-800 transition-colors bg-cyan-50 px-2 py-1 rounded-lg"

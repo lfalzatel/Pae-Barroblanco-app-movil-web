@@ -30,7 +30,11 @@ export function MiniCalendar({
     mode = 'schedules',
     onMonthChange
 }: MiniCalendarProps) {
-    const [currentDate, setCurrentDate] = useState(new Date(selectedDate));
+    const [currentDate, setCurrentDate] = useState(() => {
+        if (!selectedDate) return new Date();
+        const d = new Date(selectedDate);
+        return isNaN(d.getTime()) ? new Date() : d;
+    });
     const [internalDates, setInternalDates] = useState<string[]>([]);
     const [loading, setLoading] = useState(mode === 'schedules');
 
@@ -59,12 +63,27 @@ export function MiniCalendar({
 
             const { data } = await supabase
                 .from('schedules')
-                .select('date')
+                .select('date, items')
                 .gte('date', startStr)
                 .lte('date', endStr);
 
             if (data) {
-                setInternalDates(data.map(d => d.date));
+                const datesWithSchedules = data.map(d => d.date);
+                setInternalDates(datesWithSchedules);
+
+                // If showCounters is on, build the count map
+                if (showCounters) {
+                    const counts: Record<string, number> = {};
+                    data.forEach(d => {
+                        const items = d.items as any[];
+                        const newsCount = items ? items.filter((i: any) => i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length : 0;
+                        counts[d.date] = newsCount;
+                    });
+                    // We need a way to pass this back or use it internally
+                    // Since dateData is a prop, we'll merge it with internal logic or just use internalDates
+                    // Let's actually update a local state for counts if we are in 'schedules' mode
+                    setInternalCounts(counts);
+                }
             }
         } catch (error) {
             console.error('Error fetching dates:', error);
@@ -72,6 +91,8 @@ export function MiniCalendar({
             setLoading(false);
         }
     };
+
+    const [internalCounts, setInternalCounts] = useState<Record<string, number>>({});
 
     const activeDates = mode === 'manual' || mode === 'attendance' ? (externalDates || []) : internalDates;
 
@@ -144,7 +165,7 @@ export function MiniCalendar({
 
                     const dateStr = generateIsoDate(day);
                     const isSelected = selectedDate === dateStr;
-                    const count = dateData?.[dateStr] || 0;
+                    const count = dateData?.[dateStr] || internalCounts[dateStr] || 0;
                     const hasData = count > 0 || activeDates.includes(dateStr);
                     const isToday = dateStr === toLocalISO(new Date());
 
@@ -166,8 +187,8 @@ export function MiniCalendar({
                                 {day}
                             </span>
 
-                            {count > 0 && showCounters && !isSelected && (
-                                <span className={`text-[10px] font-black -mt-0.5 ${hasData ? `text-${highlightColor}-600` : 'text-gray-400'}`}>
+                            {count > 0 && showCounters && (
+                                <span className={`text-[10px] font-black -mt-0.5 ${isSelected ? 'text-white' : hasData ? `text-${highlightColor}-600` : 'text-gray-400'}`}>
                                     {count}
                                 </span>
                             )}

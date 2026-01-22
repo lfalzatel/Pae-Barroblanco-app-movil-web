@@ -121,3 +121,99 @@ export const generateSchedulePDF = (scheduleData: any[], date: string) => {
 
     doc.save(`Horario_Restaurante_${date}.pdf`);
 };
+
+export const generateWeeklySchedulePDF = (weeklyData: any[], weekStart: Date) => {
+    const doc = new jsPDF();
+    const weekRange = `${weekStart.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} - ${new Date(new Date(weekStart).setDate(weekStart.getDate() + 4)).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}`;
+
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(22, 78, 99);
+    doc.text('Institución Educativa Barroblanco', 105, 20, { align: 'center' });
+
+    doc.setFontSize(16);
+    doc.setTextColor(71, 85, 105);
+    doc.text('Consolidado Semanal de Novedades PAE', 105, 30, { align: 'center' });
+
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text(`Semana: ${weekRange}`, 105, 40, { align: 'center' });
+
+    let currentY = 50;
+
+    weeklyData.forEach((day, index) => {
+        // Add a new page if we're running out of space
+        if (currentY > 230) {
+            doc.addPage();
+            currentY = 20;
+        }
+
+        doc.setFillColor(245, 245, 245);
+        doc.rect(15, currentY, 180, 8, 'F');
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(22, 78, 99);
+        doc.text(day.label.toUpperCase(), 20, currentY + 6);
+        currentY += 12;
+
+        if (day.items.length > 0) {
+            const columns = ['Grupo', 'Hora / Acción', 'Novedad / Observación'];
+            const rows = day.items.map((item: any) => [
+                item.group,
+                (item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE') ? 'NO ASISTE' : (item.time?.split(' - ')[0] || item.time_start),
+                item.notes || 'Normal'
+            ]);
+
+            autoTable(doc, {
+                head: [columns],
+                body: rows,
+                startY: currentY,
+                theme: 'grid',
+                headStyles: { fillColor: [71, 85, 105], fontSize: 9, halign: 'center' },
+                bodyStyles: { fontSize: 8, halign: 'center' },
+                columnStyles: {
+                    0: { cellWidth: 40, fontStyle: 'bold' },
+                    1: { cellWidth: 35 },
+                    2: { halign: 'left' }
+                },
+                styles: { cellPadding: 3 }
+            });
+
+            currentY = (doc as any).lastAutoTable.finalY + 10;
+        } else {
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(9);
+            doc.setTextColor(150);
+            doc.text('Sin novedades registradas para este día.', 25, currentY);
+            currentY += 10;
+        }
+    });
+
+    // Unified Footer (Reminders)
+    if (currentY > 240) {
+        doc.addPage();
+        currentY = 20;
+    }
+
+    doc.setDrawColor(200);
+    doc.line(20, currentY, 190, currentY);
+    currentY += 10;
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('RECUERDA: Puntualidad y uso adecuado del uniforme.', 20, currentY);
+    currentY += 6;
+    doc.text('Equipo directivo - I.E Barro Blanco', 20, currentY);
+
+    // Page Numbers
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Página ${i} de ${pageCount}`, 105, 287, { align: 'center' });
+    }
+
+    doc.save(`Horario_Semanal_${weekRange.replace(/ /g, '_')}.pdf`);
+};

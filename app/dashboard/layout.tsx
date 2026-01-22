@@ -17,11 +17,17 @@ import {
     Menu,
     Calendar,
     Bell,
+    CheckCircle,
     Clock,
     FileText,
     Info,
     X,
+    RefreshCcw,
+    ChevronLeft as ChevronLeftIcon,
+    ChevronRight as ChevronRightIcon,
+    Download
 } from 'lucide-react';
+import { MiniCalendar } from '@/components/ui/MiniCalendar';
 
 export default function DashboardLayout({
     children,
@@ -38,6 +44,91 @@ export default function DashboardLayout({
     const [notifModalOpen, setNotifModalOpen] = useState(false);
     const [tomorrowSchedule, setTomorrowSchedule] = useState<any[]>([]);
     const [tomorrowDateLabel, setTomorrowDateLabel] = useState('');
+    const [selectedDate, setSelectedDate] = useState('');
+    const [searchResult, setSearchResult] = useState<any[] | null>(null);
+    const [isSearching, setIsSearching] = useState(false);
+    const [tomorrowDateStr, setTomorrowDateStr] = useState('');
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [activeNotifTab, setActiveNotifTab] = useState<'daily' | 'weekly'>('daily');
+    const [weekStart, setWeekStart] = useState<Date>(() => {
+        const d = new Date();
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
+    });
+    const [weeklyNotifData, setWeeklyNotifData] = useState<any[]>([]);
+    const [isWeeklySearching, setIsWeeklySearching] = useState(false);
+    const [selectedDayInWeek, setSelectedDayInWeek] = useState(0); // 0 = Mon, 4 = Fri
+
+    const fetchScheduleForDate = async (dateStr: string) => {
+        const { data } = await supabase
+            .from('schedules')
+            .select('items')
+            .eq('date', dateStr)
+            .single();
+
+        if (data?.items) {
+            return (data.items as any[]).sort((a, b) => {
+                const timeA = a.time || a.time_start || "";
+                const timeB = b.time || b.time_start || "";
+                return timeA.localeCompare(timeB);
+            });
+        }
+        return [];
+    };
+
+    const fetchWeeklyNotifSchedule = async () => {
+        setIsWeeklySearching(true);
+        try {
+            const dates = [];
+            for (let i = 0; i < 5; i++) {
+                const d = new Date(weekStart);
+                d.setDate(d.getDate() + i);
+                dates.push(d.toISOString().split('T')[0]);
+            }
+
+            const { data } = await supabase
+                .from('schedules')
+                .select('*')
+                .in('date', dates);
+
+            const mapped = dates.map(dateStr => {
+                const dayData = (data || []).find(d => d.date === dateStr);
+                return {
+                    date: dateStr,
+                    label: new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+                    items: dayData?.items || []
+                };
+            });
+
+            setWeeklyNotifData(mapped);
+        } catch (error) {
+            console.error('Error fetching weekly notif schedule:', error);
+        } finally {
+            setIsWeeklySearching(false);
+        }
+    };
+
+    const changeNotifWeek = (offset: number) => {
+        const newDate = new Date(weekStart);
+        newDate.setDate(newDate.getDate() + (offset * 7));
+        setWeekStart(newDate);
+    };
+
+    useEffect(() => {
+        if (notifModalOpen && activeNotifTab === 'weekly') {
+            fetchWeeklyNotifSchedule();
+        }
+    }, [notifModalOpen, activeNotifTab, weekStart]);
+
+    const handleSearchByDate = async (date: string) => {
+        if (!date) return;
+        setIsSearching(true);
+        setSelectedDate(date);
+        const results = await fetchScheduleForDate(date);
+        setSearchResult(results);
+        setIsSearching(false);
+    };
 
     useEffect(() => {
         // 1. Check initial session immediately to avoid flash of login screen if possible
@@ -72,6 +163,7 @@ export default function DashboardLayout({
             const d = target.getDate().toString().padStart(2, '0');
             const dateStr = `${y}-${m}-${d}`;
 
+            setTomorrowDateStr(dateStr);
             setTomorrowDateLabel(target.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }));
 
             const { data } = await supabase
@@ -374,8 +466,8 @@ export default function DashboardLayout({
                                     <Bell className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h3 className="font-black text-lg">Aviso de Horario</h3>
-                                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">{tomorrowDateLabel}</p>
+                                    <h3 className="font-black text-lg">Horario</h3>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">{activeNotifTab === 'daily' ? tomorrowDateLabel : 'Consolidado Semanal'}</p>
                                 </div>
                             </div>
                             <button onClick={() => setNotifModalOpen(false)} className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full">
@@ -383,91 +475,290 @@ export default function DashboardLayout({
                             </button>
                         </div>
 
-                        <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                            {tomorrowSchedule.length > 0 ? (
-                                <div className="space-y-4">
-                                    <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex items-center gap-3">
-                                        <div className="bg-blue-600 p-2 rounded-lg">
-                                            <Calendar className="w-5 h-5 text-white" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-black text-blue-900 leading-none">Horario Publicado</p>
-                                            <p className="text-[10px] text-blue-600 font-bold mt-1">Revisa las novedades abajo</p>
-                                        </div>
-                                    </div>
+                        {/* Tabs */}
+                        <div className="flex border-b border-gray-100">
+                            <button
+                                onClick={() => setActiveNotifTab('daily')}
+                                className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeNotifTab === 'daily' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                            >
+                                Mañana
+                            </button>
+                            <button
+                                onClick={() => setActiveNotifTab('weekly')}
+                                className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeNotifTab === 'weekly' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                            >
+                                Semana
+                            </button>
+                        </div>
 
-                                    <div className="space-y-4">
-                                        {/* 1. Groups NOT attending (No Asiste) */}
-                                        {tomorrowSchedule.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length > 0 && (
-                                            <div className="space-y-2">
-                                                <p className="text-[10px] font-black text-red-500 uppercase tracking-widest pl-1 flex items-center gap-1">
-                                                    <X className="w-3 h-3" />
-                                                    Grupos que NO ASISTEN
-                                                </p>
-                                                {tomorrowSchedule.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').map((item, idx) => (
-                                                    <div key={`absent-${idx}`} className="bg-red-50 p-4 rounded-2xl border border-red-100 flex items-start gap-4 ring-1 ring-red-50/50 shadow-sm">
-                                                        <div className="bg-red-600 px-2 py-1 rounded-lg text-[10px] font-black text-white shrink-0 uppercase">
-                                                            No Asiste
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="font-bold text-red-900 text-sm mb-1">{item.group}</p>
-                                                            <div className="flex items-start gap-1.5 text-[10px] text-red-600">
-                                                                <FileText className="w-3 h-3 mt-0.5 shrink-0" />
-                                                                <span className="italic font-bold">{item.notes || 'Sin motivo especificado'}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                        <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                            {activeNotifTab === 'daily' ? (
+                                <>
+                                    {/* Enhanced Date Selector with Collapsible MiniCalendar */}
+                                    <div className="mb-6 bg-gray-50/50 rounded-3xl border border-gray-100 overflow-hidden transition-all duration-300">
+                                        <button
+                                            onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                                            className="w-full p-4 flex items-center justify-between hover:bg-gray-100/50 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="w-4 h-4 text-blue-600" />
+                                                <span className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em]">Consultar Fecha</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {selectedDate && (
+                                                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">
+                                                        {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
+                                                    </span>
+                                                )}
+                                                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isCalendarOpen ? 'rotate-180' : ''}`} />
+                                            </div>
+                                        </button>
+
+                                        {isCalendarOpen && (
+                                            <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                                                <MiniCalendar
+                                                    selectedDate={selectedDate || tomorrowDateStr}
+                                                    onSelectDate={(date) => {
+                                                        handleSearchByDate(date);
+                                                        setIsCalendarOpen(false); // Auto-collapse on select
+                                                    }}
+                                                    mode="schedules"
+                                                    className="!shadow-none !border-none !p-0 bg-transparent"
+                                                />
+                                                <div className="mt-4 pt-3 border-t border-gray-100">
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedDate('');
+                                                            setSearchResult(null);
+                                                            setIsCalendarOpen(false);
+                                                        }}
+                                                        className="w-full text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                                    >
+                                                        <RefreshCcw className="w-3 h-3" />
+                                                        Ver Mañana (Reset)
+                                                    </button>
+                                                </div>
                                             </div>
                                         )}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="mb-6 bg-gray-50/50 rounded-3xl border border-gray-100 overflow-hidden">
+                                    <div className="p-4 flex flex-col gap-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="w-4 h-4 text-blue-600" />
+                                                <span className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em]">Consultar Semana</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between bg-white p-2 rounded-2xl border border-gray-100">
+                                            <button onClick={() => changeNotifWeek(-1)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-blue-600">
+                                                <ChevronLeftIcon className="w-5 h-5" />
+                                            </button>
+                                            <span className="text-[10px] font-black px-2 uppercase tracking-tight text-gray-900">
+                                                {weekStart.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} - {new Date(new Date(weekStart).setDate(weekStart.getDate() + 4)).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
+                                            </span>
+                                            <button onClick={() => changeNotifWeek(1)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-blue-600">
+                                                <ChevronRightIcon className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                        <div className="flex gap-1.5 p-1 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                                            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((day, dIdx) => (
+                                                <button
+                                                    key={day}
+                                                    onClick={() => setSelectedDayInWeek(dIdx)}
+                                                    className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${selectedDayInWeek === dIdx ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                                                >
+                                                    {day}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
-                                        {/* 2. Groups with other news/notes */}
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-1">
-                                                <Info className="w-4 h-4" />
-                                                Otras Novedades
-                                            </p>
-                                            {tomorrowSchedule.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').length > 0 ? (
-                                                tomorrowSchedule.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').map((item, idx) => (
-                                                    <div key={`note-${idx}`} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4 shadow-sm">
-                                                        <div className="bg-white px-2 py-1 rounded-lg border border-amber-200 text-[10px] font-black text-amber-600 shrink-0">
-                                                            {item.time?.split(' - ')[0] || item.time_start}
+                            {activeNotifTab === 'daily' ? (
+                                <>
+                                    {!isSearching && (tomorrowSchedule.length > 0 || (searchResult && searchResult.length > 0)) && (
+                                        <div className="mb-6 bg-blue-50/50 p-4 rounded-3xl border border-blue-100 flex items-center gap-4 animate-in fade-in duration-500">
+                                            <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-200">
+                                                <Calendar className="w-5 h-5 text-white" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-black text-blue-900">Horario Publicado</h4>
+                                                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Revisa las novedades abajo</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {isSearching ? (
+                                        <div className="text-center py-10">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                            <p className="text-xs text-gray-500 mt-2 font-medium">Buscando novedades...</p>
+                                        </div>
+                                    ) : searchResult ? (
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest pl-1">Resultados para {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</p>
+                                            </div>
+                                            {searchResult.filter((i: any) => i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length > 0 ? (
+                                                searchResult.filter((i: any) => i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').map((item: any, idx: number) => (
+                                                    <div key={`search-${idx}`} className={`p-4 rounded-2xl border flex items-start gap-4 shadow-sm ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'}`}>
+                                                        <div className={`${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-600' : 'bg-white border border-amber-200 text-amber-600'} px-2 py-1 rounded-lg text-[10px] font-black ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-white' : ''} shrink-0 uppercase`}>
+                                                            {item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'No Asiste' : (item.time?.split(' - ')[0] || item.time_start)}
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="font-bold text-gray-900 text-sm mb-1">{item.group}</p>
-                                                            <div className="flex items-start gap-1.5 text-[10px] text-amber-600">
-                                                                <FileText className="w-3 h-3 mt-0.5 shrink-0" />
-                                                                <span className="italic font-medium">{item.notes}</span>
-                                                            </div>
+                                                            <p className={`font-bold text-sm mb-1 ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-900' : 'text-gray-900'}`}>{item.group}</p>
+                                                            {item.notes && (
+                                                                <div className={`flex items-start gap-1.5 text-[10px] ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-600' : 'text-amber-600'}`}>
+                                                                    <FileText className="w-3 h-3 mt-0.5 shrink-0" />
+                                                                    <span className="italic font-bold">{item.notes}</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))
                                             ) : (
-                                                tomorrowSchedule.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length === 0 && (
-                                                    <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
-                                                        <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                                        <p className="text-xs font-bold text-gray-500">Sin cambios reportados</p>
-                                                        <p className="text-[10px] text-gray-400 italic">Todos los grupos ingresan en su horario normal.</p>
-                                                    </div>
-                                                )
+                                                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
+                                                    <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                                                    <p className="text-xs font-bold text-gray-500">Sin novedades</p>
+                                                    <p className="text-[10px] text-gray-400 italic">No hay cambios registrados para esta fecha.</p>
+                                                </div>
                                             )}
                                         </div>
-                                    </div>
-                                </div>
+                                    ) : (
+                                        <>
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-4">Novedades de Mañana</p>
+                                            {tomorrowSchedule.length > 0 ? (
+                                                <div className="space-y-4">
+                                                    {tomorrowSchedule.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length > 0 && (
+                                                        <div className="space-y-2">
+                                                            <p className="text-[10px] font-black text-red-500 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                                                <X className="w-3 h-3" />
+                                                                Grupos que NO ASISTEN
+                                                            </p>
+                                                            {tomorrowSchedule.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').map((item, idx) => (
+                                                                <div key={`absent-${idx}`} className="bg-red-50 p-4 rounded-2xl border border-red-100 flex items-start gap-4 ring-1 ring-red-50/50 shadow-sm">
+                                                                    <div className="bg-red-600 px-2 py-1 rounded-lg text-[10px] font-black text-white shrink-0 uppercase">
+                                                                        No Asiste
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="font-bold text-red-900 text-sm mb-1">{item.group}</p>
+                                                                        {item.notes && (
+                                                                            <div className="flex items-start gap-1.5 text-[10px] text-red-600">
+                                                                                <FileText className="w-3 h-3 mt-0.5 shrink-0" />
+                                                                                <span className="italic font-bold">{item.notes}</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    <div className="space-y-2">
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                                            <Info className="w-4 h-4" />
+                                                            Otras Novedades
+                                                        </p>
+                                                        {tomorrowSchedule.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').length > 0 ? (
+                                                            tomorrowSchedule.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').map((item, idx) => (
+                                                                <div key={`note-${idx}`} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4 shadow-sm">
+                                                                    <div className="bg-white px-2 py-1 rounded-lg border border-amber-200 text-[10px] font-black text-amber-600 shrink-0 uppercase">
+                                                                        {item.time?.split(' - ')[0] || item.time_start}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="font-bold text-gray-900 text-sm mb-1">{item.group}</p>
+                                                                        {item.notes && (
+                                                                            <div className="flex items-start gap-1.5 text-[10px] text-amber-600">
+                                                                                <FileText className="w-3 h-3 mt-0.5 shrink-0" />
+                                                                                <span className="italic font-medium">{item.notes}</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            (tomorrowSchedule.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length === 0 && tomorrowSchedule.filter(i => i.notes).length === 0) && (
+                                                                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
+                                                                    <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                                                    <p className="text-xs font-bold text-gray-500">Sin cambios reportados</p>
+                                                                    <p className="text-[10px] text-gray-400 italic">Todos los grupos ingresan en su horario normal.</p>
+                                                                </div>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-10">
+                                                    <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-inner">
+                                                        <Clock className="w-8 h-8 text-gray-400" />
+                                                    </div>
+                                                    <h4 className="font-black text-gray-900 mb-1">Sin Horario</h4>
+                                                    <p className="text-[10px] text-gray-400 font-medium max-w-[180px] mx-auto">Aún no se ha publicado el horario de mañana en el sistema.</p>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </>
                             ) : (
-                                <div className="text-center py-10">
-                                    <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-inner">
-                                        <Clock className="w-8 h-8 text-gray-400" />
-                                    </div>
-                                    <h4 className="font-black text-gray-900 mb-1">Sin Horario</h4>
-                                    <p className="text-[10px] text-gray-400 font-medium max-w-[180px] mx-auto">Aún no se ha publicado el horario de mañana en el sistema.</p>
+                                <div className="space-y-6">
+                                    {isWeeklySearching ? (
+                                        <div className="text-center py-20">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                            <p className="text-xs text-gray-500 mt-2 font-medium">Cargando consolidado semanal...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-6">
+                                            {(() => {
+                                                const day = weeklyNotifData[selectedDayInWeek];
+                                                if (!day) return null;
+                                                const news = day.items.filter((i: any) => i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE');
+
+                                                if (news.length === 0) {
+                                                    return (
+                                                        <div className="bg-gray-50 p-10 rounded-3xl border border-gray-100 text-center animate-in fade-in duration-300">
+                                                            <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
+                                                            <h4 className="font-black text-gray-900 mb-1">Sin Novedades</h4>
+                                                            <p className="text-[10px] text-gray-400 italic">No hay cambios reportados para el {day.label.split(',')[0]}.</p>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-300">
+                                                        <div className="flex items-center gap-2 border-l-4 border-blue-600 pl-3 py-1 bg-blue-50/30 rounded-r-xl">
+                                                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">{day.label}</p>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {news.map((item: any, i: number) => (
+                                                                <div key={i} className={`p-3 rounded-2xl border flex items-start gap-3 shadow-sm ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
+                                                                    <div className={`${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-600 text-white' : 'bg-blue-50 text-blue-600 border border-blue-100'} px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase shrink-0`}>
+                                                                        {item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'No Asiste' : (item.time?.split(' - ')[0] || item.time_start)}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className={`font-black text-[11px] ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-900' : 'text-gray-900'}`}>{item.group}</p>
+                                                                        {item.notes && <p className={`text-[9px] font-medium italic mt-0.5 line-clamp-1 ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-600' : 'text-gray-500'}`}>{item.notes}</p>}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
 
-                        <div className="p-4 bg-gray-50 border-t border-gray-100">
+                        <div className="p-4 bg-gray-50 border-t border-gray-100 shrink-0">
                             <button
-                                onClick={() => setNotifModalOpen(false)}
+                                onClick={() => {
+                                    setNotifModalOpen(false);
+                                    setSearchResult(null);
+                                    setSelectedDate('');
+                                }}
                                 className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg hover:bg-black transition-all active:scale-[0.98]"
                             >
                                 Entendido
