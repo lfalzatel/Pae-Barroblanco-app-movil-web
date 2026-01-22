@@ -1,7 +1,7 @@
 'use client';
 
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import ScheduleModal from '../../components/ScheduleModal';
 import WeeklyScheduleModal from '../../components/WeeklyScheduleModal';
 import { useRouter } from 'next/navigation';
@@ -9,8 +9,6 @@ import { supabase } from '../../lib/supabase';
 import { Usuario, calcularEstadisticasHoy } from '../data/demoData';
 import {
   Users,
-  UploadCloud,
-  FileSpreadsheet,
   CheckCircle,
   XCircle,
   UserX,
@@ -28,9 +26,7 @@ import * as XLSX from 'xlsx';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [usuario, setUsuario] = useState<any | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [notif, setNotif] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
   // Estados para Modal de Detalle
@@ -171,94 +167,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
 
-    setUploading(true);
-    setNotif(null);
-
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData: any[] = XLSX.utils.sheet_to_json(firstSheet);
-
-          if (jsonData.length === 0) {
-            throw new Error('El archivo está vacío');
-          }
-
-          // Validar columnas necesarias (Nombres, Apellidos, Matricula, Grado, Grupo, Sede)
-          const firstRow = jsonData[0];
-          const hasRequired = ['Apellidos', 'Nombres', 'Matrícula', 'Grado', 'Grupo', 'Sede'].every(col =>
-            Object.keys(firstRow).some(key => key.toLowerCase().includes(col.toLowerCase()))
-          );
-
-          if (!hasRequired) {
-            throw new Error('El archivo no tiene las columnas requeridas: Apellidos, Nombres, Matrícula, Grado, Grupo, Sede');
-          }
-
-          const studentsToUpsert = jsonData.map(row => {
-            // Buscar claves ignorando mayúsculas/minúsculas y tildes
-            const findKey = (name: string) => Object.keys(row).find(k =>
-              k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") ===
-              name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-            ) || name;
-
-            const apellidos = row[findKey('Apellidos')] || '';
-            const nombres = row[findKey('Nombres')] || '';
-            const matricula = String(row[findKey('Matrícula')] || '');
-            const grado = String(row[findKey('Grado')] || '');
-            const grupo = String(row[findKey('Grupo')] || '');
-            const sede = String(row[findKey('Sede')] || '').trim();
-
-            return {
-              nombre: `${apellidos.toUpperCase()} ${nombres.toUpperCase()}`.trim(),
-              matricula,
-              grado,
-              grupo,
-              sede: sede.charAt(0).toUpperCase() + sede.slice(1).toLowerCase()
-            };
-          }).filter(s => s.matricula && s.nombre);
-
-          // Subida masiva por lotes (de a 100 para evitar límites)
-          const batchSize = 100;
-          let errors = 0;
-
-          for (let i = 0; i < studentsToUpsert.length; i += batchSize) {
-            const batch = studentsToUpsert.slice(i, i + batchSize);
-            const { error: upsertError } = await supabase
-              .from('estudiantes')
-              .upsert(batch, { onConflict: 'matricula' });
-
-            if (upsertError) {
-              console.error('Error in batch:', upsertError);
-              errors++;
-            }
-          }
-
-          if (errors === 0) {
-            setNotif({ type: 'success', msg: `¡Éxito! Se procesaron ${studentsToUpsert.length} estudiantes correctamente.` });
-            fetchStats();
-          } else {
-            setNotif({ type: 'error', msg: 'Se procesaron algunos datos pero hubo errores en la base de datos.' });
-          }
-        } catch (err: any) {
-          setNotif({ type: 'error', msg: err.message || 'Error al procesar el Excel' });
-        } finally {
-          setUploading(false);
-          if (fileInputRef.current) fileInputRef.current.value = '';
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    } catch (error) {
-      setUploading(false);
-      setNotif({ type: 'error', msg: 'Error al leer el archivo' });
-    }
-  };
 
   useEffect(() => {
     // Escuchar cambios en tiempo real en la tabla de asistencia
@@ -600,34 +509,7 @@ export default function DashboardPage() {
           </div>
         </button>
 
-        {usuario?.rol === 'admin' && (
-          <>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              accept=".xlsx, .xls"
-              className="hidden"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className={`bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl py-4 px-2 flex flex-col md:flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-emerald-200 transition-all active:scale-95 group ${uploading ? 'opacity-70 cursor-wait' : ''}`}
-            >
-              <div className="bg-white/20 p-2 rounded-xl group-hover:scale-110 transition-transform">
-                {uploading ? (
-                  <div className="w-6 h-6 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <FileSpreadsheet className="w-6 h-6" />
-                )}
-              </div>
-              <div className="flex flex-col items-center md:items-start text-center md:text-left">
-                <span className="text-sm md:text-base leading-none">{uploading ? 'Cargando...' : 'Cargar Excel'}</span>
-                <span className="text-[10px] opacity-80 font-medium md:mt-1">Importar base de datos</span>
-              </div>
-            </button>
-          </>
-        )}
+
       </div>
 
 

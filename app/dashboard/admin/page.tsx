@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import {
@@ -14,7 +14,8 @@ import {
     School,
     CheckCircle,
     UserX,
-    Database
+    Database,
+    UploadCloud
 } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
@@ -71,6 +72,85 @@ export default function AdminPage() {
             console.error('Error fetching data:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+
+        try {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData: any[] = XLSX.utils.sheet_to_json(firstSheet);
+
+                    if (jsonData.length === 0) throw new Error('El archivo está vacío');
+
+                    // Validar columnas
+                    const firstRow = jsonData[0];
+                    const hasRequired = ['Apellidos', 'Nombres', 'Matrícula', 'Grado', 'Grupo', 'Sede'].every(col =>
+                        Object.keys(firstRow).some(key => key.toLowerCase().includes(col.toLowerCase()))
+                    );
+
+                    if (!hasRequired) throw new Error('Faltan columnas requeridas (Apellidos, Nombres, Matrícula, Grado, Grupo, Sede)');
+
+                    const studentsToUpsert = jsonData.map(row => {
+                        const findKey = (name: string) => Object.keys(row).find(k =>
+                            k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") ===
+                            name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                        ) || name;
+
+                        const apellidos = row[findKey('Apellidos')] || '';
+                        const nombres = row[findKey('Nombres')] || '';
+                        const matricula = String(row[findKey('Matrícula')] || '');
+                        const grado = String(row[findKey('Grado')] || '');
+                        const grupo = String(row[findKey('Grupo')] || '');
+                        const sede = String(row[findKey('Sede')] || '').trim();
+
+                        return {
+                            nombre: `${apellidos.toUpperCase()} ${nombres.toUpperCase()}`.trim(),
+                            matricula,
+                            grado,
+                            grupo,
+                            sede: sede.charAt(0).toUpperCase() + sede.slice(1).toLowerCase()
+                        };
+                    }).filter(s => s.matricula && s.nombre);
+
+                    // Batch upsert
+                    const batchSize = 100;
+                    let errors = 0;
+                    for (let i = 0; i < studentsToUpsert.length; i += batchSize) {
+                        const batch = studentsToUpsert.slice(i, i + batchSize);
+                        const { error: upsertError } = await supabase.from('estudiantes').upsert(batch, { onConflict: 'matricula' });
+                        if (upsertError) errors++;
+                    }
+
+                    if (errors === 0) {
+                        alert(`¡Éxito! Se procesaron ${studentsToUpsert.length} estudiantes.`);
+                        fetchData();
+                    } else {
+                        alert('Se procesaron datos con algunos errores.');
+                    }
+                } catch (err: any) {
+                    alert(err.message || 'Error al procesar el Excel');
+                } finally {
+                    setUploading(false);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        } catch (error) {
+            setUploading(false);
+            alert('Error al leer el archivo');
         }
     };
 
@@ -366,6 +446,30 @@ export default function AdminPage() {
                                         <div className="text-left">
                                             <div className="text-sm">GENERAR RESPALDO COMPLETO</div>
                                             <div className="text-[10px] opacity-70 font-normal">Estudiantes, Grupos y Horarios (.xlsx)</div>
+                                        </div>
+                                    </button>
+
+                                    {/* Importar Excel */}
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleFileUpload}
+                                        accept=".xlsx, .xls"
+                                        className="hidden"
+                                    />
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploading}
+                                        className={`w-full bg-white text-emerald-600 hover:bg-emerald-50 px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-colors shadow-lg ${uploading ? 'opacity-50 cursor-wait' : ''}`}
+                                    >
+                                        {uploading ? (
+                                            <div className="w-6 h-6 border-2 border-emerald-600/30 border-t-emerald-600 rounded-full animate-spin" />
+                                        ) : (
+                                            <UploadCloud className="w-6 h-6" />
+                                        )}
+                                        <div className="text-left">
+                                            <div className="text-sm">{uploading ? 'PROCESANDO...' : 'CARGAR BASE DE DATOS'}</div>
+                                            <div className="text-[10px] opacity-70 font-normal">Importar desde Excel (.xlsx)</div>
                                         </div>
                                     </button>
                                 </div>
