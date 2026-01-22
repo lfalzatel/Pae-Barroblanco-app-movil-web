@@ -463,38 +463,38 @@ export default function HorarioPage() {
                     </div>
 
                     {/* Toolbar Container */}
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4 mt-2 relative z-20">
+                    <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2 mt-2 relative z-20">
 
                         {/* ROW 1: Toggle & Actions */}
-                        <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center justify-between gap-2">
                             {/* Left: View Toggle */}
                             <div className="bg-gray-100 p-1 rounded-xl flex items-center shrink-0">
                                 <button
                                     onClick={() => setViewMode('day')}
-                                    className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${viewMode === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all ${viewMode === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
                                     Día
                                 </button>
                                 <button
                                     onClick={() => setViewMode('week')}
-                                    className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${viewMode === 'week' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all ${viewMode === 'week' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
                                     Semana
                                 </button>
                             </div>
 
                             {/* Right: Actions (Save) */}
-                            <div className="flex items-center gap-4">
-                                <span className="text-[10px] font-bold text-gray-300 hidden sm:inline-block text-right leading-tight max-w-[100px]">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-bold text-gray-300 hidden sm:inline-block text-right leading-tight max-w-[80px]">
                                     Cambios sin guardar
                                 </span>
                                 <button
                                     onClick={handleSave}
                                     disabled={saving || !Object.keys(assignments).length}
-                                    className="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-lg font-bold shadow-lg shadow-gray-200 transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none"
+                                    className="bg-gray-900 hover:bg-black text-white px-3 py-1.5 rounded-lg font-bold shadow-lg shadow-gray-200 transition-all flex items-center gap-2 disabled:opacity-50 disabled:transform-none"
                                 >
-                                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                    <span className="text-sm tracking-wide">Guardar</span>
+                                    {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                                    <span className="text-xs tracking-wide">Guardar</span>
                                 </button>
                             </div>
                         </div>
@@ -507,18 +507,18 @@ export default function HorarioPage() {
                                     <div className="relative">
                                         <button
                                             onClick={() => setShowCalendar(!showCalendar)}
-                                            className="flex items-center gap-3 hover:bg-gray-50 px-6 py-2 rounded-xl transition-all group border border-transparent hover:border-gray-100"
+                                            className="flex items-center gap-2 hover:bg-gray-50 px-4 py-1.5 rounded-xl transition-all group border border-transparent hover:border-gray-100"
                                         >
-                                            <div className="bg-blue-50 p-2 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors border border-blue-50">
-                                                <CalendarIcon className="w-6 h-6" />
+                                            <div className="bg-blue-50 p-1.5 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors border border-blue-50">
+                                                <CalendarIcon className="w-4 h-4" />
                                             </div>
                                             <div className="text-left">
-                                                <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none mb-1.5">EDITANDO</p>
-                                                <div className="flex items-center gap-2">
-                                                    <p className="text-lg font-black text-[#0A0D14] leading-none">
+                                                <p className="text-[8px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none mb-1">EDITANDO</p>
+                                                <div className="flex items-center gap-1.5">
+                                                    <p className="text-sm font-black text-[#0A0D14] leading-none">
                                                         {selectedDate ? formatDateLabel(selectedDate) : 'Cargando...'}
                                                     </p>
-                                                    <ChevronDown className="w-4 h-4 text-gray-300" />
+                                                    <ChevronDown className="w-3 h-3 text-gray-300" />
                                                 </div>
                                             </div>
                                         </button>
