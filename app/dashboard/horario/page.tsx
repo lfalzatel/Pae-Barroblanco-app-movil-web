@@ -454,7 +454,7 @@ export default function HorarioPage() {
                                 <h1 className="text-xl lg:text-3xl font-black text-gray-900 tracking-tight">Tablero de Horarios</h1>
                                 <button
                                     onClick={() => setShowInstructions(true)}
-                                    className="w-10 h-10 border-2 border-blue-100 bg-blue-50/30 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-100 transition-all shadow-sm"
+                                    className="w-10 h-10 border-2 border-blue-100 bg-blue-50/30 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-100 transition-all shadow-sm animate-pulse"
                                 >
                                     <Info className="w-6 h-6" />
                                 </button>
@@ -463,7 +463,7 @@ export default function HorarioPage() {
                     </div>
 
                     {/* Toolbar Container */}
-                    <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2 mt-2 relative z-20">
+                    <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2 mt-1 relative z-20">
 
                         {/* ROW 1: Toggle & Actions */}
                         <div className="flex items-center justify-between gap-2">
