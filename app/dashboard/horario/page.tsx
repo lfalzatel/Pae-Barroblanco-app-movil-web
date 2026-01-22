@@ -172,11 +172,13 @@ export default function HorarioPage() {
 
             // 2. Fetch Current Schedule (Day or Week)
             if (viewMode === 'day') {
-                const { data: schedData } = await supabase
+                const { data: schedArray } = await supabase
                     .from('schedules')
                     .select('items')
                     .eq('date', selectedDate)
-                    .maybeSingle();
+                    .limit(1);
+
+                const schedData = schedArray?.[0];
 
                 const currentAssignments: Record<string, AssignedSlot[]> = {};
                 const absent: AssignedSlot[] = [];
@@ -712,8 +714,8 @@ export default function HorarioPage() {
 
                             {/* Right: Sidebar (Col 4 - Groups & Absent) */}
                             <div className="col-span-4 flex flex-col gap-2 lg:gap-4 overflow-hidden h-full">
-                                {/* Groups List */}
-                                <div className="shrink-0 max-h-[60vh] h-auto min-h-[200px] bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+                                {/* Groups List - Allow shrinking but keep min height */}
+                                <div className="shrink-1 flex-1 min-h-[150px] bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
                                     {(() => {
                                         // Calculate filtered groups outside the render to use the count
                                         const filteredAvailableGroups = availableGroups.filter(group => {
@@ -769,8 +771,8 @@ export default function HorarioPage() {
                                     })()}
                                 </div>
 
-                                {/* Absent Groups Box */}
-                                <div className="flex-1 bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden shrink-0">
+                                {/* Absent Groups Box - Fixed height or flex-none to ensure visibility */}
+                                <div className="flex-none h-auto max-h-[40%] bg-white rounded-2xl lg:rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden shrink-0">
                                     <div className="p-4 bg-white border-b border-gray-100 flex flex-col gap-2 shrink-0">
                                         <div className="flex items-center justify-between w-full">
                                             <div className="flex items-center gap-2">
