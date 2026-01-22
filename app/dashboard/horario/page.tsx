@@ -125,18 +125,24 @@ export default function HorarioPage() {
     }, []);
 
     const checkAccess = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
+        try {
+            const { data: { user }, error } = await supabase.auth.getUser();
+            if (error || !user) {
+                console.error('Auth Error:', error);
+                await supabase.auth.signOut();
+                router.push('/');
+                return;
+            }
+
+            const userRole = user.user_metadata?.rol;
+            if (userRole !== 'admin' && userRole !== 'coordinador_pae') {
+                router.push('/dashboard');
+                return;
+            }
+            setRole(userRole);
+        } catch (err) {
             router.push('/');
-            return;
         }
-        const { data: { user } } = await supabase.auth.getUser();
-        const userRole = user?.user_metadata?.rol;
-        if (userRole !== 'admin' && userRole !== 'coordinador_pae') {
-            router.push('/dashboard');
-            return;
-        }
-        setRole(userRole);
     };
 
     const initData = async () => {
@@ -170,7 +176,7 @@ export default function HorarioPage() {
                     .from('schedules')
                     .select('items')
                     .eq('date', selectedDate)
-                    .single();
+                    .maybeSingle();
 
                 const currentAssignments: Record<string, AssignedSlot[]> = {};
                 const absent: AssignedSlot[] = [];
