@@ -478,7 +478,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-3 mb-6">
         <button
           onClick={() => setScheduleModalOpen(true)}
           className="bg-orange-500 hover:bg-orange-600 text-white rounded-2xl py-4 px-2 flex flex-col md:flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-orange-200 transition-all active:scale-95 group"
