@@ -546,6 +546,82 @@ export default function AdminPage() {
                     </div>
                 </div>
             </div>
+                ))}
         </div>
+            
+            {/* Modal de Carga Masiva (Año Nuevo) */ }
+    {
+        activeTab === 'backup' && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <UploadCloud className="w-5 h-5 text-blue-600" />
+                    Carga Masiva y Cambio de Año
+                </h2>
+
+                <p className="text-sm text-gray-600 mb-6">
+                    Sube el archivo de listas de estudiantes (Excel con múltiples hojas) para actualizar el sistema al nuevo año escolar.
+                    El sistema usará la <strong>Matrícula</strong> para identificar a los estudiantes y preservar su historial.
+                </p>
+
+                <div className="space-y-6 max-w-xl">
+                    <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                        <label className="flex items-start gap-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                className="mt-1 w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                checked={inactivateAll}
+                                onChange={e => setInactivateAll(e.target.checked)}
+                            />
+                            <div>
+                                <span className="font-bold text-gray-900 block text-sm">Inactivar a todos los estudiantes actuales</span>
+                                <span className="text-xs text-orange-800 mt-1 block">
+                                    Recomendado para inicio de año. Todos los estudiantes pasarán a estado "Inactivo".
+                                    Solo se reactivarán los que aparezcan en el nuevo archivo excel.
+                                </span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="block text-sm font-bold text-gray-700">Seleccionar Archivo Excel (.xlsx)</label>
+                        <input
+                            type="file"
+                            accept=".xlsx, .xls"
+                            onChange={handleBulkUpload}
+                            disabled={uploading}
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all border border-gray-200 rounded-xl cursor-pointer"
+                        />
+                    </div>
+
+                    {uploading && (
+                        <div className="space-y-2 animate-in fade-in duration-300">
+                            <div className="flex justify-between text-xs font-bold text-gray-500">
+                                <span>Procesando...</span>
+                                <span>{importProgress}%</span>
+                            </div>
+                            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-blue-600 transition-all duration-300 rounded-full"
+                                    style={{ width: `${importProgress}%` }}
+                                />
+                            </div>
+                            <p className="text-xs text-center text-gray-400 italic">No cierres esta ventana</p>
+                        </div>
+                    )}
+
+                    {importLog.length > 0 && (
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 max-h-40 overflow-y-auto text-xs font-mono space-y-1">
+                            {importLog.map((log, i) => (
+                                <div key={i} className={log.includes('Error') ? 'text-red-600 font-bold' : 'text-gray-600'}>
+                                    {log}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        )
+    }
+        </div >
     );
 }
