@@ -175,7 +175,8 @@ export default function HorarioPage() {
                 }
             });
 
-            const uniqueGroups = Array.from(new Set(estData?.map(e => e.grupo) || []));
+            const uniqueGroups = Array.from(new Set(estData?.map(e => e.grupo) || []))
+                .filter(g => !g.includes('2025')); // Quick fix: Exclude legacy groups
             const processed = processGroups(uniqueGroups).map(g => ({
                 ...g,
                 studentCount: counts[g.label] || 0,

@@ -62,6 +62,16 @@ export default function AdminPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
 
+    useEffect(() => {
+        const checkAccess = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.user_metadata?.rol !== 'admin') {
+                router.push('/dashboard');
+            }
+        };
+        checkAccess();
+    }, [router]);
+
     // UI State
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const [confirmModal, setConfirmModal] = useState<ConfirmationModalProps>({
