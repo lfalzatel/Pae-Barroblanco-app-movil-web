@@ -150,7 +150,8 @@ export default function ReportesPage() {
         // 1. Consultar Total Estudiantes (filtrado por sede)
         let queryEstudiantes = supabase
           .from('estudiantes')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true })
+          .not('grupo', 'ilike', '%2025%');
 
         if (sedeFilter !== 'todas') {
           queryEstudiantes = queryEstudiantes.eq('sede', sedeMap[sedeFilter] || 'Principal');
@@ -193,7 +194,7 @@ export default function ReportesPage() {
         if (errorAsist) throw errorAsist;
 
         // 3. Consultar Inactivos y Datos de Grupos
-        let queryEst = supabase.from('estudiantes').select('id, nombre, grupo, estado');
+        let queryEst = supabase.from('estudiantes').select('id, nombre, grupo, estado').not('grupo', 'ilike', '%2025%');
         if (sedeFilter !== 'todas') {
           queryEst = queryEst.eq('sede', sedeMap[sedeFilter] || 'Principal');
         }

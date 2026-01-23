@@ -144,6 +144,7 @@ export default function GestionPage() {
         let query = supabase
           .from('estudiantes')
           .select('*')
+          .not('grupo', 'ilike', '%2025%')
           .order('nombre', { ascending: true });
 
         if (sedeFilter !== 'todas') {

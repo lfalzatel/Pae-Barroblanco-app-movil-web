@@ -168,14 +168,16 @@ function RegistroContent() {
       try {
         const { data, error } = await supabase
           .from('estudiantes')
-          .select('sede');
+          .select('sede, grupo');
 
         if (error) throw error;
 
+        const validData = (data || []).filter(e => !e.grupo || !e.grupo.includes('2025')); // Filter 2025
+
         const counts = {
-          principal: data.filter(e => e.sede === 'Principal').length,
-          primaria: data.filter(e => e.sede === 'Primaria').length,
-          maria: data.filter(e => e.sede === 'Maria Inmaculada').length,
+          principal: validData.filter(e => e.sede === 'Principal').length,
+          primaria: validData.filter(e => e.sede === 'Primaria').length,
+          maria: validData.filter(e => e.sede === 'Maria Inmaculada').length,
         };
 
         setCountsBySede(counts);
