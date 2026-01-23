@@ -137,13 +137,12 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                         </div>
                         <div className="flex items-center gap-2">
                             {/* Sede Selector Dropdown */}
-                            <div className="relative hidden sm:block">
+                            <div className="relative block">
                                 <select
                                     value={selectedSede}
                                     onChange={(e) => setSelectedSede(e.target.value)}
                                     className="appearance-none bg-cyan-50 pl-2 pr-6 py-1 rounded-lg text-[10px] font-bold text-cyan-700 border border-transparent hover:bg-white hover:border-cyan-100 focus:outline-none cursor-pointer uppercase tracking-tight"
                                 >
-                                    <option value="Todas">Todas</option>
                                     <option value="Principal">Principal</option>
                                     <option value="Primaria">Primaria</option>
                                     <option value="Maria Inmaculada">M. Inmaculada</option>
