@@ -840,32 +840,34 @@ export default function AdminPage() {
                         )}
 
                         {activeTab === 'status' && (
-                            <>
-                                <h2 className="text-lg font-bold mb-2 flex items-center gap-2">
-                                    <ShieldAlert className="w-5 h-5" />
-                                    Gestión de Estados (Activo/Inactivo)
-                                </h2>
-                                <p className="text-blue-100 text-sm mb-6">Cambia el estado de los estudiantes seleccionados rápidamente.</p>
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                                <div className="text-left">
+                                    <h2 className="text-lg font-bold flex items-center gap-2">
+                                        <ShieldAlert className="w-5 h-5" />
+                                        Gestión de Estados
+                                    </h2>
+                                    <p className="text-blue-100 text-xs opacity-80">Actualiza el estado de los {selectedStudents.length} estudiantes seleccionados.</p>
+                                </div>
 
-                                <div className="flex gap-4">
+                                <div className="flex gap-2 w-full md:w-auto">
                                     <button
                                         onClick={() => handleToggleStatus('activo')}
                                         disabled={selectedStudents.length === 0}
-                                        className="flex-1 bg-green-500 hover:bg-green-400 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors shadow-lg"
+                                        className="flex-1 md:flex-none bg-green-500 hover:bg-green-400 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors shadow-sm whitespace-nowrap"
                                     >
-                                        <CheckCircle className="w-5 h-5" />
-                                        Marcar ACTIVOS ({selectedStudents.length})
+                                        <CheckCircle className="w-4 h-4" />
+                                        Marcar Activos
                                     </button>
                                     <button
                                         onClick={() => handleToggleStatus('inactivo')}
                                         disabled={selectedStudents.length === 0}
-                                        className="flex-1 bg-red-500 hover:bg-red-400 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors shadow-lg"
+                                        className="flex-1 md:flex-none bg-red-500 hover:bg-red-400 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors shadow-sm whitespace-nowrap"
                                     >
-                                        <UserX className="w-5 h-5" />
-                                        Marcar INACTIVOS ({selectedStudents.length})
+                                        <UserX className="w-4 h-4" />
+                                        Marcar Inactivos
                                     </button>
                                 </div>
-                            </>
+                            </div>
                         )}
 
                         {activeTab === 'sede' && (

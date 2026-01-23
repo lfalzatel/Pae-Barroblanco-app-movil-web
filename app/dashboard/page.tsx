@@ -481,32 +481,22 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <button
           onClick={() => setScheduleModalOpen(true)}
-          className="bg-orange-500 hover:bg-orange-600 text-white rounded-2xl py-4 px-2 flex flex-col md:flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-orange-200 transition-all active:scale-95 group"
+          className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl py-3 px-4 flex flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-orange-200 transition-all active:scale-95 group"
         >
-          <div className="bg-white/20 p-2 rounded-xl group-hover:scale-110 transition-transform">
-            <Calendar className="w-6 h-6" />
+          <div className="bg-white/20 p-1.5 rounded-lg group-hover:rotate-12 transition-transform">
+            <Calendar className="w-5 h-5" />
           </div>
-          <div className="flex flex-col items-center md:items-start text-center md:text-left">
-            <span className="text-sm md:text-base leading-none">Horario de mañana</span>
-            <span className="text-[10px] opacity-80 font-medium md:mt-1">
-              Ver novedades diarias
-            </span>
-          </div>
+          <span className="text-sm md:text-base leading-none">Horario Mañana</span>
         </button>
 
         <button
           onClick={() => setWeeklyModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl py-4 px-2 flex flex-col md:flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 group"
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 px-4 flex flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 group"
         >
-          <div className="bg-white/20 p-2 rounded-xl group-hover:scale-110 transition-transform">
-            <FileText className="w-6 h-6" />
+          <div className="bg-white/20 p-1.5 rounded-lg group-hover:rotate-12 transition-transform">
+            <FileText className="w-5 h-5" />
           </div>
-          <div className="flex flex-col items-center md:items-start text-center md:text-left">
-            <span className="text-sm md:text-base leading-none">Horario de la semana</span>
-            <span className="text-[10px] opacity-80 font-medium md:mt-1">
-              Ver cuadro semanal
-            </span>
-          </div>
+          <span className="text-sm md:text-base leading-none">Horario Semanal</span>
         </button>
 
 
