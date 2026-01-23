@@ -487,7 +487,7 @@ export default function DashboardLayout({
                                     </div>
                                     <div>
                                         <h3 className="font-black text-lg leading-tight">Novedades</h3>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">{activeNotifTab === 'daily' ? 'Diario' : 'Semanal'}</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">{activeNotifTab === 'daily' ? tomorrowDateLabel : 'Consolidado Semanal'}</p>
                                     </div>
                                 </div>
                                 <button onClick={() => setNotifModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
