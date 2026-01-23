@@ -25,7 +25,8 @@ import {
     RefreshCcw,
     ChevronLeft as ChevronLeftIcon,
     ChevronRight as ChevronRightIcon,
-    Download
+    Download,
+    School
 } from 'lucide-react';
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
 
@@ -495,18 +496,21 @@ export default function DashboardLayout({
                                 </button>
                             </div>
 
-                            {/* Sede Selector */}
-                            <div className="relative">
+                            {/* Sede Selector (Premium) */}
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <School className="w-4 h-4 text-white/70" />
+                                </div>
                                 <select
                                     value={selectedSede}
                                     onChange={(e) => setSelectedSede(e.target.value)}
-                                    className="w-full appearance-none bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl py-2 pl-3 pr-8 font-bold text-xs uppercase tracking-tight shadow-sm cursor-pointer focus:outline-none transition-colors"
+                                    className="w-full appearance-none bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl py-2.5 pl-10 pr-8 font-bold text-xs uppercase tracking-tight shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
                                 >
-                                    <option value="Principal" className="text-gray-900">Sede Principal</option>
-                                    <option value="Primaria" className="text-gray-900">Sede Primaria</option>
-                                    <option value="Maria Inmaculada" className="text-gray-900">Sede M. Inmaculada</option>
+                                    <option value="Principal" className="text-gray-900 font-bold">Sede Principal</option>
+                                    <option value="Primaria" className="text-gray-900 font-bold">Sede Primaria</option>
+                                    <option value="Maria Inmaculada" className="text-gray-900 font-bold">Sede M. Inmaculada</option>
                                 </select>
-                                <ChevronDown className="w-3.5 h-3.5 text-white/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <ChevronDown className="w-4 h-4 text-white/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none group-hover:rotate-180 transition-transform" />
                             </div>
                         </div>
 
@@ -530,14 +534,16 @@ export default function DashboardLayout({
                             {activeNotifTab === 'daily' ? (
                                 <>
                                     {/* Enhanced Date Selector with Collapsible MiniCalendar */}
-                                    <div className="mb-6 bg-gray-50/50 rounded-3xl border border-gray-100 overflow-hidden transition-all duration-300">
+                                    <div className="mb-6 bg-gray-50/80 rounded-3xl border border-gray-200 overflow-hidden transition-all duration-300 shadow-sm">
                                         <button
                                             onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-                                            className="w-full p-4 flex items-center justify-between hover:bg-gray-100/50 transition-colors"
+                                            className="w-full p-4 flex items-center justify-between hover:bg-gray-100 transition-colors group"
                                         >
-                                            <div className="flex items-center gap-2">
-                                                <Calendar className="w-4 h-4 text-blue-600" />
-                                                <span className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em]">Consultar Fecha</span>
+                                            <div className="flex items-center gap-3">
+                                                <div className="bg-blue-100 p-2 rounded-xl group-hover:scale-110 transition-transform animate-pulse">
+                                                    <Calendar className="w-5 h-5 text-blue-600" />
+                                                </div>
+                                                <span className="text-[11px] font-black text-gray-900 uppercase tracking-[0.15em]">Consultar Fecha</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 {selectedDate && (
