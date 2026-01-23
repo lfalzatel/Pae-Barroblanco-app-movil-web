@@ -22,7 +22,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
     const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
-    const [selectedSede, setSelectedSede] = useState('Todas');
+    const [selectedSede, setSelectedSede] = useState('Principal');
 
     useEffect(() => {
         if (isOpen) {
