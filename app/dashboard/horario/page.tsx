@@ -33,7 +33,7 @@ export default function HorarioPage() {
     const [saving, setSaving] = useState(false);
     const [role, setRole] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
-    const [selectedSede, setSelectedSede] = useState('Todas');
+    const [selectedSede, setSelectedSede] = useState('Principal');
 
     // Initialize with "Smart Tomorrow" logic
     // If today is Friday/Saturday -> Default to Monday
@@ -504,7 +504,6 @@ export default function HorarioPage() {
                                         onChange={(e) => setSelectedSede(e.target.value)}
                                         className="appearance-none bg-gray-100 pl-3 pr-8 py-1.5 rounded-xl text-xs font-bold text-gray-700 border border-transparent hover:bg-white hover:border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
                                     >
-                                        <option value="Todas">Todas las Sedes</option>
                                         <option value="Principal">Sede Principal</option>
                                         <option value="Primaria">Sede Primaria</option>
                                         <option value="Maria Inmaculada">Sede Maria Inmaculada</option>
