@@ -59,6 +59,8 @@ export default function DashboardLayout({
     const [weeklyNotifData, setWeeklyNotifData] = useState<any[]>([]);
     const [isWeeklySearching, setIsWeeklySearching] = useState(false);
     const [selectedDayInWeek, setSelectedDayInWeek] = useState(0); // 0 = Mon, 4 = Fri
+    const [selectedSede, setSelectedSede] = useState('Principal');
+    const [groupSedeMap, setGroupSedeMap] = useState<Record<string, string>>({});
 
     const fetchScheduleForDate = async (dateStr: string) => {
         const { data } = await supabase
@@ -114,6 +116,23 @@ export default function DashboardLayout({
         newDate.setDate(newDate.getDate() + (offset * 7));
         setWeekStart(newDate);
     };
+
+    // Fetch Sede Map
+    useEffect(() => {
+        const fetchSedeMap = async () => {
+            const { data } = await supabase
+                .from('estudiantes')
+                .select('grupo, sede')
+                .eq('estado', 'activo');
+
+            const map: Record<string, string> = {};
+            data?.forEach((e: any) => {
+                if (e.grupo && e.sede) map[e.grupo] = e.sede;
+            });
+            setGroupSedeMap(map);
+        };
+        fetchSedeMap();
+    }, []);
 
     useEffect(() => {
         if (notifModalOpen && activeNotifTab === 'weekly') {
@@ -461,18 +480,34 @@ export default function DashboardLayout({
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setNotifModalOpen(false)}></div>
                     <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
                         <div className="p-6 bg-gradient-to-br from-blue-600 to-blue-700 text-white relative">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="bg-white/20 p-2 rounded-xl">
-                                    <Bell className="w-6 h-6" />
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-white/20 p-2 rounded-xl">
+                                        <Bell className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-black text-lg leading-tight">Novedades</h3>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">{activeNotifTab === 'daily' ? 'Diario' : 'Semanal'}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-black text-lg">Horario</h3>
-                                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">{activeNotifTab === 'daily' ? tomorrowDateLabel : 'Consolidado Semanal'}</p>
-                                </div>
+                                <button onClick={() => setNotifModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                    <X className="w-5 h-5" />
+                                </button>
                             </div>
-                            <button onClick={() => setNotifModalOpen(false)} className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full">
-                                <X className="w-5 h-5" />
-                            </button>
+
+                            {/* Sede Selector */}
+                            <div className="relative">
+                                <select
+                                    value={selectedSede}
+                                    onChange={(e) => setSelectedSede(e.target.value)}
+                                    className="w-full appearance-none bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl py-2 pl-3 pr-8 font-bold text-xs uppercase tracking-tight shadow-sm cursor-pointer focus:outline-none transition-colors"
+                                >
+                                    <option value="Principal" className="text-gray-900">Sede Principal</option>
+                                    <option value="Primaria" className="text-gray-900">Sede Primaria</option>
+                                    <option value="Maria Inmaculada" className="text-gray-900">Sede M. Inmaculada</option>
+                                </select>
+                                <ChevronDown className="w-3.5 h-3.5 text-white/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
                         </div>
 
                         {/* Tabs */}
@@ -579,17 +614,30 @@ export default function DashboardLayout({
 
                             {activeNotifTab === 'daily' ? (
                                 <>
-                                    {!isSearching && (tomorrowSchedule.length > 0 || (searchResult && searchResult.length > 0)) && (
-                                        <div className="mb-6 bg-blue-50/50 p-4 rounded-3xl border border-blue-100 flex items-center gap-4 animate-in fade-in duration-500">
-                                            <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-200">
-                                                <Calendar className="w-5 h-5 text-white" />
+                                    {!isSearching && (
+                                        (() => {
+                                            const filteredTomorrow = tomorrowSchedule.filter(i => {
+                                                const groupSede = groupSedeMap[i.group] || 'Principal';
+                                                return groupSede === selectedSede;
+                                            });
+                                            const filteredSearch = searchResult ? searchResult.filter(i => {
+                                                const groupSede = groupSedeMap[i.group] || 'Principal';
+                                                return groupSede === selectedSede;
+                                            }) : null;
+
+                                            return (filteredTomorrow.length > 0 || (filteredSearch && filteredSearch.length > 0));
+                                        })()
+                                    ) && (
+                                            <div className="mb-6 bg-blue-50/50 p-4 rounded-3xl border border-blue-100 flex items-center gap-4 animate-in fade-in duration-500">
+                                                <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-200">
+                                                    <Calendar className="w-5 h-5 text-white" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-black text-blue-900">Horario Publicado</h4>
+                                                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Revisa las novedades abajo</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h4 className="text-sm font-black text-blue-900">Horario Publicado</h4>
-                                                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Revisa las novedades abajo</p>
-                                            </div>
-                                        </div>
-                                    )}
+                                        )}
 
                                     {isSearching ? (
                                         <div className="text-center py-10">
@@ -601,8 +649,14 @@ export default function DashboardLayout({
                                             <div className="flex items-center justify-between mb-2">
                                                 <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest pl-1">Resultados para {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</p>
                                             </div>
-                                            {searchResult.filter((i: any) => i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length > 0 ? (
-                                                searchResult.filter((i: any) => i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').map((item: any, idx: number) => (
+                                            {searchResult.filter((i: any) => {
+                                                const groupSede = groupSedeMap[i.group] || 'Principal';
+                                                return groupSede === selectedSede && (i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE');
+                                            }).length > 0 ? (
+                                                searchResult.filter((i: any) => {
+                                                    const groupSede = groupSedeMap[i.group] || 'Principal';
+                                                    return groupSede === selectedSede && (i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE');
+                                                }).map((item: any, idx: number) => (
                                                     <div key={`search-${idx}`} className={`p-4 rounded-2xl border flex items-start gap-4 shadow-sm ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'}`}>
                                                         <div className={`${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-600' : 'bg-white border border-amber-200 text-amber-600'} px-2 py-1 rounded-lg text-[10px] font-black ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-white' : ''} shrink-0 uppercase`}>
                                                             {item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'No Asiste' : (item.time?.split(' - ')[0] || item.time_start)}
@@ -629,147 +683,170 @@ export default function DashboardLayout({
                                     ) : (
                                         <>
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-4">Novedades de Mañana</p>
-                                            {tomorrowSchedule.length > 0 ? (
-                                                <div className="space-y-4">
-                                                    {tomorrowSchedule.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length > 0 && (
-                                                        <div className="space-y-2">
-                                                            <p className="text-[10px] font-black text-red-500 uppercase tracking-widest pl-1 flex items-center gap-1">
-                                                                <X className="w-3 h-3" />
-                                                                Grupos que NO ASISTEN
-                                                            </p>
-                                                            {tomorrowSchedule.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').map((item, idx) => (
-                                                                <div key={`absent-${idx}`} className="bg-red-50 p-4 rounded-2xl border border-red-100 flex items-start gap-4 ring-1 ring-red-50/50 shadow-sm">
-                                                                    <div className="bg-red-600 px-2 py-1 rounded-lg text-[10px] font-black text-white shrink-0 uppercase">
-                                                                        No Asiste
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p className="font-bold text-red-900 text-sm mb-1">{item.group}</p>
-                                                                        {item.notes && (
-                                                                            <div className="flex items-start gap-1.5 text-[10px] text-red-600">
-                                                                                <FileText className="w-3 h-3 mt-0.5 shrink-0" />
-                                                                                <span className="italic font-bold">{item.notes}</span>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                            {(() => {
+                                                const filteredTomorrow = tomorrowSchedule.filter(i => {
+                                                    const groupSede = groupSedeMap[i.group] || 'Principal';
+                                                    return groupSede === selectedSede;
+                                                });
 
-                                                    <div className="space-y-2">
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-1">
-                                                            <Info className="w-4 h-4" />
-                                                            Otras Novedades
-                                                        </p>
-                                                        {tomorrowSchedule.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').length > 0 ? (
-                                                            tomorrowSchedule.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').map((item, idx) => (
-                                                                <div key={`note-${idx}`} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4 shadow-sm">
-                                                                    <div className="bg-white px-2 py-1 rounded-lg border border-amber-200 text-[10px] font-black text-amber-600 shrink-0 uppercase">
-                                                                        {item.time?.split(' - ')[0] || item.time_start}
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p className="font-bold text-gray-900 text-sm mb-1">{item.group}</p>
-                                                                        {item.notes && (
-                                                                            <div className="flex items-start gap-1.5 text-[10px] text-amber-600">
-                                                                                <FileText className="w-3 h-3 mt-0.5 shrink-0" />
-                                                                                <span className="italic font-medium">{item.notes}</span>
+                                                if (filteredTomorrow.length > 0) {
+                                                    return (
+                                                        <div className="space-y-4">
+                                                            {filteredTomorrow.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length > 0 && (
+                                                                <div className="space-y-2">
+                                                                    <p className="text-[10px] font-black text-red-500 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                                                        <X className="w-3 h-3" />
+                                                                        Grupos que NO ASISTEN
+                                                                    </p>
+                                                                    {filteredTomorrow.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').map((item, idx) => (
+                                                                        <div key={`absent-${idx}`} className="bg-red-50 p-4 rounded-2xl border border-red-100 flex items-start gap-4 ring-1 ring-red-50/50 shadow-sm">
+                                                                            <div className="bg-red-600 px-2 py-1 rounded-lg text-[10px] font-black text-white shrink-0 uppercase">
+                                                                                No Asiste
                                                                             </div>
-                                                                        )}
-                                                                    </div>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <p className="font-bold text-red-900 text-sm mb-1">{item.group}</p>
+                                                                                {item.notes && (
+                                                                                    <div className="flex items-start gap-1.5 text-[10px] text-red-600">
+                                                                                        <FileText className="w-3 h-3 mt-0.5 shrink-0" />
+                                                                                        <span className="italic font-bold">{item.notes}</span>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
-                                                            ))
-                                                        ) : (
-                                                            (tomorrowSchedule.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length === 0 && tomorrowSchedule.filter(i => i.notes).length === 0) && (
-                                                                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
-                                                                    <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                                                    <p className="text-xs font-bold text-gray-500">Sin cambios reportados</p>
-                                                                    <p className="text-[10px] text-gray-400 italic">Todos los grupos ingresan en su horario normal.</p>
-                                                                </div>
-                                                            )
-                                                        )}
-                                                    </div>
+                                                            )}
+
+                                                            <div className="space-y-2">
+                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                                                    <Info className="w-4 h-4" />
+                                                                    Otras Novedades
+                                                                </p>
+                                                                {filteredTomorrow.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').length > 0 ? (
+                                                                    filteredTomorrow.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').map((item, idx) => (
+                                                                        <div key={`note-${idx}`} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4 shadow-sm">
+                                                                            <div className="bg-white px-2 py-1 rounded-lg border border-amber-200 text-[10px] font-black text-amber-600 shrink-0 uppercase">
+                                                                                {item.time?.split(' - ')[0] || item.time_start}
+                                                                            </div>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <p className="font-bold text-gray-900 text-sm mb-1">{item.group}</p>
+                                                                                {item.notes && (
+                                                                                    <div className="flex items-start gap-1.5 text-[10px] text-amber-600">
+                                                                                        <FileText className="w-3 h-3 mt-0.5 shrink-0" />
+                                                                                        <span className="italic font-medium">{item.notes}</span>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))
+                                                                ) : (
+                                                                    (filteredTomorrow.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length === 0 && filteredTomorrow.filter(i => i.notes).length === 0) && (
+                                                                        <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
+                                                                            <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                                                            <p className="text-xs font-bold text-gray-500">Sin cambios reportados</p>
+                                                                            <p className="text-[10px] text-gray-400 italic">Todos los grupos ingresan en su horario normal.</p>
+                                                                        </div>
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                 </div>
-                                            ) : (
-                                                <div className="text-center py-10">
-                                                    <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-inner">
-                                                        <Clock className="w-8 h-8 text-gray-400" />
-                                                    </div>
-                                                    <h4 className="font-black text-gray-900 mb-1">Sin Horario</h4>
-                                                    <p className="text-[10px] text-gray-400 font-medium max-w-[180px] mx-auto">Aún no se ha publicado el horario de mañana en el sistema.</p>
-                                                </div>
+                                    );
+                                                } else {
+                                                    return (
+                                    <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
+                                        <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                        <p className="text-xs font-bold text-gray-500">Sin programación</p>
+                                        <p className="text-[10px] text-gray-400 italic">No hay horario publicado para {selectedSede} mañana.</p>
+                                    </div>
+                                    );
+                                                }
+                                            })()}
+                                    ) : (
+                                    <div className="text-center py-10">
+                                        <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-inner">
+                                            <Clock className="w-8 h-8 text-gray-400" />
+                                        </div>
+                                        <h4 className="font-black text-gray-900 mb-1">Sin Horario</h4>
+                                        <p className="text-[10px] text-gray-400 font-medium max-w-[180px] mx-auto">Aún no se ha publicado el horario de mañana en el sistema.</p>
+                                    </div>
                                             )}
-                                        </>
-                                    )}
                                 </>
+                            )}
+                        </>
+                        ) : (
+                        <div className="space-y-6">
+                            {isWeeklySearching ? (
+                                <div className="text-center py-20">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                    <p className="text-xs text-gray-500 mt-2 font-medium">Cargando consolidado semanal...</p>
+                                </div>
                             ) : (
                                 <div className="space-y-6">
-                                    {isWeeklySearching ? (
-                                        <div className="text-center py-20">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                                            <p className="text-xs text-gray-500 mt-2 font-medium">Cargando consolidado semanal...</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-6">
-                                            {(() => {
-                                                const day = weeklyNotifData[selectedDayInWeek];
-                                                if (!day) return null;
-                                                const news = day.items.filter((i: any) => i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE');
+                                    {(() => {
+                                        const day = weeklyNotifData[selectedDayInWeek];
+                                        if (!day) return null;
+                                        const news = day.items.filter((i: any) => {
+                                            const groupSede = groupSedeMap[i.group] || 'Principal';
+                                            return groupSede === selectedSede && (i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE');
+                                        });
 
-                                                if (news.length === 0) {
-                                                    return (
-                                                        <div className="bg-gray-50 p-10 rounded-3xl border border-gray-100 text-center animate-in fade-in duration-300">
-                                                            <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
-                                                            <h4 className="font-black text-gray-900 mb-1">Sin Novedades</h4>
-                                                            <p className="text-[10px] text-gray-400 italic">No hay cambios reportados para el {day.label.split(',')[0]}.</p>
-                                                        </div>
-                                                    );
-                                                }
+                                        if (news.length === 0) {
+                                            return (
+                                                <div className="bg-gray-50 p-10 rounded-3xl border border-gray-100 text-center animate-in fade-in duration-300">
+                                                    <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
+                                                    <h4 className="font-black text-gray-900 mb-1">Sin Novedades</h4>
+                                                    <p className="text-[10px] text-gray-400 italic">No hay cambios reportados para el {day.label.split(',')[0]}.</p>
+                                                </div>
+                                            );
+                                        }
 
-                                                return (
-                                                    <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-300">
-                                                        <div className="flex items-center gap-2 border-l-4 border-blue-600 pl-3 py-1 bg-blue-50/30 rounded-r-xl">
-                                                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">{day.label}</p>
+                                        return (
+                                            <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-300">
+                                                <div className="flex items-center gap-2 border-l-4 border-blue-600 pl-3 py-1 bg-blue-50/30 rounded-r-xl">
+                                                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">{day.label}</p>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {news.map((item: any, i: number) => (
+                                                        <div key={i} className={`p-3 rounded-2xl border flex items-start gap-3 shadow-sm ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
+                                                            <div className={`${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-600 text-white' : 'bg-blue-50 text-blue-600 border border-blue-100'} px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase shrink-0`}>
+                                                                {item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'No Asiste' : (item.time?.split(' - ')[0] || item.time_start)}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className={`font-black text-[11px] ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-900' : 'text-gray-900'}`}>{item.group}</p>
+                                                                {item.notes && <p className={`text-[9px] font-medium italic mt-0.5 line-clamp-1 ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-600' : 'text-gray-500'}`}>{item.notes}</p>}
+                                                            </div>
                                                         </div>
-                                                        <div className="space-y-2">
-                                                            {news.map((item: any, i: number) => (
-                                                                <div key={i} className={`p-3 rounded-2xl border flex items-start gap-3 shadow-sm ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
-                                                                    <div className={`${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-600 text-white' : 'bg-blue-50 text-blue-600 border border-blue-100'} px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase shrink-0`}>
-                                                                        {item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'No Asiste' : (item.time?.split(' - ')[0] || item.time_start)}
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p className={`font-black text-[11px] ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-900' : 'text-gray-900'}`}>{item.group}</p>
-                                                                        {item.notes && <p className={`text-[9px] font-medium italic mt-0.5 line-clamp-1 ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-600' : 'text-gray-500'}`}>{item.notes}</p>}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })()}
-                                        </div>
-                                    )}
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             )}
                         </div>
+                            )}
+                    </div>
 
-                        <div className="p-4 bg-gray-50 border-t border-gray-100 shrink-0">
-                            <button
-                                onClick={() => {
-                                    setNotifModalOpen(false);
-                                    setSearchResult(null);
-                                    setSelectedDate('');
-                                }}
-                                className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg hover:bg-black transition-all active:scale-[0.98]"
-                            >
-                                Entendido
-                            </button>
-                        </div>
+                    <div className="p-4 bg-gray-50 border-t border-gray-100 shrink-0">
+                        <button
+                            onClick={() => {
+                                setNotifModalOpen(false);
+                                setSearchResult(null);
+                                setSelectedDate('');
+                            }}
+                            className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg hover:bg-black transition-all active:scale-[0.98]"
+                        >
+                            Entendido
+                        </button>
                     </div>
                 </div>
-            )}
+                </div>
+    )
+}
 
-            {/* Spacer for Mobile Header */}
-            <div className="md:hidden h-16"></div>
-        </div>
+{/* Spacer for Mobile Header */ }
+<div className="md:hidden h-16"></div>
+        </div >
     );
 }
