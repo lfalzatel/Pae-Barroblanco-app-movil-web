@@ -575,10 +575,10 @@ export default function GestionPage() {
                 <div className="relative flex-1">
                   <button
                     onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl flex items-center justify-between shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+                    className="w-full pl-4 pr-4 py-2.5 text-xs font-bold uppercase tracking-tight text-blue-800 bg-blue-50 border border-transparent rounded-xl flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-blue-500/20 hover:bg-white hover:border-blue-200 hover:shadow-md transition-all shadow-sm cursor-pointer"
                   >
-                    <span className="text-gray-900 font-bold text-sm">{grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter}</span>
-                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
+                    <span className="truncate">{grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter}</span>
+                    <ChevronDown className={`w-4 h-4 text-blue-600/60 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {grupoDropdownOpen && (

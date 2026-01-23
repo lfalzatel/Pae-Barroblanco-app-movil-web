@@ -1151,7 +1151,7 @@ export default function ReportesPage() {
                   setSedeFilter(e.target.value);
                   setGrupoFilter('todos');
                 }}
-                className="block w-full pl-10 pr-10 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl appearance-none bg-white shadow-sm border font-bold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
+                className="block w-full pl-4 pr-10 py-2.5 text-xs font-bold uppercase tracking-tight text-blue-800 bg-blue-50 border border-transparent rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500/20 hover:bg-white hover:border-blue-200 hover:shadow-md transition-all shadow-sm cursor-pointer appearance-none"
               >
                 <option value="todas">Todas las Sedes</option>
                 <option value="principal">Sede Principal</option>
@@ -1159,7 +1159,7 @@ export default function ReportesPage() {
                 <option value="maria-inmaculada">Maria Inmaculada</option>
               </select>
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <ChevronDown className="h-5 w-5 text-gray-400" />
+                <ChevronDown className="h-4 w-4 text-blue-600/60" />
               </div>
             </div>
           </div>
@@ -1176,12 +1176,12 @@ export default function ReportesPage() {
             <div className="relative flex-1">
               <button
                 onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between shadow-sm"
+                className="w-full pl-4 pr-4 py-2.5 text-xs font-bold uppercase tracking-tight text-blue-800 bg-blue-50 border border-transparent rounded-xl flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-blue-500/20 hover:bg-white hover:border-blue-200 hover:shadow-md transition-all shadow-sm cursor-pointer"
               >
-                <span className="text-gray-900 font-bold text-sm">
+                <span className="truncate">
                   {grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter}
                 </span>
-                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-blue-600/60 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {grupoDropdownOpen && (
