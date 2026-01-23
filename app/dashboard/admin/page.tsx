@@ -21,7 +21,8 @@ import {
     X,
     AlertTriangle,
     Info,
-    ChevronDown
+    ChevronDown,
+    Check
 } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
@@ -109,6 +110,7 @@ export default function AdminPage() {
     const [changingSede, setChangingSede] = useState({ grupo: '', newSede: '' });
     const [sourceSedeFilter, setSourceSedeFilter] = useState('Todas');
     const [renameSedeFilter, setRenameSedeFilter] = useState('Principal');
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'move' | 'rename' | 'status' | 'backup' | 'sede'>('move');
     const [uploading, setUploading] = useState(false);
     const [inactivateAll, setInactivateAll] = useState(false);
@@ -591,28 +593,75 @@ export default function AdminPage() {
                 {/* Tabs de Herramientas (Responsive) */}
 
                 {/* Mobile: Selector Desplegable Premium */}
-                <div className="md:hidden">
-                    <div className="relative">
-                        <select
-                            value={activeTab}
-                            onChange={(e) => setActiveTab(e.target.value as any)}
-                            className="w-full appearance-none bg-white border border-blue-200 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-4 shadow-sm font-bold"
-                        >
-                            <option value="move">Mover Masa</option>
-                            <option value="rename">Renombrar Grupos</option>
-                            <option value="sede">Cambiar Sede</option>
-                            <option value="status">Gestión de Estados</option>
-                            <option value="backup">Respaldo</option>
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-blue-600">
-                            {activeTab === 'move' && <ArrowRightLeft className="w-5 h-5 mr-2" />}
-                            {activeTab === 'rename' && <Edit3 className="w-5 h-5 mr-2" />}
-                            {activeTab === 'sede' && <MapPin className="w-5 h-5 mr-2" />}
-                            {activeTab === 'status' && <ShieldAlert className="w-5 h-5 mr-2" />}
-                            {activeTab === 'backup' && <Database className="w-5 h-5 mr-2" />}
-                            <ChevronDown className="h-5 w-5" />
+                {/* Mobile: Selector Desplegable Premium */}
+                <div className="md:hidden relative z-30">
+                    <button
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        className="w-full bg-white border border-gray-200 shadow-sm rounded-xl p-4 flex items-center justify-between active:bg-gray-50 transition-all active:scale-[0.99]"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-xl ${activeTab === 'move' ? 'bg-blue-100 text-blue-600' :
+                                activeTab === 'rename' ? 'bg-purple-100 text-purple-600' :
+                                    activeTab === 'sede' ? 'bg-orange-100 text-orange-600' :
+                                        activeTab === 'status' ? 'bg-red-100 text-red-600' :
+                                            'bg-green-100 text-green-600'
+                                }`}>
+                                {activeTab === 'move' && <ArrowRightLeft className="w-6 h-6" />}
+                                {activeTab === 'rename' && <Edit3 className="w-6 h-6" />}
+                                {activeTab === 'sede' && <MapPin className="w-6 h-6" />}
+                                {activeTab === 'status' && <ShieldAlert className="w-6 h-6" />}
+                                {activeTab === 'backup' && <Database className="w-6 h-6" />}
+                            </div>
+                            <div className="text-left">
+                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-0.5">Herramienta Activa</p>
+                                <p className="text-lg font-black text-gray-900 leading-none">
+                                    {activeTab === 'move' && 'Mover Masa'}
+                                    {activeTab === 'rename' && 'Renombrar Grupos'}
+                                    {activeTab === 'sede' && 'Cambiar Sede'}
+                                    {activeTab === 'status' && 'Gestión de Estados'}
+                                    {activeTab === 'backup' && 'Respaldos'}
+                                </p>
+                            </div>
                         </div>
-                    </div>
+                        <div className={`bg-gray-50 p-2 rounded-lg transition-transform duration-200 ${isMobileMenuOpen ? 'rotate-180 bg-gray-100' : ''}`}>
+                            <ChevronDown className="w-5 h-5 text-gray-400" />
+                        </div>
+                    </button>
+
+                    {/* Menú Desplegable */}
+                    {isMobileMenuOpen && (
+                        <>
+                            <div className="fixed inset-0 bg-black/5 z-40" onClick={() => setIsMobileMenuOpen(false)} />
+                            <div className="absolute top-full left-0 right-0 mt-3 bg-white rounded-2xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden divide-y divide-gray-100 animate-in fade-in slide-in-from-top-4 duration-200">
+                                {[
+                                    { id: 'move', label: 'Mover Masa', icon: ArrowRightLeft, color: 'text-blue-600', bg: 'bg-blue-50' },
+                                    { id: 'rename', label: 'Renombrar Grupos', icon: Edit3, color: 'text-purple-600', bg: 'bg-purple-50' },
+                                    { id: 'sede', label: 'Cambiar Sede', icon: MapPin, color: 'text-orange-600', bg: 'bg-orange-50' },
+                                    { id: 'status', label: 'Gestión de Estados', icon: ShieldAlert, color: 'text-red-600', bg: 'bg-red-50' },
+                                    { id: 'backup', label: 'Respaldos', icon: Database, color: 'text-green-600', bg: 'bg-green-50' },
+                                ].map((tool) => (
+                                    <button
+                                        key={tool.id}
+                                        onClick={() => {
+                                            setActiveTab(tool.id as any);
+                                            setIsMobileMenuOpen(false);
+                                        }}
+                                        className={`w-full p-4 flex items-center justify-between transition-colors ${activeTab === tool.id ? 'bg-gray-50' : 'hover:bg-gray-50'}`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-lg ${tool.bg} ${tool.color}`}>
+                                                <tool.icon className="w-5 h-5" />
+                                            </div>
+                                            <span className={`font-bold ${activeTab === tool.id ? 'text-gray-900' : 'text-gray-600'}`}>
+                                                {tool.label}
+                                            </span>
+                                        </div>
+                                        {activeTab === tool.id && <Check className="w-5 h-5 text-blue-600" />}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Desktop: Tabs Horizontales */}
