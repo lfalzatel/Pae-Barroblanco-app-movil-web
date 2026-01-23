@@ -382,7 +382,6 @@ export default function DashboardPage() {
                         {item.grupo.replace('Grado ', '').split('-')[0]}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-gray-900 group-hover:text-blue-700 transition-colors">{item.grupo.split('-')[0]}</span>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="text-[10px] font-medium text-gray-500 bg-gray-100/80 px-1.5 py-0.5 rounded-md group-hover:bg-blue-100/50 group-hover:text-blue-600 transition-colors">Ver estudiantes</span>
                         </div>
