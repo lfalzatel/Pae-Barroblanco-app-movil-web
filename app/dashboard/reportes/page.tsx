@@ -209,6 +209,7 @@ export default function ReportesPage() {
 
         // Agregación por Grupos para Modales
         const groupAgg = {
+          recibieron: {} as Record<string, number>,
           noRecibieron: {} as Record<string, number>,
           ausentes: {} as Record<string, number>,
           inactivos: {} as Record<string, number>
@@ -219,7 +220,9 @@ export default function ReportesPage() {
         });
 
         asistenciaData?.forEach((a: any) => {
-          if (a.estado === 'no_recibio') {
+          if (a.estado === 'recibio') {
+            groupAgg.recibieron[a.estudiantes.grupo] = (groupAgg.recibieron[a.estudiantes.grupo] || 0) + 1;
+          } else if (a.estado === 'no_recibio') {
             groupAgg.noRecibieron[a.estudiantes.grupo] = (groupAgg.noRecibieron[a.estudiantes.grupo] || 0) + 1;
           } else if (a.estado === 'ausente') {
             groupAgg.ausentes[a.estudiantes.grupo] = (groupAgg.ausentes[a.estudiantes.grupo] || 0) + 1;
@@ -233,6 +236,7 @@ export default function ReportesPage() {
           ausentes: ausentesCount,
           inactivos: inactivosCount,
           groupDetails: {
+            recibieron: Object.entries(groupAgg.recibieron).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
             noRecibieron: Object.entries(groupAgg.noRecibieron).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
             ausentes: Object.entries(groupAgg.ausentes).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
             inactivos: Object.entries(groupAgg.inactivos).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count)
@@ -1089,34 +1093,22 @@ export default function ReportesPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filtros de período */}
-        <div className="flex gap-3 mb-6">
-          <button
-            onClick={() => setPeriodo('hoy')}
-            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors ${periodo === 'hoy'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-          >
-            Hoy
-          </button>
-          <button
-            onClick={() => setPeriodo('semana')}
-            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors ${periodo === 'semana'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-          >
-            Semana
-          </button>
-          <button
-            onClick={() => setPeriodo('mes')}
-            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors ${periodo === 'mes'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-          >
-            Mes
-          </button>
+        {/* Filtros de período (Premium Segmented Control) */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-gray-100/80 p-1.5 rounded-2xl flex gap-1 shadow-sm border border-gray-200/50">
+            {['hoy', 'semana', 'mes'].map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriodo(p as any)}
+                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all duration-300 capitalize ${periodo === p
+                  ? 'bg-white text-blue-600 shadow-md transform scale-105'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
+                  }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Filtro de sede */}
@@ -1232,7 +1224,12 @@ export default function ReportesPage() {
           </div>
 
           {/* Recibieron */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
+          {/* Recibieron */}
+          <button
+            onClick={() => openGroupModal('recibieron')}
+            disabled={stats.recibieron === 0}
+            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-50 transition-all text-left"
+          >
             <div className="flex justify-between items-start mb-2">
               <div>
                 <div className="text-2xl md:text-3xl font-black text-emerald-500 tracking-tighter">
@@ -1244,14 +1241,14 @@ export default function ReportesPage() {
                 </div>
                 <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">RECIBIERON</div>
               </div>
-              <div className="bg-emerald-50 p-2 rounded-xl">
-                <CheckCircle className="w-5 h-5 text-emerald-500" />
+              <div className="bg-emerald-50 p-2 rounded-xl group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300">
+                <CheckCircle className="w-5 h-5 text-emerald-500 group-hover:text-white transition-colors" />
               </div>
             </div>
-            <div className="text-[10px] text-emerald-600 font-bold">
-              Periodo: {periodo}
+            <div className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+              {stats.porcentajeAsistencia}% - Ver detalle <Info className="w-3 h-3" />
             </div>
-          </div>
+          </button>
 
           {/* No Recibieron */}
           <button

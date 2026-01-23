@@ -122,6 +122,7 @@ export default function DashboardPage() {
 
       // Agregación por Grupos para Modales
       const groupAgg = {
+        recibieron: {} as Record<string, number>,
         noRecibieron: {} as Record<string, number>,
         ausentes: {} as Record<string, number>,
         inactivos: {} as Record<string, number>
@@ -130,6 +131,12 @@ export default function DashboardPage() {
       // Llenar inactivos por grupo
       inactivos.forEach(e => {
         groupAgg.inactivos[e.grupo] = (groupAgg.inactivos[e.grupo] || 0) + 1;
+      });
+
+      // Llenar recibieron por grupo
+      asistenciasHoy.filter(a => a.estado === 'recibio').forEach(a => {
+        const est = estudiantes.find(e => e.id === a.estudiante_id);
+        if (est && est.grupo) groupAgg.recibieron[est.grupo] = (groupAgg.recibieron[est.grupo] || 0) + 1;
       });
 
       // Llenar no recibieron por grupo
@@ -155,6 +162,7 @@ export default function DashboardPage() {
         ausentes,
         porcentajeAsistencia: activos.length > 0 ? (((activos.length - ausentes) / activos.length) * 100).toFixed(1) : '0',
         groupDetails: {
+          recibieron: Object.entries(groupAgg.recibieron).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
           noRecibieron: Object.entries(groupAgg.noRecibieron).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
           ausentes: Object.entries(groupAgg.ausentes).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
           inactivos: Object.entries(groupAgg.inactivos).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count)
@@ -224,6 +232,16 @@ export default function DashboardPage() {
       data = stats.groupDetails.inactivos;
       color = "text-blue-700 bg-blue-50";
       Icon = UserMinus;
+    } else if (category === 'inactivos') {
+      title = "Estudiantes Inactivos";
+      data = stats.groupDetails.inactivos;
+      color = "text-blue-700 bg-blue-50";
+      Icon = UserMinus;
+    } else if (category === 'recibieron') {
+      title = "Recibieron Ración";
+      data = stats.groupDetails.recibieron;
+      color = "text-emerald-600 bg-emerald-50";
+      Icon = CheckCircle;
     }
 
     if (data.length > 0) {
@@ -247,6 +265,21 @@ export default function DashboardPage() {
           id: e.id,
           fecha: 'Estado Actual'
         }));
+    } else if (category === 'recibieron') {
+      records = allAttendance
+        .filter(a => {
+          const est = allStudents.find(e => e.id === a.estudiante_id);
+          return est && est.grupo === grupo && a.estado === 'recibio';
+        })
+        .map(a => {
+          const est = allStudents.find(e => e.id === a.estudiante_id);
+          return {
+            nombre: est?.nombre || 'Desconocido',
+            estado: 'Recibió',
+            id: a.estudiante_id,
+            fecha: 'Hoy'
+          };
+        });
     } else if (category === 'noRecibieron') {
       records = allAttendance
         .filter(a => {
@@ -536,7 +569,12 @@ export default function DashboardPage() {
           </div>
 
           {/* Recibieron */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
+          {/* Recibieron */}
+          <button
+            onClick={() => openGroupModal('recibieron')}
+            disabled={stats.recibieron === 0}
+            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-50 transition-all text-left"
+          >
             <div className="flex justify-between items-start mb-2">
               <div>
                 <div className="text-2xl md:text-3xl font-black text-emerald-500 tracking-tighter">
@@ -548,14 +586,14 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">RECIBIERON</div>
               </div>
-              <div className="bg-emerald-50 p-2 rounded-xl">
-                <CheckCircle className="w-5 h-5 text-emerald-500" />
+              <div className="bg-emerald-50 p-2 rounded-xl group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300">
+                <CheckCircle className="w-5 h-5 text-emerald-500 group-hover:text-white transition-colors" />
               </div>
             </div>
-            <div className="text-[10px] text-emerald-600 font-bold">
-              {stats.porcentajeAsistencia}% Asistencia
+            <div className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+              {stats.porcentajeAsistencia}% - Ver detalle <Info className="w-3 h-3" />
             </div>
-          </div>
+          </button>
 
           {/* No Recibieron */}
           <button

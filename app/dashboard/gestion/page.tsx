@@ -538,12 +538,12 @@ export default function GestionPage() {
           <>
             {/* Filtros */}
             <div className="mb-6 space-y-4">
-              <div>
-                <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <School className="w-4 h-4" />
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                <div className="w-full md:w-auto md:min-w-[150px] text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <School className="w-4 h-4 text-blue-600" />
                   Filtrar por Sede:
                 </div>
-                <div className="relative w-full sm:w-64">
+                <div className="relative w-full md:flex-1">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <School className="h-5 w-5 text-gray-400" />
                   </div>
@@ -553,7 +553,7 @@ export default function GestionPage() {
                       setSedeFilter(e.target.value);
                       setGrupoFilter('todos');
                     }}
-                    className="block w-full pl-10 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl appearance-none bg-white shadow-sm border font-bold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
+                    className="block w-full pl-10 pr-10 py-2.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-xl appearance-none bg-white shadow-sm border font-bold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
                   >
                     <option value="todas">Todas las Sedes</option>
                     {sedes.filter((s) => s.id !== 'todas').map((sede) => (
@@ -568,15 +568,15 @@ export default function GestionPage() {
                 </div>
               </div>
 
-              <div>
-                <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <Users className="w-4 h-4" />
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                <div className="w-full md:w-auto md:min-w-[150px] text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
                   Filtrar por Grupo:
                 </div>
-                <div className="relative">
+                <div className="relative w-full md:flex-1">
                   <button
                     onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl flex items-center justify-between shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl flex items-center justify-between shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
                   >
                     <span className="text-gray-900 font-bold text-sm">{grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter}</span>
                     <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
@@ -609,19 +609,19 @@ export default function GestionPage() {
                 </div>
               </div>
 
-              <div>
-                <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <Search className="w-4 h-4" />
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                <div className="w-full md:w-auto md:min-w-[150px] text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <Search className="w-4 h-4 text-blue-600" />
                   Buscar Estudiante:
                 </div>
-                <div className="relative">
+                <div className="relative w-full md:flex-1">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Buscar por nombre o matrícula..."
-                    className="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                    className="w-full pl-12 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                   />
                 </div>
               </div>
