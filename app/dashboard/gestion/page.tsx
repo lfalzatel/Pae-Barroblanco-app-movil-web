@@ -545,16 +545,13 @@ export default function GestionPage() {
                   <span className="sm:hidden">Sede:</span>
                 </div>
                 <div className="relative flex-1">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <School className="h-5 w-5 text-gray-400" />
-                  </div>
                   <select
                     value={sedeFilter}
                     onChange={(e) => {
                       setSedeFilter(e.target.value);
                       setGrupoFilter('todos');
                     }}
-                    className="block w-full pl-10 pr-10 py-2.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-xl appearance-none bg-white shadow-sm border font-bold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
+                    className="block w-full pl-4 pr-10 py-2.5 text-xs font-bold uppercase tracking-tight text-blue-800 bg-blue-50 border border-transparent rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500/20 hover:bg-white hover:border-blue-200 hover:shadow-md transition-all shadow-sm cursor-pointer appearance-none"
                   >
                     <option value="todas">Todas las Sedes</option>
                     {sedes.filter((s) => s.id !== 'todas').map((sede) => (
@@ -564,7 +561,7 @@ export default function GestionPage() {
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <ChevronDown className="h-5 w-5 text-gray-400" />
+                    <ChevronDown className="h-4 w-4 text-blue-600/60" />
                   </div>
                 </div>
               </div>

@@ -39,7 +39,7 @@ export default function DashboardPage() {
   const [deepDetailOpen, setDeepDetailOpen] = useState(false);
   const [deepDetailTitle, setDeepDetailTitle] = useState("");
   const [deepDetailData, setDeepDetailData] = useState<any[]>([]);
-  const [modalData, setModalData] = useState<{ grupo: string, count: number }[]>([]);
+  const [modalData, setModalData] = useState<{ grupo: string, count: number, total: number, percentage: string }[]>([]);
 
   // Estado para Modal de Horario
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
@@ -153,6 +153,20 @@ export default function DashboardPage() {
         }
       });
 
+      // Calcular totales por grupo para porcentajes
+      const totalByGroup: Record<string, number> = {};
+      activos.forEach(e => {
+        if (e.grupo) totalByGroup[e.grupo] = (totalByGroup[e.grupo] || 0) + 1;
+      });
+
+      const mapDetails = (agg: Record<string, number>) => {
+        return Object.entries(agg).map(([grupo, count]) => {
+          const total = totalByGroup[grupo] || 0;
+          const percentage = total > 0 ? ((count / total) * 100).toFixed(0) : '0';
+          return { grupo, count, total, percentage };
+        }).sort((a, b) => b.count - a.count);
+      };
+
       setStats({
         totalEstudiantes: estudiantes.length,
         activos: activos.length,
@@ -162,10 +176,10 @@ export default function DashboardPage() {
         ausentes,
         porcentajeAsistencia: activos.length > 0 ? (((activos.length - ausentes) / activos.length) * 100).toFixed(1) : '0',
         groupDetails: {
-          recibieron: Object.entries(groupAgg.recibieron).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
-          noRecibieron: Object.entries(groupAgg.noRecibieron).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
-          ausentes: Object.entries(groupAgg.ausentes).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
-          inactivos: Object.entries(groupAgg.inactivos).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count)
+          recibieron: mapDetails(groupAgg.recibieron),
+          noRecibieron: mapDetails(groupAgg.noRecibieron),
+          ausentes: mapDetails(groupAgg.ausentes),
+          inactivos: mapDetails(groupAgg.inactivos)
         }
       });
     } catch (error) {
@@ -374,10 +388,13 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 pr-1">
-                      <span className="text-2xl font-black text-gray-900 tracking-tight group-hover:scale-110 transition-transform duration-300">{item.count}</span>
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-blue-100 group-hover:text-blue-600 text-gray-300 transition-all duration-300">
-                        <ChevronDown className="w-5 h-5 -rotate-90 group-hover:translate-x-0.5 transition-transform" />
+                    <div className="flex flex-col items-end gap-0.5 pr-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-400">{item.count}/{item.total}</span>
+                        <span className="text-2xl font-black text-gray-900 tracking-tight group-hover:scale-110 transition-transform duration-300">{item.percentage}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1.5 w-24">
+                        <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${item.percentage}%` }}></div>
                       </div>
                     </div>
                   </button>

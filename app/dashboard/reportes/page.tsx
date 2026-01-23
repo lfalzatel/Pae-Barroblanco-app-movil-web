@@ -45,7 +45,7 @@ export default function ReportesPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalCategory, setModalCategory] = useState<any>(null);
-  const [modalData, setModalData] = useState<{ grupo: string, count: number }[]>([]);
+  const [modalData, setModalData] = useState<{ grupo: string, count: number, total: number, percentage: string }[]>([]);
 
   // Estados para Detalle Premium (Segundo nivel)
   const [allPeriodRecords, setAllPeriodRecords] = useState<any[]>([]);
@@ -229,6 +229,25 @@ export default function ReportesPage() {
           }
         });
 
+        // Calcular totales por grupo para porcentajes (considerando solo activos para ausentes/recibieron?)
+        // Para "recibieron", idealmente es sobre el total de activos del grupo.
+        const totalByGroup: Record<string, number> = {};
+        // Usamos los estudiantes filtrados (ests) que ya están cargados
+        ests.filter(e => e.estado === 'activo').forEach(e => {
+          if (e.grupo) totalByGroup[e.grupo] = (totalByGroup[e.grupo] || 0) + 1;
+        });
+
+        const mapDetails = (agg: Record<string, number>) => {
+          return Object.entries(agg).map(([grupo, count]) => {
+            const total = totalByGroup[grupo] || 0;
+            // Si es inactivo, el total debería ser sobre inactivos? No, el usuario pide ranking.
+            // Para inactivos, el total podría ser distinto, pero usaremos activos como base o total general?
+            // Para simplicidad y consistencia con Dashboard, usaremos total activos para Recibieron/NoRecibieron/Ausentes.
+            const percentage = total > 0 ? ((count / total) * 100).toFixed(0) : '0';
+            return { grupo, count, total, percentage };
+          }).sort((a, b) => b.count - a.count);
+        };
+
         setStats({
           totalEstudiantes: totalCount || 0,
           recibieron: recibieronCount,
@@ -236,10 +255,10 @@ export default function ReportesPage() {
           ausentes: ausentesCount,
           inactivos: inactivosCount,
           groupDetails: {
-            recibieron: Object.entries(groupAgg.recibieron).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
-            noRecibieron: Object.entries(groupAgg.noRecibieron).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
-            ausentes: Object.entries(groupAgg.ausentes).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count),
-            inactivos: Object.entries(groupAgg.inactivos).map(([grupo, count]) => ({ grupo, count })).sort((a, b) => b.count - a.count)
+            recibieron: mapDetails(groupAgg.recibieron),
+            noRecibieron: mapDetails(groupAgg.noRecibieron),
+            ausentes: mapDetails(groupAgg.ausentes),
+            inactivos: mapDetails(groupAgg.inactivos)
           }
         });
 
@@ -916,10 +935,13 @@ export default function ReportesPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 pr-1">
-                      <span className="text-2xl font-black text-gray-900 tracking-tight group-hover:scale-110 transition-transform duration-300">{item.count}</span>
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-blue-100 group-hover:text-blue-600 text-gray-300 transition-all duration-300">
-                        <ChevronDown className="w-5 h-5 -rotate-90 group-hover:translate-x-0.5 transition-transform" />
+                    <div className="flex flex-col items-end gap-0.5 pr-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-400">{item.count}/{item.total}</span>
+                        <span className="text-2xl font-black text-gray-900 tracking-tight group-hover:scale-110 transition-transform duration-300">{item.percentage}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1.5 w-24">
+                        <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${item.percentage}%` }}></div>
                       </div>
                     </div>
                   </button>
@@ -1111,91 +1133,98 @@ export default function ReportesPage() {
           </div>
         </div>
 
-        {/* Filtro de sede */}
+        {/* Filtro de sede (Inline) */}
         <div className="mb-6">
-          <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <School className="w-4 h-4" />
-            Filtrar por Sede:
-          </div>
-          <div className="relative w-full sm:w-64">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <School className="h-5 w-5 text-gray-400" />
+          <div className="flex items-center gap-3">
+            <div className="text-sm font-bold text-gray-700 flex items-center gap-2 whitespace-nowrap">
+              <School className="w-4 h-4 text-gray-500" />
+              <span className="hidden sm:inline">Filtrar por Sede:</span>
+              <span className="sm:hidden">Sede:</span>
             </div>
-            <select
-              value={sedeFilter}
-              onChange={(e) => setSedeFilter(e.target.value)}
-              className="block w-full pl-10 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl appearance-none bg-white shadow-sm border font-bold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
-            >
-              <option value="todas">Todas las Sedes</option>
-              <option value="principal">Sede Principal</option>
-              <option value="primaria">Sede Primaria</option>
-              <option value="maria-inmaculada">Maria Inmaculada</option>
-            </select>
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <ChevronDown className="h-5 w-5 text-gray-400" />
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <School className="h-5 w-5 text-gray-400" />
+              </div>
+              <select
+                value={sedeFilter}
+                onChange={(e) => {
+                  setSedeFilter(e.target.value);
+                  setGrupoFilter('todos');
+                }}
+                className="block w-full pl-10 pr-10 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl appearance-none bg-white shadow-sm border font-bold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
+              >
+                <option value="todas">Todas las Sedes</option>
+                <option value="principal">Sede Principal</option>
+                <option value="primaria">Sede Primaria</option>
+                <option value="maria-inmaculada">Maria Inmaculada</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <ChevronDown className="h-5 w-5 text-gray-400" />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Filtro de grupo */}
+        {/* Filtro de grupo (Inline) */}
         <div className="mb-6">
-          <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            Filtrar por Grupo:
-          </div>
-          <div className="relative">
-            <button
-              onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
-              className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between"
-            >
-              <span className="text-gray-900">
-                {grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter}
-              </span>
-              <svg className={`w-5 h-5 text-gray-400 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+          <div className="flex items-center gap-3">
+            <div className="text-sm font-bold text-gray-700 flex items-center gap-2 whitespace-nowrap">
+              <Users className="w-4 h-4 text-gray-500" />
+              <span className="hidden sm:inline">Filtrar por Grupo:</span>
+              <span className="sm:hidden">Grupo:</span>
+            </div>
+            <div className="relative flex-1">
+              <button
+                onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between shadow-sm"
+              >
+                <span className="text-gray-900 font-bold text-sm">
+                  {grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter}
+                </span>
+                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-            {grupoDropdownOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setGrupoDropdownOpen(false)}
-                ></div>
+              {grupoDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setGrupoDropdownOpen(false)}
+                  ></div>
 
-                <div className="absolute z-20 w-full mt-2 bg-white border border-gray-300 rounded-xl shadow-lg max-h-96 overflow-y-auto">
-                  <div className="p-3 grid grid-cols-3 gap-2">
-                    <button
-                      onClick={() => {
-                        setGrupoFilter('todos');
-                        setGrupoDropdownOpen(false);
-                      }}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${grupoFilter === 'todos'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                        }`}
-                    >
-                      Todos
-                    </button>
-                    {gruposDisponibles.map(grupo => (
+                  <div className="absolute z-20 w-full mt-2 bg-white border border-gray-300 rounded-xl shadow-lg max-h-96 overflow-y-auto">
+                    <div className="p-3 grid grid-cols-3 gap-2">
                       <button
-                        key={grupo}
                         onClick={() => {
-                          setGrupoFilter(grupo);
+                          setGrupoFilter('todos');
                           setGrupoDropdownOpen(false);
                         }}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${grupoFilter === grupo
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${grupoFilter === 'todos'
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                           }`}
                       >
-                        {grupo}
+                        Todos
                       </button>
-                    ))}
+                      {gruposDisponibles.map(grupo => (
+                        <button
+                          key={grupo}
+                          onClick={() => {
+                            setGrupoFilter(grupo);
+                            setGrupoDropdownOpen(false);
+                          }}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${grupoFilter === grupo
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                            }`}
+                        >
+                          {grupo}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
 
