@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+
+import { useEffect, useState, useRef, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import {
@@ -15,7 +16,11 @@ import {
     CheckCircle,
     UserX,
     Database,
-    UploadCloud
+    UploadCloud,
+    MapPin,
+    X,
+    AlertTriangle,
+    Info
 } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
@@ -30,6 +35,23 @@ interface Estudiante {
     estado?: string;
 }
 
+interface ToastMessage {
+    id: number;
+    type: 'success' | 'error' | 'info' | 'warning';
+    message: string;
+}
+
+interface ConfirmationModalProps {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+    confirmText?: string;
+    cancelText?: string;
+    type?: 'danger' | 'info' | 'warning';
+}
+
 export default function AdminPage() {
     const router = useRouter();
     const [usuario, setUsuario] = useState<any | null>(null);
@@ -37,10 +59,220 @@ export default function AdminPage() {
     const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+
+    // UI State
+    const [toasts, setToasts] = useState<ToastMessage[]>([]);
+    const [confirmModal, setConfirmModal] = useState<ConfirmationModalProps>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        onCancel: () => { }
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, type, message }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, 3000);
+    };
+
+    const closeConfirmModal = () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const requestConfirm = (
+        title: string,
+        message: string,
+        onConfirm: () => void,
+        type: 'danger' | 'info' | 'warning' = 'info'
+    ) => {
+        setConfirmModal({
+            isOpen: true,
+            title,
+            message,
+            onConfirm: () => {
+                onConfirm();
+                closeConfirmModal();
+            },
+            onCancel: closeConfirmModal,
+            confirmText: 'Confirmar',
+            cancelText: 'Cancelar',
+            type
+        });
+    };
     const [targetGrupo, setTargetGrupo] = useState('');
     const [allGrupos, setAllGrupos] = useState<string[]>([]);
     const [renamingGrupo, setRenamingGrupo] = useState({ oldName: '', newName: '' });
-    const [activeTab, setActiveTab] = useState<'move' | 'rename' | 'status' | 'backup'>('move');
+    const [changingSede, setChangingSede] = useState({ grupo: '', newSede: '' });
+    const [sourceSedeFilter, setSourceSedeFilter] = useState('Todas');
+    const [activeTab, setActiveTab] = useState<'move' | 'rename' | 'status' | 'backup' | 'sede'>('move');
+    const [uploading, setUploading] = useState(false);
+    const [inactivateAll, setInactivateAll] = useState(false);
+    const [importProgress, setImportProgress] = useState(0);
+    const [importLog, setImportLog] = useState<string[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        requestConfirm(
+            'Confirmar Carga Masiva',
+            `¿Estás seguro de iniciar la carga? ${inactivateAll ? 'Se INACTIVARÁN todos los estudiantes actuales primero.' : ''}`,
+            () => processBulkUpload(file),
+            'warning'
+        );
+    };
+
+    const processBulkUpload = async (file: File) => {
+        setUploading(true);
+        setImportProgress(0);
+        setImportLog([]);
+        const log = (msg: string) => setImportLog(prev => [msg, ...prev]);
+
+        try {
+            // Paso 1: Inactivación Masiva (Opcional)
+            if (inactivateAll) {
+                log('Iniciando inactivación masiva...');
+                const { error: inactError } = await supabase
+                    .from('estudiantes')
+                    .update({ estado: 'inactivo' })
+                    .neq('estado', 'inactivo');
+
+                if (inactError) throw new Error('Error al inactivar estudiantes: ' + inactError.message);
+                log('Todos los estudiantes marcados como inactivos.');
+            }
+
+            // Paso 2: Leer el Excel
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                try {
+                    const bstr = evt.target?.result;
+                    const workbook = XLSX.read(bstr, { type: 'binary' });
+                    const sheetNames = workbook.SheetNames;
+                    log(`Archivo leído. ${sheetNames.length} hojas encontradas.`);
+
+                    let totalProcessed = 0;
+                    let totalErrors = 0;
+                    let allStudentsToUpsert: any[] = [];
+
+                    // Paso 3: Procesar cada hoja
+                    for (const sheetName of sheetNames) {
+                        const worksheet = workbook.Sheets[sheetName];
+                        // Leer primeras 20 filas para detectar encabezados
+                        const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1, range: 0, defval: '' }) as any[][];
+
+                        let headerRowIndex = -1;
+                        for (let i = 0; i < Math.min(rawData.length, 25); i++) {
+                            const rowStr = JSON.stringify(rawData[i]).toLowerCase();
+                            // Buscamos palabras clave
+                            if ((rowStr.includes('matricula') || rowStr.includes('matrícula')) &&
+                                (rowStr.includes('nombre') || rowStr.includes('estudiante'))) {
+                                headerRowIndex = i;
+                                break;
+                            }
+                        }
+
+                        if (headerRowIndex === -1) {
+                            log(`⚠️ Hoja "${sheetName}": No se detectaron encabezados válidos en las primeras 25 filas. Saltando.`);
+                            continue;
+                        }
+
+                        // Parsear datos reales usando la fila de encabezados detectada
+                        const sheetData = XLSX.utils.sheet_to_json(worksheet, { range: headerRowIndex });
+                        log(`Hoja "${sheetName}": Procesando ${sheetData.length} filas (Encabezados en fila ${headerRowIndex + 1})...`);
+
+                        // Mapear Columnas
+                        const mappedStudents = sheetData.map((row: any) => {
+                            const findVal = (keys: string[]) => {
+                                for (const key of Object.keys(row)) {
+                                    const cleanKey = key.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                                    if (keys.some(k => cleanKey.includes(k))) return row[key];
+                                }
+                                return '';
+                            };
+
+                            const matricula = String(findVal(['matricula', 'codigo']) || '').trim();
+                            // Buscar columnas de nombre
+                            let nombre = String(findVal(['nombre', 'estudiante', 'alumno']) || '').trim();
+                            const apellidos = String(findVal(['apellido']) || '').trim();
+
+                            // Si hay apellidos separados, concatenar
+                            if (apellidos && nombre) {
+                                nombre = `${apellidos} ${nombre}`;
+                            }
+
+                            if (!matricula || !nombre || matricula.length < 3) return null; // Saltar filas inválidas
+
+                            const grado = String(findVal(['grado']) || '').trim();
+                            // Usar nombre de hoja como grupo si no hay columna grupo, o viceversa
+                            let grupo = String(findVal(['grupo']) || sheetName).trim();
+                            const sede = String(findVal(['sede']) || 'Principal').trim();
+
+                            return {
+                                matricula,
+                                nombre: nombre.toUpperCase(),
+                                grado,
+                                grupo,
+                                sede: sede.charAt(0).toUpperCase() + sede.slice(1).toLowerCase(),
+                                estado: 'activo' // Reactivar si estaba inactivo
+                            };
+                        }).filter(Boolean); // Eliminar nulos
+
+                        allStudentsToUpsert = [...allStudentsToUpsert, ...mappedStudents];
+                    }
+
+                    if (allStudentsToUpsert.length === 0) {
+                        throw new Error('No se encontraron estudiantes válidos en el archivo.');
+                    }
+
+                    log(`Preparando actualización de ${allStudentsToUpsert.length} estudiantes...`);
+
+                    // Paso 4: Batch Upsert (lotes de 100)
+                    const batchSize = 100;
+                    const totalBatches = Math.ceil(allStudentsToUpsert.length / batchSize);
+
+                    for (let i = 0; i < allStudentsToUpsert.length; i += batchSize) {
+                        const batch = allStudentsToUpsert.slice(i, i + batchSize);
+                        const { error } = await supabase.from('estudiantes').upsert(batch, { onConflict: 'matricula' });
+
+                        if (error) {
+                            console.error('Error en lote:', error);
+                            totalErrors += batch.length;
+                            log(`❌ Error al procesar lote ${Math.ceil(i / batchSize) + 1}/${totalBatches}`);
+                        } else {
+                            totalProcessed += batch.length;
+                        }
+
+                        // Actualizar progreso
+                        setImportProgress(Math.round(((i + batch.length) / allStudentsToUpsert.length) * 100));
+                    }
+
+                    log(`✅ Proceso finalizado. Procesados: ${totalProcessed}. Errores: ${totalErrors}.`);
+                    if (totalProcessed > 0) {
+                        alert(`Carga masiva completada.\nProcesados: ${totalProcessed}\nErrores: ${totalErrors}`);
+                        fetchData(); // Refrescar lista
+                    }
+
+                } catch (parseError: any) {
+                    console.error(parseError);
+                    log(`❌ Error crítico al procesar archivo: ${parseError.message}`);
+                    alert('Error al procesar el archivo Excel.');
+                } finally {
+                    setUploading(false);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                }
+            };
+            reader.readAsBinaryString(file);
+
+        } catch (error: any) {
+            console.error(error);
+            log(`❌ Error general: ${error.message}`);
+            setUploading(false);
+        }
+    };
 
     useEffect(() => {
         const checkAdmin = async () => {
@@ -75,9 +307,6 @@ export default function AdminPage() {
         }
     };
 
-    const [uploading, setUploading] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -95,35 +324,60 @@ export default function AdminPage() {
 
                     if (jsonData.length === 0) throw new Error('El archivo está vacío');
 
-                    // Validar columnas
+                    // Validar columnas (Lógica Flexible)
                     const firstRow = jsonData[0];
-                    const hasRequired = ['Apellidos', 'Nombres', 'Matrícula', 'Grado', 'Grupo', 'Sede'].every(col =>
-                        Object.keys(firstRow).some(key => key.toLowerCase().includes(col.toLowerCase()))
-                    );
+                    const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    const keys = Object.keys(firstRow).map(k => normalize(k));
 
-                    if (!hasRequired) throw new Error('Faltan columnas requeridas (Apellidos, Nombres, Matrícula, Grado, Grupo, Sede)');
+                    const hasMatricula = keys.some(k => k.includes('matricula') || k.includes('codigo'));
+                    const hasNombre = keys.some(k => k.includes('nombre') || k.includes('estudiante') || k.includes('alumno') || k.includes('apellidos'));
 
-                    const studentsToUpsert = jsonData.map(row => {
-                        const findKey = (name: string) => Object.keys(row).find(k =>
-                            k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") ===
-                            name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                        ) || name;
+                    if (!hasMatricula || !hasNombre) {
+                        throw new Error('El archivo debe tener al menos una columna de "Matrícula" y "Nombre/Estudiante".');
+                    }
 
-                        const apellidos = row[findKey('Apellidos')] || '';
-                        const nombres = row[findKey('Nombres')] || '';
-                        const matricula = String(row[findKey('Matrícula')] || '');
-                        const grado = String(row[findKey('Grado')] || '');
-                        const grupo = String(row[findKey('Grupo')] || '');
-                        const sede = String(row[findKey('Sede')] || '').trim();
+                    const studentsToUpsert = jsonData.map((row: any) => {
+                        const findVal = (possibleKeys: string[]) => {
+                            const key = Object.keys(row).find(k => {
+                                const normK = k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                                return possibleKeys.some(pk => normK.includes(pk));
+                            });
+                            return key ? row[key] : '';
+                        };
+
+                        // Estrategia de Nombre: 
+                        // 1. Buscar "Apellidos" y "Nombres" separados.
+                        // 2. Si no, buscar columna genérica de nombre.
+                        let nombreCompleto = '';
+                        const rawApellidos = String(findVal(['apellidos'])).trim();
+                        const rawNombres = String(findVal(['nombres'])).trim();
+
+                        // Si existen ambas columnas DISTINTAS (heurística simple: valores diferentes o claves diferentes)
+                        // Para simplificar, si encontramos valores en ambas búsquedas (y no son la misma columna capturada dos veces por coincidencia parcial), concatenamos.
+                        // Pero mejor confiamos en una búsqueda priorizada.
+
+                        // En el caso del usuario, es una sola columna. Busquemos la columna más probable.
+                        // "Apellidos y Nombres" contiene "apellidos".
+
+                        const valNombre = String(findVal(['nombre', 'estudiante', 'alumno', 'apellidos'])).trim();
+                        nombreCompleto = valNombre;
+
+                        const matricula = String(findVal(['matricula', 'codigo']) || '');
+                        const grado = String(findVal(['grado']) || '');
+                        const grupo = String(findVal(['grupo']) || '').trim();
+                        let sede = String(findVal(['sede']) || '').trim();
+
+                        if (!sede) sede = 'Principal'; // Default
 
                         return {
-                            nombre: `${apellidos.toUpperCase()} ${nombres.toUpperCase()}`.trim(),
+                            nombre: nombreCompleto.toUpperCase(),
                             matricula,
                             grado,
                             grupo,
-                            sede: sede.charAt(0).toUpperCase() + sede.slice(1).toLowerCase()
+                            sede: sede.charAt(0).toUpperCase() + sede.slice(1).toLowerCase(),
+                            estado: 'activo'
                         };
-                    }).filter(s => s.matricula && s.nombre);
+                    }).filter(s => s.matricula && s.nombre && s.matricula.length > 2);
 
                     // Batch upsert
                     const batchSize = 100;
@@ -135,13 +389,13 @@ export default function AdminPage() {
                     }
 
                     if (errors === 0) {
-                        alert(`¡Éxito! Se procesaron ${studentsToUpsert.length} estudiantes.`);
+                        showToast(`¡Éxito! Se procesaron ${studentsToUpsert.length} estudiantes.`, 'success');
                         fetchData();
                     } else {
-                        alert('Se procesaron datos con algunos errores.');
+                        showToast('Se procesaron datos con algunos errores.', 'warning');
                     }
                 } catch (err: any) {
-                    alert(err.message || 'Error al procesar el Excel');
+                    showToast(err.message || 'Error al procesar el Excel', 'error');
                 } finally {
                     setUploading(false);
                     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -150,110 +404,156 @@ export default function AdminPage() {
             reader.readAsArrayBuffer(file);
         } catch (error) {
             setUploading(false);
-            alert('Error al leer el archivo');
+            showToast('Error al leer el archivo', 'error');
         }
     };
 
-    const handleMoveStudents = async () => {
+    const handleMoveStudents = () => {
         if (selectedStudents.length === 0 || !targetGrupo) return;
 
-        if (!confirm(`¿Mover ${selectedStudents.length} estudiantes al grupo ${targetGrupo}?`)) return;
+        requestConfirm(
+            'Mover Estudiantes',
+            `¿Mover ${selectedStudents.length} estudiantes al grupo ${targetGrupo}?`,
+            async () => {
+                try {
+                    const { error } = await supabase
+                        .from('estudiantes')
+                        .update({ grupo: targetGrupo })
+                        .in('id', selectedStudents);
 
-        try {
-            const { error } = await supabase
-                .from('estudiantes')
-                .update({ grupo: targetGrupo })
-                .in('id', selectedStudents);
+                    if (error) throw error;
 
-            if (error) throw error;
-
-            alert('Estudiantes movidos con éxito');
-            setSelectedStudents([]);
-            fetchData();
-        } catch (error) {
-            console.error('Error moving students:', error);
-            alert('Error al mover estudiantes');
-        }
+                    showToast('Estudiantes movidos con éxito', 'success');
+                    setSelectedStudents([]);
+                    fetchData();
+                } catch (error) {
+                    console.error('Error moving students:', error);
+                    showToast('Error al mover estudiantes', 'error');
+                }
+            }
+        );
     };
 
-    const handleRenameGroup = async () => {
+    const handleRenameGroup = () => {
         if (!renamingGrupo.oldName || !renamingGrupo.newName) return;
 
-        if (!confirm(`¿Renombrar el grupo "${renamingGrupo.oldName}" a "${renamingGrupo.newName}" para TODOS los estudiantes?`)) return;
+        requestConfirm(
+            'Renombrar Grupo',
+            `¿Renombrar el grupo "${renamingGrupo.oldName}" a "${renamingGrupo.newName}" para TODOS los estudiantes?`,
+            async () => {
+                try {
+                    const { error } = await supabase
+                        .from('estudiantes')
+                        .update({ grupo: renamingGrupo.newName })
+                        .eq('grupo', renamingGrupo.oldName);
 
-        try {
-            const { error } = await supabase
-                .from('estudiantes')
-                .update({ grupo: renamingGrupo.newName })
-                .eq('grupo', renamingGrupo.oldName);
+                    if (error) throw error;
 
-            if (error) throw error;
-
-            alert('Grupo renombrado con éxito');
-            setRenamingGrupo({ oldName: '', newName: '' });
-            fetchData();
-        } catch (error) {
-            console.error('Error renaming group:', error);
-            alert('Error al renombrar el grupo');
-        }
+                    showToast('Grupo renombrado con éxito', 'success');
+                    setRenamingGrupo({ oldName: '', newName: '' });
+                    fetchData();
+                } catch (error) {
+                    console.error('Error renaming group:', error);
+                    showToast('Error al renombrar el grupo', 'error');
+                }
+            },
+            'warning'
+        );
     };
 
-    const handleToggleStatus = async (status: 'activo' | 'inactivo') => {
+    const handleChangeSede = () => {
+        if (!changingSede.grupo || !changingSede.newSede) return;
+
+        requestConfirm(
+            'Cambiar Sede',
+            `¿Cambiar la sede del grupo "${changingSede.grupo}" a "${changingSede.newSede}" para TODOS los estudiantes?`,
+            async () => {
+                try {
+                    const { error } = await supabase
+                        .from('estudiantes')
+                        .update({ sede: changingSede.newSede })
+                        .eq('grupo', changingSede.grupo);
+
+                    if (error) throw error;
+
+                    showToast('Sede actualizada con éxito', 'success');
+                    setChangingSede({ grupo: '', newSede: '' });
+                    fetchData();
+                } catch (error) {
+                    console.error('Error updating sede:', error);
+                    showToast('Error al actualizar la sede', 'error');
+                }
+            },
+            'warning'
+        );
+    };
+
+    const handleToggleStatus = (status: 'activo' | 'inactivo') => {
         if (selectedStudents.length === 0) return;
 
-        if (!confirm(`¿Cambiar el estado a ${status} para los ${selectedStudents.length} estudiantes seleccionados?`)) return;
+        requestConfirm(
+            'Cambiar Estado',
+            `¿Cambiar el estado a ${status} para los ${selectedStudents.length} estudiantes seleccionados?`,
+            async () => {
+                try {
+                    const { error } = await supabase
+                        .from('estudiantes')
+                        .update({ estado: status })
+                        .in('id', selectedStudents);
 
-        try {
-            const { error } = await supabase
-                .from('estudiantes')
-                .update({ estado: status })
-                .in('id', selectedStudents);
+                    if (error) throw error;
 
-            if (error) throw error;
-
-            alert('Estado actualizado con éxito');
-            setSelectedStudents([]);
-            fetchData();
-        } catch (error) {
-            console.error('Error updating status:', error);
-            alert('Error al actualizar el estado');
-        }
+                    showToast('Estado actualizado con éxito', 'success');
+                    setSelectedStudents([]);
+                    fetchData();
+                } catch (error) {
+                    console.error('Error updating status:', error);
+                    showToast('Error al actualizar el estado', 'error');
+                }
+            },
+            status === 'inactivo' ? 'danger' : 'info'
+        );
     };
 
-    const handleBackup = async () => {
-        if (!confirm('¿Generar y descargar una copia completa de la base de datos?')) return;
-        setLoading(true);
-        try {
-            // Fetch Estudiantes
-            const { data: estData } = await supabase.from('estudiantes').select('*');
-            // Fetch Schedules
-            const { data: schedData } = await supabase.from('schedules').select('*');
+    const handleBackup = () => {
+        requestConfirm(
+            'Generar Respaldo',
+            '¿Generar y descargar una copia completa de la base de datos?',
+            async () => {
+                setLoading(true);
+                try {
+                    // Fetch Estudiantes
+                    const { data: estData } = await supabase.from('estudiantes').select('*');
+                    // Fetch Schedules
+                    const { data: schedData } = await supabase.from('schedules').select('*');
 
-            // Create Workbook
-            const wb = XLSX.utils.book_new();
+                    // Create Workbook
+                    const wb = XLSX.utils.book_new();
 
-            // Add Sheets
-            if (estData) {
-                const wsEst = XLSX.utils.json_to_sheet(estData);
-                XLSX.utils.book_append_sheet(wb, wsEst, "Estudiantes");
+                    // Add Sheets
+                    if (estData) {
+                        const wsEst = XLSX.utils.json_to_sheet(estData);
+                        XLSX.utils.book_append_sheet(wb, wsEst, "Estudiantes");
+                    }
+                    if (schedData) {
+                        const wsSched = XLSX.utils.json_to_sheet(schedData.map(s => ({
+                            ...s,
+                            items: JSON.stringify(s.items)
+                        })));
+                        XLSX.utils.book_append_sheet(wb, wsSched, "Horarios");
+                    }
+
+                    // Export
+                    XLSX.writeFile(wb, `Respaldo_PAE_${new Date().toISOString().split('T')[0]}.xlsx`);
+                    showToast('Respaldo generado correctamente', 'success');
+                } catch (e) {
+                    console.error(e);
+                    showToast('Error al generar respaldo', 'error');
+                } finally {
+                    setLoading(false);
+                }
             }
-            if (schedData) {
-                const wsSched = XLSX.utils.json_to_sheet(schedData.map(s => ({
-                    ...s,
-                    items: JSON.stringify(s.items)
-                })));
-                XLSX.utils.book_append_sheet(wb, wsSched, "Horarios");
-            }
-
-            // Export
-            XLSX.writeFile(wb, `Respaldo_PAE_${new Date().toISOString().split('T')[0]}.xlsx`);
-            alert('Respaldo generado correctamente');
-        } catch (e) {
-            console.error(e);
-            alert('Error al generar respaldo');
-        } finally {
-            setLoading(false);
-        }
+        );
     };
 
     const filteredEstudiantes = estudiantes.filter(e =>
@@ -298,6 +598,12 @@ export default function AdminPage() {
                         className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all ${activeTab === 'rename' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
                     >
                         Renombrar Grupos
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('sede')}
+                        className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all ${activeTab === 'sede' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                    >
+                        Cambiar Sede
                     </button>
                     <button
                         onClick={() => setActiveTab('status')}
@@ -429,6 +735,81 @@ export default function AdminPage() {
                             </>
                         )}
 
+                        {activeTab === 'sede' && (
+                            <>
+                                <h2 className="text-lg font-bold mb-2 flex items-center gap-2">
+                                    <MapPin className="w-5 h-5" />
+                                    Cambiar Sede Globalmente
+                                </h2>
+                                <p className="text-blue-100 text-sm mb-6">Actualiza la sede de TODOS los estudiantes del grupo seleccionado.</p>
+
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    <div className="flex-1">
+                                        <label className="block text-xs font-bold uppercase mb-2 opacity-80">1. Filtrar por Sede Actual</label>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {['Todas', 'Principal', 'Primaria', 'Maria Inmaculada'].map(sede => (
+                                                <button
+                                                    key={sede}
+                                                    onClick={() => setSourceSedeFilter(sede)}
+                                                    className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${sourceSedeFilter === sede
+                                                        ? 'bg-blue-800 text-white border-blue-400'
+                                                        : 'bg-blue-700/50 text-blue-200 border-transparent hover:bg-blue-700'
+                                                        }`}
+                                                >
+                                                    {sede}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <label className="block text-xs font-bold uppercase mb-2 opacity-80">2. Seleccione Grupo ({sourceSedeFilter === 'Todas' ? 'Todos' : sourceSedeFilter})</label>
+                                        <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-40 p-1 bg-blue-700/30 rounded-xl">
+                                            {allGrupos.filter(g => {
+                                                if (sourceSedeFilter === 'Todas') return true;
+                                                // Check if group belongs to selected sede (has at least one student in that sede)
+                                                return estudiantes.some(e => e.grupo === g && e.sede === sourceSedeFilter);
+                                            }).map(g => (
+                                                <button
+                                                    key={g}
+                                                    onClick={() => setChangingSede(prev => ({ ...prev, grupo: g }))}
+                                                    className={`py-2 px-1 rounded-lg text-[10px] font-bold transition-all border ${changingSede.grupo === g
+                                                        ? 'bg-white text-blue-600 border-white shadow-md'
+                                                        : 'bg-blue-700/50 text-blue-100 border-blue-500/30 hover:bg-blue-600'
+                                                        }`}
+                                                >
+                                                    {g}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="block text-xs font-bold uppercase mb-2 opacity-80">3. Nueva Sede de Destino</label>
+                                        <div className="flex flex-col gap-2">
+                                            {['Principal', 'Primaria', 'Maria Inmaculada'].map(sede => (
+                                                <button
+                                                    key={sede}
+                                                    onClick={() => setChangingSede(prev => ({ ...prev, newSede: sede }))}
+                                                    className={`py-3 px-4 rounded-xl text-sm font-bold transition-all border text-left flex items-center justify-between ${changingSede.newSede === sede
+                                                        ? 'bg-white text-blue-600 border-white shadow-md'
+                                                        : 'bg-blue-700/50 text-blue-100 border-blue-500/30 hover:bg-blue-600'
+                                                        }`}
+                                                >
+                                                    {sede}
+                                                    {changingSede.newSede === sede && <CheckCircle className="w-4 h-4" />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleChangeSede}
+                                        disabled={!changingSede.grupo || !changingSede.newSede}
+                                        className="bg-white text-blue-600 px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-blue-50 transition-colors"
+                                    >
+                                        Confirmar Cambio
+                                    </button>
+                                </div>
+                            </>
+                        )}
+
                         {activeTab === 'backup' && (
                             <>
                                 <h2 className="text-lg font-bold mb-2 flex items-center gap-2">
@@ -453,7 +834,7 @@ export default function AdminPage() {
                                     <input
                                         type="file"
                                         ref={fileInputRef}
-                                        onChange={handleFileUpload}
+                                        onChange={handleBulkUpload}
                                         accept=".xlsx, .xls"
                                         className="hidden"
                                     />
@@ -546,82 +927,138 @@ export default function AdminPage() {
                     </div>
                 </div>
             </div>
-                ))}
-        </div>
-            
-            {/* Modal de Carga Masiva (Año Nuevo) */ }
-    {
-        activeTab === 'backup' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <UploadCloud className="w-5 h-5 text-blue-600" />
-                    Carga Masiva y Cambio de Año
-                </h2>
 
-                <p className="text-sm text-gray-600 mb-6">
-                    Sube el archivo de listas de estudiantes (Excel con múltiples hojas) para actualizar el sistema al nuevo año escolar.
-                    El sistema usará la <strong>Matrícula</strong> para identificar a los estudiantes y preservar su historial.
-                </p>
+            {/* Modal de Carga Masiva (Año Nuevo) */}
+            {
+                activeTab === 'backup' && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <UploadCloud className="w-5 h-5 text-blue-600" />
+                            Carga Masiva y Cambio de Año
+                        </h2>
 
-                <div className="space-y-6 max-w-xl">
-                    <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
-                        <label className="flex items-start gap-3 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                className="mt-1 w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                checked={inactivateAll}
-                                onChange={e => setInactivateAll(e.target.checked)}
-                            />
-                            <div>
-                                <span className="font-bold text-gray-900 block text-sm">Inactivar a todos los estudiantes actuales</span>
-                                <span className="text-xs text-orange-800 mt-1 block">
-                                    Recomendado para inicio de año. Todos los estudiantes pasarán a estado "Inactivo".
-                                    Solo se reactivarán los que aparezcan en el nuevo archivo excel.
-                                </span>
+                        <p className="text-sm text-gray-600 mb-6">
+                            Sube el archivo de listas de estudiantes (Excel con múltiples hojas) para actualizar el sistema al nuevo año escolar.
+                            El sistema usará la <strong>Matrícula</strong> para identificar a los estudiantes y preservar su historial.
+                        </p>
+
+                        <div className="space-y-6 max-w-xl">
+                            <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="mt-1 w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                        checked={inactivateAll}
+                                        onChange={e => setInactivateAll(e.target.checked)}
+                                    />
+                                    <div>
+                                        <span className="font-bold text-gray-900 block text-sm">Inactivar a todos los estudiantes actuales</span>
+                                        <span className="text-xs text-orange-800 mt-1 block">
+                                            Recomendado para inicio de año. Todos los estudiantes pasarán a estado "Inactivo".
+                                            Solo se reactivarán los que aparezcan en el nuevo archivo excel.
+                                        </span>
+                                    </div>
+                                </label>
                             </div>
-                        </label>
-                    </div>
 
-                    <div className="space-y-2">
-                        <label className="block text-sm font-bold text-gray-700">Seleccionar Archivo Excel (.xlsx)</label>
-                        <input
-                            type="file"
-                            accept=".xlsx, .xls"
-                            onChange={handleBulkUpload}
-                            disabled={uploading}
-                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all border border-gray-200 rounded-xl cursor-pointer"
-                        />
-                    </div>
-
-                    {uploading && (
-                        <div className="space-y-2 animate-in fade-in duration-300">
-                            <div className="flex justify-between text-xs font-bold text-gray-500">
-                                <span>Procesando...</span>
-                                <span>{importProgress}%</span>
-                            </div>
-                            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-blue-600 transition-all duration-300 rounded-full"
-                                    style={{ width: `${importProgress}%` }}
+                            <div className="space-y-2">
+                                <label className="block text-sm font-bold text-gray-700">Seleccionar Archivo Excel (.xlsx)</label>
+                                <input
+                                    type="file"
+                                    accept=".xlsx, .xls"
+                                    onChange={handleBulkUpload}
+                                    disabled={uploading}
+                                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all border border-gray-200 rounded-xl cursor-pointer"
                                 />
                             </div>
-                            <p className="text-xs text-center text-gray-400 italic">No cierres esta ventana</p>
-                        </div>
-                    )}
 
-                    {importLog.length > 0 && (
-                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 max-h-40 overflow-y-auto text-xs font-mono space-y-1">
-                            {importLog.map((log, i) => (
-                                <div key={i} className={log.includes('Error') ? 'text-red-600 font-bold' : 'text-gray-600'}>
-                                    {log}
+                            {uploading && (
+                                <div className="space-y-2 animate-in fade-in duration-300">
+                                    <div className="flex justify-between text-xs font-bold text-gray-500">
+                                        <span>Procesando...</span>
+                                        <span>{importProgress}%</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-blue-600 transition-all duration-300 rounded-full"
+                                            style={{ width: `${importProgress}%` }}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-center text-gray-400 italic">No cierres esta ventana</p>
                                 </div>
-                            ))}
+                            )}
+
+                            {importLog.length > 0 && (
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 max-h-40 overflow-y-auto text-xs font-mono space-y-1">
+                                    {importLog.map((log, i) => (
+                                        <div key={i} className={log.includes('Error') ? 'text-red-600 font-bold' : 'text-gray-600'}>
+                                            {log}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )
+            }
+            {/* Toasts Container */}
+            <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+                {toasts.map(toast => (
+                    <div
+                        key={toast.id}
+                        className={`pointer-events-auto transform transition-all duration-300 ease-out flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg backdrop-blur-md border ${toast.type === 'success' ? 'bg-emerald-500/90 border-emerald-400 text-white' :
+                            toast.type === 'error' ? 'bg-red-500/90 border-red-400 text-white' :
+                                'bg-blue-600/90 border-blue-500 text-white'
+                            }`}
+                    >
+                        {toast.type === 'success' && <CheckCircle className="w-5 h-5" />}
+                        {toast.type === 'error' && <X className="w-5 h-5" />}
+                        {toast.type === 'info' && <Info className="w-5 h-5" />}
+                        <span className="text-sm font-medium">{toast.message}</span>
+                    </div>
+                ))}
             </div>
-        )
-    }
-        </div >
+
+            {/* Confirmation Modal */}
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200 border border-white/20">
+                        <div className="flex flex-col items-center text-center gap-4">
+                            <div className={`p-4 rounded-full ${confirmModal.type === 'danger' ? 'bg-red-100 text-red-600' :
+                                confirmModal.type === 'warning' ? 'bg-amber-100 text-amber-600' :
+                                    'bg-blue-100 text-blue-600'
+                                }`}>
+                                {confirmModal.type === 'danger' && <AlertTriangle className="w-8 h-8" />}
+                                {confirmModal.type === 'warning' && <AlertTriangle className="w-8 h-8" />}
+                                {confirmModal.type === 'info' && <Info className="w-8 h-8" />}
+                            </div>
+
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 mb-2">{confirmModal.title}</h3>
+                                <p className="text-sm text-gray-500">{confirmModal.message}</p>
+                            </div>
+
+                            <div className="flex gap-3 w-full mt-2">
+                                <button
+                                    onClick={confirmModal.onCancel}
+                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                                >
+                                    {confirmModal.cancelText || 'Cancelar'}
+                                </button>
+                                <button
+                                    onClick={confirmModal.onConfirm}
+                                    className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all transform active:scale-95 ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-500 shadow-red-500/30' :
+                                        confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/30' :
+                                            'bg-blue-600 hover:bg-blue-500 shadow-blue-500/30'
+                                        }`}
+                                >
+                                    {confirmModal.confirmText || 'Confirmar'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }

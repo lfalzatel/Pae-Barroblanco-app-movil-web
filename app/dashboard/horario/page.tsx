@@ -151,10 +151,11 @@ export default function HorarioPage() {
             const slots = generateTimeSlots(10);
             setTimeSlots(slots);
 
-            // 1. Fetch Students/Groups
+            // 1. Fetch Students/Groups (Solo Activos)
             const { data: estData, error: estError } = await supabase
                 .from('estudiantes')
                 .select('grupo')
+                .eq('estado', 'activo') // Change: Filtrar solo activos
                 .neq('grupo', null);
 
             if (estError) throw estError;
