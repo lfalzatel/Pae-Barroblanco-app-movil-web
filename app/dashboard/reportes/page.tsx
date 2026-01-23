@@ -926,7 +926,7 @@ export default function ReportesPage() {
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 flex items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200/60 shadow-inner text-sm font-black text-gray-700 group-hover:from-blue-500 group-hover:to-blue-600 group-hover:text-white group-hover:border-blue-500 group-hover:shadow-blue-200 transition-all duration-300">
-                        {item.grupo.replace('Grado ', '')}
+                        {item.grupo.replace('Grado ', '').split('-')[0]}
                       </div>
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-gray-900 group-hover:text-blue-700 transition-colors">{item.grupo}</span>
@@ -1142,9 +1142,6 @@ export default function ReportesPage() {
               <span className="sm:hidden">Sede:</span>
             </div>
             <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <School className="h-5 w-5 text-gray-400" />
-              </div>
               <select
                 value={sedeFilter}
                 onChange={(e) => {

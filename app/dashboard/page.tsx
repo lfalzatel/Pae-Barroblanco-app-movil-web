@@ -379,7 +379,7 @@ export default function DashboardPage() {
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 flex items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200/60 shadow-inner text-sm font-black text-gray-700 group-hover:from-blue-500 group-hover:to-blue-600 group-hover:text-white group-hover:border-blue-500 group-hover:shadow-blue-200 transition-all duration-300">
-                        {item.grupo.replace('Grado ', '')}
+                        {item.grupo.replace('Grado ', '').split('-')[0]}
                       </div>
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-gray-900 group-hover:text-blue-700 transition-colors">{item.grupo}</span>
