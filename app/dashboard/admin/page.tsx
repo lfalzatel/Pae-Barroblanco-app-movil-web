@@ -107,6 +107,7 @@ export default function AdminPage() {
     const [renamingGrupo, setRenamingGrupo] = useState({ oldName: '', newName: '' });
     const [changingSede, setChangingSede] = useState({ grupo: '', newSede: '' });
     const [sourceSedeFilter, setSourceSedeFilter] = useState('Todas');
+    const [renameSedeFilter, setRenameSedeFilter] = useState('Principal');
     const [activeTab, setActiveTab] = useState<'move' | 'rename' | 'status' | 'backup' | 'sede'>('move');
     const [uploading, setUploading] = useState(false);
     const [inactivateAll, setInactivateAll] = useState(false);
@@ -571,7 +572,7 @@ export default function AdminPage() {
     if (!usuario) return null;
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="min-h-screen bg-gray-50 pb-32">
             <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -586,35 +587,41 @@ export default function AdminPage() {
 
             <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
                 {/* Tabs de Herramientas */}
-                <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-200">
+                {/* Tabs de Herramientas */}
+                <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-200 overflow-x-auto no-scrollbar gap-2">
                     <button
                         onClick={() => setActiveTab('move')}
-                        className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all ${activeTab === 'move' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'move' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
                     >
+                        <ArrowRightLeft className="w-4 h-4" />
                         Mover Masa
                     </button>
                     <button
                         onClick={() => setActiveTab('rename')}
-                        className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all ${activeTab === 'rename' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'rename' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
                     >
+                        <Edit3 className="w-4 h-4" />
                         Renombrar Grupos
                     </button>
                     <button
                         onClick={() => setActiveTab('sede')}
-                        className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all ${activeTab === 'sede' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'sede' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
                     >
+                        <MapPin className="w-4 h-4" />
                         Cambiar Sede
                     </button>
                     <button
                         onClick={() => setActiveTab('status')}
-                        className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all ${activeTab === 'status' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'status' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
                     >
+                        <ShieldAlert className="w-4 h-4" />
                         Gestión de Estados
                     </button>
                     <button
                         onClick={() => setActiveTab('backup')}
-                        className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all ${activeTab === 'backup' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'backup' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
                     >
+                        <Database className="w-4 h-4" />
                         Respaldo
                     </button>
                 </div>
@@ -669,9 +676,28 @@ export default function AdminPage() {
 
                                 <div className="flex flex-col md:flex-row gap-4">
                                     <div className="flex-1">
-                                        <label className="block text-xs font-bold uppercase mb-2 opacity-80">Seleccione Grupo Original</label>
+                                        <label className="block text-xs font-bold uppercase mb-2 opacity-80">1. Filtrar por Sede</label>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {['Principal', 'Primaria', 'Maria Inmaculada'].map(sede => (
+                                                <button
+                                                    key={sede}
+                                                    onClick={() => setRenameSedeFilter(sede)}
+                                                    className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${renameSedeFilter === sede
+                                                        ? 'bg-blue-800 text-white border-blue-400'
+                                                        : 'bg-blue-700/50 text-blue-200 border-transparent hover:bg-blue-700'
+                                                        }`}
+                                                >
+                                                    {sede}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <label className="block text-xs font-bold uppercase mb-2 opacity-80">2. Seleccione Grupo Original</label>
                                         <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-40 p-1 bg-blue-700/30 rounded-xl">
-                                            {allGrupos.map(g => (
+                                            {allGrupos.filter(g => {
+                                                // Filter groups by selected Sede
+                                                return estudiantes.some(e => e.grupo === g && e.sede === renameSedeFilter);
+                                            }).map(g => (
                                                 <button
                                                     key={g}
                                                     onClick={() => setRenamingGrupo({ ...renamingGrupo, oldName: g })}
