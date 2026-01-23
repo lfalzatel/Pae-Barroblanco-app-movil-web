@@ -38,9 +38,9 @@ export default function ReportesPage() {
     totalEstudiantes: 0,
     recibieron: 0,
     noRecibieron: 0,
-    ausentes: 0,
     inactivos: 0,
-    groupDetails: { noRecibieron: [], ausentes: [], inactivos: [] }
+    porcentajeAsistencia: '0',
+    groupDetails: { recibieron: [], noRecibieron: [], ausentes: [], inactivos: [] }
   });
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -254,6 +254,7 @@ export default function ReportesPage() {
           noRecibieron: noRecibieronCount,
           ausentes: ausentesCount,
           inactivos: inactivosCount,
+          porcentajeAsistencia: (totalCount && totalCount > 0) ? (((totalCount - ausentesCount) / totalCount) * 100).toFixed(1) : '0',
           groupDetails: {
             recibieron: mapDetails(groupAgg.recibieron),
             noRecibieron: mapDetails(groupAgg.noRecibieron),
@@ -844,6 +845,11 @@ export default function ReportesPage() {
       data = stats.groupDetails.inactivos;
       color = "text-blue-700 bg-blue-50";
       Icon = UserMinus;
+    } else if (category === 'recibieron') {
+      title = "Recibieron Ración";
+      data = stats.groupDetails.recibieron;
+      color = "text-emerald-600 bg-emerald-50";
+      Icon = CheckCircle;
     }
 
     if (data.length > 0) {
@@ -867,7 +873,7 @@ export default function ReportesPage() {
           id: e.id
         }));
     } else {
-      const state = category === 'noRecibieron' ? 'no_recibio' : 'ausente';
+      const state = category === 'recibieron' ? 'recibio' : (category === 'noRecibieron' ? 'no_recibio' : 'ausente');
       records = allPeriodRecords
         .filter(a => a.estudiantes.grupo === grupo && a.estado === state)
         .map(a => ({
