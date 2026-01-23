@@ -95,7 +95,7 @@ export default function DashboardPage() {
 
       if (errAsist) throw errAsist;
 
-      const estudiantes = todosEstudiantes || [];
+      const estudiantes = (todosEstudiantes || []).filter(e => !e.grupo || !e.grupo.includes('2025')); // Filter out 2025
       const asistenciasHoy = asistencias || [];
 
       const asistMap: Record<string, string> = {};
@@ -114,10 +114,10 @@ export default function DashboardPage() {
       const recibieron = asistenciasHoy.filter(a => a.estado === 'recibio').length;
       const noRecibieron = asistenciasHoy.filter(a => a.estado === 'no_recibio').length;
 
-      // Ausentes: Activos que tienen record como 'ausente' O no tienen record
+      // Ausentes: Activos que tienen record EXPLICITO como 'ausente'
       const ausentes = activos.filter(e => {
         const estadoAsist = asistMap[e.id];
-        return estadoAsist === 'ausente' || !estadoAsist;
+        return estadoAsist === 'ausente';
       }).length;
 
       // Agregación por Grupos para Modales
@@ -135,13 +135,13 @@ export default function DashboardPage() {
       // Llenar no recibieron por grupo
       asistenciasHoy.filter(a => a.estado === 'no_recibio').forEach(a => {
         const est = estudiantes.find(e => e.id === a.estudiante_id);
-        if (est) groupAgg.noRecibieron[est.grupo] = (groupAgg.noRecibieron[est.grupo] || 0) + 1;
+        if (est && est.grupo) groupAgg.noRecibieron[est.grupo] = (groupAgg.noRecibieron[est.grupo] || 0) + 1;
       });
 
       // Llenar ausentes por grupo
       activos.forEach(e => {
         const estadoAsist = asistMap[e.id];
-        if (estadoAsist === 'ausente' || !estadoAsist) {
+        if (estadoAsist === 'ausente') {
           groupAgg.ausentes[e.grupo] = (groupAgg.ausentes[e.grupo] || 0) + 1;
         }
       });

@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
-import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X, ChevronLeft, School } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -1119,43 +1119,29 @@ export default function ReportesPage() {
         </div>
 
         {/* Filtro de sede */}
-        <div className="mb-6 flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-          <button
-            onClick={() => setSedeFilter('todas')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${sedeFilter === 'todas'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-          >
-            Todas
-          </button>
-          <button
-            onClick={() => setSedeFilter('principal')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${sedeFilter === 'principal'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-          >
-            Principal
-          </button>
-          <button
-            onClick={() => setSedeFilter('primaria')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${sedeFilter === 'primaria'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-          >
-            Primaria
-          </button>
-          <button
-            onClick={() => setSedeFilter('maria-inmaculada')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${sedeFilter === 'maria-inmaculada'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-          >
-            Maria Inmaculada
-          </button>
+        <div className="mb-6">
+          <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <School className="w-4 h-4" />
+            Filtrar por Sede:
+          </div>
+          <div className="relative w-full sm:w-64">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <School className="h-5 w-5 text-gray-400" />
+            </div>
+            <select
+              value={sedeFilter}
+              onChange={(e) => setSedeFilter(e.target.value)}
+              className="block w-full pl-10 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl appearance-none bg-white shadow-sm border font-bold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
+            >
+              <option value="todas">Todas las Sedes</option>
+              <option value="principal">Sede Principal</option>
+              <option value="primaria">Sede Primaria</option>
+              <option value="maria-inmaculada">Maria Inmaculada</option>
+            </select>
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <ChevronDown className="h-5 w-5 text-gray-400" />
+            </div>
+          </div>
         </div>
 
         {/* Filtro de grupo */}

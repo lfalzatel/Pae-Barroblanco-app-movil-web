@@ -505,17 +505,17 @@ export default function HorarioPage() {
                                 <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
 
                                 {/* Sede Selector (Dropdown) */}
-                                <div className="relative">
+                                <div className="relative animate-pulse hover:animate-none group">
                                     <select
                                         value={selectedSede}
                                         onChange={(e) => setSelectedSede(e.target.value)}
-                                        className="appearance-none bg-gray-100 pl-3 pr-8 py-1.5 rounded-xl text-xs font-bold text-gray-700 border border-transparent hover:bg-white hover:border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
+                                        className="appearance-none bg-blue-50/50 pl-3 pr-8 py-1.5 rounded-xl text-xs font-bold text-blue-700 border border-blue-100 hover:bg-white hover:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer shadow-sm"
                                     >
                                         <option value="Principal">Sede Principal</option>
                                         <option value="Primaria">Sede Primaria</option>
                                         <option value="Maria Inmaculada">Sede Maria Inmaculada</option>
                                     </select>
-                                    <ChevronDown className="w-3 h-3 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    <ChevronDown className="w-3 h-3 text-blue-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none group-hover:transform group-hover:rotate-180 transition-transform" />
                                 </div>
                             </div>
 

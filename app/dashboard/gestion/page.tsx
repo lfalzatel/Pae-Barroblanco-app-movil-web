@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Search, Eye, FileDown, Users, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Search, Eye, FileDown, Users, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2, School, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -542,19 +542,28 @@ export default function GestionPage() {
                   <Users className="w-4 h-4" />
                   Filtrar por Sede:
                 </div>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {sedes.map(sede => (
-                    <button
-                      key={sede.id}
-                      onClick={() => {
-                        setSedeFilter(sede.id);
-                        setGrupoFilter('todos');
-                      }}
-                      className={`px-3 py-1.5 text-sm rounded-full font-medium whitespace-nowrap transition-colors ${sedeFilter === sede.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
-                    >
-                      {sede.nombre}
-                    </button>
-                  ))}
+                <div className="relative w-full sm:w-64">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <School className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <select
+                    value={sedeFilter}
+                    onChange={(e) => {
+                      setSedeFilter(e.target.value);
+                      setGrupoFilter('todos');
+                    }}
+                    className="block w-full pl-10 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl appearance-none bg-white shadow-sm border font-bold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
+                  >
+                    <option value="todas">Todas las Sedes</option>
+                    {sedes.filter((s) => s.id !== 'todas').map((sede) => (
+                      <option key={sede.id} value={sede.id}>
+                        {sede.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <ChevronDown className="h-5 w-5 text-gray-400" />
+                  </div>
                 </div>
               </div>
 

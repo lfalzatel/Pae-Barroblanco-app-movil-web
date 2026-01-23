@@ -120,6 +120,7 @@ export default function AdminPage() {
     const [changingSede, setChangingSede] = useState({ grupo: '', newSede: '' });
     const [sourceSedeFilter, setSourceSedeFilter] = useState('Todas');
     const [renameSedeFilter, setRenameSedeFilter] = useState('Principal');
+    const [moveSedeFilter, setMoveSedeFilter] = useState('Principal');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'move' | 'rename' | 'status' | 'backup' | 'sede'>('move');
     const [uploading, setUploading] = useState(false);
@@ -312,7 +313,7 @@ export default function AdminPage() {
             if (error) throw error;
             setEstudiantes(data || []);
 
-            const grupos = Array.from(new Set((data || []).map(e => e.grupo))).sort();
+            const grupos = Array.from(new Set((data || []).map(e => e.grupo))).filter(g => !g.includes('2025')).sort();
             setAllGrupos(grupos as string[]);
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -726,9 +727,28 @@ export default function AdminPage() {
 
                                 <div className="flex flex-col md:flex-row gap-4">
                                     <div className="flex-1">
-                                        <label className="block text-xs font-bold uppercase mb-2 opacity-80">Seleccione Grupo de Destino</label>
+                                        <label className="block text-xs font-bold uppercase mb-2 opacity-80">1. Filtrar por Sede</label>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {['Principal', 'Primaria', 'Maria Inmaculada'].map(sede => (
+                                                <button
+                                                    key={sede}
+                                                    onClick={() => setMoveSedeFilter(sede)}
+                                                    className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${moveSedeFilter === sede
+                                                        ? 'bg-blue-800 text-white border-blue-400'
+                                                        : 'bg-blue-700/50 text-blue-200 border-transparent hover:bg-blue-700'
+                                                        }`}
+                                                >
+                                                    {sede}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <label className="block text-xs font-bold uppercase mb-2 opacity-80">2. Seleccione Grupo de Destino</label>
                                         <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-40 p-1 bg-blue-700/30 rounded-xl">
-                                            {allGrupos.map(g => (
+                                            {allGrupos.filter(g => {
+                                                // Filter groups by selected Sede
+                                                return estudiantes.some(e => e.grupo === g && e.sede === moveSedeFilter);
+                                            }).map(g => (
                                                 <button
                                                     key={g}
                                                     onClick={() => setTargetGrupo(g)}
