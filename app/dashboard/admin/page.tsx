@@ -20,7 +20,8 @@ import {
     MapPin,
     X,
     AlertTriangle,
-    Info
+    Info,
+    ChevronDown
 } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
@@ -587,8 +588,35 @@ export default function AdminPage() {
 
             <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
                 {/* Tabs de Herramientas */}
-                {/* Tabs de Herramientas */}
-                <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-200 overflow-x-auto no-scrollbar gap-2">
+                {/* Tabs de Herramientas (Responsive) */}
+
+                {/* Mobile: Selector Desplegable Premium */}
+                <div className="md:hidden">
+                    <div className="relative">
+                        <select
+                            value={activeTab}
+                            onChange={(e) => setActiveTab(e.target.value as any)}
+                            className="w-full appearance-none bg-white border border-blue-200 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-4 shadow-sm font-bold"
+                        >
+                            <option value="move">Mover Masa</option>
+                            <option value="rename">Renombrar Grupos</option>
+                            <option value="sede">Cambiar Sede</option>
+                            <option value="status">Gestión de Estados</option>
+                            <option value="backup">Respaldo</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-blue-600">
+                            {activeTab === 'move' && <ArrowRightLeft className="w-5 h-5 mr-2" />}
+                            {activeTab === 'rename' && <Edit3 className="w-5 h-5 mr-2" />}
+                            {activeTab === 'sede' && <MapPin className="w-5 h-5 mr-2" />}
+                            {activeTab === 'status' && <ShieldAlert className="w-5 h-5 mr-2" />}
+                            {activeTab === 'backup' && <Database className="w-5 h-5 mr-2" />}
+                            <ChevronDown className="h-5 w-5" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Desktop: Tabs Horizontales */}
+                <div className="hidden md:flex bg-white p-1 rounded-xl shadow-sm border border-gray-200 overflow-x-auto no-scrollbar gap-2">
                     <button
                         onClick={() => setActiveTab('move')}
                         className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'move' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}

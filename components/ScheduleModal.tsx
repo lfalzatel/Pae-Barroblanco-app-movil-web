@@ -119,43 +119,45 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
                 {/* Header */}
                 <div className="p-6 border-b border-gray-100/50 bg-gradient-to-r from-cyan-50 to-white shrink-0">
-                    <div className="flex items-start justify-between">
+                    {/* Row 1: Title & Close */}
+                    <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-4">
                             <div className="bg-cyan-100 text-cyan-700 p-3 rounded-2xl shadow-sm ring-1 ring-cyan-500/10">
                                 <Calendar className="w-6 h-6" />
                             </div>
-                            <div>
-                                <h3 className="font-black text-gray-900 leading-tight text-lg">Horario de mañana</h3>
-                                <button
-                                    onClick={() => setShowCalendar(!showCalendar)}
-                                    className="text-xs font-bold text-cyan-600 mt-0.5 capitalize flex items-center gap-1 hover:text-cyan-800 transition-colors bg-cyan-50 px-2 py-1 rounded-lg"
-                                >
-                                    {formattedDate}
-                                    {showCalendar ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                </button>
-                            </div>
+                            <h3 className="font-black text-gray-900 leading-tight text-xl">Horario de mañana</h3>
                         </div>
-                        <div className="flex items-center gap-2">
-                            {/* Sede Selector Dropdown */}
-                            <div className="relative block">
-                                <select
-                                    value={selectedSede}
-                                    onChange={(e) => setSelectedSede(e.target.value)}
-                                    className="appearance-none bg-cyan-50 pl-2 pr-6 py-1 rounded-lg text-[10px] font-bold text-cyan-700 border border-transparent hover:bg-white hover:border-cyan-100 focus:outline-none cursor-pointer uppercase tracking-tight"
-                                >
-                                    <option value="Principal">Principal</option>
-                                    <option value="Primaria">Primaria</option>
-                                    <option value="Maria Inmaculada">M. Inmaculada</option>
-                                </select>
-                                <ChevronDown className="w-3 h-3 text-cyan-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                            </div>
+                        <button
+                            onClick={onClose}
+                            className="p-2.5 hover:bg-black/5 rounded-full transition-all duration-200 text-gray-400 hover:text-gray-900 hover:rotate-90"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
 
-                            <button
-                                onClick={onClose}
-                                className="p-2.5 hover:bg-black/5 rounded-full transition-all duration-200 text-gray-400 hover:text-gray-900 hover:rotate-90"
+                    {/* Row 2: Controls (Date & Sede) */}
+                    <div className="flex gap-3">
+                        {/* Date Selector */}
+                        <button
+                            onClick={() => setShowCalendar(!showCalendar)}
+                            className="flex-1 bg-cyan-50 hover:bg-white border border-transparent hover:border-cyan-200 text-cyan-800 rounded-xl py-2.5 px-3 flex items-center justify-center gap-2 font-bold transition-all text-xs uppercase tracking-tight shadow-sm ring-1 ring-cyan-900/5 group"
+                        >
+                            <span className="truncate">{formattedDate}</span>
+                            {showCalendar ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60 group-hover:translate-y-0.5 transition-transform" />}
+                        </button>
+
+                        {/* Sede Selector */}
+                        <div className="relative flex-1">
+                            <select
+                                value={selectedSede}
+                                onChange={(e) => setSelectedSede(e.target.value)}
+                                className="w-full appearance-none bg-cyan-50 hover:bg-white border border-transparent hover:border-cyan-200 text-cyan-800 rounded-xl py-2.5 pl-3 pr-8 font-bold transition-all text-xs uppercase tracking-tight shadow-sm ring-1 ring-cyan-900/5 cursor-pointer text-center focus:outline-none"
                             >
-                                <X className="w-5 h-5" />
-                            </button>
+                                <option value="Principal">Principal</option>
+                                <option value="Primaria">Primaria</option>
+                                <option value="Maria Inmaculada">M. Inmaculada</option>
+                            </select>
+                            <ChevronDown className="w-3.5 h-3.5 text-cyan-600 opacity-60 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
                     </div>
 
