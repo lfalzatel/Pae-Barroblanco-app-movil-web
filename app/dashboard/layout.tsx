@@ -67,7 +67,7 @@ export default function DashboardLayout({
             .from('schedules')
             .select('items')
             .eq('date', dateStr)
-            .single();
+            .maybeSingle();
 
         if (data?.items) {
             return (data.items as any[]).sort((a, b) => {
@@ -189,7 +189,7 @@ export default function DashboardLayout({
                 .from('schedules')
                 .select('items')
                 .eq('date', dateStr)
-                .single();
+                .maybeSingle();
 
             if (data?.items) {
                 // Sort by time before setting state
