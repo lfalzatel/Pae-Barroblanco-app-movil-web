@@ -1147,7 +1147,10 @@ export default function ReportesPage() {
 
         {/* Filtro de grupo */}
         <div className="mb-6">
-          <div className="text-sm font-medium text-gray-700 mb-2">Filtrar por Grupo:</div>
+          <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Filtrar por Grupo:
+          </div>
           <div className="relative">
             <button
               onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}

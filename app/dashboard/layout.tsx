@@ -530,7 +530,7 @@ export default function DashboardLayout({
                             </button>
                         </div>
 
-                        <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                        <div className="p-6 max-h-[60vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
                             {activeNotifTab === 'daily' ? (
                                 <>
                                     {/* Enhanced Date Selector with Collapsible MiniCalendar */}
