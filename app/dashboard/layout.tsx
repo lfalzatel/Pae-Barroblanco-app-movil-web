@@ -750,103 +750,94 @@ export default function DashboardLayout({
                                                                 )}
                                                             </div>
                                                         </div>
-                                                </div>
-                                    );
+                                                    );
                                                 } else {
                                                     return (
-                                    <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
-                                        <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                        <p className="text-xs font-bold text-gray-500">Sin programación</p>
-                                        <p className="text-[10px] text-gray-400 italic">No hay horario publicado para {selectedSede} mañana.</p>
-                                    </div>
-                                    );
+                                                        <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
+                                                            <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                                            <p className="text-xs font-bold text-gray-500">Sin programación</p>
+                                                            <p className="text-[10px] text-gray-400 italic">No hay horario publicado para {selectedSede} mañana.</p>
+                                                        </div>
+                                                    );
                                                 }
                                             })()}
-                                    ) : (
-                                    <div className="text-center py-10">
-                                        <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-inner">
-                                            <Clock className="w-8 h-8 text-gray-400" />
-                                        </div>
-                                        <h4 className="font-black text-gray-900 mb-1">Sin Horario</h4>
-                                        <p className="text-[10px] text-gray-400 font-medium max-w-[180px] mx-auto">Aún no se ha publicado el horario de mañana en el sistema.</p>
-                                    </div>
-                                            )}
+
+                                        </>
+                                    )}
                                 </>
-                            )}
-                        </>
-                        ) : (
-                        <div className="space-y-6">
-                            {isWeeklySearching ? (
-                                <div className="text-center py-20">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                                    <p className="text-xs text-gray-500 mt-2 font-medium">Cargando consolidado semanal...</p>
-                                </div>
                             ) : (
                                 <div className="space-y-6">
-                                    {(() => {
-                                        const day = weeklyNotifData[selectedDayInWeek];
-                                        if (!day) return null;
-                                        const news = day.items.filter((i: any) => {
-                                            const groupSede = groupSedeMap[i.group] || 'Principal';
-                                            return groupSede === selectedSede && (i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE');
-                                        });
+                                    {isWeeklySearching ? (
+                                        <div className="text-center py-20">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                            <p className="text-xs text-gray-500 mt-2 font-medium">Cargando consolidado semanal...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-6">
+                                            {(() => {
+                                                const day = weeklyNotifData[selectedDayInWeek];
+                                                if (!day) return null;
+                                                const news = day.items.filter((i: any) => {
+                                                    const groupSede = groupSedeMap[i.group] || 'Principal';
+                                                    return groupSede === selectedSede && (i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE');
+                                                });
 
-                                        if (news.length === 0) {
-                                            return (
-                                                <div className="bg-gray-50 p-10 rounded-3xl border border-gray-100 text-center animate-in fade-in duration-300">
-                                                    <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
-                                                    <h4 className="font-black text-gray-900 mb-1">Sin Novedades</h4>
-                                                    <p className="text-[10px] text-gray-400 italic">No hay cambios reportados para el {day.label.split(',')[0]}.</p>
-                                                </div>
-                                            );
-                                        }
-
-                                        return (
-                                            <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-300">
-                                                <div className="flex items-center gap-2 border-l-4 border-blue-600 pl-3 py-1 bg-blue-50/30 rounded-r-xl">
-                                                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">{day.label}</p>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    {news.map((item: any, i: number) => (
-                                                        <div key={i} className={`p-3 rounded-2xl border flex items-start gap-3 shadow-sm ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
-                                                            <div className={`${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-600 text-white' : 'bg-blue-50 text-blue-600 border border-blue-100'} px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase shrink-0`}>
-                                                                {item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'No Asiste' : (item.time?.split(' - ')[0] || item.time_start)}
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className={`font-black text-[11px] ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-900' : 'text-gray-900'}`}>{item.group}</p>
-                                                                {item.notes && <p className={`text-[9px] font-medium italic mt-0.5 line-clamp-1 ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-600' : 'text-gray-500'}`}>{item.notes}</p>}
-                                                            </div>
+                                                if (news.length === 0) {
+                                                    return (
+                                                        <div className="bg-gray-50 p-10 rounded-3xl border border-gray-100 text-center animate-in fade-in duration-300">
+                                                            <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
+                                                            <h4 className="font-black text-gray-900 mb-1">Sin Novedades</h4>
+                                                            <p className="text-[10px] text-gray-400 italic">No hay cambios reportados para el {day.label.split(',')[0]}.</p>
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-300">
+                                                        <div className="flex items-center gap-2 border-l-4 border-blue-600 pl-3 py-1 bg-blue-50/30 rounded-r-xl">
+                                                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">{day.label}</p>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {news.map((item: any, i: number) => (
+                                                                <div key={i} className={`p-3 rounded-2xl border flex items-start gap-3 shadow-sm ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
+                                                                    <div className={`${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-600 text-white' : 'bg-blue-50 text-blue-600 border border-blue-100'} px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase shrink-0`}>
+                                                                        {item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'No Asiste' : (item.time?.split(' - ')[0] || item.time_start)}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className={`font-black text-[11px] ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-900' : 'text-gray-900'}`}>{item.group}</p>
+                                                                        {item.notes && <p className={`text-[9px] font-medium italic mt-0.5 line-clamp-1 ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-600' : 'text-gray-500'}`}>{item.notes}</p>}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
-                            )}
-                    </div>
 
-                    <div className="p-4 bg-gray-50 border-t border-gray-100 shrink-0">
-                        <button
-                            onClick={() => {
-                                setNotifModalOpen(false);
-                                setSearchResult(null);
-                                setSelectedDate('');
-                            }}
-                            className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg hover:bg-black transition-all active:scale-[0.98]"
-                        >
-                            Entendido
-                        </button>
+                        <div className="p-4 bg-gray-50 border-t border-gray-100 shrink-0">
+                            <button
+                                onClick={() => {
+                                    setNotifModalOpen(false);
+                                    setSearchResult(null);
+                                    setSelectedDate('');
+                                }}
+                                className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg hover:bg-black transition-all active:scale-[0.98]"
+                            >
+                                Entendido
+                            </button>
+                        </div>
                     </div>
                 </div>
-                </div>
-    )
-}
+            )
+            }
 
-{/* Spacer for Mobile Header */ }
-<div className="md:hidden h-16"></div>
+            {/* Spacer for Mobile Header */}
+            <div className="md:hidden h-16"></div>
         </div >
     );
 }
