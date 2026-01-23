@@ -323,7 +323,7 @@ export default function HorarioPage() {
             if (prevWeekGroupIds.includes(selectedGroup.label)) {
                 setNotif({
                     type: 'error',
-                    msg: `⚠️ Advertencia: El grupo ${selectedGroup.label} ya tuvo clase en este horario la semana pasada.`
+                    msg: `⚠️ Advertencia: El grupo ${selectedGroup.label} ya fue asignado en este horario la semana pasada.`
                 });
             }
 
