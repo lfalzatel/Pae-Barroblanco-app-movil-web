@@ -17,7 +17,8 @@ import {
     ChevronDown,
     ChevronRight,
     X,
-    FileText
+    FileText,
+    AlertTriangle
 } from 'lucide-react';
 import { generateTimeSlots, processGroups, GlobalGroup, isBreakTime } from '@/lib/schedule-utils';
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
@@ -320,13 +321,6 @@ export default function HorarioPage() {
             const prevWeekGroupIds = prevWeekAssignments[startKey] || [];
 
             // Note: prevWeekAssignments stores group labels (strings), but we can compare with selectedGroup.label
-            if (prevWeekGroupIds.includes(selectedGroup.label)) {
-                setNotif({
-                    type: 'error',
-                    msg: `⚠️ Advertencia: El grupo ${selectedGroup.label} ya fue asignado en este horario la semana pasada.`
-                });
-            }
-
             setAssignments(prev => ({
                 ...prev,
                 [time]: [...(prev[time] || []), { group: selectedGroup }]
@@ -744,6 +738,20 @@ export default function HorarioPage() {
                                                                                     <span className="text-[10px] font-bold truncate">{slot.notes}</span>
                                                                                 </div>
                                                                             )}
+                                                                            {/* Conflict Warning */}
+                                                                            {(() => {
+                                                                                const startKey = time.split(' - ')[0];
+                                                                                const prevWeekGroupIds = prevWeekAssignments[startKey] || [];
+                                                                                if (prevWeekGroupIds.includes(slot.group.label)) {
+                                                                                    return (
+                                                                                        <div className="inline-flex items-center gap-1 bg-red-50 text-red-600 px-2 py-1 rounded-lg border border-red-100 w-full max-w-full mt-1 animate-in fade-in slide-in-from-left-1">
+                                                                                            <AlertTriangle className="w-3 h-3 shrink-0" />
+                                                                                            <span className="text-[9px] font-bold leading-tight">Ya fue asignado aquí la semana pasada</span>
+                                                                                        </div>
+                                                                                    );
+                                                                                }
+                                                                                return null;
+                                                                            })()}
                                                                         </div>
                                                                     </div>
                                                                 ))}
