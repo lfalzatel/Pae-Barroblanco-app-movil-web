@@ -538,12 +538,13 @@ export default function GestionPage() {
           <>
             {/* Filtros */}
             <div className="mb-6 space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                <div className="w-full md:w-auto md:min-w-[150px] text-sm font-bold text-gray-700 flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <div className="text-sm font-bold text-gray-700 flex items-center gap-2 whitespace-nowrap">
                   <School className="w-4 h-4 text-blue-600" />
-                  Filtrar por Sede:
+                  <span className="hidden sm:inline">Filtrar por Sede:</span>
+                  <span className="sm:hidden">Sede:</span>
                 </div>
-                <div className="relative w-full md:flex-1">
+                <div className="relative flex-1">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <School className="h-5 w-5 text-gray-400" />
                   </div>
@@ -568,12 +569,13 @@ export default function GestionPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                <div className="w-full md:w-auto md:min-w-[150px] text-sm font-bold text-gray-700 flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <div className="text-sm font-bold text-gray-700 flex items-center gap-2 whitespace-nowrap">
                   <Users className="w-4 h-4 text-blue-600" />
-                  Filtrar por Grupo:
+                  <span className="hidden sm:inline">Filtrar por Grupo:</span>
+                  <span className="sm:hidden">Grupo:</span>
                 </div>
-                <div className="relative w-full md:flex-1">
+                <div className="relative flex-1">
                   <button
                     onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl flex items-center justify-between shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
@@ -609,12 +611,13 @@ export default function GestionPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                <div className="w-full md:w-auto md:min-w-[150px] text-sm font-bold text-gray-700 flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <div className="text-sm font-bold text-gray-700 flex items-center gap-2 whitespace-nowrap">
                   <Search className="w-4 h-4 text-blue-600" />
-                  Buscar Estudiante:
+                  <span className="hidden sm:inline">Buscar Estudiante:</span>
+                  <span className="sm:hidden">Buscar:</span>
                 </div>
-                <div className="relative w-full md:flex-1">
+                <div className="relative flex-1">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type="text"
