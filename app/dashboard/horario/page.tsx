@@ -315,6 +315,18 @@ export default function HorarioPage() {
                 return;
             }
 
+            // Check for conflict with previous week
+            const startKey = time.split(' - ')[0];
+            const prevWeekGroupIds = prevWeekAssignments[startKey] || [];
+
+            // Note: prevWeekAssignments stores group labels (strings), but we can compare with selectedGroup.label
+            if (prevWeekGroupIds.includes(selectedGroup.label)) {
+                setNotif({
+                    type: 'error',
+                    msg: `⚠️ Advertencia: El grupo ${selectedGroup.label} ya tuvo clase en este horario la semana pasada.`
+                });
+            }
+
             setAssignments(prev => ({
                 ...prev,
                 [time]: [...(prev[time] || []), { group: selectedGroup }]
