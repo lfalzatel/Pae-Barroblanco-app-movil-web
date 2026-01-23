@@ -8,6 +8,7 @@ interface ScheduleItem {
     time: string;
     group: string;
     studentCount?: number;
+    sede?: string;
     notes?: string;
 }
 
@@ -21,6 +22,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
     const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
+    const [selectedSede, setSelectedSede] = useState('Todas');
 
     useEffect(() => {
         if (isOpen) {
@@ -61,15 +63,17 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                 const rawItems = data.items;
                 const uniqueGroupsInSched = Array.from(new Set(rawItems.map((i: any) => i.group)));
 
-                // 2. Fetch Student Counts for these specific groups
                 const { data: countsData } = await supabase
                     .from('estudiantes')
-                    .select('grupo')
+                    .select('grupo, sede')
                     .in('grupo', uniqueGroupsInSched);
 
                 const countsMap: Record<string, number> = {};
+                const sedeMap: Record<string, string> = {};
+
                 countsData?.forEach(s => {
                     countsMap[s.grupo] = (countsMap[s.grupo] || 0) + 1;
+                    if (s.sede) sedeMap[s.grupo] = s.sede;
                 });
 
                 // 3. Map everything together and sort by time
@@ -77,7 +81,8 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                     time: i.time || i.time_start,
                     group: i.group,
                     notes: i.notes,
-                    studentCount: countsMap[i.group] || 0
+                    studentCount: countsMap[i.group] || 0,
+                    sede: sedeMap[i.group] || 'Principal'
                 })).sort((a: any, b: any) => a.time.localeCompare(b.time));
 
                 setSchedule(sortedItems);
@@ -93,7 +98,8 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
     };
 
     const handleDownload = () => {
-        generateSchedulePDF(schedule, date);
+        const filteredSchedule = schedule.filter(s => selectedSede === 'Todas' || s.sede === selectedSede);
+        generateSchedulePDF(filteredSchedule, date, selectedSede);
     };
 
     if (!isOpen) return null;
@@ -129,12 +135,29 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                 </button>
                             </div>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="p-2.5 hover:bg-black/5 rounded-full transition-all duration-200 text-gray-400 hover:text-gray-900 hover:rotate-90"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {/* Sede Selector Dropdown */}
+                            <div className="relative hidden sm:block">
+                                <select
+                                    value={selectedSede}
+                                    onChange={(e) => setSelectedSede(e.target.value)}
+                                    className="appearance-none bg-cyan-50 pl-2 pr-6 py-1 rounded-lg text-[10px] font-bold text-cyan-700 border border-transparent hover:bg-white hover:border-cyan-100 focus:outline-none cursor-pointer uppercase tracking-tight"
+                                >
+                                    <option value="Todas">Todas</option>
+                                    <option value="Principal">Principal</option>
+                                    <option value="Primaria">Primaria</option>
+                                    <option value="Maria Inmaculada">M. Inmaculada</option>
+                                </select>
+                                <ChevronDown className="w-3 h-3 text-cyan-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
+
+                            <button
+                                onClick={onClose}
+                                className="p-2.5 hover:bg-black/5 rounded-full transition-all duration-200 text-gray-400 hover:text-gray-900 hover:rotate-90"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Calendar Collapse */}
@@ -158,7 +181,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                     ) : schedule.length > 0 ? (
                         <>
                             <div className="space-y-3">
-                                {schedule.map((item, idx) => (
+                                {schedule.filter(s => selectedSede === 'Todas' || s.sede === selectedSede).map((item, idx) => (
                                     <div
                                         key={idx}
                                         className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-gray-100 hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-100/50 transition-all duration-300 group"

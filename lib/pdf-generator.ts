@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export const generateSchedulePDF = (scheduleData: any[], date: string) => {
+export const generateSchedulePDF = (scheduleData: any[], date: string, sede: string = 'Todas') => {
     const doc = new jsPDF();
 
     // Header
@@ -14,7 +14,7 @@ export const generateSchedulePDF = (scheduleData: any[], date: string) => {
 
     doc.setFontSize(16);
     doc.setTextColor(71, 85, 105); // Slate-600
-    doc.text('Horario de Restaurante Escolar', 105, 30, { align: 'center' });
+    doc.text(`Horario de Restaurante Escolar${sede !== 'Todas' ? ` - Sede ${sede}` : ''}`, 105, 30, { align: 'center' });
 
     doc.setFontSize(12);
     doc.setTextColor(100);

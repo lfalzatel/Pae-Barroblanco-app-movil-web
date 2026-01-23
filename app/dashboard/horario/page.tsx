@@ -23,7 +23,7 @@ import { generateTimeSlots, processGroups, GlobalGroup, isBreakTime } from '@/li
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
 
 interface AssignedSlot {
-    group: GlobalGroup;
+    group: GlobalGroup & { sede?: string };
     notes?: string;
 }
 
@@ -33,6 +33,7 @@ export default function HorarioPage() {
     const [saving, setSaving] = useState(false);
     const [role, setRole] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+    const [selectedSede, setSelectedSede] = useState('Todas');
 
     // Initialize with "Smart Tomorrow" logic
     // If today is Friday/Saturday -> Default to Monday
@@ -154,21 +155,30 @@ export default function HorarioPage() {
             // 1. Fetch Students/Groups (Solo Activos)
             const { data: estData, error: estError } = await supabase
                 .from('estudiantes')
-                .select('grupo')
-                .eq('estado', 'activo') // Change: Filtrar solo activos
+                .select('grupo, sede') // Fetch sede too
+                .eq('estado', 'activo')
                 .neq('grupo', null);
 
             if (estError) throw estError;
 
+            // Count students per group and determine sede per group
             const counts: Record<string, number> = {};
+            const groupSedeMap: Record<string, string> = {};
+
             estData?.forEach(e => {
-                if (e.grupo) counts[e.grupo] = (counts[e.grupo] || 0) + 1;
+                if (e.grupo) {
+                    counts[e.grupo] = (counts[e.grupo] || 0) + 1;
+                    // Assign Sede (Last one wins, assuming homogeneity)
+                    // Better: If mixed, maybe mark as mixed? Usually homogenous.
+                    if (e.sede) groupSedeMap[e.grupo] = e.sede;
+                }
             });
 
             const uniqueGroups = Array.from(new Set(estData?.map(e => e.grupo) || []));
             const processed = processGroups(uniqueGroups).map(g => ({
                 ...g,
-                studentCount: counts[g.label] || 0
+                studentCount: counts[g.label] || 0,
+                sede: groupSedeMap[g.label] || 'Principal' // Default to Principal if missing
             }));
 
             // 2. Fetch Current Schedule (Day or Week)
@@ -468,20 +478,39 @@ export default function HorarioPage() {
 
                         {/* ROW 1: Toggle & Actions */}
                         <div className="flex items-center justify-between gap-2">
-                            {/* Left: View Toggle */}
-                            <div className="bg-gray-100 p-1 rounded-xl flex items-center shrink-0">
-                                <button
-                                    onClick={() => setViewMode('day')}
-                                    className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all ${viewMode === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                                >
-                                    Día
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('week')}
-                                    className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all ${viewMode === 'week' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                                >
-                                    Semana
-                                </button>
+                            {/* Left: View Toggle & Sede Filter */}
+                            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+                                <div className="bg-gray-100 p-1 rounded-xl flex items-center shrink-0">
+                                    <button
+                                        onClick={() => setViewMode('day')}
+                                        className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all ${viewMode === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        Día
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('week')}
+                                        className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all ${viewMode === 'week' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        Semana
+                                    </button>
+                                </div>
+
+                                <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
+
+                                {/* Sede Selector (Dropdown) */}
+                                <div className="relative">
+                                    <select
+                                        value={selectedSede}
+                                        onChange={(e) => setSelectedSede(e.target.value)}
+                                        className="appearance-none bg-gray-100 pl-3 pr-8 py-1.5 rounded-xl text-xs font-bold text-gray-700 border border-transparent hover:bg-white hover:border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
+                                    >
+                                        <option value="Todas">Todas las Sedes</option>
+                                        <option value="Principal">Sede Principal</option>
+                                        <option value="Primaria">Sede Primaria</option>
+                                        <option value="Maria Inmaculada">Sede Maria Inmaculada</option>
+                                    </select>
+                                    <ChevronDown className="w-3 h-3 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
                             </div>
 
                             {/* Right: Actions (Save) */}
@@ -661,7 +690,9 @@ export default function HorarioPage() {
                                 <div className="flex-1 overflow-y-auto p-2 bg-[#F9FAFB] custom-scrollbar">
                                     <div className="space-y-1.5 lg:space-y-2 pb-20">
                                         {timeSlots.map((time) => {
-                                            const slots = assignments[time] || [];
+                                            const allSlots = assignments[time] || [];
+                                            // Filter slots displayed in timeline based on Sede
+                                            const slots = allSlots.filter(s => selectedSede === 'Todas' || s.group.sede === selectedSede);
                                             const isBreak = isBreakTime(time);
 
                                             return (
@@ -728,6 +759,10 @@ export default function HorarioPage() {
                                     {(() => {
                                         // Calculate filtered groups outside the render to use the count
                                         const filteredAvailableGroups = availableGroups.filter(group => {
+                                            // 1. Filter by Sede
+                                            if (selectedSede !== 'Todas' && (group as any).sede !== selectedSede) return false;
+
+                                            // 2. Filter Assigned/Absent
                                             const isAssigned = Object.values(assignments).some(slots => slots.some(s => s.group.id === group.id));
                                             const isAbsent = absentGroups.some(a => a.group.id === group.id);
                                             return !isAssigned && !isAbsent;
