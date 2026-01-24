@@ -101,7 +101,7 @@ export default function HorarioPage() {
 
     useEffect(() => {
         if (role) initData();
-    }, [role, selectedDate, viewMode]);
+    }, [role, selectedDate, viewMode, selectedSede]);
 
     const checkAccess = async () => {
         const { data: { user }, error } = await supabase.auth.getUser();
