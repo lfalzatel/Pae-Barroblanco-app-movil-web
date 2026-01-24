@@ -1,0 +1,38 @@
+
+> sistema-pae-barroblanco@1.0.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.3
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ Ô£ô (pwa) Compiling for server...
+ Ô£ô (pwa) Compiling for server...
+ Ô£ô (pwa) Compiling for client (static)...
+ Ôùï (pwa) Service worker: C:\6. Viaje a san andres\3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App (PWA)\public\sw.js
+ Ôùï (pwa)   URL: /sw.js
+ Ôùï (pwa)   Scope: /
+Failed to compile.
+
+./app/dashboard/registro/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[C:\6. Viaje a san andres\3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App (PWA)\app\dashboard\registro\page.tsx:624:1]
+ 624 |   if (!usuario) return null;
+ 625 | 
+ 626 |   return (
+ 627 |     <div className="min-h-screen bg-gray-50 pb-20">
+     :      ^^^
+ 628 |       {/* Modal de Novedad */}
+ 629 |       {modalNovedad && (
+ 630 |         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/dashboard/registro/page.tsx
+
+
+> Build failed because of webpack errors
