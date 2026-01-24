@@ -510,49 +510,67 @@ export default function HorarioPage() {
                                 </div>
                             </button>
                         ) : (
-                            <div className="flex flex-row items-center justify-between gap-1 lg:gap-3 animate-in slide-in-from-top-2 duration-300 w-full px-2 lg:px-0">
-                                {/* Week Navigator */}
-                                <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 p-0.5 lg:p-1 rounded-[2rem] flex items-center shadow-lg shadow-cyan-100 border border-cyan-500/30 shrink-0">
-                                    <button
-                                        onClick={() => handleMoveWeek(-1)}
-                                        className="p-1 lg:p-2 hover:bg-white/10 rounded-full text-white transition-colors"
-                                    >
-                                        <ChevronLeft className="w-3.5 h-3.5 lg:w-4 h-4" />
-                                    </button>
-                                    <div className="px-1 lg:px-4 text-center min-w-[100px] lg:min-w-[170px]">
-                                        <p className="text-[8px] lg:text-[10px] font-black text-white tracking-tighter lg:tracking-widest">{getWeekRange(selectedDate)}</p>
+                            <div className="flex flex-col gap-3 animate-in slide-in-from-top-2 duration-300">
+                                {/* Agenda Header (Now on Top of Weekly Navigation) */}
+                                <div className="flex justify-between items-center bg-white p-3 rounded-3xl border border-gray-100 shadow-sm">
+                                    <div>
+                                        <h2 className="text-lg font-black text-gray-900 tracking-tight">Agenda Institucional</h2>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Actividades Semanales</p>
                                     </div>
                                     <button
-                                        onClick={() => handleMoveWeek(1)}
-                                        className="p-1 lg:p-2 hover:bg-white/10 rounded-full text-white transition-colors"
+                                        onClick={() => handleAddEvent()}
+                                        className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white px-4 py-2 rounded-xl font-black text-[10px] shadow-lg shadow-cyan-200/50 flex items-center gap-2 transition-all active:scale-95"
                                     >
-                                        <ChevronRight className="w-3.5 h-3.5 lg:w-4 h-4" />
+                                        <Plus className="w-4 h-4" />
+                                        PROGRAMAR
                                     </button>
                                 </div>
 
-                                {/* Day Selector */}
-                                <div className="bg-white p-0.5 lg:p-1 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-0.5 lg:gap-1 tracking-tight shrink-0 overflow-x-auto no-scrollbar">
-                                    {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((d, i) => {
-                                        const dayIdx = i + 1;
-                                        const dateObj = new Date(selectedDate + 'T12:00:00');
-                                        const currentDayIdx = dateObj.getDay() || 7;
-                                        const isActive = currentDayIdx === dayIdx;
+                                {/* Weekly Navigation Selectors */}
+                                <div className="flex flex-row items-center justify-between gap-1 lg:gap-3 w-full px-2 lg:px-0">
+                                    {/* Week Navigator */}
+                                    <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 p-0.5 lg:p-1 rounded-[2rem] flex items-center shadow-lg shadow-cyan-100 border border-cyan-500/30 shrink-0">
+                                        <button
+                                            onClick={() => handleMoveWeek(-1)}
+                                            className="p-1 lg:p-2 hover:bg-white/10 rounded-full text-white transition-colors"
+                                        >
+                                            <ChevronLeft className="w-3.5 h-3.5 lg:w-4 h-4" />
+                                        </button>
+                                        <div className="px-1 lg:px-4 text-center min-w-[100px] lg:min-w-[170px]">
+                                            <p className="text-[8px] lg:text-[10px] font-black text-white tracking-tighter lg:tracking-widest">{getWeekRange(selectedDate)}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleMoveWeek(1)}
+                                            className="p-1 lg:p-2 hover:bg-white/10 rounded-full text-white transition-colors"
+                                        >
+                                            <ChevronRight className="w-3.5 h-3.5 lg:w-4 h-4" />
+                                        </button>
+                                    </div>
 
-                                        return (
-                                            <button
-                                                key={d}
-                                                onClick={() => handleSelectDateInWeek(dayIdx)}
-                                                className={`
-                                                    px-2.5 lg:px-4 py-1.5 lg:py-2 rounded-2xl text-[8px] lg:text-[10px] font-black transition-all uppercase tracking-tighter
-                                                    ${isActive
-                                                        ? 'bg-gradient-to-br from-cyan-600 to-cyan-700 text-white shadow-lg shadow-cyan-200/50 scale-105 z-10'
-                                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}
-                                                `}
-                                            >
-                                                {d}
-                                            </button>
-                                        );
-                                    })}
+                                    {/* Day Selector */}
+                                    <div className="bg-white p-0.5 lg:p-1 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-0.5 lg:gap-1 tracking-tight shrink-0 overflow-x-auto no-scrollbar">
+                                        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((d, i) => {
+                                            const dayIdx = i + 1;
+                                            const dateObj = new Date(selectedDate + 'T12:00:00');
+                                            const currentDayIdx = dateObj.getDay() || 7;
+                                            const isActive = currentDayIdx === dayIdx;
+
+                                            return (
+                                                <button
+                                                    key={d}
+                                                    onClick={() => handleSelectDateInWeek(dayIdx)}
+                                                    className={`
+                                                        px-2.5 lg:px-4 py-1.5 lg:py-2 rounded-2xl text-[8px] lg:text-[10px] font-black transition-all uppercase tracking-tighter
+                                                        ${isActive
+                                                            ? 'bg-gradient-to-br from-cyan-600 to-cyan-700 text-white shadow-lg shadow-cyan-200/50 scale-105 z-10'
+                                                            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}
+                                                    `}
+                                                >
+                                                    {d}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -722,20 +740,6 @@ export default function HorarioPage() {
                     </div>
                 ) : (
                     <div className="flex-1 overflow-hidden flex flex-col px-1 animate-in fade-in duration-300">
-                        <div className="flex justify-between items-center mb-3 px-4 bg-white p-3 rounded-3xl border border-gray-100 shadow-sm">
-                            <div>
-                                <h2 className="text-lg font-black text-gray-900 tracking-tight">Agenda Institucional</h2>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Actividades Semanales</p>
-                            </div>
-                            <button
-                                onClick={() => handleAddEvent()}
-                                className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white px-4 py-2 rounded-xl font-black text-[10px] shadow-lg shadow-cyan-200/50 flex items-center gap-2 transition-all active:scale-95"
-                            >
-                                <Plus className="w-4 h-4" />
-                                PROGRAMAR
-                            </button>
-                        </div>
-
                         <div className="flex-1 overflow-y-auto px-2 pb-20 custom-scrollbar">
                             <div className="grid grid-cols-2 gap-3">
                                 {weekData.map((d, i) => {
