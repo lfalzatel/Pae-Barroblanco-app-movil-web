@@ -638,35 +638,36 @@ export default function DashboardLayout({
                                     </div>
                                 </>
                             ) : (
-                                <div className="mb-6 bg-gray-50/50 rounded-3xl border border-gray-100 overflow-hidden">
-                                    <div className="p-4 flex flex-col gap-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Calendar className="w-4 h-4 text-blue-600" />
-                                                <span className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em]">Consultar Semana</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center justify-between bg-white p-2 rounded-2xl border border-gray-100">
-                                            <button onClick={() => changeNotifWeek(-1)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-blue-600">
-                                                <ChevronLeftIcon className="w-5 h-5" />
+                                <div className="px-6 mb-6">
+                                    <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden animate-in fade-in duration-500">
+                                        {/* Week Selector - Dark Header Style */}
+                                        <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 p-3 flex items-center justify-between">
+                                            <button onClick={() => changeNotifWeek(-1)} className="p-1.5 hover:bg-white/10 rounded-xl transition-colors text-white">
+                                                <ChevronLeftIcon className="w-4 h-4" />
                                             </button>
-                                            <span className="text-[10px] font-black px-2 uppercase tracking-tight text-gray-900">
+                                            <span className="text-[10px] font-black px-2 uppercase tracking-widest text-white text-center">
                                                 {weekStart.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} - {new Date(new Date(weekStart).setDate(weekStart.getDate() + 4)).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
                                             </span>
-                                            <button onClick={() => changeNotifWeek(1)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-blue-600">
-                                                <ChevronRightIcon className="w-5 h-5" />
+                                            <button onClick={() => changeNotifWeek(1)} className="p-1.5 hover:bg-white/10 rounded-xl transition-colors text-white">
+                                                <ChevronRightIcon className="w-4 h-4" />
                                             </button>
                                         </div>
-                                        <div className="flex gap-1.5 p-1 bg-white rounded-2xl border border-gray-100 shadow-sm">
-                                            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((day, dIdx) => (
-                                                <button
-                                                    key={day}
-                                                    onClick={() => setSelectedDayInWeek(dIdx)}
-                                                    className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${selectedDayInWeek === dIdx ? 'bg-cyan-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
-                                                >
-                                                    {day}
-                                                </button>
-                                            ))}
+
+                                        {/* Day Tab Selector - Light Capsule Style */}
+                                        <div className="p-4">
+                                            <div className="flex p-1 bg-gray-50 rounded-full border border-gray-100 shadow-inner">
+                                                {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((day, dIdx) => (
+                                                    <button
+                                                        key={day}
+                                                        onClick={() => setSelectedDayInWeek(dIdx)}
+                                                        className={`flex-1 py-2 text-[10px] font-black rounded-full transition-all duration-300 ${selectedDayInWeek === dIdx
+                                                            ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-100'
+                                                            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                                                    >
+                                                        {day}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -861,8 +862,17 @@ export default function DashboardLayout({
 
                                                 return (
                                                     <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-300">
-                                                        <div className="flex items-center gap-2 border-l-4 border-cyan-600 pl-3 py-1 bg-cyan-50/30 rounded-r-xl">
-                                                            <p className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.2em]">{day.label}</p>
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className="bg-cyan-50 p-1.5 rounded-lg">
+                                                                <School className="w-4 h-4 text-cyan-600" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[8px] font-black text-cyan-600 uppercase tracking-widest leading-none mb-1">Novedades del día</p>
+                                                                <p className="text-sm font-black text-gray-900 leading-none">
+                                                                    {day.label.split(',')[0]}
+                                                                    <span className="text-gray-300 ml-1.5 font-black">{day.label.split(',')[1]}</span>
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                         <div className="space-y-2">
                                                             {totalNews.map((item: any, i: number) => {
