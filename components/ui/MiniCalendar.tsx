@@ -130,7 +130,26 @@ export function MiniCalendar({
     for (let i = 0; i < firstDay; i++) days.push(null);
     for (let i = 1; i <= daysInMonth; i++) days.push(i);
 
-    const highlightColor = mode === 'attendance' ? 'emerald' : mode === 'schedules' ? 'emerald' : 'blue';
+    const styles = {
+        emerald: {
+            bg: 'bg-emerald-50',
+            text: 'text-emerald-700',
+            hover: 'hover:bg-emerald-100',
+            border: 'border-emerald-100',
+            count: 'text-emerald-600',
+            dot: 'bg-emerald-500'
+        },
+        blue: {
+            bg: 'bg-blue-50',
+            text: 'text-blue-700',
+            hover: 'hover:bg-blue-100',
+            border: 'border-blue-100',
+            count: 'text-blue-600',
+            dot: 'bg-blue-500'
+        }
+    };
+
+    const color = (mode === 'attendance' || mode === 'schedules') ? styles.emerald : styles.blue;
 
     return (
         <div className={`bg-white rounded-2xl shadow-xl border border-gray-100 p-4 w-full ${className}`}>
@@ -178,7 +197,7 @@ export function MiniCalendar({
                                 ${isSelected
                                     ? 'bg-blue-600 text-white shadow-md scale-105 z-10'
                                     : hasData
-                                        ? `bg-${highlightColor}-50 text-${highlightColor}-700 hover:bg-${highlightColor}-100 border border-${highlightColor}-100`
+                                        ? `${color.bg} ${color.text} ${color.hover} border ${color.border}`
                                         : 'text-gray-700 hover:bg-gray-50 border border-transparent hover:border-gray-100'}
                                 ${isToday && !isSelected ? 'ring-2 ring-blue-600 border-transparent text-blue-600' : ''}
                             `}
@@ -188,13 +207,13 @@ export function MiniCalendar({
                             </span>
 
                             {count > 0 && showCounters && (
-                                <span className={`text-[10px] font-black -mt-0.5 ${isSelected ? 'text-white' : hasData ? `text-${highlightColor}-600` : 'text-gray-400'}`}>
+                                <span className={`text-[10px] font-black -mt-0.5 ${isSelected ? 'text-white' : hasData ? color.count : 'text-gray-400'}`}>
                                     {count}
                                 </span>
                             )}
 
                             {hasData && (!showCounters || count === 0) && !isSelected && (
-                                <div className={`absolute bottom-1 w-1.5 h-1.5 rounded-full bg-${highlightColor}-500`}></div>
+                                <div className={`absolute bottom-1 w-1.5 h-1.5 rounded-full ${color.dot}`}></div>
                             )}
                         </button>
                     );
@@ -203,7 +222,7 @@ export function MiniCalendar({
 
             <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-gray-400 border-t border-gray-100 pt-3">
                 <div className="flex items-center gap-1.5">
-                    <div className={`w-1.5 h-1.5 rounded-full bg-${highlightColor}-500`}></div>
+                    <div className={`w-1.5 h-1.5 rounded-full ${color.dot}`}></div>
                     <span>{mode === 'attendance' ? 'Con Asistencia' : mode === 'schedules' ? 'Con Horario' : 'Registrado'}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
