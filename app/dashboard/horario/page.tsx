@@ -842,6 +842,15 @@ export default function HorarioPage() {
                                             <Trash2 className="w-5 h-5" />
                                         </button>
                                     </div>
+
+                                    {prevWeekAssignments[editingSlot]?.includes(s.group.id) && (
+                                        <div className="bg-amber-50 border border-amber-100 p-3 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-1 duration-300">
+                                            <div className="p-1.5 bg-amber-100 rounded-lg">
+                                                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                            </div>
+                                            <p className="text-[10px] font-black text-amber-700 uppercase tracking-tight">Cruce: mismo bloque la semana pasada</p>
+                                        </div>
+                                    )}
                                     <div className="space-y-2">
                                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Observaciones / Ración</label>
                                         <input
