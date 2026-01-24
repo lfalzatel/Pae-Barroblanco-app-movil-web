@@ -738,7 +738,7 @@ function RegistroContent() {
               <div className="relative">
                 <h1 className="text-lg md:text-2xl font-black text-white leading-none tracking-tight">
                   {step === 'sede' && 'Seleccionar Sede'}
-                  {step === 'grupo' && 'Seleccionar Grupo'}
+                  {step === 'grupo' && (sedeSeleccionada ? `Grupos: ${sedeSeleccionada.nombre}` : 'Seleccionar Grupo')}
                   {step === 'registro' && 'Registro de Asistencia'}
                 </h1>
                 <p className="text-[9px] md:text-[11px] font-bold text-cyan-50 uppercase tracking-[0.2em] mt-1 opacity-90">
