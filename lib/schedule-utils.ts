@@ -24,7 +24,7 @@ export const generateTimeSlots = (intervalMinutes: number = 10) => {
     };
 
     const startMins = toMins("07:10");
-    const endMins = toMins("11:05"); // Extended to include 11:00 slot
+    const endMins = toMins("12:05"); // Extended to include 12:00 slot
 
     // Iterate
     let current = startMins;

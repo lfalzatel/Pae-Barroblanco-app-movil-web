@@ -179,12 +179,46 @@ export const generateWeeklySchedulePDF = (weeklyData: any[], weekStart: Date) =>
                 styles: { cellPadding: 3 }
             });
 
+            currentY = (doc as any).lastAutoTable.finalY + 5;
+        }
+
+        // --- Institutional Agenda Table ---
+        if (day.instEvents && day.instEvents.length > 0) {
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(6, 182, 212); // Cyan-500
+            doc.text('AGENDA INSTITUCIONAL', 20, currentY + 4);
+            currentY += 6;
+
+            const instColumns = ['Hora', 'Actividad', 'Afectados / Detalles'];
+            const instRows = day.instEvents.map((e: any) => [
+                e.hora || 'S/H',
+                e.titulo,
+                `${e.afectados || ''} ${e.descripcion ? `(${e.descripcion})` : ''}`.trim() || '-'
+            ]);
+
+            autoTable(doc, {
+                head: [instColumns],
+                body: instRows,
+                startY: currentY,
+                theme: 'grid',
+                headStyles: { fillColor: [6, 182, 212], fontSize: 8, halign: 'center' },
+                bodyStyles: { fontSize: 7, halign: 'center' },
+                columnStyles: {
+                    0: { cellWidth: 25 },
+                    1: { cellWidth: 45, fontStyle: 'bold' },
+                    2: { halign: 'left' }
+                },
+                styles: { cellPadding: 2 }
+            });
             currentY = (doc as any).lastAutoTable.finalY + 10;
+        } else if (day.items.length > 0) {
+            currentY += 5; // Add space if no events but we had items
         } else {
             doc.setFont('helvetica', 'italic');
             doc.setFontSize(9);
             doc.setTextColor(150);
-            doc.text('Sin novedades registradas para este día.', 25, currentY);
+            doc.text('Sin actividades registradas para este día.', 25, currentY);
             currentY += 10;
         }
     });

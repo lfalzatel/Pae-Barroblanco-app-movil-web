@@ -46,20 +46,28 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                 dates.push(d.toISOString().split('T')[0]);
             }
 
-            const { data, error } = await supabase
+            // 1. Fetch PAE Schedules
+            const { data: schedData } = await supabase
                 .from('schedules')
                 .select('*')
                 .in('date', dates);
 
-            if (error) throw error;
+            // 2. Fetch Institutional Events
+            const { data: eventData } = await supabase
+                .from('novedades_institucionales')
+                .select('*')
+                .in('fecha', dates)
+                .order('hora', { ascending: true });
 
-            // Map data to ensure all 5 days are present even if empty
+            // Map data to ensure all 5 days are present
             const mapped = dates.map(dateStr => {
-                const dayData = data?.find(d => d.date === dateStr);
+                const daySched = schedData?.find(d => d.date === dateStr);
+                const dayEvents = eventData?.filter(e => e.fecha === dateStr) || [];
                 return {
                     date: dateStr,
                     label: new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                    items: dayData?.items || []
+                    items: daySched?.items || [],
+                    instEvents: dayEvents
                 };
             });
 
@@ -133,29 +141,50 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                                         <p className="text-lg font-black text-gray-900">{day.label.split(' ')[1]}</p>
                                     </div>
 
-                                    <div className="flex-1 space-y-2">
-                                        {day.items.length > 0 ? (
-                                            day.items.map((item: any, i: number) => {
-                                                const isAbsent = item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE';
-                                                return (
-                                                    <div key={i} className={`p-3 rounded-xl border text-[10px] shadow-sm animate-in fade-in slide-in-from-bottom-1 ${isAbsent ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <span className={`font-black uppercase ${isAbsent ? 'text-red-700' : 'text-gray-900'}`}>{item.group}</span>
-                                                            <span className={`px-1.5 py-0.5 rounded-md font-bold ${isAbsent ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-500'}`}>
-                                                                {isAbsent ? 'X' : (item.time?.split(' - ')[0] || item.time_start)}
-                                                            </span>
+                                    <div className="flex-1 space-y-4">
+                                        {/* PAE Items */}
+                                        <div className="space-y-2">
+                                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-1">Restaurante PAE</p>
+                                            {day.items.length > 0 ? (
+                                                day.items.map((item: any, i: number) => {
+                                                    const isAbsent = item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE';
+                                                    return (
+                                                        <div key={i} className={`p-3 rounded-xl border text-[10px] shadow-sm animate-in fade-in slide-in-from-bottom-1 ${isAbsent ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className={`font-black uppercase ${isAbsent ? 'text-red-700' : 'text-gray-900'}`}>{item.group}</span>
+                                                                <span className={`px-1.5 py-0.5 rounded-md font-bold ${isAbsent ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                                                                    {isAbsent ? 'X' : item.time}
+                                                                </span>
+                                                            </div>
+                                                            <p className={`italic font-medium line-clamp-2 ${isAbsent ? 'text-red-600' : 'text-gray-400'}`}>
+                                                                {item.notes || 'Normal'}
+                                                            </p>
                                                         </div>
-                                                        <p className={`italic font-medium line-clamp-2 ${isAbsent ? 'text-red-600' : 'text-gray-400'}`}>
-                                                            {item.notes || 'Normal'}
-                                                        </p>
+                                                    );
+                                                })
+                                            ) : (
+                                                <div className="p-3 rounded-xl border border-dashed border-gray-200 text-center text-gray-300 text-[9px] font-bold">Sin PAE</div>
+                                            )}
+                                        </div>
+
+                                        {/* Institutional Agenda */}
+                                        <div className="space-y-2">
+                                            <p className="text-[8px] font-black text-cyan-600 uppercase tracking-widest pl-1 mb-1">Agenda Institucional</p>
+                                            {day.instEvents?.length > 0 ? (
+                                                day.instEvents.map((event: any, i: number) => (
+                                                    <div key={i} className={`p-3 rounded-xl border text-[10px] shadow-sm bg-cyan-50/50 ${event.prioridad === 'alta' ? 'border-red-200 ring-1 ring-red-500/20' : 'border-cyan-100'}`}>
+                                                        <div className="flex items-center gap-1.5 mb-1">
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${event.prioridad === 'alta' ? 'bg-red-500 animate-pulse' : 'bg-cyan-500'}`} />
+                                                            <span className="font-black text-cyan-800">{event.titulo}</span>
+                                                        </div>
+                                                        {event.hora && <p className="text-[9px] font-black text-cyan-600 mb-1">{event.hora}</p>}
+                                                        {event.afectados && <p className="text-[9px] text-gray-400 font-bold truncate">{event.afectados}</p>}
                                                     </div>
-                                                );
-                                            })
-                                        ) : (
-                                            <div className="h-20 flex items-center justify-center rounded-2xl border-2 border-dashed border-gray-200/60 text-gray-400">
-                                                <CheckCircle className="w-5 h-5 opacity-30" />
-                                            </div>
-                                        )}
+                                                ))
+                                            ) : (
+                                                <div className="p-3 rounded-xl border border-dashed border-cyan-100 text-center text-cyan-200 text-[9px] font-bold">Sin eventos</div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
