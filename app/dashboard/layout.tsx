@@ -581,7 +581,7 @@ export default function DashboardLayout({
             {notifModalOpen && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setNotifModalOpen(false)}></div>
-                    <div className="bg-white rounded-[2.5rem] w-full max-w-md relative z-10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20 flex flex-col max-h-[90vh]">
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-md relative z-10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
                         {/* Header */}
                         <div className="p-5 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
                             <div className="flex items-start justify-between mb-3">
@@ -600,23 +600,58 @@ export default function DashboardLayout({
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
-
-                            {/* Sede Selector */}
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <School className="w-4 h-4 text-white/70" />
-                                </div>
-                                <select
-                                    value={selectedSede}
-                                    onChange={(e) => setSelectedSede(e.target.value)}
-                                    className="w-full appearance-none bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl py-2.5 pl-10 pr-8 font-bold text-xs uppercase tracking-tight shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/30 transition-all font-sans"
+                            {/* Control Row: Sede & Date */}
+                            <div className="flex gap-2">
+                                {/* Date Selector Capsule */}
+                                <button
+                                    onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                                    className="flex-1 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-2xl py-2.5 px-3 flex items-center justify-center gap-2 font-bold transition-all text-[10px] uppercase tracking-widest shadow-sm group"
                                 >
-                                    <option value="Principal" className="text-gray-900 font-bold">Sede Principal</option>
-                                    <option value="Primaria" className="text-gray-900 font-bold">Sede Primaria</option>
-                                    <option value="Maria Inmaculada" className="text-gray-900 font-bold">Sede M. Inmaculada</option>
-                                </select>
-                                <ChevronDown className="w-4 h-4 text-white/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none group-hover:rotate-180 transition-transform" />
+                                    <span className="truncate">{selectedDate ? new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) : 'Consultar Fecha'}</span>
+                                    <ChevronDown className={`w-3.5 h-3.5 opacity-60 transition-transform ${isCalendarOpen ? 'rotate-180' : 'group-hover:translate-y-0.5'}`} />
+                                </button>
+
+                                {/* Sede Selector Capsule */}
+                                <div className="relative flex-1 group">
+                                    <select
+                                        value={selectedSede}
+                                        onChange={(e) => setSelectedSede(e.target.value)}
+                                        className="w-full appearance-none bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-2xl py-2.5 pl-4 pr-10 font-bold text-[10px] uppercase tracking-widest cursor-pointer focus:outline-none transition-all"
+                                    >
+                                        <option value="Principal" className="text-gray-900">Sede Principal</option>
+                                        <option value="Primaria" className="text-gray-900">Sede Primaria</option>
+                                        <option value="Maria Inmaculada" className="text-gray-900">M. Inmaculada</option>
+                                    </select>
+                                    <ChevronDown className="w-3.5 h-3.5 text-white opacity-60 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none group-hover:rotate-180 transition-transform" />
+                                </div>
                             </div>
+
+                            {/* Inner Calendar - Header Integrated */}
+                            {isCalendarOpen && (
+                                <div className="mt-4 animate-in slide-in-from-top-2 fade-in duration-200 flex flex-col items-center bg-white p-3 rounded-2xl shadow-xl">
+                                    <MiniCalendar
+                                        selectedDate={selectedDate || formatLocalDate(new Date())}
+                                        onSelectDate={(date) => {
+                                            handleSearchByDate(date);
+                                            setIsCalendarOpen(false);
+                                        }}
+                                        className="border-none p-0"
+                                    />
+                                    {selectedDate && (
+                                        <button
+                                            onClick={() => {
+                                                setSearchResult(null);
+                                                setSelectedDate('');
+                                                setIsCalendarOpen(false);
+                                            }}
+                                            className="w-full mt-3 text-[10px] font-bold text-cyan-600 bg-cyan-50 px-3 py-2 rounded-xl flex items-center justify-center gap-2"
+                                        >
+                                            <RefreshCcw className="w-3 h-3" />
+                                            Limpiar Filtro
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Tabs Selector (Ultra Compact) */}
@@ -659,47 +694,6 @@ export default function DashboardLayout({
                                             </button>
                                         </div>
                                     )}
-                                    {/* Date Picker (Full Width) */}
-                                    <div className="bg-white border-y border-gray-100 overflow-hidden shadow-sm -mx-4 mb-4">
-                                        <button
-                                            onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-                                            className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="bg-cyan-50 p-2 rounded-xl">
-                                                    <Calendar className="w-5 h-5 text-cyan-600" />
-                                                </div>
-                                                <span className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Consultar Fecha</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                {selectedDate && <span className="text-[10px] font-bold text-cyan-600 bg-cyan-50 px-2 py-1 rounded-lg border border-cyan-100 italic">{new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>}
-                                                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isCalendarOpen ? 'rotate-180' : ''}`} />
-                                            </div>
-                                        </button>
-                                        {isCalendarOpen && (
-                                            <div className="p-4 bg-white border-t border-gray-100 flex flex-col items-center animate-in slide-in-from-top-2 duration-300">
-                                                <MiniCalendar
-                                                    selectedDate={selectedDate || formatLocalDate(new Date())}
-                                                    onSelectDate={(date) => {
-                                                        handleSearchByDate(date);
-                                                        setIsCalendarOpen(false);
-                                                    }}
-                                                />
-                                                <button
-                                                    onClick={() => {
-                                                        setSearchResult(null);
-                                                        setSelectedDate('');
-                                                        setIsCalendarOpen(false);
-                                                    }}
-                                                    className="w-full mt-4 text-[10px] font-bold text-cyan-600 bg-cyan-50 px-3 py-2 rounded-xl flex items-center justify-center gap-2"
-                                                >
-                                                    <RefreshCcw className="w-3 h-3" />
-                                                    Reiniciar a Mañana
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-
                                     {isSearching ? (
                                         <div className="text-center py-10">
                                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600 mx-auto"></div>

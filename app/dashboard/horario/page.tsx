@@ -498,16 +498,14 @@ export default function HorarioPage() {
                         {viewMode === 'day' ? (
                             <button
                                 onClick={() => setShowCalendar(true)}
-                                className="flex items-center gap-3 bg-white hover:bg-gray-50 px-5 py-2.5 rounded-2xl border border-gray-100 transition-all shadow-sm hover:shadow-md active:scale-95"
+                                className="flex items-center gap-3 bg-cyan-600 hover:bg-cyan-700/90 px-5 py-2.5 rounded-2xl border border-cyan-500/30 transition-all shadow-lg shadow-cyan-100 group/calendar active:scale-95 text-white"
                             >
-                                <div className="bg-cyan-50 p-1.5 rounded-xl text-cyan-600 border border-cyan-100">
-                                    <CalendarIcon className="w-4 h-4" />
-                                </div>
-                                <div className="text-left border-l border-gray-100 pl-3">
-                                    <p className="text-[8px] font-black text-cyan-600/60 uppercase tracking-[0.2em] leading-none mb-1">EDITANDO FECHA</p>
+                                <CalendarIcon className="w-4 h-4 opacity-80" />
+                                <div className="text-left border-l border-white/20 pl-3">
+                                    <p className="text-[8px] font-black text-cyan-50/60 uppercase tracking-[0.2em] leading-none mb-1">EDITANDO FECHA</p>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[13px] font-black text-gray-900 leading-none uppercase tracking-tight">{formatDateLabel(selectedDate)}</span>
-                                        <ChevronDown className="w-4 h-4 text-gray-300 group-hover/calendar:translate-y-0.5 transition-transform" />
+                                        <span className="text-[13px] font-black leading-none uppercase tracking-tight">{formatDateLabel(selectedDate)}</span>
+                                        <ChevronDown className="w-4 h-4 text-white/50 group-hover/calendar:translate-y-0.5 transition-transform" />
                                     </div>
                                 </div>
                             </button>

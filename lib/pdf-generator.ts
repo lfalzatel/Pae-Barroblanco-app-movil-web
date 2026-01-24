@@ -158,7 +158,7 @@ export const generateWeeklySchedulePDF = (weeklyData: any[], weekStart: Date) =>
 
         // --- Institutional Agenda Table ---
         if (day.instEvents && day.instEvents.length > 0) {
-            const instColumns = ['Hora', 'Actividad', 'Afectados / Detalles'];
+            const instColumns = ['Hora', 'Actividad', 'Dirigido a / Detalles'];
             const instRows = day.instEvents.map((e: any) => [
                 e.hora || 'S/H',
                 e.titulo,
