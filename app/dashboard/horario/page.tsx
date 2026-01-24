@@ -184,15 +184,18 @@ export default function HorarioPage() {
 
                 // Fetch Previous Week for Conflict Detection
                 const [y, m, d_num] = selectedDate.split('-').map(Number);
-                const prevDateObj = new Date(y, m - 1, d_num);
+                const prevDateObj = new Date(y, m - 1, d_num, 12, 0, 0); // Noon to avoid tz shifts
                 prevDateObj.setDate(prevDateObj.getDate() - 7);
-                const prevDateStr = prevDateObj.toISOString().split('T')[0];
+                const py = prevDateObj.getFullYear();
+                const pm = (prevDateObj.getMonth() + 1).toString().padStart(2, '0');
+                const pd = prevDateObj.getDate().toString().padStart(2, '0');
+                const prevDateStr = `${py}-${pm}-${pd}`;
 
                 const { data: prevSchedData } = await supabase
                     .from('schedules')
                     .select('items')
                     .eq('date', prevDateStr)
-                    .single();
+                    .maybeSingle();
 
                 const prevAssignments: Record<string, string[]> = {};
                 if (prevSchedData?.items) {
@@ -323,7 +326,49 @@ export default function HorarioPage() {
         }
     };
 
-    const isAssigned = (g: GlobalGroup) => Object.values(assignments).some(slots => slots.some(s => s.group.label === g.label)) || absentGroups.some(a => a.group.label === g.label);
+    const isAssigned = (g: GlobalGroup) => Object.values(assignments).some(slots => slots.some(s => s.group.id === g.id)) || absentGroups.some(a => a.group.id === g.id);
+
+    const getWeekRange = (dateStr: string) => {
+        const d = new Date(dateStr + 'T12:00:00');
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+
+        const mon = new Date(d.setDate(diff));
+        const fri = new Date(d.setDate(diff + 4));
+
+        const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+        return `${mon.toLocaleDateString('es-CO', opts)} - ${fri.toLocaleDateString('es-CO', opts)}`.toUpperCase().replace(/\./g, '');
+    };
+
+    const handleMoveWeek = (offset: number) => {
+        const d = new Date(selectedDate + 'T12:00:00');
+        d.setDate(d.getDate() + (offset * 7));
+        setSelectedDate(d.toISOString().split('T')[0]);
+    };
+
+    const handleJumpToDay = (dayIndex: number) => {
+        const d = new Date(selectedDate + 'T12:00:00');
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const target = new Date(d.setDate(diff + (dayIndex - 1)));
+        setSelectedDate(target.toISOString().split('T')[0]);
+        setViewMode('day');
+    };
+
+    const handleSelectDateInWeek = (dayIndex: number) => {
+        const d = new Date(selectedDate + 'T12:00:00');
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const target = new Date(d.setDate(diff + (dayIndex - 1)));
+        const targetStr = target.toISOString().split('T')[0];
+        setSelectedDate(targetStr);
+
+        // Auto-scroll to the card
+        setTimeout(() => {
+            const el = document.getElementById(`day-card-${targetStr}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    };
 
     const formatDateLabel = (date: string) => {
         const [y, m, d] = date.split('-').map(Number);
@@ -428,21 +473,69 @@ export default function HorarioPage() {
                     </div>
 
                     <div className="flex justify-center -mt-1 scale-95 lg:scale-100 relative group/calendar">
-                        <button
-                            onClick={() => setShowCalendar(true)}
-                            className="flex items-center gap-3 bg-white hover:bg-gray-50 px-5 py-2.5 rounded-2xl border border-gray-100 transition-all shadow-sm hover:shadow-md active:scale-95"
-                        >
-                            <div className="bg-cyan-50 p-1.5 rounded-xl text-cyan-600 border border-cyan-100">
-                                <CalendarIcon className="w-4 h-4" />
-                            </div>
-                            <div className="text-left border-l border-gray-100 pl-3">
-                                <p className="text-[8px] font-black text-cyan-600/60 uppercase tracking-[0.2em] leading-none mb-1">EDITANDO FECHA</p>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[13px] font-black text-gray-900 leading-none uppercase tracking-tight">{formatDateLabel(selectedDate)}</span>
-                                    <ChevronDown className="w-4 h-4 text-gray-300 group-hover/calendar:translate-y-0.5 transition-transform" />
+                        {viewMode === 'day' ? (
+                            <button
+                                onClick={() => setShowCalendar(true)}
+                                className="flex items-center gap-3 bg-white hover:bg-gray-50 px-5 py-2.5 rounded-2xl border border-gray-100 transition-all shadow-sm hover:shadow-md active:scale-95"
+                            >
+                                <div className="bg-cyan-50 p-1.5 rounded-xl text-cyan-600 border border-cyan-100">
+                                    <CalendarIcon className="w-4 h-4" />
+                                </div>
+                                <div className="text-left border-l border-gray-100 pl-3">
+                                    <p className="text-[8px] font-black text-cyan-600/60 uppercase tracking-[0.2em] leading-none mb-1">EDITANDO FECHA</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[13px] font-black text-gray-900 leading-none uppercase tracking-tight">{formatDateLabel(selectedDate)}</span>
+                                        <ChevronDown className="w-4 h-4 text-gray-300 group-hover/calendar:translate-y-0.5 transition-transform" />
+                                    </div>
+                                </div>
+                            </button>
+                        ) : (
+                            <div className="flex flex-row items-center gap-1 lg:gap-3 animate-in slide-in-from-top-2 duration-300 w-full justify-center lg:w-auto">
+                                {/* Week Navigator */}
+                                <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 p-0.5 lg:p-1 rounded-[2rem] flex items-center shadow-lg shadow-cyan-100 border border-cyan-500/30 shrink-0">
+                                    <button
+                                        onClick={() => handleMoveWeek(-1)}
+                                        className="p-1 lg:p-2 hover:bg-white/10 rounded-full text-white transition-colors"
+                                    >
+                                        <ChevronLeft className="w-3.5 h-3.5 lg:w-4 h-4" />
+                                    </button>
+                                    <div className="px-1 lg:px-4 text-center min-w-[110px] lg:min-w-[170px]">
+                                        <p className="text-[8px] lg:text-[10px] font-black text-white tracking-tighter lg:tracking-widest">{getWeekRange(selectedDate)}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => handleMoveWeek(1)}
+                                        className="p-1 lg:p-2 hover:bg-white/10 rounded-full text-white transition-colors"
+                                    >
+                                        <ChevronRight className="w-3.5 h-3.5 lg:w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                {/* Day Selector */}
+                                <div className="bg-white p-0.5 lg:p-1 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-0.5 lg:gap-1.5 shrink-0 overflow-x-auto no-scrollbar">
+                                    {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((d, i) => {
+                                        const dayIdx = i + 1;
+                                        const dateObj = new Date(selectedDate + 'T12:00:00');
+                                        const currentDayIdx = dateObj.getDay() || 7;
+                                        const isActive = currentDayIdx === dayIdx;
+
+                                        return (
+                                            <button
+                                                key={d}
+                                                onClick={() => handleSelectDateInWeek(dayIdx)}
+                                                className={`
+                                                    px-2 lg:px-4 py-1.5 lg:py-2 rounded-2xl text-[8px] lg:text-[10px] font-black transition-all uppercase tracking-tighter
+                                                    ${isActive
+                                                        ? 'bg-gradient-to-br from-cyan-600 to-cyan-700 text-white shadow-lg shadow-cyan-200/50 scale-105 z-10'
+                                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}
+                                                `}
+                                            >
+                                                {d}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
-                        </button>
+                        )}
                     </div>
                 </div>
 
@@ -497,8 +590,8 @@ export default function HorarioPage() {
                                                                 <div key={idx} className="flex flex-col gap-1.5 p-1">
                                                                     <div className="flex items-center gap-2">
                                                                         <span className="font-black text-gray-900 text-[14px] lg:text-lg tracking-tight">{s.group.label.replace('-2026', '')}</span>
-                                                                        <span className="text-[10px] font-black text-white bg-cyan-600/80 px-2 py-0.5 rounded-lg shadow-sm">
-                                                                            {s.group.studentCount} est
+                                                                        <span className="text-[10px] font-black text-white bg-cyan-600/80 px-2 py-0.5 rounded-lg shadow-sm uppercase tracking-tighter">
+                                                                            {s.group.studentCount} ESTUDIANTES
                                                                         </span>
                                                                     </div>
 
@@ -509,10 +602,10 @@ export default function HorarioPage() {
                                                                         </div>
                                                                     )}
 
-                                                                    {prevWeekAssignments[time]?.includes(s.group.label) && (
-                                                                        <div className="bg-red-50 border border-red-100 rounded-lg p-1.5 flex items-center gap-1.5 shadow-sm">
+                                                                    {(prevWeekAssignments[time]?.includes(s.group.label) || prevWeekAssignments[time]?.includes(s.group.id)) && (
+                                                                        <div className="bg-red-50 border border-red-100 rounded-lg p-1.5 flex items-center gap-1.5 shadow-sm mt-1">
                                                                             <AlertTriangle className="w-3 h-3 text-red-500" />
-                                                                            <span className="text-[9px] font-black text-red-600 leading-tight">Ya fue asignado aquí la semana pasada</span>
+                                                                            <span className="text-[9px] font-black text-red-600 leading-tight uppercase tracking-tight">Cruce: Mismo bloque la semana pasada</span>
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -628,12 +721,12 @@ export default function HorarioPage() {
                                 {weekData.map((d, i) => {
                                     const events = instEvents.filter(e => e.fecha === d.date);
                                     const dateObj = new Date(d.date + 'T12:00:00');
-                                    const isToday = d.date === new Date().toISOString().split('T')[0];
+                                    const isSelected = d.date === selectedDate;
 
                                     return (
-                                        <div key={i} className="flex flex-col gap-3">
-                                            <div className={`p-4 rounded-[3xl] text-center shadow-sm border transition-all ${isToday ? 'bg-cyan-600 text-white border-cyan-500 shadow-cyan-100' : 'bg-white border-gray-100'}`}>
-                                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isToday ? 'text-cyan-100' : 'text-cyan-600'}`}>
+                                        <div key={i} id={`day-card-${d.date}`} className="flex flex-col gap-3 scroll-mt-20">
+                                            <div className={`p-4 rounded-[3xl] text-center shadow-sm border transition-all ${isSelected ? 'bg-cyan-600 text-white border-cyan-500 shadow-cyan-100' : 'bg-white border-gray-100'}`}>
+                                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isSelected ? 'text-cyan-100' : 'text-cyan-600'}`}>
                                                     {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'][dateObj.getDay()]}
                                                 </p>
                                                 <p className="text-xl font-black">{dateObj.getDate()}</p>
