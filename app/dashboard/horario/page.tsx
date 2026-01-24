@@ -872,7 +872,7 @@ export default function HorarioPage() {
                                                             return next;
                                                         });
                                                     }}
-                                                    className="w-full appearance-none bg-white border border-gray-100 rounded-2xl py-3 pl-10 pr-10 text-xs font-black uppercase tracking-widest cursor-pointer focus:ring-2 focus:ring-cyan-500/10 transition-all text-cyan-600 shadow-sm"
+                                                    className="w-full appearance-none bg-white border border-gray-100 rounded-2xl py-3 pl-10 pr-10 text-[10px] lg:text-xs font-black uppercase tracking-widest cursor-pointer focus:ring-2 focus:ring-cyan-500/10 transition-all text-cyan-600 shadow-sm"
                                                 >
                                                     {timeSlots.map(time => (
                                                         <option key={time} value={time}>
@@ -939,10 +939,10 @@ export default function HorarioPage() {
                             <CalendarIcon className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 rotate-12" />
                         </div>
 
-                        <div className="p-8 space-y-6">
+                        <div className="p-6 space-y-4">
                             {eventForm.prioridad === 'alta' && (
-                                <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-center gap-3 animate-pulse">
-                                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                                <div className="bg-red-50 border border-red-100 p-3 rounded-2xl flex items-center gap-3 animate-pulse">
+                                    <AlertTriangle className="w-4 h-4 text-red-600" />
                                     <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">ACTIVIDAD DE ALTA PRIORIDAD / URGENTE</p>
                                 </div>
                             )}
@@ -963,7 +963,7 @@ export default function HorarioPage() {
                                     <input
                                         value={eventForm.hora}
                                         onChange={e => setEventForm({ ...eventForm, hora: e.target.value })}
-                                        className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all"
+                                        className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all text-xs lg:text-sm"
                                         placeholder="08:00 AM"
                                     />
                                 </div>
@@ -972,7 +972,7 @@ export default function HorarioPage() {
                                     <select
                                         value={eventForm.prioridad}
                                         onChange={e => setEventForm({ ...eventForm, prioridad: e.target.value })}
-                                        className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none"
+                                        className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none text-xs lg:text-sm"
                                     >
                                         <option value="normal">Normal 😊</option>
                                         <option value="alta">Urgente ⚠️</option>
@@ -983,13 +983,22 @@ export default function HorarioPage() {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Dirigido a / Participantes</label>
                                 <div className="relative">
-                                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input
+                                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                    <select
                                         value={eventForm.afectados}
                                         onChange={e => setEventForm({ ...eventForm, afectados: e.target.value })}
-                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all"
-                                        placeholder="Ej: Grados 6° y 7°"
-                                    />
+                                        className="w-full pl-12 pr-10 py-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none text-xs lg:text-sm"
+                                    >
+                                        <option value="">Seleccionar destinatarios...</option>
+                                        <option value="Estudiantes">Estudiantes 🎓</option>
+                                        <option value="Docentes">Docentes 👨‍🏫</option>
+                                        <option value="Padres de Familia">Padres de Familia 👪</option>
+                                        <option value="Toda la Comunidad">Toda la Comunidad 🏫</option>
+                                        <option value="Grupos Primaria">Grupos Primaria 🧒</option>
+                                        <option value="Grupos Bachillerato">Grupos Bachillerato 👱</option>
+                                        <option value="Personal Administrativo">Personal Administrativo 💼</option>
+                                    </select>
+                                    <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                                 </div>
                             </div>
 
@@ -998,14 +1007,14 @@ export default function HorarioPage() {
                                 <textarea
                                     value={eventForm.descripcion}
                                     onChange={e => setEventForm({ ...eventForm, descripcion: e.target.value })}
-                                    className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all min-h-[100px] resize-none"
+                                    className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all min-h-[80px] lg:min-h-[100px] resize-none text-xs lg:text-sm"
                                     placeholder="Detalles adicionales de la actividad..."
                                 />
                             </div>
                         </div>
 
-                        <div className="p-8 pt-0 flex gap-4">
-                            <button onClick={() => setShowEventModal(false)} className="px-6 py-4 bg-gray-50 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-100 transition-all">
+                        <div className="p-6 pt-0 flex gap-3">
+                            <button onClick={() => setShowEventModal(false)} className="px-5 py-4 bg-gray-50 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-100 transition-all">
                                 CANCELAR
                             </button>
                             {editingEvent && (
@@ -1021,7 +1030,7 @@ export default function HorarioPage() {
                                 </button>
                             )}
                             <button onClick={handleSaveInstitutionalEvent} className="flex-1 py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-cyan-100 transition-all active:scale-[0.98]">
-                                {editingEvent ? 'GUARDAR CAMBIOS' : 'CREAR ACTIVIDAD'}
+                                {editingEvent ? 'GUARDAR' : 'CREAR'}
                             </button>
                         </div>
                     </div>
