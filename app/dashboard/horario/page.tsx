@@ -180,7 +180,10 @@ export default function HorarioPage() {
                     .select('*')
                     .eq('fecha', selectedDate);
 
-                if (selectedSede !== 'Todas') {
+                if (selectedSede === 'Principal') {
+                    // Include both 'Principal' and legacy records (null)
+                    dailyQuery = dailyQuery.or('sede.eq.Principal,sede.is.null');
+                } else if (selectedSede !== 'Todas') {
                     dailyQuery = dailyQuery.eq('sede', selectedSede);
                 }
 
@@ -229,7 +232,10 @@ export default function HorarioPage() {
                     .select('*')
                     .in('fecha', dates);
 
-                if (selectedSede !== 'Todas') {
+                if (selectedSede === 'Principal') {
+                    // Include both 'Principal' and legacy records (null)
+                    weekQuery = weekQuery.or('sede.eq.Principal,sede.is.null');
+                } else if (selectedSede !== 'Todas') {
                     weekQuery = weekQuery.eq('sede', selectedSede);
                 }
 
