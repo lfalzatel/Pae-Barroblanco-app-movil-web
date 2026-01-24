@@ -866,7 +866,7 @@ export default function HorarioPage() {
                                 onClick={() => setEditingSlot(null)}
                                 className="w-full py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-cyan-100 transition-all active:scale-[0.98]"
                             >
-                                LISTOS, VOLVER
+                                LISTO, VOLVER
                             </button>
                         </div>
                     </div>
@@ -896,6 +896,13 @@ export default function HorarioPage() {
                         </div>
 
                         <div className="p-8 space-y-6">
+                            {eventForm.prioridad === 'alta' && (
+                                <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-center gap-3 animate-pulse">
+                                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                                    <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">ACTIVIDAD DE ALTA PRIORIDAD / URGENTE</p>
+                                </div>
+                            )}
+
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Título de la Actividad</label>
                                 <input
@@ -930,7 +937,7 @@ export default function HorarioPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Participantes</label>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Dirigido a / Participantes</label>
                                 <div className="relative">
                                     <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <input
@@ -940,6 +947,16 @@ export default function HorarioPage() {
                                         placeholder="Ej: Grados 6° y 7°"
                                     />
                                 </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descripción / Detalles</label>
+                                <textarea
+                                    value={eventForm.descripcion}
+                                    onChange={e => setEventForm({ ...eventForm, descripcion: e.target.value })}
+                                    className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all min-h-[100px] resize-none"
+                                    placeholder="Detalles adicionales de la actividad..."
+                                />
                             </div>
                         </div>
 
