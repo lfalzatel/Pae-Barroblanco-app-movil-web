@@ -699,6 +699,19 @@ export default function HorarioPage() {
 
                         <div className="p-8 space-y-6">
                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Fecha de la Actividad</label>
+                                <div className="relative">
+                                    <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="date"
+                                        value={eventDate}
+                                        onChange={e => setEventDate(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Título de la Actividad</label>
                                 <input
                                     value={eventForm.titulo}
