@@ -602,17 +602,19 @@ export default function DashboardLayout({
                             </div>
                             {/* Control Row: Sede & Date */}
                             <div className="flex gap-2">
-                                {/* Date Selector Capsule */}
-                                <button
-                                    onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-                                    className="w-[40%] bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-2xl py-2.5 px-3 flex items-center justify-center gap-2 font-bold transition-all text-[10px] uppercase tracking-widest shadow-sm group shrink-0"
-                                >
-                                    <span className="truncate">{selectedDate ? new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) : 'Fecha'}</span>
-                                    <ChevronDown className={`w-3.5 h-3.5 opacity-60 transition-transform ${isCalendarOpen ? 'rotate-180' : 'group-hover:translate-y-0.5'}`} />
-                                </button>
+                                {/* Date Selector Capsule - Only in Daily View */}
+                                {activeNotifTab === 'daily' && (
+                                    <button
+                                        onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                                        className="w-[40%] bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-2xl py-2.5 px-3 flex items-center justify-center gap-2 font-bold transition-all text-[10px] uppercase tracking-widest shadow-sm group shrink-0"
+                                    >
+                                        <span className="truncate">{selectedDate ? new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) : 'Fecha'}</span>
+                                        <ChevronDown className={`w-3.5 h-3.5 opacity-60 transition-transform ${isCalendarOpen ? 'rotate-180' : 'group-hover:translate-y-0.5'}`} />
+                                    </button>
+                                )}
 
                                 {/* Sede Selector Capsule */}
-                                <div className="relative w-[60%] group shrink-0">
+                                <div className={`relative group shrink-0 transition-all duration-300 ${activeNotifTab === 'daily' ? 'w-[60%]' : 'w-full'}`}>
                                     <select
                                         value={selectedSede}
                                         onChange={(e) => setSelectedSede(e.target.value)}
