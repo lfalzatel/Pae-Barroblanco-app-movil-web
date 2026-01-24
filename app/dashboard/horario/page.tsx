@@ -851,20 +851,55 @@ export default function HorarioPage() {
                                             <p className="text-[10px] font-black text-amber-700 uppercase tracking-tight">Cruce: mismo bloque la semana pasada</p>
                                         </div>
                                     )}
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Observaciones / Ración</label>
-                                        <input
-                                            placeholder="Ej: Solo ración básica, alumnos de viaje..."
-                                            value={s.notes || ''}
-                                            onChange={e => {
-                                                setAssignments(prev => {
-                                                    const next = { ...prev };
-                                                    next[editingSlot][i].notes = e.target.value;
-                                                    return next;
-                                                });
-                                            }}
-                                            className="w-full p-4 bg-white border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-cyan-500/10 transition-all"
-                                        />
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Cambiar Horario</label>
+                                            <div className="relative">
+                                                <select
+                                                    value={editingSlot}
+                                                    onChange={(e) => {
+                                                        const newTime = e.target.value;
+                                                        if (newTime === editingSlot) return;
+                                                        setAssignments(prev => {
+                                                            const next = { ...prev };
+                                                            const [item] = next[editingSlot].splice(i, 1);
+                                                            if (next[editingSlot].length === 0) {
+                                                                delete next[editingSlot];
+                                                                setEditingSlot(null); // Close modal if current slot empty
+                                                            }
+                                                            if (!next[newTime]) next[newTime] = [];
+                                                            next[newTime].push(item);
+                                                            return next;
+                                                        });
+                                                    }}
+                                                    className="w-full appearance-none bg-white border border-gray-100 rounded-2xl py-3 pl-10 pr-10 text-xs font-black uppercase tracking-widest cursor-pointer focus:ring-2 focus:ring-cyan-500/10 transition-all text-cyan-600 shadow-sm"
+                                                >
+                                                    {timeSlots.map(time => (
+                                                        <option key={time} value={time}>
+                                                            HORA: {time} {time === editingSlot ? '(ACTUAL)' : ''}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <Clock className="w-4 h-4 text-cyan-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                                <ChevronDown className="w-4 h-4 text-cyan-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Observaciones / Ración</label>
+                                            <input
+                                                placeholder="Ej: Solo ración básica, alumnos de viaje..."
+                                                value={s.notes || ''}
+                                                onChange={e => {
+                                                    setAssignments(prev => {
+                                                        const next = { ...prev };
+                                                        next[editingSlot][i].notes = e.target.value;
+                                                        return next;
+                                                    });
+                                                }}
+                                                className="w-full p-4 bg-white border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-cyan-500/10 transition-all shadow-sm"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             ))}
