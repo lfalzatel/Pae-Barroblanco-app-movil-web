@@ -533,9 +533,9 @@ export default function DashboardLayout({
             {notifModalOpen && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setNotifModalOpen(false)}></div>
-                    <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
-                        <div className="p-6 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative">
-                            <div className="flex items-start justify-between mb-4">
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-md relative z-10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20">
+                        <div className="p-7 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative">
+                            <div className="flex items-start justify-between mb-5">
                                 <div className="flex items-center gap-3">
                                     <div className="bg-white/20 p-2 rounded-xl">
                                         <Bell className="w-6 h-6" />
@@ -568,23 +568,23 @@ export default function DashboardLayout({
                             </div>
                         </div>
 
-                        {/* Tabs - Redesigned as Capsule Selector */}
-                        <div className="px-6 py-4 bg-white border-b border-gray-100">
-                            <div className="flex p-1 bg-gray-50 rounded-full border border-gray-100 shadow-inner relative">
+                        {/* Tabs - Redesigned as Wide Capsule Selector */}
+                        <div className="px-5 py-5 bg-white border-b border-gray-100">
+                            <div className="flex p-1.5 bg-gray-50/50 rounded-full border border-gray-200/60 shadow-inner relative">
                                 <button
                                     onClick={() => setActiveNotifTab('daily')}
-                                    className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'daily' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`flex-1 py-3 text-[11px] font-black uppercase tracking-[0.2em] rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'daily' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
                                     Mañana
                                 </button>
                                 <button
                                     onClick={() => setActiveNotifTab('weekly')}
-                                    className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'weekly' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`flex-1 py-3 text-[11px] font-black uppercase tracking-[0.2em] rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'weekly' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
                                     Semana
                                 </button>
                                 {/* Active Indicator (Sliding Switch) */}
-                                <div className={`absolute inset-y-1 transition-all duration-300 ease-out bg-cyan-600 rounded-full shadow-lg shadow-cyan-200/50 ${activeNotifTab === 'daily' ? 'left-1 w-[48%]' : 'left-[51%] w-[48%]'}`} />
+                                <div className={`absolute inset-y-1.5 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-cyan-600 rounded-full shadow-lg shadow-cyan-200/50 ${activeNotifTab === 'daily' ? 'left-1.5 w-[47%]' : 'left-[51.5%] w-[47%]'}`} />
                             </div>
                         </div>
 
@@ -642,8 +642,8 @@ export default function DashboardLayout({
                                     </div>
                                 </>
                             ) : (
-                                <div className="px-4 mb-6">
-                                    <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden animate-in fade-in duration-500">
+                                <div className="px-5 mb-8">
+                                    <div className="bg-white rounded-[2.2rem] border border-gray-100 shadow-xl shadow-cyan-100/20 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-500">
                                         {/* Week Selector - Dark Header Style */}
                                         <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 p-3 flex items-center justify-between">
                                             <button onClick={() => changeNotifWeek(-1)} className="p-1.5 hover:bg-white/10 rounded-xl transition-colors text-white">
@@ -657,16 +657,16 @@ export default function DashboardLayout({
                                             </button>
                                         </div>
 
-                                        {/* Day Tab Selector - Light Capsule Style */}
-                                        <div className="p-4">
-                                            <div className="flex p-1 bg-gray-50 rounded-full border border-gray-100 shadow-inner">
+                                        {/* Day Tab Selector - Wider Light Capsule Style */}
+                                        <div className="p-5">
+                                            <div className="flex p-1.5 bg-gray-50/80 rounded-full border border-gray-100 shadow-inner">
                                                 {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((day, dIdx) => (
                                                     <button
                                                         key={day}
                                                         onClick={() => setSelectedDayInWeek(dIdx)}
-                                                        className={`flex-1 py-2 text-[10px] font-black rounded-full transition-all duration-300 ${selectedDayInWeek === dIdx
-                                                            ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-100'
-                                                            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                                                        className={`flex-1 py-3 text-[11px] font-black rounded-full transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${selectedDayInWeek === dIdx
+                                                            ? 'bg-cyan-600 text-white shadow-xl shadow-cyan-200/50 scale-[1.02]'
+                                                            : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'}`}
                                                     >
                                                         {day}
                                                     </button>
