@@ -65,11 +65,12 @@ export default function HorarioPage() {
     const [showInstructions, setShowInstructions] = useState(false);
 
     const [showEventModal, setShowEventModal] = useState(false);
+    const [eventDate, setEventDate] = useState<string>('');
     const [editingEvent, setEditingEvent] = useState<any | null>(null);
     const [eventForm, setEventForm] = useState({
         titulo: '',
         hora: '',
-        afectados: '',
+        participantes: '',
         descripcion: '',
         prioridad: 'normal'
     });
@@ -265,21 +266,22 @@ export default function HorarioPage() {
 
     const handleAddEvent = (date?: string) => {
         setEditingEvent(null);
-        setEventForm({ titulo: '', hora: '', afectados: '', descripcion: '', prioridad: 'normal' });
-        if (date) setSelectedDate(date);
+        setEventForm({ titulo: '', hora: '', participantes: '', descripcion: '', prioridad: 'normal' });
+        setEventDate(date || selectedDate);
         setShowEventModal(true);
     };
 
     const handleEditEvent = (event: any) => {
         setEditingEvent(event);
-        setEventForm({ titulo: event.titulo, hora: event.hora || '', afectados: event.afectados || '', descripcion: event.descripcion || '', prioridad: event.prioridad || 'normal' });
+        setEventDate(event.fecha);
+        setEventForm({ titulo: event.titulo, hora: event.hora || '', participantes: event.participantes || '', descripcion: event.descripcion || '', prioridad: event.prioridad || 'normal' });
         setShowEventModal(true);
     };
 
     const handleSaveInstitutionalEvent = async () => {
         if (!eventForm.titulo) return;
         setSaving(true);
-        const data = { ...eventForm, fecha: editingEvent?.fecha || selectedDate };
+        const data = { ...eventForm, fecha: eventDate };
         const { error } = editingEvent ? await supabase.from('novedades_institucionales').update(data).eq('id', editingEvent.id) : await supabase.from('novedades_institucionales').insert([data]);
         if (!error) {
             setNotif({ type: 'success', msg: 'Evento actualizado' });
@@ -573,44 +575,57 @@ export default function HorarioPage() {
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4">
-                            <div className="flex gap-3 h-full min-w-max px-2">
+                        <div className="flex-1 overflow-y-auto px-2 pb-20 custom-scrollbar">
+                            <div className="grid grid-cols-2 gap-3">
                                 {weekData.map((d, i) => {
                                     const events = instEvents.filter(e => e.fecha === d.date);
                                     const dateObj = new Date(d.date + 'T12:00:00');
-                                    const isToday = dateObj.toDateString() === new Date().toDateString();
+                                    const isToday = d.date === new Date().toISOString().split('T')[0];
 
                                     return (
-                                        <div key={i} className="w-64 flex flex-col gap-3">
-                                            <div className={`p-4 rounded-[2rem] text-center shadow-sm border transition-all ${isToday ? 'bg-cyan-600 text-white border-cyan-500' : 'bg-white border-gray-100'}`}>
-                                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isToday ? 'text-white/70' : 'text-cyan-600'}`}>
+                                        <div key={i} className="flex flex-col gap-3">
+                                            <div className={`p-4 rounded-[3xl] text-center shadow-sm border transition-all ${isToday ? 'bg-cyan-600 text-white border-cyan-500 shadow-cyan-100' : 'bg-white border-gray-100'}`}>
+                                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isToday ? 'text-cyan-100' : 'text-cyan-600'}`}>
                                                     {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'][dateObj.getDay()]}
                                                 </p>
                                                 <p className="text-xl font-black">{dateObj.getDate()}</p>
                                             </div>
 
-                                            <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pb-10">
+                                            <div className="space-y-2">
                                                 {events.map((e, ei) => (
                                                     <div key={ei} className="p-4 rounded-[2rem] border border-gray-100 bg-white shadow-sm relative group/card">
                                                         <div className="flex items-center justify-between mb-2">
                                                             <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 uppercase tracking-widest">
                                                                 {e.hora || 'S/H'}
                                                             </span>
-                                                            <div className="flex gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                                                                <button onClick={() => handleEditEvent(e)}><Edit2 className="w-3 h-3 text-gray-300" /></button>
-                                                                <button onClick={() => handleDeleteInstitutionalEvent(e.id)}><Trash2 className="w-3 h-3 text-gray-300" /></button>
+                                                            <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover/card:opacity-100 transition-opacity">
+                                                                <button onClick={() => handleEditEvent(e)} className="p-1 hover:bg-blue-50 rounded-lg text-blue-600">
+                                                                    <Edit2 className="w-3 h-3" />
+                                                                </button>
+                                                                <button onClick={() => handleDeleteInstitutionalEvent(e.id)} className="p-1 hover:bg-red-50 rounded-lg text-red-600">
+                                                                    <Trash2 className="w-3 h-3" />
+                                                                </button>
                                                             </div>
                                                         </div>
-                                                        <h4 className="font-black text-gray-900 text-xs mb-1 leading-tight">{e.titulo}</h4>
-                                                        {e.afectados && <p className="text-[8px] font-bold text-gray-400 truncate uppercase">{e.afectados}</p>}
+                                                        <h4 className="text-[11px] font-bold text-gray-900 leading-tight mb-1">{e.titulo}</h4>
+                                                        {e.participantes && (
+                                                            <div className="flex items-center gap-1 mb-1">
+                                                                <Users className="w-2.5 h-2.5 text-gray-400" />
+                                                                <span className="text-[9px] text-gray-500 font-medium truncate">{e.participantes}</span>
+                                                            </div>
+                                                        )}
+                                                        <p className="text-[9px] text-gray-400 font-bold line-clamp-2">{e.descripcion}</p>
                                                     </div>
                                                 ))}
+
                                                 <button
                                                     onClick={() => handleAddEvent(d.date)}
-                                                    className="w-full h-24 border-2 border-dashed border-gray-100 rounded-[2rem] flex flex-col items-center justify-center text-gray-300 hover:border-cyan-200 hover:text-cyan-600 transition-all font-black text-[9px] uppercase"
+                                                    className="w-full aspect-[4/3] rounded-[2rem] border-2 border-dashed border-gray-200 hover:border-cyan-300 hover:bg-cyan-50/30 flex flex-col items-center justify-center gap-2 transition-all group"
                                                 >
-                                                    <Plus className="w-6 h-6 mb-1" />
-                                                    Programar
+                                                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-cyan-100 transition-colors">
+                                                        <Plus className="w-4 h-4 text-gray-400 group-hover:text-cyan-600" />
+                                                    </div>
+                                                    <span className="text-[9px] font-black text-gray-400 group-hover:text-cyan-600 uppercase tracking-widest">+ PROGRAMAR</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -669,18 +684,75 @@ export default function HorarioPage() {
 
             {showEventModal && (
                 <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowEventModal(false)}></div>
-                    <div className="bg-white rounded-[3rem] w-full max-w-lg relative overflow-hidden flex flex-col animate-in zoom-in-95">
-                        <div className="p-8 bg-cyan-600 text-white flex justify-between items-center"><h3 className="text-xl font-black">Actividad Institucional</h3><button onClick={() => setShowEventModal(false)}><X /></button></div>
-                        <div className="p-8 space-y-4">
-                            <input value={eventForm.titulo} onChange={e => setEventForm({ ...eventForm, titulo: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-none outline-none font-bold text-sm" placeholder="Título" />
-                            <div className="grid grid-cols-2 gap-4">
-                                <input value={eventForm.hora} onChange={e => setEventForm({ ...eventForm, hora: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-none outline-none font-bold text-sm" placeholder="Hora" />
-                                <select value={eventForm.prioridad} onChange={e => setEventForm({ ...eventForm, prioridad: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-none outline-none font-bold text-sm"><option value="normal">Normal</option><option value="alta">Urgente</option></select>
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowEventModal(false)}></div>
+                    <div className="bg-white rounded-[3rem] w-full max-w-lg relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl">
+                        <div className="p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden">
+                            <div className="relative z-10">
+                                <h3 className="text-2xl font-black">{editingEvent ? 'Editar Actividad' : 'Nueva Actividad'}</h3>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">
+                                    {eventDate ? formatDateLabel(eventDate) : 'Programación Escolar'}
+                                </p>
                             </div>
-                            <input value={eventForm.afectados} onChange={e => setEventForm({ ...eventForm, afectados: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-none outline-none font-bold text-sm" placeholder="Afectados" />
+                            <button onClick={() => setShowEventModal(false)} className="relative z-10 p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
+                            <CalendarIcon className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 rotate-12" />
                         </div>
-                        <div className="p-8 pt-0 flex gap-4"><button onClick={() => setShowEventModal(false)} className="flex-1 py-4 bg-gray-100 rounded-2xl text-[10px] font-black">CANCELAR</button><button onClick={handleSaveInstitutionalEvent} className="flex-1 py-4 bg-cyan-600 text-white rounded-2xl text-[10px] font-black uppercase shadow-xl shadow-cyan-100">GUARDAR</button></div>
+
+                        <div className="p-8 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Título de la Actividad</label>
+                                <input
+                                    value={eventForm.titulo}
+                                    onChange={e => setEventForm({ ...eventForm, titulo: e.target.value })}
+                                    className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all"
+                                    placeholder="Ej: Izada de Bandera"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hora (Opcional)</label>
+                                    <input
+                                        value={eventForm.hora}
+                                        onChange={e => setEventForm({ ...eventForm, hora: e.target.value })}
+                                        className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all"
+                                        placeholder="08:00 AM"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Prioridad</label>
+                                    <select
+                                        value={eventForm.prioridad}
+                                        onChange={e => setEventForm({ ...eventForm, prioridad: e.target.value })}
+                                        className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none"
+                                    >
+                                        <option value="normal">Normal 😊</option>
+                                        <option value="alta">Urgente ⚠️</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Participantes</label>
+                                <div className="relative">
+                                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        value={eventForm.participantes}
+                                        onChange={e => setEventForm({ ...eventForm, participantes: e.target.value })}
+                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all"
+                                        placeholder="Ej: Grados 6° y 7°"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-8 pt-0 flex gap-4">
+                            <button onClick={() => setShowEventModal(false)} className="flex-1 py-4 bg-gray-50 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-100 transition-all">
+                                CANCELAR
+                            </button>
+                            <button onClick={handleSaveInstitutionalEvent} className="flex-[2] py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-cyan-100 transition-all active:scale-[0.98]">
+                                GUARDAR CAMBIOS
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
