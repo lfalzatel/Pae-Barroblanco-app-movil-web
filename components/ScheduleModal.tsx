@@ -269,15 +269,23 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                                                 key={idx}
                                                                 className="bg-red-50/40 border border-red-100 rounded-[2rem] p-4 flex items-center gap-4 animate-in slide-in-from-bottom-2 duration-300"
                                                             >
-                                                                <div className="bg-red-600 px-3 py-1.5 rounded-xl shadow-md shrink-0">
-                                                                    <span className="text-[10px] font-black text-white uppercase tracking-wider">NO ASISTE</span>
+                                                                <div className="bg-white border border-red-200 px-3 py-1.5 rounded-xl shadow-sm shrink-0 flex items-center gap-1.5">
+                                                                    <X className="w-3 h-3 text-red-500" />
+                                                                    <span className="text-[10px] font-black text-red-700 uppercase tracking-wider">NO ASISTE</span>
                                                                 </div>
                                                                 <div className="flex flex-col">
-                                                                    <span className="font-black text-lg text-red-900 leading-none">
-                                                                        {item.group.replace('-2026', '')}
-                                                                    </span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-black text-lg text-red-900 leading-none">
+                                                                            {item.group.replace('-2026', '')}
+                                                                        </span>
+                                                                        {item.studentCount !== undefined && (
+                                                                            <span className="text-[9px] font-black text-red-700/60 bg-white border border-red-100 px-1.5 py-0.5 rounded-md">
+                                                                                {item.studentCount} Estudiantes
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                     {item.notes && (
-                                                                        <span className="text-[11px] font-bold text-red-600/70 mt-1 italic">
+                                                                        <span className="text-[11px] font-bold text-red-600/70 mt-1 italic leading-tight">
                                                                             {item.notes}
                                                                         </span>
                                                                     )}
