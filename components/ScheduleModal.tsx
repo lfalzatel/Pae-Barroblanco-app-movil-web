@@ -194,39 +194,66 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
                                     return (
                                         <>
-                                            {filtered.map((item, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="flex items-center gap-4 p-4 rounded-3xl bg-white border border-gray-100 hover:border-cyan-100 hover:shadow-xl hover:shadow-cyan-600/5 transition-all duration-300 group"
-                                                >
-                                                    <div className="flex flex-col items-center justify-center w-20 bg-gray-50 rounded-2xl p-2.5 border border-gray-100 group-hover:bg-cyan-50 group-hover:border-cyan-100 transition-colors shrink-0 shadow-sm">
-                                                        <Clock className="w-4 h-4 text-gray-400 group-hover:text-cyan-600 mb-1" />
-                                                        <span className="text-[10px] font-black text-gray-700 group-hover:text-cyan-900 text-center leading-tight">
-                                                            {item.time.split(' - ')[0]}
-                                                        </span>
-                                                    </div>
+                                            {filtered.map((item, idx) => {
+                                                const hasNotes = !!item.notes;
 
-                                                    <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-black text-xl text-gray-900 whitespace-nowrap tracking-tight">
-                                                                {item.group.replace('-2026', '')}
-                                                            </span>
-                                                            {item.studentCount !== undefined && (
-                                                                <span className="text-[10px] font-black text-white bg-cyan-600/80 px-2 py-0.5 rounded-lg shadow-sm">
-                                                                    {item.studentCount} Estudiantes
+                                                if (hasNotes) {
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className="bg-amber-50/40 border border-amber-100 rounded-[2rem] p-4 flex items-center gap-4 animate-in fade-in duration-300"
+                                                        >
+                                                            <div className="bg-white border border-amber-200 px-3 py-1.5 rounded-xl shadow-sm shrink-0">
+                                                                <span className="text-[10px] font-black text-amber-700 uppercase tracking-wider">
+                                                                    {item.time.split(' - ')[0]}
                                                                 </span>
-                                                            )}
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-black text-lg text-gray-900 leading-none tracking-tight">
+                                                                        {item.group.replace('-2026', '')}
+                                                                    </span>
+                                                                    {item.studentCount !== undefined && (
+                                                                        <span className="text-[9px] font-black text-amber-700/60 bg-white border border-amber-100 px-1.5 py-0.5 rounded-md">
+                                                                            {item.studentCount} Estudiantes
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-[11px] font-bold text-amber-600/80 mt-1 italic leading-tight">
+                                                                    {item.notes}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div
+                                                        key={idx}
+                                                        className="flex items-center gap-4 p-4 rounded-3xl bg-white border border-gray-100 hover:border-cyan-100 hover:shadow-xl hover:shadow-cyan-600/5 transition-all duration-300 group"
+                                                    >
+                                                        <div className="flex flex-col items-center justify-center w-20 bg-gray-50 rounded-2xl p-2.5 border border-gray-100 group-hover:bg-cyan-50 group-hover:border-cyan-100 transition-colors shrink-0 shadow-sm">
+                                                            <Clock className="w-4 h-4 text-gray-400 group-hover:text-cyan-600 mb-1" />
+                                                            <span className="text-[10px] font-black text-gray-700 group-hover:text-cyan-900 text-center leading-tight">
+                                                                {item.time.split(' - ')[0]}
+                                                            </span>
                                                         </div>
 
-                                                        {item.notes && (
-                                                            <div className="flex items-center gap-1.5 text-[10px] text-amber-700 bg-amber-50/80 px-3 py-1.5 rounded-xl border border-amber-100 w-fit max-w-full overflow-hidden">
-                                                                <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                                                <span className="font-bold break-words leading-tight">{item.notes}</span>
+                                                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-black text-xl text-gray-900 whitespace-nowrap tracking-tight">
+                                                                    {item.group.replace('-2026', '')}
+                                                                </span>
+                                                                {item.studentCount !== undefined && (
+                                                                    <span className="text-[10px] font-black text-white bg-cyan-600/80 px-2 py-0.5 rounded-lg shadow-sm">
+                                                                        {item.studentCount} Estudiantes
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                        )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
 
                                             {/* Not Attending Section */}
                                             {notAttending.length > 0 && (
