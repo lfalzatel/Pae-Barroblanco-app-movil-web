@@ -688,368 +688,377 @@ function RegistroContent() {
       )}
 
       {/* STICKY HEADER BLOCK: Title + Stats + Buttons */}
-      <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-40 transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+      <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 shadow-xl shadow-cyan-900/10 sticky top-0 z-40 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <button
                 onClick={() => {
                   if (step === 'sede') router.push('/dashboard');
                   else handleBack();
                 }}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700"
+                className="p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg border border-white/10"
               >
                 <ArrowLeft className="w-6 h-6" />
               </button>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 leading-none">
+              <div className="relative">
+                <h1 className="text-xl md:text-2xl font-black text-white leading-none tracking-tight">
                   {step === 'sede' && 'Seleccionar Sede'}
                   {step === 'grupo' && 'Seleccionar Grupo'}
-                  {step === 'registro' && 'Registro de Asistencia'}
+                  {step === 'registro' && 'Registro PAE'}
                 </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  {step === 'registro' ? `Grupo ${grupoSeleccionado?.nombre} • ${dateTitle}` : dateTitle}
+                <p className="text-[10px] md:text-[11px] font-bold text-cyan-50 uppercase tracking-[0.2em] mt-1.5 opacity-90">
+                  {step === 'registro' ? `GRUPO ${grupoSeleccionado?.nombre} • ${dateTitle}` : `${dateTitle}`}
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
+
+            <div className="flex items-center gap-2">
               {!isOnline && (
-                <div className="flex items-center gap-1 bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200">
+                <div className="flex items-center gap-2 bg-red-500/20 backdrop-blur-md text-white px-3 py-2 rounded-xl text-[9px] font-black tracking-widest border border-white/10">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-gray-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
                   </span>
                   OFFLINE
                 </div>
               )}
               {pendingCount > 0 && (
-                <div className="flex items-center gap-1 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold border border-blue-100 animate-pulse">
-                  <UploadCloud className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2 bg-amber-500/20 backdrop-blur-md text-white px-3 py-2 rounded-xl text-[9px] font-black tracking-widest border border-white/10">
+                  <UploadCloud className="w-3.5 h-3.5 animate-bounce" />
                   {pendingCount} PENDIENTES
                 </div>
               )}
               {(step === 'grupo' || step === 'registro') && (
-                <div className="flex flex-col items-center">
-                  <button
-                    onClick={() => setShowCalendar(true)}
-                    className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors shadow-sm"
-                  >
-                    <Calendar className="w-6 h-6" />
-                  </button>
-                  <span className="text-[10px] font-bold text-blue-600 mt-1 uppercase tracking-tight">seleccionar fecha</span>
-                </div>
+                <button
+                  onClick={() => setShowCalendar(true)}
+                  className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-all shadow-lg border border-white/10 active:scale-95 group"
+                >
+                  <Calendar className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                </button>
               )}
             </div>
-            {step === 'sede' && (
-              <div className="flex flex-col items-center opacity-40">
-                <Calendar className="w-6 h-6 text-gray-400" />
-                <span className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tight">seleccionar fecha</span>
-              </div>
-            )}
           </div>
-
-          {step === 'registro' && grupoSeleccionado && (
-            <div className="space-y-4 pb-2">
-              <div className="flex justify-between px-2 sm:justify-start sm:gap-12">
-                <div className="text-center">
-                  <span className="block text-2xl font-bold text-green-600">{statsCount.recibieron}</span>
-                  <span className="text-xs text-gray-500 font-medium">Recibieron</span>
-                </div>
-                <div className="text-center">
-                  <span className="block text-2xl font-bold text-red-600">{statsCount.noRecibieron}</span>
-                  <span className="text-xs text-gray-500 font-medium">No Recibieron</span>
-                </div>
-                <div className="text-center">
-                  <span className="block text-2xl font-bold text-gray-600">{statsCount.ausentes}</span>
-                  <span className="text-xs text-gray-500 font-medium">No Asistieron</span>
-                </div>
-                <div className="text-center">
-                  <span className="block text-2xl font-bold text-orange-400">{statsCount.inactivos}</span>
-                  <span className="text-xs text-gray-500 font-medium">Inactivos</span>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button onClick={handleMarcarTodos} className="flex-1 bg-[#10B981] hover:bg-green-600 text-white rounded-xl py-3 px-4 font-bold flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-95">
-                  <CheckCircle className="w-5 h-5" />
-                  <span>Todos Recibieron</span>
-                </button>
-                <button onClick={handleGuardar} disabled={saving} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 px-4 font-bold flex items-center justify-center gap-2 shadow-md disabled:opacity-50 transition-transform active:scale-95">
-                  {saving ? <div className="w-5 h-5 animate-spin border-2 border-white/30 border-t-white rounded-full" /> : <Save className="w-5 h-5" />}
-                  <span>{saving ? 'Guardando...' : 'Guardar'}</span>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {step === 'sede' && (
-          <div className="space-y-4">
-            {sedes.map(sede => (
-              <button
-                key={sede.id}
-                onClick={() => handleSedeSelect(sede)}
-                className="w-full relative h-32 rounded-2xl overflow-hidden shadow-md group transition-all hover:shadow-xl hover:scale-[1.01]"
-              >
-                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("/${sede.id === 'principal' ? 'sede_principal.png' : sede.id === 'primaria' ? 'sede_primaria.png' : 'sede_maria.png'}")` }} />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
-                <div className="absolute inset-0 p-4 flex items-center gap-4 text-white">
-                  <div className="bg-white/20 p-3 rounded-full backdrop-blur-sm flex-shrink-0">
-                    {sede.id === 'principal' ? <School className="w-8 h-8" /> : sede.id === 'primaria' ? <GraduationCap className="w-8 h-8" /> : <Home className="w-8 h-8" />}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <h3 className="text-xl font-bold leading-tight">{sede.nombre}</h3>
-                    <p className="text-gray-200 text-sm mb-1">{sede.id === 'principal' ? 'Grados 6° - 11°' : 'Educación Primaria'}</p>
-                    <div className="inline-flex bg-white/20 px-3 py-1 rounded-full backdrop-blur-md items-center gap-1.5 pt-0.5">
-                      <span className="font-bold text-xs">{countsBySede[sede.id] || 0} Estudiantes</span>
-                      <Users className="w-3 h-3" />
-                    </div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {step === 'grupo' && sedeSeleccionada && (
-          <div>
-            {loadingGrupos ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-8">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="rounded-lg p-3 border border-gray-100 bg-white min-h-[100px] flex flex-col items-center justify-center space-y-2">
-                    <Skeleton className="h-6 w-12" />
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-4 w-16 rounded-full" />
-                  </div>
-                ))}
+      {step === 'registro' && grupoSeleccionado && (
+        <div className="space-y-4 pt-2 pb-2">
+          <div className="flex justify-between px-2 items-end">
+            <div className="flex gap-8">
+              <div className="flex flex-col">
+                <span className="text-2xl font-black text-white leading-none">{statsCount.recibieron}</span>
+                <span className="text-[9px] font-black text-cyan-100 uppercase tracking-widest mt-1">RECIBIERON</span>
               </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-8">
-                {gruposReales.map(grupo => (
-                  <button
-                    key={grupo.id}
-                    onClick={() => handleGrupoSelect(grupo)}
-                    className={`rounded-lg p-3 shadow-sm border transition-all text-center flex flex-col items-center justify-center min-h-[100px] relative overflow-hidden group
-                      ${grupo.completado ? 'bg-[#10B981] border-[#10B981] text-white' : 'bg-white border-gray-200 hover:border-blue-500 hover:bg-blue-50 hover:shadow-md'}
-                    `}
-                  >
-                    <div className={`text-xl font-bold mb-0.5 flex items-center gap-1.5 ${grupo.completado ? 'text-white' : 'text-gray-900'}`}>
-                      {grupo.nombre}
-                      {grupo.completado && (
-                        <div className="bg-white rounded-full flex items-center justify-center w-5 h-5">
-                          <CheckCircle className="w-4 h-4 text-[#10B981]" />
-                        </div>
-                      )}
-                    </div>
-                    <div className={`text-xs ${grupo.completado ? 'text-green-100' : 'text-gray-500'}`}>
-                      {grupo.grado} • {grupo.estudiantes} estudiantes
-                    </div>
-                    <div className={`mt-2 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${grupo.completado ? 'bg-white/20 text-white' : 'bg-yellow-100 text-yellow-700'}`}>
-                      {grupo.completado ? 'Completado' : 'Pendiente'}
-                    </div>
-                  </button>
-                ))}
+              <div className="flex flex-col">
+                <span className="text-2xl font-black text-white/60 leading-none">{statsCount.noRecibieron}</span>
+                <span className="text-[9px] font-black text-cyan-100/60 uppercase tracking-widest mt-1">FALTAN</span>
               </div>
-            )}
-          </div>
-        )}
-
-        {step === 'registro' && grupoSeleccionado && (
-          <div>
-            {loadingGrupos ? (
-              <div className="space-y-4">
-                <div className="h-12 bg-gray-100 rounded-xl mb-6 animate-pulse" />
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-3">
-                        <Skeleton className="w-12 h-12 rounded-full" />
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-40" />
-                          <Skeleton className="h-3 w-24" />
-                        </div>
-                      </div>
-                      <Skeleton className="w-11 h-6 rounded-full" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <Skeleton className="h-12 rounded-xl" />
-                      <Skeleton className="h-12 rounded-xl" />
-                      <Skeleton className="h-12 rounded-xl" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar estudiante..."
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-                />
-
-                {/* Info de responsable */}
-                {Object.keys(duenos).length > 0 && (
-                  <div className="mt-2 px-1 flex items-center gap-2 text-[10px] text-gray-500 font-medium">
-                    <Users className="w-3 h-3 text-blue-500" />
-                    <span>
-                      Registrado por: {' '}
-                      <span className="text-blue-600 font-bold">
-                        {Array.from(new Set(Object.values(duenos)))
-                          .map(uid => mapaNombres[uid] || 'Cargando...')
-                          .join(', ')}
-                      </span>
-                    </span>
-                  </div>
-                )}
-
-                <div className="space-y-4 pt-2">
-                  {estudiantesFiltrados.length === 0 ? (
-                    <div className="text-center py-10 text-gray-500">No se encontraron estudiantes</div>
-                  ) : (
-                    estudiantesFiltrados.map(estudiante => {
-                      const isLocked = !!(duenos[estudiante.id] && duenos[estudiante.id] !== usuario?.id && usuario?.rol !== 'admin');
-
-                      return (
-                        <div
-                          key={estudiante.id}
-                          className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 transition-all ${estudiante.estado === 'inactivo' ? 'opacity-60 grayscale' : ''} ${asistencias[estudiante.id] === 'recibio' ? 'border-l-4 border-l-green-500' : asistencias[estudiante.id] === 'no_recibio' ? 'border-l-4 border-l-red-500' : asistencias[estudiante.id] === 'ausente' ? 'opacity-75 border-l-4 border-l-gray-400' : 'border-l-4 border-l-yellow-400'}`}
-                        >
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl text-white ${['bg-purple-200 text-purple-700', 'bg-blue-200 text-blue-700', 'bg-pink-200 text-pink-700'][estudiante.nombre.length % 3]}`}>
-                                {estudiante.nombre.charAt(0)}
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <div className="font-bold text-gray-900 leading-tight">{estudiante.nombre}</div>
-                                  {isLocked && (
-                                    <div
-                                      className="bg-gray-100 text-gray-500 p-1 rounded-md"
-                                      title="Registro de otro docente. Solo lectura."
-                                    >
-                                      <AlertCircle className="w-3 h-3" />
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="text-xs text-gray-500 mt-0.5">{estudiante.matricula} • {estudiante.grupo}</div>
-                              </div>
-                            </div>
-
-                            <button
-                              onClick={() => handleToggleEstado(estudiante)}
-                              disabled={isLocked}
-                              className={`flex flex-col items-center gap-1 group disabled:opacity-50`}
-                            >
-                              <div className={`w-11 h-6 rounded-full p-1 transition-colors duration-200 ${estudiante.estado !== 'inactivo' ? 'bg-[#00BFA5]' : 'bg-gray-300'}`}>
-                                <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ${estudiante.estado !== 'inactivo' ? 'translate-x-5' : 'translate-x-0'}`} />
-                              </div>
-                              <span className="text-[10px] text-gray-400 font-medium group-hover:text-gray-600">
-                                {estudiante.estado !== 'inactivo' ? 'Activo' : 'Inactivo'}
-                              </span>
-                            </button>
-                          </div>
-
-                          {estudiante.estado !== 'inactivo' && (
-                            <div className="space-y-3">
-                              <div className="grid grid-cols-3 gap-3">
-                                <button
-                                  onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'recibio' })}
-                                  disabled={isLocked}
-                                  className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${asistencias[estudiante.id] === 'recibio' ? 'bg-white border-2 border-[#10B981] text-[#10B981] shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
-                                >
-                                  <CheckCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'recibio' ? 'fill-current' : ''}`} />
-                                  <span>Recibió</span>
-                                </button>
-                                <button
-                                  onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'no_recibio' })}
-                                  disabled={isLocked}
-                                  className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${asistencias[estudiante.id] === 'no_recibio' ? 'bg-red-500 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
-                                >
-                                  <XCircle className={`w-5 h-5 ${asistencias[estudiante.id] === 'no_recibio' ? 'fill-current' : ''}`} />
-                                  <span>No Recibió</span>
-                                </button>
-                                <button
-                                  onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'ausente' })}
-                                  disabled={isLocked}
-                                  className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${asistencias[estudiante.id] === 'ausente' ? 'bg-gray-700 text-white' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
-                                >
-                                  <UserX className="w-5 h-5" />
-                                  <span>No Asistió</span>
-                                </button>
-                              </div>
-
-                              {asistencias[estudiante.id] === 'no_recibio' && (
-                                <button
-                                  onClick={() => openNovedadModal(estudiante)}
-                                  disabled={isLocked}
-                                  className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors border border-yellow-200 disabled:opacity-50"
-                                >
-                                  <AlertCircle className="w-5 h-5" />
-                                  Registrar Novedad
-                                  {novedades[estudiante.id] && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1" />}
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Date Picker Modal */}
-      {showCalendar && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowCalendar(false)}></div>
-          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20">
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-              <h3 className="font-black text-gray-900 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-blue-600" />
-                Seleccionar Fecha
-              </h3>
-              <button
-                onClick={() => setShowCalendar(false)}
-                className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-all hover:rotate-90"
-              >
-                <XCircle className="w-6 h-6" />
-              </button>
             </div>
-            <div className="p-4 bg-gray-50/30">
-              <MiniCalendar
-                selectedDate={selectedDate}
-                onSelectDate={(date) => {
-                  handleDateChange(date);
-                  setShowCalendar(false);
-                }}
-                mode="attendance"
-                dateData={attendanceCounts}
-                showCounters={!grupoSeleccionado}
-                onMonthChange={(year, month) => {
-                  setCalendarView({ year, month });
-                }}
-              />
-            </div>
-            <div className="p-4 bg-white border-t border-gray-100">
+
+            <div className="flex gap-3">
               <button
-                onClick={() => setShowCalendar(false)}
-                className="w-full py-3.5 bg-gray-900 text-white rounded-xl font-bold shadow-lg shadow-gray-200 hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all"
+                onClick={handleMarcarTodos}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl py-3 px-6 font-black uppercase text-[10px] tracking-widest flex items-center gap-2 shadow-xl shadow-cyan-900/20 transition-all active:scale-95 border border-emerald-400/30"
               >
-                Listo
+                <CheckCircle className="w-4 h-4" />
+                <span>TODOS LISTOS</span>
+              </button>
+              <button
+                onClick={handleGuardar}
+                disabled={saving}
+                className="bg-white hover:bg-cyan-50 text-cyan-700 rounded-2xl py-3 px-8 font-black uppercase text-[10px] tracking-widest flex items-center gap-2 shadow-xl shadow-cyan-900/20 disabled:opacity-50 transition-all active:scale-95"
+              >
+                {saving ? <div className="w-4 h-4 animate-spin border-2 border-cyan-700/30 border-t-cyan-700 rounded-full" /> : <Save className="w-4 h-4" />}
+                <span>{saving ? '...' : 'GUARDAR'}</span>
               </button>
             </div>
           </div>
         </div>
       )}
     </div>
+      </div >
+
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {step === 'sede' && (
+        <div className="space-y-4">
+          {sedes.map(sede => (
+            <button
+              key={sede.id}
+              onClick={() => handleSedeSelect(sede)}
+              className="w-full relative h-36 rounded-[2rem] overflow-hidden shadow-lg group transition-all hover:shadow-2xl hover:scale-[1.01] active:scale-[0.99] border-2 border-transparent hover:border-cyan-400/50"
+            >
+              <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style={{ backgroundImage: `url("/${sede.id === 'principal' ? 'sede_principal.png' : sede.id === 'primaria' ? 'sede_primaria.png' : 'sede_maria.png'}")` }} />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent" />
+              <div className="absolute inset-0 p-8 flex items-center gap-6 text-white">
+                <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-md flex-shrink-0 border border-white/20 shadow-xl group-hover:bg-cyan-500/20 group-hover:border-cyan-400 transition-all">
+                  {sede.id === 'principal' ? <School className="w-10 h-10" /> : sede.id === 'primaria' ? <GraduationCap className="w-10 h-10" /> : <Home className="w-10 h-10" />}
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className="text-2xl font-black leading-tight tracking-tight uppercase">{sede.nombre}</h3>
+                  <p className="text-cyan-50/70 text-[10px] font-black uppercase tracking-[0.2em] mb-3">{sede.id === 'principal' ? 'GRADOS 6° - 11°' : 'EDUCACIÓN PRIMARIA'}</p>
+                  <div className="inline-flex bg-white/10 px-4 py-1.5 rounded-xl backdrop-blur-md items-center gap-2 border border-white/10 shadow-inner">
+                    <span className="font-black text-[10px] uppercase tracking-widest">{countsBySede[sede.id] || 0} ESTUDIANTES</span>
+                    <Users className="w-3.5 h-3.5 text-cyan-400" />
+                  </div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {step === 'grupo' && sedeSeleccionada && (
+        <div>
+          {loadingGrupos ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-8">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="rounded-lg p-3 border border-gray-100 bg-white min-h-[100px] flex flex-col items-center justify-center space-y-2">
+                  <Skeleton className="h-6 w-12" />
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-4 w-16 rounded-full" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+              {gruposReales.map(grupo => (
+                <button
+                  key={grupo.id}
+                  onClick={() => handleGrupoSelect(grupo)}
+                  className={`rounded-[2rem] p-6 shadow-sm border-2 transition-all text-center flex flex-col items-center justify-center min-h-[140px] relative overflow-hidden group active:scale-[0.97]
+                      ${grupo.completado ? 'bg-cyan-600 border-cyan-500 text-white shadow-xl shadow-cyan-100' : 'bg-white border-gray-100 hover:border-cyan-400 hover:bg-cyan-50/50'}
+                    `}
+                >
+                  <div className={`text-2xl font-black mb-1 flex items-center gap-2 ${grupo.completado ? 'text-white' : 'text-gray-900 group-hover:text-cyan-700'}`}>
+                    {grupo.nombre}
+                    {grupo.completado && (
+                      <div className="bg-white/20 p-1 rounded-full backdrop-blur-sm">
+                        <CheckCircle className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <div className={`text-[10px] font-bold uppercase tracking-widest ${grupo.completado ? 'text-cyan-100' : 'text-gray-400'}`}>
+                    {grupo.grado} • {grupo.estudiantes} ESTS.
+                  </div>
+                  <div className={`mt-4 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-sm transition-colors ${grupo.completado ? 'bg-white text-cyan-700' : 'bg-gray-100 text-gray-500 group-hover:bg-cyan-100 group-hover:text-cyan-600'}`}>
+                    {grupo.completado ? 'FINALIZADO' : 'PENDIENTE'}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {step === 'registro' && grupoSeleccionado && (
+        <div>
+          {loadingGrupos ? (
+            <div className="space-y-4">
+              <div className="h-12 bg-gray-100 rounded-xl mb-6 animate-pulse" />
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-12 h-12 rounded-full" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                    </div>
+                    <Skeleton className="w-11 h-6 rounded-full" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <Skeleton className="h-12 rounded-xl" />
+                    <Skeleton className="h-12 rounded-xl" />
+                    <Skeleton className="h-12 rounded-xl" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="relative group">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar por nombre o matrícula..."
+                  className="w-full pl-12 pr-6 py-4 bg-white border border-gray-100 rounded-[1.5rem] focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-xl shadow-gray-200/50 transition-all font-bold text-gray-700"
+                />
+                <Users className="w-5 h-5 text-gray-300 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-cyan-500 transition-colors" />
+              </div>
+
+              {/* Info de responsable */}
+              {Object.keys(duenos).length > 0 && (
+                <div className="mt-2 px-1 flex items-center gap-2 text-[10px] text-gray-500 font-medium">
+                  <Users className="w-3 h-3 text-blue-500" />
+                  <span>
+                    Registrado por: {' '}
+                    <span className="text-blue-600 font-bold">
+                      {Array.from(new Set(Object.values(duenos)))
+                        .map(uid => mapaNombres[uid] || 'Cargando...')
+                        .join(', ')}
+                    </span>
+                  </span>
+                </div>
+              )}
+
+              <div className="space-y-4 pt-2">
+                {estudiantesFiltrados.length === 0 ? (
+                  <div className="text-center py-10 text-gray-500">No se encontraron estudiantes</div>
+                ) : (
+                  estudiantesFiltrados.map(estudiante => {
+                    const isLocked = !!(duenos[estudiante.id] && duenos[estudiante.id] !== usuario?.id && usuario?.rol !== 'admin');
+                    const currentAsist = asistencias[estudiante.id];
+
+                    return (
+                      <div
+                        key={estudiante.id}
+                        className={`bg-white rounded-[2rem] p-6 shadow-sm border-2 transition-all relative overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300
+                            ${estudiante.estado === 'inactivo' ? 'opacity-50 grayscale bg-gray-50 border-gray-100 shadow-none' : 'border-transparent hover:shadow-xl hover:shadow-cyan-900/5'}
+                            ${currentAsist === 'recibio' ? 'border-cyan-500/30 bg-cyan-50/10 shadow-cyan-100/50' : currentAsist === 'no_recibio' ? 'border-red-500/30 bg-red-50/10 shadow-red-100/50' : currentAsist === 'ausente' ? 'border-gray-300/30 bg-gray-50/50' : ''}
+                          `}
+                      >
+                        <div className="flex justify-between items-start mb-6">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-2xl shadow-inner border border-white/50 transition-all duration-300
+                                ${currentAsist === 'recibio' ? 'bg-cyan-500 text-white rotate-3 shadow-cyan-200' : 'bg-gradient-to-br from-gray-50 to-gray-100 text-gray-400'}
+                              `}>
+                              {estudiante.nombre.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="font-black text-gray-900 leading-tight tracking-tight text-lg">{estudiante.nombre}</div>
+                                {isLocked && (
+                                  <div className="bg-amber-100 text-amber-600 p-1.5 rounded-lg border border-amber-200 shadow-sm" title="Registro de otro docente. Solo lectura.">
+                                    <AlertCircle className="w-3.5 h-3.5" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{estudiante.matricula} • {estudiante.grupo.replace('-2026', '')}</div>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleToggleEstado(estudiante)}
+                            disabled={isLocked}
+                            className="bg-gray-50 px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-gray-100 transition-colors border border-gray-100 active:scale-95 disabled:opacity-30"
+                          >
+                            <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500' : 'bg-gray-300'}`}>
+                              <div className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all duration-300 ${estudiante.estado !== 'inactivo' ? 'left-4.5 translate-x-1' : 'left-0.5'}`} />
+                            </div>
+                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
+                              {estudiante.estado !== 'inactivo' ? 'ACTIVO' : 'INACT.'}
+                            </span>
+                          </button>
+                        </div>
+
+                        {estudiante.estado !== 'inactivo' && (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-3 gap-3">
+                              <button
+                                onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'recibio' })}
+                                disabled={isLocked}
+                                className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center justify-center gap-2 border-2 active:scale-95 disabled:opacity-30
+                                    ${currentAsist === 'recibio' ? 'bg-cyan-600 border-cyan-500 text-white shadow-lg shadow-cyan-200' : 'bg-white border-gray-100 text-gray-400 hover:border-cyan-200 hover:text-cyan-600'}
+                                  `}
+                              >
+                                <CheckCircle className={`w-5 h-5 ${currentAsist === 'recibio' ? 'animate-bounce' : ''}`} />
+                                <span>Recibió</span>
+                              </button>
+                              <button
+                                onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'no_recibio' })}
+                                disabled={isLocked}
+                                className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center justify-center gap-2 border-2 active:scale-95 disabled:opacity-30
+                                    ${currentAsist === 'no_recibio' ? 'bg-red-500 border-red-400 text-white shadow-lg shadow-red-200' : 'bg-white border-gray-100 text-gray-400 hover:border-red-200 hover:text-red-500'}
+                                  `}
+                              >
+                                <XCircle className="w-5 h-5" />
+                                <span>Faltó</span>
+                              </button>
+                              <button
+                                onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'ausente' })}
+                                disabled={isLocked}
+                                className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center justify-center gap-2 border-2 active:scale-95 disabled:opacity-30
+                                    ${currentAsist === 'ausente' ? 'bg-gray-800 border-gray-700 text-white shadow-lg shadow-gray-200' : 'bg-white border-gray-100 text-gray-400 hover:border-gray-300 hover:text-gray-700'}
+                                  `}
+                              >
+                                <UserX className="w-5 h-5" />
+                                <span>Ausente</span>
+                              </button>
+                            </div>
+
+                            {currentAsist === 'no_recibio' && (
+                              <button
+                                onClick={() => openNovedadModal(estudiante)}
+                                disabled={isLocked}
+                                className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all border border-amber-200 active:scale-95"
+                              >
+                                <AlertCircle className="w-4 h-4" />
+                                REGISTRAR NOVEDAD
+                                {novedades[estudiante.id] && <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1" />}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+
+  {/* Date Picker Modal */ }
+  {
+    showCalendar && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowCalendar(false)}></div>
+        <div className="bg-white/95 backdrop-blur-2xl rounded-[3rem] w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20">
+          <div className="p-6 border-b border-gray-100 bg-gradient-to-br from-cyan-600 to-cyan-700 flex items-center justify-between text-white">
+            <h3 className="font-black flex items-center gap-3 uppercase text-[11px] tracking-[0.2em]">
+              <Calendar className="w-5 h-5" />
+              Seleccionar Fecha
+            </h3>
+            <button
+              onClick={() => setShowCalendar(false)}
+              className="p-2 hover:bg-white/10 rounded-full transition-all hover:rotate-90"
+            >
+              <XCircle className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="p-6 bg-white">
+            <MiniCalendar
+              selectedDate={selectedDate}
+              onSelectDate={(date) => {
+                handleDateChange(date);
+                setShowCalendar(false);
+              }}
+              mode="attendance"
+              dateData={attendanceCounts}
+              showCounters={!grupoSeleccionado}
+              onMonthChange={(year, month) => {
+                setCalendarView({ year, month });
+              }}
+            />
+          </div>
+          <div className="p-6 pt-0 bg-white">
+            <button
+              onClick={() => setShowCalendar(false)}
+              className="w-full py-4 bg-cyan-600 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-cyan-100 hover:bg-cyan-700 active:scale-[0.98] transition-all"
+            >
+              LISTO, VOLVER
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+    </div >
   );
 }
 
