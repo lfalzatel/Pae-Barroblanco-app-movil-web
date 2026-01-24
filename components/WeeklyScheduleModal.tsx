@@ -144,7 +144,6 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                                     <div className="flex-1 space-y-4">
                                         {/* PAE Items */}
                                         <div className="space-y-2">
-                                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-1">Restaurante PAE</p>
                                             {day.items.length > 0 ? (
                                                 day.items.map((item: any, i: number) => {
                                                     const isAbsent = item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE';

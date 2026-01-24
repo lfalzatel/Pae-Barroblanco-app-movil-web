@@ -90,17 +90,27 @@ export default function DashboardLayout({
                 dates.push(d.toISOString().split('T')[0]);
             }
 
-            const { data } = await supabase
+            // Fetch PAE schedules
+            const { data: schedData } = await supabase
                 .from('schedules')
                 .select('*')
                 .in('date', dates);
 
+            // Fetch Institutional events
+            const { data: instData } = await supabase
+                .from('novedades_institucionales')
+                .select('*')
+                .in('fecha', dates)
+                .order('hora', { ascending: true });
+
             const mapped = dates.map(dateStr => {
-                const dayData = (data || []).find(d => d.date === dateStr);
+                const dayData = (schedData || []).find(d => d.date === dateStr);
+                const dayInst = (instData || []).filter(e => e.fecha === dateStr);
                 return {
                     date: dateStr,
                     label: new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                    items: dayData?.items || []
+                    items: dayData?.items || [],
+                    instEvents: dayInst
                 };
             });
 
@@ -108,6 +118,7 @@ export default function DashboardLayout({
         } catch (error) {
             console.error('Error fetching weekly notif schedule:', error);
         } finally {
+            setIsWeeklySearching(true); // Small delay feel or keep it as false? It was false.
             setIsWeeklySearching(false);
         }
     };
@@ -204,11 +215,17 @@ export default function DashboardLayout({
             }
         };
 
+        const fetchInstChanges = () => {
+            if (notifModalOpen && activeNotifTab === 'weekly') {
+                fetchWeeklyNotifSchedule();
+            }
+        };
+
         initSession();
         fetchTomorrowSchedule();
 
         // 2. Realtime listener for schedule changes
-        const channel = supabase
+        const scheduleChannel = supabase
             .channel('schedule_changes')
             .on(
                 'postgres_changes',
@@ -219,11 +236,28 @@ export default function DashboardLayout({
                 },
                 () => {
                     fetchTomorrowSchedule();
+                    fetchInstChanges();
                 }
             )
             .subscribe();
 
-        // 3. Set up the listener for changes (sign in, sign out, token refresh)
+        // 3. Realtime listener for institutional changes
+        const instChannel = supabase
+            .channel('inst_changes')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'novedades_institucionales'
+                },
+                () => {
+                    fetchInstChanges();
+                }
+            )
+            .subscribe();
+
+        // 4. Set up the listener for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' && session) {
                 setUsuario({
@@ -232,7 +266,7 @@ export default function DashboardLayout({
                     rol: session.user.user_metadata?.rol || 'docente',
                     foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
                 });
-                fetchTomorrowSchedule(); // Refresh when user logs in
+                fetchTomorrowSchedule();
             } else if (event === 'SIGNED_OUT') {
                 setUsuario(null);
                 setTomorrowSchedule([]);
@@ -242,9 +276,10 @@ export default function DashboardLayout({
 
         return () => {
             subscription.unsubscribe();
-            supabase.removeChannel(channel);
+            supabase.removeChannel(scheduleChannel);
+            supabase.removeChannel(instChannel);
         };
-    }, [router]);
+    }, [router, notifModalOpen, activeNotifTab]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -480,7 +515,7 @@ export default function DashboardLayout({
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setNotifModalOpen(false)}></div>
                     <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
-                        <div className="p-6 bg-gradient-to-br from-blue-600 to-blue-700 text-white relative">
+                        <div className="p-6 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative">
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="bg-white/20 p-2 rounded-xl">
@@ -518,13 +553,13 @@ export default function DashboardLayout({
                         <div className="flex border-b border-gray-100">
                             <button
                                 onClick={() => setActiveNotifTab('daily')}
-                                className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeNotifTab === 'daily' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                                className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeNotifTab === 'daily' ? 'text-cyan-600 border-b-2 border-cyan-600 bg-cyan-50/50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
                             >
                                 Mañana
                             </button>
                             <button
                                 onClick={() => setActiveNotifTab('weekly')}
-                                className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeNotifTab === 'weekly' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                                className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeNotifTab === 'weekly' ? 'text-cyan-600 border-b-2 border-cyan-600 bg-cyan-50/50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
                             >
                                 Semana
                             </button>
@@ -540,14 +575,14 @@ export default function DashboardLayout({
                                             className="w-full p-4 flex items-center justify-between hover:bg-gray-100 transition-colors group"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="bg-blue-100 p-2 rounded-xl group-hover:scale-110 transition-transform animate-pulse">
-                                                    <Calendar className="w-5 h-5 text-blue-600" />
+                                                <div className="bg-cyan-100 p-2 rounded-xl group-hover:scale-110 transition-transform animate-pulse">
+                                                    <Calendar className="w-5 h-5 text-cyan-600" />
                                                 </div>
                                                 <span className="text-[11px] font-black text-gray-900 uppercase tracking-[0.15em]">Consultar Fecha</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 {selectedDate && (
-                                                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">
+                                                    <span className="text-[10px] font-bold text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-lg border border-cyan-100">
                                                         {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
                                                     </span>
                                                 )}
@@ -573,7 +608,7 @@ export default function DashboardLayout({
                                                             setSearchResult(null);
                                                             setIsCalendarOpen(false);
                                                         }}
-                                                        className="w-full text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                                        className="w-full text-[10px] font-bold text-cyan-600 hover:text-cyan-700 bg-cyan-50 px-3 py-2 rounded-xl transition-colors flex items-center justify-center gap-2"
                                                     >
                                                         <RefreshCcw className="w-3 h-3" />
                                                         Ver Mañana (Reset)
@@ -608,7 +643,7 @@ export default function DashboardLayout({
                                                 <button
                                                     key={day}
                                                     onClick={() => setSelectedDayInWeek(dIdx)}
-                                                    className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${selectedDayInWeek === dIdx ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                                                    className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${selectedDayInWeek === dIdx ? 'bg-cyan-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
                                                 >
                                                     {day}
                                                 </button>
@@ -634,13 +669,13 @@ export default function DashboardLayout({
                                             return (filteredTomorrow.length > 0 || (filteredSearch && filteredSearch.length > 0));
                                         })()
                                     ) && (
-                                            <div className="mb-6 bg-blue-50/50 p-4 rounded-3xl border border-blue-100 flex items-center gap-4 animate-in fade-in duration-500">
-                                                <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-200">
+                                            <div className="mb-6 bg-cyan-50/50 p-4 rounded-3xl border border-cyan-100 flex items-center gap-4 animate-in fade-in duration-500">
+                                                <div className="bg-cyan-600 p-2 rounded-xl shadow-lg shadow-cyan-200">
                                                     <Calendar className="w-5 h-5 text-white" />
                                                 </div>
                                                 <div>
-                                                    <h4 className="text-sm font-black text-blue-900">Horario Publicado</h4>
-                                                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Revisa las novedades abajo</p>
+                                                    <h4 className="text-sm font-black text-cyan-900">Horario Publicado</h4>
+                                                    <p className="text-[10px] font-bold text-cyan-600 uppercase tracking-widest">Revisa las novedades abajo</p>
                                                 </div>
                                             </div>
                                         )}
@@ -653,7 +688,7 @@ export default function DashboardLayout({
                                     ) : searchResult ? (
                                         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                             <div className="flex items-center justify-between mb-2">
-                                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest pl-1">Resultados para {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</p>
+                                                <p className="text-[10px] font-black text-cyan-600 uppercase tracking-widest pl-1">Resultados para {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</p>
                                             </div>
                                             {searchResult.filter((i: any) => {
                                                 const groupSede = groupSedeMap[i.group] || 'Principal';
@@ -788,7 +823,14 @@ export default function DashboardLayout({
                                                     return groupSede === selectedSede && (i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE');
                                                 });
 
-                                                if (news.length === 0) {
+                                                const instNews = (day.instEvents || []).map((e: any) => ({
+                                                    ...e,
+                                                    isInst: true
+                                                }));
+
+                                                const totalNews = [...news, ...instNews];
+
+                                                if (totalNews.length === 0) {
                                                     return (
                                                         <div className="bg-gray-50 p-10 rounded-3xl border border-gray-100 text-center animate-in fade-in duration-300">
                                                             <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
@@ -800,21 +842,40 @@ export default function DashboardLayout({
 
                                                 return (
                                                     <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-300">
-                                                        <div className="flex items-center gap-2 border-l-4 border-blue-600 pl-3 py-1 bg-blue-50/30 rounded-r-xl">
-                                                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">{day.label}</p>
+                                                        <div className="flex items-center gap-2 border-l-4 border-cyan-600 pl-3 py-1 bg-cyan-50/30 rounded-r-xl">
+                                                            <p className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.2em]">{day.label}</p>
                                                         </div>
                                                         <div className="space-y-2">
-                                                            {news.map((item: any, i: number) => (
-                                                                <div key={i} className={`p-3 rounded-2xl border flex items-start gap-3 shadow-sm ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
-                                                                    <div className={`${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-600 text-white' : 'bg-blue-50 text-blue-600 border border-blue-100'} px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase shrink-0`}>
-                                                                        {item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'No Asiste' : (item.time?.split(' - ')[0] || item.time_start)}
+                                                            {totalNews.map((item: any, i: number) => {
+                                                                if (item.isInst) {
+                                                                    return (
+                                                                        <div key={`inst-${i}`} className="p-3 rounded-2xl border border-cyan-100 bg-cyan-50/50 flex items-start gap-3 shadow-sm">
+                                                                            <div className="bg-cyan-600 text-white px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase shrink-0">
+                                                                                Agenda
+                                                                            </div>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <div className="flex items-center gap-1.5 mb-0.5">
+                                                                                    {item.prioridad === 'alta' && <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />}
+                                                                                    <p className="font-black text-[11px] text-cyan-900 truncate">{item.titulo}</p>
+                                                                                </div>
+                                                                                <p className="text-[9px] font-bold text-cyan-600/80">{item.hora || 'Todo el día'} - {item.afectados || 'Institucional'}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                const isAbsent = item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE';
+                                                                return (
+                                                                    <div key={`pae-${i}`} className={`p-3 rounded-2xl border flex items-start gap-3 shadow-sm ${isAbsent ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
+                                                                        <div className={`${isAbsent ? 'bg-red-600 text-white' : 'bg-cyan-50 text-cyan-600 border border-cyan-100'} px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase shrink-0`}>
+                                                                            {isAbsent ? 'No Asiste' : (item.time?.split(' - ')[0] || item.time_start)}
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <p className={`font-black text-[11px] ${isAbsent ? 'text-red-900' : 'text-gray-900'}`}>{item.group}</p>
+                                                                            {item.notes && <p className={`text-[9px] font-medium italic mt-0.5 line-clamp-1 ${isAbsent ? 'text-red-600' : 'text-gray-500'}`}>{item.notes}</p>}
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p className={`font-black text-[11px] ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-900' : 'text-gray-900'}`}>{item.group}</p>
-                                                                        {item.notes && <p className={`text-[9px] font-medium italic mt-0.5 line-clamp-1 ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-600' : 'text-gray-500'}`}>{item.notes}</p>}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
+                                                                );
+                                                            })}
                                                         </div>
                                                     </div>
                                                 );
