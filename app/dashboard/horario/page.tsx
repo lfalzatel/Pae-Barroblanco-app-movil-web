@@ -141,11 +141,13 @@ export default function HorarioPage() {
             const uniqueGroups = Array.from(new Set(estData?.map(e => e.grupo) || [])).filter(g => !g.includes('2025'));
             const processed: any[] = uniqueGroups.map(g => ({
                 id: g,
-                label: g,
+                label: g.replace('-2026', ''),
                 studentCount: counts[g] || 0,
                 sede: groupSedeMap[g] || 'Principal',
                 isCombo: false
-            }));
+            })).sort((a: any, b: any) => {
+                return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' });
+            });
             setAvailableGroups(processed);
 
             if (viewMode === 'day') {
@@ -159,7 +161,7 @@ export default function HorarioPage() {
 
                 if (schedArray?.[0]?.items) {
                     schedArray[0].items.forEach((item: any) => {
-                        const found = processed.find(g => g.label === item.group);
+                        const found = processed.find(g => g.id === item.group);
                         if (!found) return;
                         if (item.time === 'NO_ASISTE') {
                             absent.push({ group: found, notes: item.notes });
@@ -263,9 +265,19 @@ export default function HorarioPage() {
         try {
             const items: any[] = [];
             Object.entries(assignments).forEach(([time, slots]) => {
-                slots.forEach(s => items.push({ time, time_start: time, group: s.group.label, notes: s.notes || '' }));
+                slots.forEach(s => items.push({
+                    time,
+                    time_start: time,
+                    group: s.group.id, // Using ID for persistence
+                    notes: s.notes || ''
+                }));
             });
-            absentGroups.forEach(a => items.push({ time: 'NO_ASISTE', time_start: 'NO_ASISTE', group: a.group.label, notes: a.notes || '' }));
+            absentGroups.forEach(a => items.push({
+                time: 'NO_ASISTE',
+                time_start: 'NO_ASISTE',
+                group: a.group.id, // Using ID for persistence
+                notes: a.notes || ''
+            }));
 
             await supabase.from('schedules').upsert({ date: selectedDate, items, updated_at: new Date().toISOString() }, { onConflict: 'date' });
             setNotif({ type: 'success', msg: 'Horario guardado' });
@@ -344,16 +356,19 @@ export default function HorarioPage() {
 
             <div className="p-1 lg:p-6 max-w-7xl mx-auto h-screen flex flex-col overflow-hidden bg-gray-50/50">
 
-                {/* Fixed Title Header (Restored) */}
-                <div className="flex items-center justify-between px-4 mb-4 shrink-0">
+                {/* Fixed Title Header - Premium Modal Style Integration */}
+                <div className="flex items-center justify-between px-4 mb-4 shrink-0 bg-gradient-to-r from-cyan-600 to-cyan-700 p-4 rounded-[2rem] text-white shadow-lg shadow-cyan-100">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => router.push('/dashboard')} className="p-3 bg-white hover:bg-gray-50 rounded-full text-gray-400 shadow-sm border border-gray-100 transition-all active:scale-95">
+                        <button onClick={() => router.push('/dashboard')} className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white shadow-sm border border-white/10 transition-all active:scale-95">
                             <ChevronLeft className="w-6 h-6" />
                         </button>
-                        <h1 className="text-xl lg:text-3xl font-black text-gray-900 tracking-tight">Tablero de Horarios</h1>
+                        <div>
+                            <h1 className="text-xl lg:text-3xl font-black tracking-tight leading-none">Tablero de Horarios</h1>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-70 mt-1">Gestión Institucional PAE</p>
+                        </div>
                         <button
                             onClick={() => setShowInstructions(true)}
-                            className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-100 transition-all pulse-dark-button shadow-sm outline-none border-none"
+                            className="w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all pulse-dark-button shadow-sm outline-none border border-white/10"
                         >
                             <Info className="w-6 h-6" />
                         </button>
@@ -364,7 +379,7 @@ export default function HorarioPage() {
                 <div className="flex flex-col gap-2 mb-2 px-1 shrink-0">
                     <div className="bg-white p-2 lg:p-3 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between gap-2 overflow-hidden">
                         <div className="flex items-center gap-1 lg:gap-2">
-                            <div className="bg-gray-100/80 p-1 rounded-2xl flex items-center shrink-0 relative">
+                            <div className="bg-gray-100/80 p-0.5 rounded-2xl flex items-center shrink-0 relative">
                                 <button
                                     onClick={() => setViewMode('day')}
                                     className={`px-4 py-1.5 rounded-xl text-[11px] font-black transition-all relative z-10 ${viewMode === 'day' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
@@ -379,10 +394,10 @@ export default function HorarioPage() {
                                 </button>
                                 {/* Sliding Indicator */}
                                 <div
-                                    className={`absolute inset-y-1 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-cyan-600 rounded-xl shadow-md shadow-cyan-200/50 ${viewMode === 'day' ? 'left-1 w-[45%]' : 'left-[48%] w-[50%]'}`}
+                                    className={`absolute inset-y-0.5 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-gradient-to-br from-cyan-600 to-cyan-700 rounded-xl shadow-md shadow-cyan-200/50 ${viewMode === 'day' ? 'left-0.5 w-[45%]' : 'left-[48%] w-[50%]'}`}
                                     style={{
-                                        width: viewMode === 'day' ? 'calc(50% - 4px)' : 'calc(50% - 4px)',
-                                        left: viewMode === 'day' ? '4px' : 'calc(50%)'
+                                        width: viewMode === 'day' ? 'calc(50% - 2px)' : 'calc(50% - 2px)',
+                                        left: viewMode === 'day' ? '2px' : 'calc(50%)'
                                     }}
                                 />
                             </div>
@@ -391,39 +406,40 @@ export default function HorarioPage() {
                                 <select
                                     value={selectedSede}
                                     onChange={e => setSelectedSede(e.target.value)}
-                                    className="appearance-none bg-blue-50/50 pl-3 pr-8 py-2 rounded-full text-[11px] font-bold text-blue-700 border border-blue-100/50 outline-none focus:ring-2 focus:ring-blue-500/20"
+                                    className="appearance-none bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 pl-2.5 pr-8 py-[7px] rounded-2xl text-[10px] font-black text-white border-none outline-none transition-all uppercase tracking-wider cursor-pointer w-[110px] lg:w-auto shadow-lg shadow-cyan-100"
                                 >
-                                    <option value="Principal">Principal</option>
-                                    <option value="Primaria">Primaria</option>
-                                    <option value="Maria Inmaculada">M. Inmaculada</option>
+                                    <option value="Todas" className="bg-white text-gray-900">Todas</option>
+                                    <option value="Principal" className="bg-white text-gray-900">Principal</option>
+                                    <option value="Primaria" className="bg-white text-gray-900">Primaria</option>
+                                    <option value="Maria Inmaculada" className="bg-white text-gray-900">M. Inmaculada</option>
                                 </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-blue-400 pointer-events-none" />
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-white opacity-80 pointer-events-none" />
                             </div>
                         </div>
 
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="bg-gray-700 hover:bg-black text-white px-4 py-2 rounded-xl font-black text-[11px] flex items-center gap-2 shadow-lg shadow-gray-200 transition-all shrink-0"
+                            className="bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white px-4 py-[7px] rounded-xl font-black text-[11px] flex items-center gap-2 shadow-lg shadow-cyan-200/50 transition-all active:scale-95 shrink-0"
                         >
                             {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                             Guardar
                         </button>
                     </div>
 
-                    <div className="flex justify-center -mt-1 scale-95 lg:scale-100">
+                    <div className="flex justify-center -mt-1 scale-95 lg:scale-100 relative group/calendar">
                         <button
                             onClick={() => setShowCalendar(true)}
-                            className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-blue-100 transition-all group pulse-blue-button shadow-sm hover:shadow-md"
+                            className="flex items-center gap-3 bg-white hover:bg-gray-50 px-5 py-2.5 rounded-2xl border border-gray-100 transition-all shadow-sm hover:shadow-md active:scale-95"
                         >
-                            <div className="bg-blue-100 p-1.5 rounded-xl text-blue-600">
+                            <div className="bg-cyan-50 p-1.5 rounded-xl text-cyan-600 border border-cyan-100">
                                 <CalendarIcon className="w-4 h-4" />
                             </div>
-                            <div className="text-left">
-                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">EDITANDO</p>
-                                <div className="flex items-center gap-1">
-                                    <span className="text-sm font-black text-gray-900 leading-none">{formatDateLabel(selectedDate)}</span>
-                                    <ChevronDown className="w-3 h-3 text-gray-300" />
+                            <div className="text-left border-l border-gray-100 pl-3">
+                                <p className="text-[8px] font-black text-cyan-600/60 uppercase tracking-[0.2em] leading-none mb-1">EDITANDO FECHA</p>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[13px] font-black text-gray-900 leading-none uppercase tracking-tight">{formatDateLabel(selectedDate)}</span>
+                                    <ChevronDown className="w-4 h-4 text-gray-300 group-hover/calendar:translate-y-0.5 transition-transform" />
                                 </div>
                             </div>
                         </button>
@@ -435,18 +451,19 @@ export default function HorarioPage() {
                     <div className="grid grid-cols-12 gap-2 flex-1 overflow-hidden pb-4 px-1 animate-in fade-in duration-300">
                         {/* Left: Timeline (Col 8) */}
                         <div className="col-span-8 bg-white rounded-[2rem] shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
-                            <div className="p-3 lg:p-4 border-b border-gray-100 bg-gray-50/30 flex justify-between items-center shrink-0">
-                                <h3 className="font-bold text-gray-900 flex items-center gap-2 text-xs lg:text-base">
-                                    <Clock className="w-4 h-4 text-orange-500" />
-                                    <span>Tiempo</span>
+                            <div className="p-3 lg:p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0 rounded-t-[2rem]">
+                                <h3 className="font-black text-gray-900 flex items-center gap-2 text-[10px] lg:text-xs uppercase tracking-widest">
+                                    <Clock className="w-4 h-4 text-cyan-600" />
+                                    <span>Línea de Tiempo</span>
                                     {selectedGroup && (
-                                        <span className="text-[9px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold animate-pulse">
-                                            Asig: {selectedGroup.label}
-                                        </span>
+                                        <div className="flex items-center gap-1.5 animate-pulse">
+                                            <div className="w-1.5 h-1.5 bg-cyan-600 rounded-full" />
+                                            <span className="text-[9px] font-black text-cyan-700 uppercase">Asignando: {selectedGroup.label}</span>
+                                        </div>
                                     )}
                                 </h3>
                                 <p className="text-[8px] lg:text-[9px] text-gray-400 font-bold leading-tight text-right w-32 lg:w-48 whitespace-normal opacity-70">
-                                    Tip: Puedes asignar múltiples grupos en la misma hora
+                                    TIP: PUEDES ASIGNAR VARIOS GRUPOS A LA MISMA HORA
                                 </p>
                             </div>
 
@@ -479,14 +496,16 @@ export default function HorarioPage() {
                                                             {slots.map((s, idx) => (
                                                                 <div key={idx} className="flex flex-col gap-1.5 p-1">
                                                                     <div className="flex items-center gap-2">
-                                                                        <span className="font-black text-gray-900 text-[11px]">{s.group.label}</span>
-                                                                        <span className="text-[10px] text-gray-400 font-bold">({s.group.studentCount} est)</span>
+                                                                        <span className="font-black text-gray-900 text-[14px] lg:text-lg tracking-tight">{s.group.label.replace('-2026', '')}</span>
+                                                                        <span className="text-[10px] font-black text-white bg-cyan-600/80 px-2 py-0.5 rounded-lg shadow-sm">
+                                                                            {s.group.studentCount} est
+                                                                        </span>
                                                                     </div>
 
                                                                     {s.notes && (
-                                                                        <div className="bg-amber-50 border border-amber-100 rounded-lg p-1.5 flex items-center gap-1.5 shadow-sm">
-                                                                            <FileText className="w-3 h-3 text-amber-500" />
-                                                                            <span className="text-[9px] font-bold text-amber-700 leading-tight">{s.notes}</span>
+                                                                        <div className="flex items-center gap-1.5 text-[10px] text-amber-700 bg-amber-50/80 px-3 py-1.5 rounded-xl border border-amber-100 w-fit">
+                                                                            <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                                                            <span className="font-bold leading-tight">{s.notes}</span>
                                                                         </div>
                                                                     )}
 
@@ -521,9 +540,9 @@ export default function HorarioPage() {
                             <div className="flex-[6] bg-white rounded-[2rem] shadow-sm border border-gray-100 flex flex-col overflow-hidden">
                                 <div className="p-3 border-b text-center shrink-0">
                                     <div className="flex items-center justify-center gap-1 mb-1">
-                                        <Users className="w-4 h-4 text-blue-600" />
-                                        <h3 className="text-[10px] font-black text-gray-900 uppercase">Grupos</h3>
-                                        <span className="text-[10px] font-black text-gray-300 ml-1">
+                                        <Users className="w-4 h-4 text-cyan-600" />
+                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Grupos</h3>
+                                        <span className="text-[10px] font-black text-cyan-200 ml-1">
                                             {availableGroups.filter(g => (selectedSede === 'Todas' || (g as any).sede === selectedSede) && !isAssigned(g)).length}
                                         </span>
                                     </div>
@@ -537,11 +556,11 @@ export default function HorarioPage() {
                                                 onClick={() => setSelectedGroup(selectedGroup?.id === g.id ? null : g)}
                                                 className={`
                                                     p-2.5 lg:p-3 rounded-2xl border transition-all text-center relative
-                                                    ${selectedGroup?.id === g.id ? 'bg-blue-600 border-blue-600 text-white shadow-lg scale-105 z-10' : 'bg-white border-gray-100 hover:border-blue-200'}
+                                                    ${selectedGroup?.id === g.id ? 'bg-cyan-600 border-cyan-600 text-white shadow-lg shadow-cyan-100 scale-105 z-10' : 'bg-white border-gray-100 hover:border-cyan-200'}
                                                 `}
                                             >
                                                 <div className="font-black text-[10px] lg:text-xs truncate">{g.label}</div>
-                                                <div className={`text-[8px] font-bold ${selectedGroup?.id === g.id ? 'text-blue-200' : 'text-gray-400'}`}>{g.studentCount} est</div>
+                                                <div className={`text-[8px] font-bold ${selectedGroup?.id === g.id ? 'text-cyan-100' : 'text-gray-400'}`}>{g.studentCount} est</div>
                                             </button>
                                         ))}
                                     </div>
@@ -597,7 +616,7 @@ export default function HorarioPage() {
                             </div>
                             <button
                                 onClick={() => handleAddEvent()}
-                                className="bg-cyan-600 text-white px-4 py-2 rounded-xl font-black text-[10px] shadow-lg flex items-center gap-2"
+                                className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white px-4 py-2 rounded-xl font-black text-[10px] shadow-lg shadow-cyan-200/50 flex items-center gap-2 transition-all active:scale-95"
                             >
                                 <Plus className="w-4 h-4" />
                                 PROGRAMAR
@@ -622,13 +641,13 @@ export default function HorarioPage() {
 
                                             <div className="space-y-2">
                                                 {events.map((e, ei) => (
-                                                    <div key={ei} className="p-4 rounded-[2rem] border border-gray-100 bg-white shadow-sm relative group/card">
+                                                    <div key={ei} className="p-4 rounded-[2rem] border border-cyan-50 bg-white shadow-sm relative group/card hover:border-cyan-200 transition-colors">
                                                         <div className="flex items-center justify-between mb-2">
-                                                            <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 uppercase tracking-widest">
+                                                            <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-600 uppercase tracking-widest border border-cyan-100">
                                                                 {e.hora || 'S/H'}
                                                             </span>
                                                             <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover/card:opacity-100 transition-opacity">
-                                                                <button onClick={() => handleEditEvent(e)} className="p-1 hover:bg-blue-50 rounded-lg text-blue-600">
+                                                                <button onClick={() => handleEditEvent(e)} className="p-1 hover:bg-cyan-50 rounded-lg text-cyan-600">
                                                                     <Edit2 className="w-3 h-3" />
                                                                 </button>
                                                                 <button onClick={() => handleDeleteInstitutionalEvent(e.id)} className="p-1 hover:bg-red-50 rounded-lg text-red-600">
@@ -636,14 +655,14 @@ export default function HorarioPage() {
                                                                 </button>
                                                             </div>
                                                         </div>
-                                                        <h4 className="text-[11px] font-bold text-gray-900 leading-tight mb-1">{e.titulo}</h4>
+                                                        <h4 className="text-[11px] font-black text-gray-900 leading-tight mb-1">{e.titulo}</h4>
                                                         {e.afectados && (
                                                             <div className="flex items-center gap-1 mb-1">
-                                                                <Users className="w-2.5 h-2.5 text-gray-400" />
-                                                                <span className="text-[9px] text-gray-500 font-medium truncate">{e.afectados}</span>
+                                                                <Users className="w-2.5 h-2.5 text-cyan-500" />
+                                                                <span className="text-[9px] text-cyan-700 font-bold truncate tracking-tight">{e.afectados}</span>
                                                             </div>
                                                         )}
-                                                        <p className="text-[9px] text-gray-400 font-bold line-clamp-2">{e.descripcion}</p>
+                                                        <p className="text-[9px] text-gray-400 font-bold line-clamp-2 italic leading-tight">{e.descripcion}</p>
                                                     </div>
                                                 ))}
 
