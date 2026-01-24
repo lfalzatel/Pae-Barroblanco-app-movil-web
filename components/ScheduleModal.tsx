@@ -107,7 +107,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
     const formattedDate = date ? new Date(date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
@@ -115,32 +115,35 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
             />
 
             {/* Modal Content */}
-            <div className="bg-white/95 backdrop-blur-2xl rounded-3xl w-full max-w-lg relative z-10 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden border border-white/20 ring-1 ring-black/5 flex flex-col max-h-[85vh]">
+            <div className="bg-white rounded-[2rem] w-full max-w-lg relative z-10 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden flex flex-col max-h-[90vh]">
 
-                {/* Header */}
-                <div className="p-6 border-b border-gray-100/50 bg-gradient-to-r from-cyan-50 to-white shrink-0">
+                {/* Header - Premium Cyan Style */}
+                <div className="p-5 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
                     {/* Row 1: Title & Close */}
                     <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-4">
-                            <div className="bg-cyan-100 text-cyan-700 p-3 rounded-2xl shadow-sm ring-1 ring-cyan-500/10">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-white/20 p-2 rounded-xl shadow-sm ring-1 ring-white/10">
                                 <Calendar className="w-6 h-6" />
                             </div>
-                            <h3 className="font-black text-gray-900 leading-tight text-xl">Horario de mañana</h3>
+                            <div>
+                                <h3 className="font-black text-lg tracking-tight leading-none">Horario de mañana</h3>
+                                <p className="text-[9px] font-bold uppercase tracking-[0.15em] opacity-80 mt-1">Programa Diario PAE</p>
+                            </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2.5 hover:bg-black/5 rounded-full transition-all duration-200 text-gray-400 hover:text-gray-900 hover:rotate-90"
+                            className="p-2.5 hover:bg-white/10 rounded-full transition-all duration-200 text-white/70 hover:text-white"
                         >
                             <X className="w-5 h-5" />
                         </button>
                     </div>
 
-                    {/* Row 2: Controls (Date & Sede) */}
-                    <div className="flex gap-3">
+                    {/* Row 2: Controls (Date & Sede) - Capsule Style */}
+                    <div className="flex gap-2">
                         {/* Date Selector */}
                         <button
                             onClick={() => setShowCalendar(!showCalendar)}
-                            className="flex-1 bg-cyan-50 hover:bg-white border border-transparent hover:border-cyan-200 text-cyan-800 rounded-xl py-2.5 px-3 flex items-center justify-center gap-2 font-bold transition-all text-xs uppercase tracking-tight shadow-sm ring-1 ring-cyan-900/5 group"
+                            className="flex-1 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-2xl py-2.5 px-3 flex items-center justify-center gap-2 font-bold transition-all text-[10px] uppercase tracking-widest shadow-sm group"
                         >
                             <span className="truncate">{formattedDate}</span>
                             {showCalendar ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60 group-hover:translate-y-0.5 transition-transform" />}
@@ -151,23 +154,24 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                             <select
                                 value={selectedSede}
                                 onChange={(e) => setSelectedSede(e.target.value)}
-                                className="w-full appearance-none bg-cyan-50 hover:bg-white border border-transparent hover:border-cyan-200 text-cyan-800 rounded-xl py-2.5 pl-3 pr-8 font-bold transition-all text-xs uppercase tracking-tight shadow-sm ring-1 ring-cyan-900/5 cursor-pointer text-center focus:outline-none"
+                                className="w-full appearance-none bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-2xl py-2.5 pl-4 pr-10 font-bold transition-all text-[10px] uppercase tracking-widest cursor-pointer focus:outline-none"
                             >
-                                <option value="Principal">Principal</option>
-                                <option value="Primaria">Primaria</option>
-                                <option value="Maria Inmaculada">M. Inmaculada</option>
+                                <option value="Todas" className="text-gray-900">Todas las sedes</option>
+                                <option value="Principal" className="text-gray-900">Sede Principal</option>
+                                <option value="Primaria" className="text-gray-900">Sede Primaria</option>
+                                <option value="Maria Inmaculada" className="text-gray-900">M. Inmaculada</option>
                             </select>
-                            <ChevronDown className="w-3.5 h-3.5 text-cyan-600 opacity-60 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <ChevronDown className="w-3.5 h-3.5 text-white opacity-60 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
                     </div>
 
                     {/* Calendar Collapse */}
                     {showCalendar && (
-                        <div className="mt-4 animate-in slide-in-from-top-2 fade-in duration-200 flex justify-center">
+                        <div className="mt-4 animate-in slide-in-from-top-2 fade-in duration-200 flex justify-center bg-white p-3 rounded-2xl shadow-xl">
                             <MiniCalendar
                                 selectedDate={date}
                                 onSelectDate={(d) => { setDate(d); setShowCalendar(false); }}
-                                className="border border-cyan-100 shadow-lg"
+                                className="border-none p-0"
                             />
                         </div>
                     )}
@@ -176,38 +180,41 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                 {/* Body */}
                 <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/30">
                     {loading ? (
-                        <div className="py-20 flex justify-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
+                        <div className="py-20 flex flex-col items-center justify-center gap-4">
+                            <div className="animate-spin rounded-full h-8 w-8 border-4 border-cyan-600/20 border-t-cyan-600"></div>
+                            <p className="font-bold text-xs text-gray-400 animate-pulse">Sincronizando horario...</p>
                         </div>
                     ) : schedule.length > 0 ? (
                         <>
-                            <div className="space-y-3">
+                            <div className="space-y-4">
                                 {schedule.filter(s => selectedSede === 'Todas' || s.sede === selectedSede).map((item, idx) => (
                                     <div
                                         key={idx}
-                                        className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-gray-100 hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-100/50 transition-all duration-300 group"
+                                        className="flex items-center gap-4 p-4 rounded-3xl bg-white border border-gray-100 hover:border-cyan-100 hover:shadow-xl hover:shadow-cyan-600/5 transition-all duration-300 group"
                                     >
-                                        <div className="flex flex-col items-center justify-center w-20 bg-gray-50 rounded-xl p-2 border border-gray-100 group-hover:bg-cyan-50 group-hover:border-cyan-100 transition-colors shrink-0">
+                                        <div className="flex flex-col items-center justify-center w-20 bg-gray-50 rounded-2xl p-2.5 border border-gray-100 group-hover:bg-cyan-50 group-hover:border-cyan-100 transition-colors shrink-0 shadow-sm">
                                             <Clock className="w-4 h-4 text-gray-400 group-hover:text-cyan-600 mb-1" />
-                                            <span className="text-[10px] font-black text-gray-700 group-hover:text-cyan-800 text-center leading-tight">
+                                            <span className="text-[10px] font-black text-gray-700 group-hover:text-cyan-900 text-center leading-tight">
                                                 {item.time.split(' - ')[0]}
                                             </span>
                                         </div>
 
-                                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                                             <div className="flex items-center gap-2">
-                                                <span className="font-black text-lg text-gray-900 whitespace-nowrap">{item.group}</span>
+                                                <span className="font-black text-xl text-gray-900 whitespace-nowrap tracking-tight">
+                                                    {item.group.replace('-2026', '')}
+                                                </span>
                                                 {item.studentCount !== undefined && (
-                                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">
+                                                    <span className="text-[10px] font-black text-white bg-cyan-600/80 px-2 py-0.5 rounded-lg shadow-sm">
                                                         {item.studentCount} est
                                                     </span>
                                                 )}
                                             </div>
 
                                             {item.notes && (
-                                                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100 w-fit max-w-full overflow-hidden">
-                                                    <FileText className="w-3 h-3 shrink-0" />
-                                                    <span className="font-medium break-words line-clamp-2 sm:line-clamp-none">{item.notes}</span>
+                                                <div className="flex items-center gap-1.5 text-[10px] text-amber-700 bg-amber-50/80 px-3 py-1.5 rounded-xl border border-amber-100 w-fit max-w-full overflow-hidden">
+                                                    <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                                    <span className="font-bold break-words leading-tight">{item.notes}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -230,15 +237,15 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                     <p className="text-[10px] font-black text-cyan-800 uppercase mb-2">RECUERDA</p>
                                     <ul className="space-y-1.5">
                                         <li className="flex items-center gap-2 text-[10px] font-bold text-gray-600 italic">
-                                            <div className="w-1 h-1 bg-cyan-400 rounded-full" />
+                                            <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full" />
                                             Puntualidad
                                         </li>
                                         <li className="flex items-center gap-2 text-[10px] font-bold text-gray-600 italic">
-                                            <div className="w-1 h-1 bg-cyan-400 rounded-full" />
+                                            <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full" />
                                             Uso adecuado del uniforme
                                         </li>
                                         <li className="flex items-center gap-2 text-[10px] font-bold text-gray-600 italic">
-                                            <div className="w-1 h-1 bg-cyan-400 rounded-full" />
+                                            <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full" />
                                             Seguir las recomendaciones escritas en estas novedades
                                         </li>
                                     </ul>
@@ -258,23 +265,25 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                     )}
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 flex gap-3 shrink-0">
-                    <button
-                        onClick={handleDownload}
-                        disabled={schedule.length === 0}
-                        className="flex-1 py-3.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-bold shadow-lg shadow-cyan-200 hover:shadow-xl hover:shadow-cyan-300 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                    >
-                        <Download className="w-5 h-5" />
-                        Descargar PDF
-                    </button>
+                {/* Footer Actions */}
+                <div className="p-4 md:p-6 bg-gray-50 border-t border-gray-100 shrink-0">
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleDownload}
+                            disabled={schedule.length === 0}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition-all active:scale-95 disabled:opacity-50"
+                        >
+                            <Download className="w-5 h-5" />
+                            <span>Descargar PDF</span>
+                        </button>
 
-                    <button
-                        onClick={onClose}
-                        className="px-6 py-3.5 bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 rounded-xl font-bold transition-all duration-200"
-                    >
-                        Cerrar
-                    </button>
+                        <button
+                            onClick={onClose}
+                            className="flex-1 px-4 py-3 bg-white text-gray-900 border border-gray-200 rounded-2xl font-black text-sm hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+                        >
+                            Cerrar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -540,7 +540,7 @@ export default function DashboardPage() {
 
         <button
           onClick={() => setWeeklyModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 px-4 flex flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 group"
+          className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl py-3 px-4 flex flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-cyan-200 transition-all active:scale-95 group"
         >
           <div className="bg-white/20 p-1.5 rounded-lg group-hover:rotate-12 transition-transform">
             <FileText className="w-5 h-5" />

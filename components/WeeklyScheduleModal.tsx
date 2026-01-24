@@ -101,8 +101,6 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
     };
 
     const handleDownloadPDF = () => {
-        // We reuse the generator but it might need PAE data if it expects it. 
-        // For now we keep it, but eventually might need adjustment if PDF also needs only agenda.
         generateWeeklySchedulePDF(weeklyData, weekStart);
     };
 

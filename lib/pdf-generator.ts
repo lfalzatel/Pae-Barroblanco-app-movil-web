@@ -31,7 +31,7 @@ export const generateSchedulePDF = (scheduleData: any[], date: string, sede: str
     // Map data to table format
     const rows = scheduleData.map(item => ({
         time: item.time,
-        group: item.group,
+        group: item.group.replace('-2026', ''),
         count: item.studentCount || '-',
         notes: item.notes || '-'
     }));
@@ -133,7 +133,7 @@ export const generateWeeklySchedulePDF = (weeklyData: any[], weekStart: Date) =>
 
     doc.setFontSize(16);
     doc.setTextColor(71, 85, 105);
-    doc.text('Consolidado Semanal de Novedades PAE', 105, 30, { align: 'center' });
+    doc.text(`Consolidado Semanal - Agenda Institucional`, 105, 30, { align: 'center' });
 
     doc.setFontSize(12);
     doc.setTextColor(100);
@@ -156,40 +156,8 @@ export const generateWeeklySchedulePDF = (weeklyData: any[], weekStart: Date) =>
         doc.text(day.label.toUpperCase(), 20, currentY + 6);
         currentY += 12;
 
-        if (day.items.length > 0) {
-            const columns = ['Grupo', 'Hora / Acción', 'Novedad / Observación'];
-            const rows = day.items.map((item: any) => [
-                item.group,
-                (item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE') ? 'NO ASISTE' : (item.time?.split(' - ')[0] || item.time_start),
-                item.notes || 'Normal'
-            ]);
-
-            autoTable(doc, {
-                head: [columns],
-                body: rows,
-                startY: currentY,
-                theme: 'grid',
-                headStyles: { fillColor: [71, 85, 105], fontSize: 9, halign: 'center' },
-                bodyStyles: { fontSize: 8, halign: 'center' },
-                columnStyles: {
-                    0: { cellWidth: 40, fontStyle: 'bold' },
-                    1: { cellWidth: 35 },
-                    2: { halign: 'left' }
-                },
-                styles: { cellPadding: 3 }
-            });
-
-            currentY = (doc as any).lastAutoTable.finalY + 5;
-        }
-
         // --- Institutional Agenda Table ---
         if (day.instEvents && day.instEvents.length > 0) {
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(6, 182, 212); // Cyan-500
-            doc.text('AGENDA INSTITUCIONAL', 20, currentY + 4);
-            currentY += 6;
-
             const instColumns = ['Hora', 'Actividad', 'Afectados / Detalles'];
             const instRows = day.instEvents.map((e: any) => [
                 e.hora || 'S/H',
@@ -212,8 +180,6 @@ export const generateWeeklySchedulePDF = (weeklyData: any[], weekStart: Date) =>
                 styles: { cellPadding: 2 }
             });
             currentY = (doc as any).lastAutoTable.finalY + 10;
-        } else if (day.items.length > 0) {
-            currentY += 5; // Add space if no events but we had items
         } else {
             doc.setFont('helvetica', 'italic');
             doc.setFontSize(9);

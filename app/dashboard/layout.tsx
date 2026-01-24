@@ -43,12 +43,19 @@ export default function DashboardLayout({
     // Notification logic
     const [hasNotification, setHasNotification] = useState(false);
     const [notifModalOpen, setNotifModalOpen] = useState(false);
+    const [todaySchedule, setTodaySchedule] = useState<any[]>([]);
+    const [todayInstEvents, setTodayInstEvents] = useState<any[]>([]);
+    const [todayDateLabel, setTodayDateLabel] = useState('');
+    const [todayDateStr, setTodayDateStr] = useState('');
     const [tomorrowSchedule, setTomorrowSchedule] = useState<any[]>([]);
+    const [tomorrowInstEvents, setTomorrowInstEvents] = useState<any[]>([]);
     const [tomorrowDateLabel, setTomorrowDateLabel] = useState('');
+    const [tomorrowDateStr, setTomorrowDateStr] = useState('');
     const [selectedDate, setSelectedDate] = useState('');
     const [searchResult, setSearchResult] = useState<any[] | null>(null);
+    const [searchInstEvents, setSearchInstEvents] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
-    const [tomorrowDateStr, setTomorrowDateStr] = useState('');
+    const [dailySubTab, setDailySubTab] = useState<'today' | 'tomorrow'>('today');
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [activeNotifTab, setActiveNotifTab] = useState<'daily' | 'weekly'>('daily');
     const [weekStart, setWeekStart] = useState<Date>(() => {
@@ -59,13 +66,13 @@ export default function DashboardLayout({
         const hour = bogotaNow.getHours();
 
         const d = new Date(bogotaNow);
-        if ((day === 5 && hour >= 20) || day === 6 || day === 0) {
-            const daysToAdd = day === 5 ? 3 : (day === 6 ? 2 : 1);
-            d.setDate(d.getDate() + daysToAdd);
-        } else {
-            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-            d.setDate(diff);
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        d.setDate(diff);
+
+        if ((day === 5 && hour >= 18) || day === 6 || day === 0) {
+            d.setDate(d.getDate() + 7);
         }
+
         d.setHours(12, 0, 0, 0);
         return d;
     });
@@ -75,6 +82,22 @@ export default function DashboardLayout({
         const m = (date.getMonth() + 1).toString().padStart(2, '0');
         const d = date.getDate().toString().padStart(2, '0');
         return `${y}-${m}-${d}`;
+    };
+
+    const timeToMinutes = (timeStr: string) => {
+        if (!timeStr) return 9999; // Put items without time at the end
+        const clean = timeStr.toLowerCase().trim();
+        let modifier = clean.includes('pm') ? 'pm' : clean.includes('am') ? 'am' : clean.includes('m') ? 'pm' : '';
+        let timePart = clean.replace(/[apm\s]/g, '');
+        let [hours, minutes] = timePart.split(':').map(Number);
+
+        if (isNaN(hours)) return 9999;
+        if (isNaN(minutes)) minutes = 0;
+
+        if (modifier === 'pm' && hours < 12) hours += 12;
+        if (modifier === 'am' && hours === 12) hours = 0;
+
+        return hours * 60 + minutes;
     };
     const [weeklyNotifData, setWeeklyNotifData] = useState<any[]>([]);
     const [isWeeklySearching, setIsWeeklySearching] = useState(false);
@@ -91,9 +114,9 @@ export default function DashboardLayout({
 
         if (data?.items) {
             return (data.items as any[]).sort((a, b) => {
-                const timeA = a.time || a.time_start || "";
-                const timeB = b.time || b.time_start || "";
-                return timeA.localeCompare(timeB);
+                const valA = timeToMinutes(a.time || a.time_start);
+                const valB = timeToMinutes(b.time || b.time_start);
+                return valA - valB;
             });
         }
         return [];
@@ -104,16 +127,12 @@ export default function DashboardLayout({
         try {
             const dates = [];
             for (let i = 0; i < 5; i++) {
-                const d = new Date(weekStart);
-                d.setDate(d.getDate() + i);
+                const d = new Date(weekStart.getTime());
+                d.setDate(weekStart.getDate() + i);
                 dates.push(formatLocalDate(d));
             }
 
-            // Fetch PAE schedules
-            const { data: schedData } = await supabase
-                .from('schedules')
-                .select('*')
-                .in('date', dates);
+
 
             // Fetch Institutional events
             const { data: instData } = await supabase
@@ -123,13 +142,15 @@ export default function DashboardLayout({
                 .order('hora', { ascending: true });
 
             const mapped = dates.map(dateStr => {
-                const dayData = (schedData || []).find(d => d.date === dateStr);
                 const dayInst = (instData || []).filter(e => e.fecha === dateStr);
+                const sortedInst = (dayInst || []).sort((a: any, b: any) =>
+                    timeToMinutes(a.hora) - timeToMinutes(b.hora)
+                );
                 return {
                     date: dateStr,
                     label: new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                    items: dayData?.items || [],
-                    instEvents: dayInst
+                    items: [], // Weekly strictly institutional
+                    instEvents: sortedInst
                 };
             });
 
@@ -137,7 +158,6 @@ export default function DashboardLayout({
         } catch (error) {
             console.error('Error fetching weekly notif schedule:', error);
         } finally {
-            setIsWeeklySearching(true); // Small delay feel or keep it as false? It was false.
             setIsWeeklySearching(false);
         }
     };
@@ -175,8 +195,19 @@ export default function DashboardLayout({
         if (!date) return;
         setIsSearching(true);
         setSelectedDate(date);
+
+        // Fetch PAE
         const results = await fetchScheduleForDate(date);
         setSearchResult(results);
+
+        // Fetch Institutional
+        const { data: instData } = await supabase
+            .from('novedades_institucionales')
+            .select('*')
+            .eq('fecha', date)
+            .order('hora', { ascending: true });
+
+        setSearchInstEvents((instData || []).sort((a, b) => timeToMinutes(a.hora) - timeToMinutes(b.hora)));
         setIsSearching(false);
     };
 
@@ -194,54 +225,70 @@ export default function DashboardLayout({
             }
         };
 
-        const fetchTomorrowSchedule = async () => {
+        const fetchDailySchedules = async () => {
             const now = new Date();
-            // Get current Bogota date
             const bogota = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
 
+            // 1. Today
+            const todayStr = formatLocalDate(bogota);
+            setTodayDateStr(todayStr);
+            setTodayDateLabel('Hoy, ' + bogota.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }));
+
+            // 2. Tomorrow (Next Business Day)
             const target = new Date(bogota);
             const day = target.getDay();
-
-            // Smart business day: Fri/Sat -> Mon, others -> +1
             if (day === 5) target.setDate(target.getDate() + 3);
             else if (day === 6) target.setDate(target.getDate() + 2);
             else target.setDate(target.getDate() + 1);
 
-            // Format as YYYY-MM-DD using Bogota components
-            const y = target.getFullYear();
-            const m = (target.getMonth() + 1).toString().padStart(2, '0');
-            const d = target.getDate().toString().padStart(2, '0');
-            const dateStr = `${y}-${m}-${d}`;
+            const tomorrowStr = formatLocalDate(target);
+            setTomorrowDateStr(tomorrowStr);
+            setTomorrowDateLabel(target.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }));
 
-            setTomorrowDateStr(dateStr);
-            setTomorrowDateLabel(target.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }));
+            // Default Tab Logic
+            // If it's Friday after 6 PM, or it's Saturday or Sunday, show "Tomorrow" (which will be Monday)
+            const dayOfWeek = bogota.getDay();
+            const currentHour = bogota.getHours();
 
-            const { data } = await supabase
-                .from('schedules')
-                .select('items')
-                .eq('date', dateStr)
-                .maybeSingle();
-
-            if (data?.items) {
-                // Sort by time before setting state
-                const sorted = (data.items as any[]).sort((a, b) => {
-                    const timeA = a.time || a.time_start || "";
-                    const timeB = b.time || b.time_start || "";
-                    return timeA.localeCompare(timeB);
-                });
-                setTomorrowSchedule(sorted);
-                setHasNotification(true);
+            if (currentHour >= 18 || dayOfWeek === 6 || dayOfWeek === 0) {
+                setDailySubTab('tomorrow');
+            } else {
+                setDailySubTab('today');
             }
+
+            // Fetch Today
+            const { data: tData } = await supabase.from('schedules').select('items').eq('date', todayStr).maybeSingle();
+            if (tData?.items) {
+                const sorted = (tData.items as any[]).sort((a, b) => timeToMinutes(a.time || a.time_start) - timeToMinutes(b.time || b.time_start));
+                setTodaySchedule(sorted);
+                if (sorted.length > 0) setHasNotification(true);
+            }
+            const { data: tInst } = await supabase.from('novedades_institucionales').select('*').eq('fecha', todayStr);
+            setTodayInstEvents((tInst || []).sort((a, b) => timeToMinutes(a.hora) - timeToMinutes(b.hora)));
+
+            // Fetch Tomorrow
+            const { data: mData } = await supabase.from('schedules').select('items').eq('date', tomorrowStr).maybeSingle();
+            if (mData?.items) {
+                const sorted = (mData.items as any[]).sort((a, b) => timeToMinutes(a.time || a.time_start) - timeToMinutes(b.time || b.time_start));
+                setTomorrowSchedule(sorted);
+                if (sorted.length > 0) setHasNotification(true);
+            }
+            const { data: mInst } = await supabase.from('novedades_institucionales').select('*').eq('fecha', tomorrowStr);
+            setTomorrowInstEvents((mInst || []).sort((a, b) => timeToMinutes(a.hora) - timeToMinutes(b.hora)));
         };
 
         const fetchInstChanges = () => {
-            if (notifModalOpen && activeNotifTab === 'weekly') {
-                fetchWeeklyNotifSchedule();
+            if (notifModalOpen) {
+                if (activeNotifTab === 'weekly') {
+                    fetchWeeklyNotifSchedule();
+                } else if (selectedDate) {
+                    handleSearchByDate(selectedDate);
+                }
             }
         };
 
         initSession();
-        fetchTomorrowSchedule();
+        fetchDailySchedules();
 
         // 2. Realtime listener for schedule changes
         const scheduleChannel = supabase
@@ -254,7 +301,7 @@ export default function DashboardLayout({
                     table: 'schedules'
                 },
                 () => {
-                    fetchTomorrowSchedule();
+                    fetchDailySchedules();
                     fetchInstChanges();
                 }
             )
@@ -285,9 +332,10 @@ export default function DashboardLayout({
                     rol: session.user.user_metadata?.rol || 'docente',
                     foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
                 });
-                fetchTomorrowSchedule();
+                fetchDailySchedules();
             } else if (event === 'SIGNED_OUT') {
                 setUsuario(null);
+                setTodaySchedule([]);
                 setTomorrowSchedule([]);
                 setHasNotification(false);
             }
@@ -533,16 +581,19 @@ export default function DashboardLayout({
             {notifModalOpen && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setNotifModalOpen(false)}></div>
-                    <div className="bg-white rounded-[2.5rem] w-full max-w-md relative z-10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20">
-                        <div className="p-7 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative">
-                            <div className="flex items-start justify-between mb-5">
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-md relative z-10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20 flex flex-col max-h-[90vh]">
+                        {/* Header */}
+                        <div className="p-5 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
+                            <div className="flex items-start justify-between mb-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="bg-white/20 p-2 rounded-xl">
-                                        <Bell className="w-6 h-6" />
+                                    <div className="bg-white/20 p-1.5 rounded-xl">
+                                        <Bell className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <h3 className="font-black text-lg leading-tight">Novedades</h3>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">{activeNotifTab === 'daily' ? tomorrowDateLabel : 'Consolidado Semanal'}</p>
+                                        <h3 className="font-black text-base leading-tight">Novedades</h3>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest opacity-80">
+                                            {activeNotifTab === 'daily' ? (selectedDate ? new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long' }) : (dailySubTab === 'today' ? todayDateLabel : tomorrowDateLabel)) : 'Consolidado Semanal'}
+                                        </p>
                                     </div>
                                 </div>
                                 <button onClick={() => setNotifModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
@@ -550,7 +601,7 @@ export default function DashboardLayout({
                                 </button>
                             </div>
 
-                            {/* Sede Selector (Premium) */}
+                            {/* Sede Selector */}
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <School className="w-4 h-4 text-white/70" />
@@ -558,7 +609,7 @@ export default function DashboardLayout({
                                 <select
                                     value={selectedSede}
                                     onChange={(e) => setSelectedSede(e.target.value)}
-                                    className="w-full appearance-none bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl py-2.5 pl-10 pr-8 font-bold text-xs uppercase tracking-tight shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                                    className="w-full appearance-none bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl py-2.5 pl-10 pr-8 font-bold text-xs uppercase tracking-tight shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/30 transition-all font-sans"
                                 >
                                     <option value="Principal" className="text-gray-900 font-bold">Sede Principal</option>
                                     <option value="Primaria" className="text-gray-900 font-bold">Sede Primaria</option>
@@ -568,348 +619,248 @@ export default function DashboardLayout({
                             </div>
                         </div>
 
-                        {/* Tabs - Redesigned as Wide Capsule Selector */}
-                        <div className="px-5 py-5 bg-white border-b border-gray-100">
-                            <div className="flex p-1.5 bg-gray-50/50 rounded-full border border-gray-200/60 shadow-inner relative">
+                        {/* Tabs Selector (Ultra Compact) */}
+                        <div className="px-0 py-2 bg-white border-b border-gray-100 shrink-0">
+                            <div className="flex mx-6 p-1 bg-gray-100/50 rounded-full border border-gray-200/50 shadow-inner relative">
                                 <button
                                     onClick={() => setActiveNotifTab('daily')}
-                                    className={`flex-1 py-3 text-[11px] font-black uppercase tracking-[0.2em] rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'daily' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`flex-1 py-2 text-[10px] font-black uppercase tracking-[0.15em] rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'daily' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
-                                    Mañana
+                                    Diario
                                 </button>
                                 <button
                                     onClick={() => setActiveNotifTab('weekly')}
-                                    className={`flex-1 py-3 text-[11px] font-black uppercase tracking-[0.2em] rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'weekly' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`flex-1 py-2 text-[10px] font-black uppercase tracking-[0.15em] rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'weekly' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
                                     Semana
                                 </button>
-                                {/* Active Indicator (Sliding Switch) */}
-                                <div className={`absolute inset-y-1.5 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-cyan-600 rounded-full shadow-lg shadow-cyan-200/50 ${activeNotifTab === 'daily' ? 'left-1.5 w-[47%]' : 'left-[51.5%] w-[47%]'}`} />
+                                <div className={`absolute inset-y-1 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-cyan-600 rounded-full shadow-md shadow-cyan-200/50 ${activeNotifTab === 'daily' ? 'left-1 w-[48%]' : 'left-[51%] w-[48%]'}`} />
                             </div>
                         </div>
 
-                        <div className="p-6 max-h-[60vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+                        {/* Content Area */}
+                        <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] bg-gray-50/30 p-4">
                             {activeNotifTab === 'daily' ? (
-                                <>
-                                    {/* Enhanced Date Selector with Collapsible MiniCalendar */}
-                                    <div className="mb-6 bg-gray-50/80 rounded-3xl border border-gray-200 overflow-hidden transition-all duration-300 shadow-sm">
+                                <div className="space-y-6">
+                                    {/* Daily Sub-Tabs (Hoy / Mañana) */}
+                                    {!searchResult && (
+                                        <div className="flex bg-gray-200/30 p-1 rounded-2xl mb-4 shadow-inner border border-gray-100">
+                                            <button
+                                                onClick={() => setDailySubTab('today')}
+                                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${dailySubTab === 'today' ? 'bg-white text-cyan-600 shadow-sm ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}
+                                            >
+                                                Hoy
+                                            </button>
+                                            <button
+                                                onClick={() => setDailySubTab('tomorrow')}
+                                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${dailySubTab === 'tomorrow' ? 'bg-white text-cyan-600 shadow-sm ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}
+                                            >
+                                                Próx. Día
+                                            </button>
+                                        </div>
+                                    )}
+                                    {/* Date Picker (Full Width) */}
+                                    <div className="bg-white border-y border-gray-100 overflow-hidden shadow-sm -mx-4 mb-4">
                                         <button
                                             onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-                                            className="w-full p-4 flex items-center justify-between hover:bg-gray-100 transition-colors group"
+                                            className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="bg-cyan-100 p-2 rounded-xl group-hover:scale-110 transition-transform animate-pulse">
+                                                <div className="bg-cyan-50 p-2 rounded-xl">
                                                     <Calendar className="w-5 h-5 text-cyan-600" />
                                                 </div>
-                                                <span className="text-[11px] font-black text-gray-900 uppercase tracking-[0.15em]">Consultar Fecha</span>
+                                                <span className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Consultar Fecha</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                {selectedDate && (
-                                                    <span className="text-[10px] font-bold text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-lg border border-cyan-100">
-                                                        {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
-                                                    </span>
-                                                )}
-                                                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isCalendarOpen ? 'rotate-180' : ''}`} />
+                                                {selectedDate && <span className="text-[10px] font-bold text-cyan-600 bg-cyan-50 px-2 py-1 rounded-lg border border-cyan-100 italic">{new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>}
+                                                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isCalendarOpen ? 'rotate-180' : ''}`} />
                                             </div>
                                         </button>
-
                                         {isCalendarOpen && (
-                                            <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                                            <div className="p-4 bg-white border-t border-gray-100 flex flex-col items-center animate-in slide-in-from-top-2 duration-300">
                                                 <MiniCalendar
-                                                    selectedDate={selectedDate || tomorrowDateStr}
+                                                    selectedDate={selectedDate || formatLocalDate(new Date())}
                                                     onSelectDate={(date) => {
                                                         handleSearchByDate(date);
-                                                        setIsCalendarOpen(false); // Auto-collapse on select
+                                                        setIsCalendarOpen(false);
                                                     }}
-                                                    mode="schedules"
-                                                    className="!shadow-none !border-none !p-0 bg-transparent"
                                                 />
-                                                <div className="mt-4 pt-3 border-t border-gray-100">
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedDate('');
-                                                            setSearchResult(null);
-                                                            setIsCalendarOpen(false);
-                                                        }}
-                                                        className="w-full text-[10px] font-bold text-cyan-600 hover:text-cyan-700 bg-cyan-50 px-3 py-2 rounded-xl transition-colors flex items-center justify-center gap-2"
-                                                    >
-                                                        <RefreshCcw className="w-3 h-3" />
-                                                        Ver Mañana (Reset)
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        setSearchResult(null);
+                                                        setSelectedDate('');
+                                                        setIsCalendarOpen(false);
+                                                    }}
+                                                    className="w-full mt-4 text-[10px] font-bold text-cyan-600 bg-cyan-50 px-3 py-2 rounded-xl flex items-center justify-center gap-2"
+                                                >
+                                                    <RefreshCcw className="w-3 h-3" />
+                                                    Reiniciar a Mañana
+                                                </button>
                                             </div>
                                         )}
                                     </div>
-                                </>
-                            ) : (
-                                <div className="px-5 mb-8">
-                                    <div className="bg-white rounded-[2.2rem] border border-gray-100 shadow-xl shadow-cyan-100/20 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                        {/* Week Selector - Dark Header Style */}
-                                        <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 p-3 flex items-center justify-between">
-                                            <button onClick={() => changeNotifWeek(-1)} className="p-1.5 hover:bg-white/10 rounded-xl transition-colors text-white">
-                                                <ChevronLeftIcon className="w-4 h-4" />
-                                            </button>
-                                            <span className="text-[10px] font-black px-2 uppercase tracking-widest text-white text-center">
-                                                {weekStart.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} - {new Date(new Date(weekStart).setDate(weekStart.getDate() + 4)).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
-                                            </span>
-                                            <button onClick={() => changeNotifWeek(1)} className="p-1.5 hover:bg-white/10 rounded-xl transition-colors text-white">
-                                                <ChevronRightIcon className="w-4 h-4" />
-                                            </button>
-                                        </div>
-
-                                        {/* Day Tab Selector - Wider Light Capsule Style */}
-                                        <div className="p-5">
-                                            <div className="flex p-1.5 bg-gray-50/80 rounded-full border border-gray-100 shadow-inner">
-                                                {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((day, dIdx) => (
-                                                    <button
-                                                        key={day}
-                                                        onClick={() => setSelectedDayInWeek(dIdx)}
-                                                        className={`flex-1 py-3 text-[11px] font-black rounded-full transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${selectedDayInWeek === dIdx
-                                                            ? 'bg-cyan-600 text-white shadow-xl shadow-cyan-200/50 scale-[1.02]'
-                                                            : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'}`}
-                                                    >
-                                                        {day}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeNotifTab === 'daily' ? (
-                                <>
-                                    {!isSearching && (
-                                        (() => {
-                                            const filteredTomorrow = tomorrowSchedule.filter(i => {
-                                                const groupSede = groupSedeMap[i.group] || 'Principal';
-                                                return groupSede === selectedSede;
-                                            });
-                                            const filteredSearch = searchResult ? searchResult.filter(i => {
-                                                const groupSede = groupSedeMap[i.group] || 'Principal';
-                                                return groupSede === selectedSede;
-                                            }) : null;
-
-                                            return (filteredTomorrow.length > 0 || (filteredSearch && filteredSearch.length > 0));
-                                        })()
-                                    ) && (
-                                            <div className="mb-6 bg-cyan-50/50 p-4 rounded-3xl border border-cyan-100 flex items-center gap-4 animate-in fade-in duration-500">
-                                                <div className="bg-cyan-600 p-2 rounded-xl shadow-lg shadow-cyan-200">
-                                                    <Calendar className="w-5 h-5 text-white" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-sm font-black text-cyan-900">Horario Publicado</h4>
-                                                    <p className="text-[10px] font-bold text-cyan-600 uppercase tracking-widest">Revisa las novedades abajo</p>
-                                                </div>
-                                            </div>
-                                        )}
 
                                     {isSearching ? (
                                         <div className="text-center py-10">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                                            <p className="text-xs text-gray-500 mt-2 font-medium">Buscando novedades...</p>
-                                        </div>
-                                    ) : searchResult ? (
-                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <p className="text-[10px] font-black text-cyan-600 uppercase tracking-widest pl-1">Resultados para {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</p>
-                                            </div>
-                                            {searchResult.filter((i: any) => {
-                                                const groupSede = groupSedeMap[i.group] || 'Principal';
-                                                return groupSede === selectedSede && (i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE');
-                                            }).length > 0 ? (
-                                                searchResult.filter((i: any) => {
-                                                    const groupSede = groupSedeMap[i.group] || 'Principal';
-                                                    return groupSede === selectedSede && (i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE');
-                                                }).map((item: any, idx: number) => (
-                                                    <div key={`search-${idx}`} className={`p-4 rounded-2xl border flex items-start gap-4 shadow-sm ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'}`}>
-                                                        <div className={`${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'bg-red-600' : 'bg-white border border-amber-200 text-amber-600'} px-2 py-1 rounded-lg text-[10px] font-black ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-white' : ''} shrink-0 uppercase`}>
-                                                            {item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'No Asiste' : (item.time?.split(' - ')[0] || item.time_start)}
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className={`font-bold text-sm mb-1 ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-900' : 'text-gray-900'}`}>{item.group}</p>
-                                                            {item.notes && (
-                                                                <div className={`flex items-start gap-1.5 text-[10px] ${item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE' ? 'text-red-600' : 'text-amber-600'}`}>
-                                                                    <FileText className="w-3 h-3 mt-0.5 shrink-0" />
-                                                                    <span className="italic font-bold">{item.notes}</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
-                                                    <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-                                                    <p className="text-xs font-bold text-gray-500">Sin novedades</p>
-                                                    <p className="text-[10px] text-gray-400 italic">No hay cambios registrados para esta fecha.</p>
-                                                </div>
-                                            )}
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600 mx-auto"></div>
+                                            <p className="text-xs text-gray-500 mt-2 font-medium">Buscando...</p>
                                         </div>
                                     ) : (
-                                        <>
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-4">Novedades de Mañana</p>
+                                        <div className="space-y-4">
                                             {(() => {
-                                                const filteredTomorrow = tomorrowSchedule.filter(i => {
-                                                    const groupSede = groupSedeMap[i.group] || 'Principal';
-                                                    return groupSede === selectedSede;
-                                                });
-
-                                                if (filteredTomorrow.length > 0) {
-                                                    return (
-                                                        <div className="space-y-4">
-                                                            {filteredTomorrow.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length > 0 && (
-                                                                <div className="space-y-2">
-                                                                    <p className="text-[10px] font-black text-red-500 uppercase tracking-widest pl-1 flex items-center gap-1">
-                                                                        <X className="w-3 h-3" />
-                                                                        Grupos que NO ASISTEN
-                                                                    </p>
-                                                                    {filteredTomorrow.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').map((item, idx) => (
-                                                                        <div key={`absent-${idx}`} className="bg-red-50 p-4 rounded-2xl border border-red-100 flex items-start gap-4 ring-1 ring-red-50/50 shadow-sm">
-                                                                            <div className="bg-red-600 px-2 py-1 rounded-lg text-[10px] font-black text-white shrink-0 uppercase">
-                                                                                No Asiste
-                                                                            </div>
-                                                                            <div className="flex-1 min-w-0">
-                                                                                <p className="font-bold text-red-900 text-sm mb-1">{item.group}</p>
-                                                                                {item.notes && (
-                                                                                    <div className="flex items-start gap-1.5 text-[10px] text-red-600">
-                                                                                        <FileText className="w-3 h-3 mt-0.5 shrink-0" />
-                                                                                        <span className="italic font-bold">{item.notes}</span>
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-
-                                                            <div className="space-y-2">
-                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-1">
-                                                                    <Info className="w-4 h-4" />
-                                                                    Otras Novedades
-                                                                </p>
-                                                                {filteredTomorrow.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').length > 0 ? (
-                                                                    filteredTomorrow.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').map((item, idx) => (
-                                                                        <div key={`note-${idx}`} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4 shadow-sm">
-                                                                            <div className="bg-white px-2 py-1 rounded-lg border border-amber-200 text-[10px] font-black text-amber-600 shrink-0 uppercase">
-                                                                                {item.time?.split(' - ')[0] || item.time_start}
-                                                                            </div>
-                                                                            <div className="flex-1 min-w-0">
-                                                                                <p className="font-bold text-gray-900 text-sm mb-1">{item.group}</p>
-                                                                                {item.notes && (
-                                                                                    <div className="flex items-start gap-1.5 text-[10px] text-amber-600">
-                                                                                        <FileText className="w-3 h-3 mt-0.5 shrink-0" />
-                                                                                        <span className="italic font-medium">{item.notes}</span>
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    ))
-                                                                ) : (
-                                                                    (filteredTomorrow.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length === 0 && filteredTomorrow.filter(i => i.notes).length === 0) && (
-                                                                        <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
-                                                                            <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                                                            <p className="text-xs font-bold text-gray-500">Sin cambios reportados</p>
-                                                                            <p className="text-[10px] text-gray-400 italic">Todos los grupos ingresan en su horario normal.</p>
-                                                                        </div>
-                                                                    )
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                } else {
-                                                    return (
-                                                        <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
-                                                            <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                                            <p className="text-xs font-bold text-gray-500">Sin programación</p>
-                                                            <p className="text-[10px] text-gray-400 italic">No hay horario publicado para {selectedSede} mañana.</p>
-                                                        </div>
-                                                    );
-                                                }
-                                            })()}
-
-                                        </>
-                                    )}
-                                </>
-                            ) : (
-                                <div className="space-y-6">
-                                    {isWeeklySearching ? (
-                                        <div className="text-center py-20">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                                            <p className="text-xs text-gray-500 mt-2 font-medium">Cargando consolidado semanal...</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-6">
-                                            {(() => {
-                                                const day = weeklyNotifData[selectedDayInWeek];
-                                                if (!day) return null;
-                                                const news = day.items.filter((i: any) => {
+                                                const currentSchedule = searchResult || (dailySubTab === 'today' ? todaySchedule : tomorrowSchedule);
+                                                const filteredPAE = currentSchedule.filter(i => {
                                                     const groupSede = groupSedeMap[i.group] || 'Principal';
                                                     return groupSede === selectedSede && (i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE');
                                                 });
 
-                                                const instNews = (day.instEvents || []).map((e: any) => ({
-                                                    ...e,
-                                                    isInst: true
-                                                }));
+                                                const instEvents = (searchResult ? searchInstEvents : (dailySubTab === 'today' ? todayInstEvents : tomorrowInstEvents)).filter(e => {
+                                                    const affected = e.afectados?.toLowerCase() || "";
+                                                    return affected.includes('institucional') ||
+                                                        affected.includes('plantel') ||
+                                                        affected.includes('comunidad') ||
+                                                        affected.includes('todos') ||
+                                                        affected.includes(selectedSede.toLowerCase());
+                                                });
 
-                                                const totalNews = [...news, ...instNews];
-
-                                                if (totalNews.length === 0) {
+                                                if (filteredPAE.length === 0 && instEvents.length === 0) {
                                                     return (
-                                                        <div className="bg-gray-50 p-10 rounded-3xl border border-gray-100 text-center animate-in fade-in duration-300">
+                                                        <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 text-center mx-2">
                                                             <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
-                                                            <h4 className="font-black text-gray-900 mb-1">Sin Novedades</h4>
-                                                            <p className="text-[10px] text-gray-400 italic">No hay cambios reportados para el {day.label.split(',')[0]}.</p>
+                                                            <h4 className="text-gray-900 font-black text-sm mb-1">Sin Novedades</h4>
+                                                            <p className="text-[10px] text-gray-400 italic">Todo transcurre con normalidad para {selectedSede}.</p>
                                                         </div>
                                                     );
                                                 }
 
                                                 return (
-                                                    <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-300">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <div className="bg-cyan-50 p-1.5 rounded-lg">
-                                                                <School className="w-4 h-4 text-cyan-600" />
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-[8px] font-black text-cyan-600 uppercase tracking-widest leading-none mb-1">Novedades del día</p>
-                                                                <p className="text-sm font-black text-gray-900 leading-none">
-                                                                    {day.label.split(',')[0]}
-                                                                    <span className="text-gray-300 ml-1.5 font-black">{day.label.split(',')[1]}</span>
+                                                    <div className="space-y-5">
+                                                        {/* PAE Absences */}
+                                                        {filteredPAE.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length > 0 && (
+                                                            <div className="space-y-2">
+                                                                <p className="text-[10px] font-black text-red-500 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                                                    <X className="w-3 h-3" /> Grupos que NO ASISTEN
                                                                 </p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            {totalNews.map((item: any, i: number) => {
-                                                                if (item.isInst) {
-                                                                    return (
-                                                                        <div key={`inst-${i}`} className="p-3 rounded-2xl border border-cyan-100 bg-cyan-50/50 flex items-start gap-3 shadow-sm">
-                                                                            <div className="bg-cyan-600 text-white px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase shrink-0">
-                                                                                Agenda
-                                                                            </div>
-                                                                            <div className="flex-1 min-w-0">
-                                                                                <div className="flex items-center gap-1.5 mb-0.5">
-                                                                                    {item.prioridad === 'alta' && <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />}
-                                                                                    <p className="font-black text-[11px] text-cyan-900 truncate">{item.titulo}</p>
-                                                                                </div>
-                                                                                <p className="text-[9px] font-bold text-cyan-600/80">{item.hora || 'Todo el día'} - {item.afectados || 'Institucional'}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                }
-                                                                const isAbsent = item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE';
-                                                                return (
-                                                                    <div key={`pae-${i}`} className={`p-3 rounded-2xl border flex items-start gap-3 shadow-sm ${isAbsent ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
-                                                                        <div className={`${isAbsent ? 'bg-red-600 text-white' : 'bg-cyan-50 text-cyan-600 border border-cyan-100'} px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase shrink-0`}>
-                                                                            {isAbsent ? 'No Asiste' : (item.time?.split(' - ')[0] || item.time_start)}
-                                                                        </div>
+                                                                {filteredPAE.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').map((item, idx) => (
+                                                                    <div key={`abs-${idx}`} className="bg-red-50 p-4 rounded-2xl border border-red-100 flex items-start gap-4 shadow-sm">
+                                                                        <div className="bg-red-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0">No Asiste</div>
                                                                         <div className="flex-1 min-w-0">
-                                                                            <p className={`font-black text-[11px] ${isAbsent ? 'text-red-900' : 'text-gray-900'}`}>{item.group}</p>
-                                                                            {item.notes && <p className={`text-[9px] font-medium italic mt-0.5 line-clamp-1 ${isAbsent ? 'text-red-600' : 'text-gray-500'}`}>{item.notes}</p>}
+                                                                            <p className="font-black text-red-900 text-sm">{item.group}</p>
+                                                                            {item.notes && <p className="text-[10px] font-medium text-red-600 italic mt-1">{item.notes}</p>}
                                                                         </div>
                                                                     </div>
-                                                                );
-                                                            })}
+                                                                ))}
+                                                            </div>
+                                                        )}
+
+                                                        {/* PAE Notes */}
+                                                        {filteredPAE.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').length > 0 && (
+                                                            <div className="space-y-2">
+                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                                                    <Info className="w-4 h-4" /> Otras Novedades
+                                                                </p>
+                                                                {filteredPAE.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').map((item, idx) => (
+                                                                    <div key={`note-${idx}`} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4 shadow-sm">
+                                                                        <div className="bg-white border border-amber-200 text-amber-600 px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0">{item.time?.split(' - ')[0] || item.time_start}</div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <p className="font-black text-gray-900 text-sm">{item.group}</p>
+                                                                            <p className="text-[10px] font-medium text-amber-600 italic mt-1">{item.notes}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Institutional */}
+                                                        {instEvents.length > 0 && (
+                                                            <div className="space-y-2">
+                                                                <p className="text-[10px] font-black text-cyan-600 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                                                    <School className="w-3 h-3" /> Agenda Institucional
+                                                                </p>
+                                                                {instEvents.map((item, idx) => (
+                                                                    <div key={`inst-${idx}`} className="bg-cyan-50/50 p-4 rounded-2xl border border-cyan-100 flex items-start gap-4 shadow-sm">
+                                                                        <div className="bg-cyan-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0">Agenda</div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <p className="font-black text-sm text-cyan-900 mb-0.5">{item.titulo}</p>
+                                                                            <p className="text-[10px] font-bold text-cyan-600">{item.hora || 'Todo el día'} - {item.afectados}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    {/* Weekly Selector (Compacted) */}
+                                    <div className="-mx-4 mb-4">
+                                        <div className="bg-white border-y border-gray-100 shadow-xl shadow-cyan-100/10 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                            <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 p-2 flex items-center justify-between">
+                                                <button onClick={() => changeNotifWeek(-1)} className="p-1 hover:bg-white/10 rounded-lg transition-colors text-white">
+                                                    <ChevronLeftIcon className="w-4 h-4" />
+                                                </button>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-white">
+                                                    {weekStart.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} - {new Date(new Date(weekStart).setDate(weekStart.getDate() + 4)).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
+                                                </span>
+                                                <button onClick={() => changeNotifWeek(1)} className="p-1 hover:bg-white/10 rounded-lg transition-colors text-white">
+                                                    <ChevronRightIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                            <div className="p-3">
+                                                <div className="flex p-1 bg-gray-50/80 rounded-full border border-gray-100 shadow-inner">
+                                                    {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((day, dIdx) => (
+                                                        <button
+                                                            key={day}
+                                                            onClick={() => setSelectedDayInWeek(dIdx)}
+                                                            className={`flex-1 py-2 text-[10px] font-black rounded-full transition-all duration-500 ${selectedDayInWeek === dIdx ? 'bg-cyan-600 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-600'}`}
+                                                        >
+                                                            {day}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {isWeeklySearching ? (
+                                        <div className="text-center py-20">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600 mx-auto"></div>
+                                            <p className="text-xs text-gray-500 mt-2 font-medium">Cargando...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-5 px-1 animate-in fade-in duration-300">
+                                            {(() => {
+                                                const dayData = weeklyNotifData[selectedDayInWeek];
+                                                if (!dayData) return null;
+
+                                                const inst = (dayData.instEvents || []);
+
+                                                if (inst.length === 0) {
+                                                    return (
+                                                        <div className="bg-gray-50 p-10 rounded-3xl border border-gray-100 text-center mx-2">
+                                                            <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
+                                                            <h4 className="font-black text-gray-900 mb-1">Día sin Agenda</h4>
+                                                            <p className="text-[10px] text-gray-400 italic">No hay eventos institucionales programados para este día.</p>
                                                         </div>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div className="space-y-4">
+                                                        {/* Institutional */}
+                                                        {inst.map((item: any, i: number) => (
+                                                            <div key={`inst-w-${i}`} className="p-4 rounded-2xl border border-cyan-100 bg-cyan-50/50 flex items-start gap-4 shadow-sm">
+                                                                <div className="bg-cyan-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0">Agenda</div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="font-black text-sm text-cyan-900 mb-0.5">{item.titulo}</p>
+                                                                    <p className="text-[10px] font-bold text-cyan-600">{item.hora || 'Todo el día'} - {item.afectados}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 );
                                             })()}
@@ -919,6 +870,7 @@ export default function DashboardLayout({
                             )}
                         </div>
 
+                        {/* Footer */}
                         <div className="p-4 bg-gray-50 border-t border-gray-100 shrink-0">
                             <button
                                 onClick={() => {
@@ -933,11 +885,11 @@ export default function DashboardLayout({
                         </div>
                     </div>
                 </div>
-            )
-            }
+            )}
+
 
             {/* Spacer for Mobile Header */}
             <div className="md:hidden h-16"></div>
-        </div >
+        </div>
     );
 }

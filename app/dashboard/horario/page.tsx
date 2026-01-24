@@ -364,19 +364,27 @@ export default function HorarioPage() {
                 <div className="flex flex-col gap-2 mb-2 px-1 shrink-0">
                     <div className="bg-white p-2 lg:p-3 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between gap-2 overflow-hidden">
                         <div className="flex items-center gap-1 lg:gap-2">
-                            <div className="bg-gray-100/80 p-1 rounded-2xl flex items-center shrink-0">
+                            <div className="bg-gray-100/80 p-1 rounded-2xl flex items-center shrink-0 relative">
                                 <button
                                     onClick={() => setViewMode('day')}
-                                    className={`px-4 py-1.5 rounded-xl text-[11px] font-black transition-all ${viewMode === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}
+                                    className={`px-4 py-1.5 rounded-xl text-[11px] font-black transition-all relative z-10 ${viewMode === 'day' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
                                     Día
                                 </button>
                                 <button
                                     onClick={() => setViewMode('week')}
-                                    className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all ${viewMode === 'week' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}
+                                    className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all relative z-10 ${viewMode === 'week' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
                                     Semana
                                 </button>
+                                {/* Sliding Indicator */}
+                                <div
+                                    className={`absolute inset-y-1 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-cyan-600 rounded-xl shadow-md shadow-cyan-200/50 ${viewMode === 'day' ? 'left-1 w-[45%]' : 'left-[48%] w-[50%]'}`}
+                                    style={{
+                                        width: viewMode === 'day' ? 'calc(50% - 4px)' : 'calc(50% - 4px)',
+                                        left: viewMode === 'day' ? '4px' : 'calc(50%)'
+                                    }}
+                                />
                             </div>
 
                             <div className="relative shrink-0">
