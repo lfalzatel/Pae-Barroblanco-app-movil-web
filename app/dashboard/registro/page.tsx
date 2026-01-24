@@ -722,7 +722,7 @@ function RegistroContent() {
       )}
 
       {/* STICKY HEADER BLOCK: Title + Stats + Buttons */}
-      <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 shadow-xl shadow-cyan-900/10 sticky top-0 z-50">
+      <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 shadow-xl shadow-cyan-900/10 sticky top-16 md:top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:pt-6 md:pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -775,7 +775,7 @@ function RegistroContent() {
           </div>
         </div>
         {step === 'registro' && grupoSeleccionado && (
-          <div className="space-y-2 pt-2 pb-5 bg-white md:bg-transparent shadow-lg md:shadow-none transition-all">
+          <div className="space-y-2 pt-2 pb-5 bg-white shadow-lg transition-all">
             <div className="flex flex-col md:flex-row justify-between px-2 items-center md:items-end gap-3 md:gap-0 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex gap-4 md:gap-8 justify-center w-full md:w-auto">
                 <div className="flex flex-col items-center">
