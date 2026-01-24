@@ -758,19 +758,15 @@ export default function HorarioPage() {
 
                                             <div className="space-y-2">
                                                 {events.map((e, ei) => (
-                                                    <div key={ei} className="p-4 rounded-[2rem] border border-cyan-50 bg-white shadow-sm relative group/card hover:border-cyan-200 transition-colors">
+                                                    <div
+                                                        key={ei}
+                                                        onClick={() => handleEditEvent(e)}
+                                                        className="p-4 rounded-[2rem] border border-cyan-50 bg-white shadow-sm relative group/card hover:border-cyan-200 transition-all active:scale-[0.98] cursor-pointer"
+                                                    >
                                                         <div className="flex items-center justify-between mb-2">
                                                             <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-600 uppercase tracking-widest border border-cyan-100">
                                                                 {e.hora || 'S/H'}
                                                             </span>
-                                                            <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover/card:opacity-100 transition-opacity">
-                                                                <button onClick={() => handleEditEvent(e)} className="p-1 hover:bg-cyan-50 rounded-lg text-cyan-600">
-                                                                    <Edit2 className="w-3 h-3" />
-                                                                </button>
-                                                                <button onClick={() => handleDeleteInstitutionalEvent(e.id)} className="p-1 hover:bg-red-50 rounded-lg text-red-600">
-                                                                    <Trash2 className="w-3 h-3" />
-                                                                </button>
-                                                            </div>
                                                         </div>
                                                         <h4 className="text-[11px] font-black text-gray-900 leading-tight mb-1">{e.titulo}</h4>
                                                         {e.afectados && (
@@ -806,36 +802,73 @@ export default function HorarioPage() {
             {editingSlot && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setEditingSlot(null)}></div>
-                    <div className="bg-white rounded-[2.5rem] w-full max-w-xl relative p-6 shadow-2xl flex flex-col gap-4 animate-in zoom-in-95">
-                        <div className="flex justify-between items-center"><h3 className="text-xl font-black">Gestionar Grupos ({editingSlot})</h3><button onClick={() => setEditingSlot(null)}><X /></button></div>
-                        <div className="space-y-4 max-h-[50vh] overflow-y-auto px-1 custom-scrollbar">
+                    <div className="bg-white rounded-[3rem] w-full max-w-xl relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl">
+                        {/* Header Premium */}
+                        <div className="p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden">
+                            <div className="relative z-10">
+                                <h3 className="text-2xl font-black">Gestionar Grupos</h3>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">
+                                    Franja Horaria: {editingSlot}
+                                </p>
+                            </div>
+                            <button onClick={() => setEditingSlot(null)} className="relative z-10 p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
+                            <Clock className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 rotate-12" />
+                        </div>
+
+                        <div className="p-8 space-y-6 max-h-[50vh] overflow-y-auto custom-scrollbar">
                             {assignments[editingSlot]?.map((s, i) => (
-                                <div key={i} className="bg-gray-50 p-4 rounded-3xl flex flex-col gap-3 relative border border-gray-100 shadow-sm">
+                                <div key={i} className="bg-gray-50 p-5 rounded-[2rem] flex flex-col gap-4 relative border border-gray-100 shadow-sm">
                                     <div className="flex justify-between items-center">
-                                        <div className="flex items-center gap-2 font-black">
-                                            <span>{s.group.label}</span>
-                                            <span className="text-[10px] text-gray-400 bg-white px-2 py-0.5 rounded-full">{s.group.studentCount} est</span>
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-white p-2 rounded-xl shadow-sm text-cyan-600 border border-cyan-50">
+                                                <Users className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-black text-gray-900 leading-tight">{s.group.label}</span>
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{s.group.studentCount} ESTUDIANTES</span>
+                                            </div>
                                         </div>
-                                        <button onClick={() => {
-                                            setAssignments(prev => {
-                                                const next = { ...prev };
-                                                next[editingSlot].splice(i, 1);
-                                                if (next[editingSlot].length === 0) delete next[editingSlot];
-                                                return next;
-                                            });
-                                        }} className="text-red-500"><Trash2 className="w-4 h-4" /></button>
+                                        <button
+                                            onClick={() => {
+                                                setAssignments(prev => {
+                                                    const next = { ...prev };
+                                                    next[editingSlot].splice(i, 1);
+                                                    if (next[editingSlot].length === 0) delete next[editingSlot];
+                                                    return next;
+                                                });
+                                            }}
+                                            className="p-2.5 hover:bg-red-50 rounded-xl text-red-500 transition-colors border border-transparent hover:border-red-100"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
                                     </div>
-                                    <input placeholder="Nota de ración o novedad..." value={s.notes || ''} onChange={e => {
-                                        setAssignments(prev => {
-                                            const next = { ...prev };
-                                            next[editingSlot][i].notes = e.target.value;
-                                            return next;
-                                        });
-                                    }} className="p-3 bg-white border border-gray-100 rounded-xl text-xs font-bold outline-none" />
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Observaciones / Ración</label>
+                                        <input
+                                            placeholder="Ej: Solo ración básica, alumnos de viaje..."
+                                            value={s.notes || ''}
+                                            onChange={e => {
+                                                setAssignments(prev => {
+                                                    const next = { ...prev };
+                                                    next[editingSlot][i].notes = e.target.value;
+                                                    return next;
+                                                });
+                                            }}
+                                            className="w-full p-4 bg-white border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-cyan-500/10 transition-all"
+                                        />
+                                    </div>
                                 </div>
                             ))}
                         </div>
-                        <button onClick={() => setEditingSlot(null)} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">Listos</button>
+
+                        <div className="p-8 pt-0">
+                            <button
+                                onClick={() => setEditingSlot(null)}
+                                className="w-full py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-cyan-100 transition-all active:scale-[0.98]"
+                            >
+                                LISTOS, VOLVER
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -911,11 +944,23 @@ export default function HorarioPage() {
                         </div>
 
                         <div className="p-8 pt-0 flex gap-4">
-                            <button onClick={() => setShowEventModal(false)} className="flex-1 py-4 bg-gray-50 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-100 transition-all">
+                            <button onClick={() => setShowEventModal(false)} className="px-6 py-4 bg-gray-50 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-100 transition-all">
                                 CANCELAR
                             </button>
-                            <button onClick={handleSaveInstitutionalEvent} className="flex-[2] py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-cyan-100 transition-all active:scale-[0.98]">
-                                GUARDAR CAMBIOS
+                            {editingEvent && (
+                                <button
+                                    onClick={() => {
+                                        handleDeleteInstitutionalEvent(editingEvent.id);
+                                        setShowEventModal(false);
+                                    }}
+                                    className="p-4 bg-red-50 text-red-600 rounded-2xl hover:bg-red-100 transition-all border border-red-100"
+                                    title="Eliminar Actividad"
+                                >
+                                    <Trash2 className="w-5 h-5" />
+                                </button>
+                            )}
+                            <button onClick={handleSaveInstitutionalEvent} className="flex-1 py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-cyan-100 transition-all active:scale-[0.98]">
+                                {editingEvent ? 'GUARDAR CAMBIOS' : 'CREAR ACTIVIDAD'}
                             </button>
                         </div>
                     </div>
