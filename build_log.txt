@@ -1,0 +1,28 @@
+
+> sistema-pae-barroblanco@1.0.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.3
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ Ô£ô (pwa) Compiling for server...
+ Ô£ô (pwa) Compiling for server...
+ Ô£ô (pwa) Compiling for client (static)...
+ Ôùï (pwa) Service worker: C:\6. Viaje a san andres\3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App (PWA)\public\sw.js
+ Ôùï (pwa)   URL: /sw.js
+ Ôùï (pwa)   Scope: /
+ Ô£ô Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+unhandledRejection Error [PageNotFoundError]: Cannot find module for page: /_document
+    at getPagePath (C:\6. Viaje a san andres\3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App (PWA)\node_modules\next\dist\server\require.js:94:15)
+    at requirePage (C:\6. Viaje a san andres\3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App (PWA)\node_modules\next\dist\server\require.js:99:22)
+    at C:\6. Viaje a san andres\3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App (PWA)\node_modules\next\dist\server\load-components.js:72:65
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Promise.all (index 0)
+    at async loadComponentsImpl (C:\6. Viaje a san andres\3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App (PWA)\node_modules\next\dist\server\load-components.js:71:33)
+    at async Object.getDefinedNamedExports (C:\6. Viaje a san andres\3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App (PWA)\node_modules\next\dist\build\utils.js:1289:24) {
+  type: 'PageNotFoundError',
+  code: 'ENOENT'
+}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Search, Eye, FileDown, Users, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2, School, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Search, Eye, FileDown, Users, User, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2, School, ChevronDown, Info, Shield } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -30,7 +30,7 @@ export default function GestionPage() {
   const router = useRouter();
   const [usuario, setUsuario] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sedeFilter, setSedeFilter] = useState('todas');
+  const [sedeFilter, setSedeFilter] = useState('Principal');
   const [grupoFilter, setGrupoFilter] = useState('todos');
   const [activeTab, setActiveTab] = useState<'estudiantes' | 'docentes'>('estudiantes');
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
@@ -50,6 +50,8 @@ export default function GestionPage() {
     lastRegister?: string;
   } | null>(null);
   const [selectedStudentDate, setSelectedStudentDate] = useState<any | null>(null);
+  const [docenteParaRol, setDocenteParaRol] = useState<Docente | null>(null);
+  const [modificandoRol, setModificandoRol] = useState(false);
 
   // Create Student State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -406,6 +408,31 @@ export default function GestionPage() {
     }
   };
 
+  const handleConfirmUpdateRol = async (newRol: string) => {
+    if (!docenteParaRol || modificandoRol) return;
+
+    const originalRol = docenteParaRol.rol;
+    const docenteId = docenteParaRol.id;
+
+    setModificandoRol(true);
+    // Optimistic update
+    setDocentes(prev => prev.map(d => d.id === docenteId ? { ...d, rol: newRol } : d));
+
+    const { error } = await supabase
+      .from('perfiles_publicos')
+      .update({ rol: newRol })
+      .eq('id', docenteId);
+
+    if (error) {
+      console.error('Error updating role:', error);
+      // Revert on error
+      setDocentes(prev => prev.map(d => d.id === docenteId ? { ...d, rol: originalRol } : d));
+    }
+
+    setModificandoRol(false);
+    setDocenteParaRol(null);
+  };
+
   const handleToggleEstado = async (estudiante: Estudiante) => {
     const newState = estudiante.estado === 'activo' ? 'inactivo' : 'activo';
 
@@ -487,189 +514,186 @@ export default function GestionPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 shadow-xl shadow-cyan-900/10 sticky top-16 md:top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:pt-6 md:pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="p-2 hover:bg-gray-100 rounded-lg">
-                <ArrowLeft className="w-6 h-6" />
+              <Link href="/dashboard" className="p-2 md:p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg border border-white/10">
+                <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
               </Link>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Gestión del Sistema</h1>
-                <p className="text-sm text-gray-600">Historial de asistencia y reportes</p>
+                <h1 className="text-lg md:text-2xl font-black text-white leading-none tracking-tight">Gestión del Sistema</h1>
+                <p className="text-[9px] md:text-[11px] font-bold text-cyan-50 uppercase tracking-[0.2em] mt-1 opacity-90">Historial y reportes administrativos</p>
               </div>
             </div>
 
             {usuario?.rol === 'admin' && activeTab === 'estudiantes' && (
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-200 transition-all font-bold flex items-center gap-2 text-sm"
+                className="p-2 md:px-4 md:py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl md:rounded-2xl transition-all shadow-xl shadow-cyan-900/20 font-black uppercase text-[9px] md:text-[10px] tracking-widest flex items-center gap-2 border border-emerald-400/30 active:scale-95"
               >
-                <UserPlus className="w-4 h-4" />
-                <span className="hidden sm:inline">Crear Estudiante</span>
+                <UserPlus className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="hidden sm:inline">CREAR ESTUDIANTE</span>
               </button>
             )}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         {/* Pestañas */}
-        <div className="flex flex-col md:flex-row md:items-center justify-end gap-4 mb-8">
-          {usuario?.rol === 'admin' && (
-            <div className="bg-gray-100 p-1 rounded-xl flex gap-1">
-              <button
-                onClick={() => setActiveTab('estudiantes')}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'estudiantes' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                Estudiantes
-              </button>
-              <button
-                onClick={() => setActiveTab('docentes')}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'docentes' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                Docentes
-              </button>
-            </div>
-          )}
-        </div>
+        {usuario?.rol === 'admin' && (
+          <div className="bg-gray-100/80 p-0.5 rounded-2xl flex items-center shrink-0 relative w-full md:w-auto mb-4">
+            <button
+              onClick={() => setActiveTab('estudiantes')}
+              className={`flex-1 md:px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${activeTab === 'estudiantes' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              Estudiantes
+            </button>
+            <button
+              onClick={() => setActiveTab('docentes')}
+              className={`flex-1 md:px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${activeTab === 'docentes' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              Docentes
+            </button>
+            {/* Sliding Indicator */}
+            <div
+              className={`absolute inset-y-0.5 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-gradient-to-br from-cyan-600 to-cyan-700 rounded-xl shadow-md shadow-cyan-200/50 ${activeTab === 'estudiantes' ? 'left-0.5 w-[50%]' : 'left-[50%] w-[49%]'}`}
+              style={{
+                width: activeTab === 'estudiantes' ? 'calc(50% - 2px)' : 'calc(50% - 2px)',
+                left: activeTab === 'estudiantes' ? '2px' : 'calc(50%)'
+              }}
+            />
+          </div>
+        )}
 
         {activeTab === 'estudiantes' ? (
           <>
-            {/* Filtros */}
-            <div className="mb-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="text-sm font-bold text-gray-700 flex items-center gap-2 whitespace-nowrap">
-                  <School className="w-4 h-4 text-blue-600" />
-                  <span className="hidden sm:inline">Filtrar por Sede:</span>
-                  <span className="sm:hidden">Sede:</span>
+            <div className="bg-white p-3 rounded-[2rem] shadow-xl shadow-cyan-900/5 border border-gray-100 mb-4 space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
+                <div className="flex items-center">
+                  <div className="relative flex-1">
+                    <select
+                      value={sedeFilter}
+                      onChange={(e) => {
+                        setSedeFilter(e.target.value);
+                        setGrupoFilter('todos');
+                      }}
+                      className="block w-full pl-3 pr-8 md:pl-5 md:pr-10 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer appearance-none"
+                    >
+                      <option value="todas">SEDES</option>
+                      {sedes.filter((s) => s.id !== 'todas').map((sede) => (
+                        <option key={sede.id} value={sede.id}>
+                          {sede.nombre.toUpperCase()}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 pr-3 md:pr-4 flex items-center pointer-events-none">
+                      <ChevronDown className="h-4 w-4 text-cyan-500" />
+                    </div>
+                  </div>
                 </div>
-                <div className="relative flex-1">
-                  <select
-                    value={sedeFilter}
-                    onChange={(e) => {
-                      setSedeFilter(e.target.value);
-                      setGrupoFilter('todos');
-                    }}
-                    className="block w-full pl-4 pr-10 py-2.5 text-xs font-bold uppercase tracking-tight text-blue-800 bg-blue-50 border border-transparent rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500/20 hover:bg-white hover:border-blue-200 hover:shadow-md transition-all shadow-sm cursor-pointer appearance-none"
-                  >
-                    <option value="todas">Todas las Sedes</option>
-                    {sedes.filter((s) => s.id !== 'todas').map((sede) => (
-                      <option key={sede.id} value={sede.id}>
-                        {sede.nombre}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <ChevronDown className="h-4 w-4 text-blue-600/60" />
+
+                <div className="flex items-center">
+                  <div className="relative flex-1">
+                    <button
+                      onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
+                      className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer"
+                    >
+                      <span className="truncate">{grupoFilter === 'todos' ? 'GRUPOS' : `${grupoFilter}`}</span>
+                      <ChevronDown className={`w-4 h-4 text-cyan-500 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {grupoDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-[60]" onClick={() => setGrupoDropdownOpen(false)}></div>
+                        <div className="absolute z-[70] w-full mt-2 bg-white/90 backdrop-blur-md border border-cyan-100 rounded-3xl shadow-2xl max-h-72 overflow-y-auto p-4 animate-in fade-in zoom-in-95 duration-200">
+                          <div className="grid grid-cols-3 gap-2">
+                            <button
+                              onClick={() => { setGrupoFilter('todos'); setGrupoDropdownOpen(false); }}
+                              className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === 'todos' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50'}`}
+                            >
+                              TODOS
+                            </button>
+                            {gruposDisponibles.map(grupo => (
+                              <button
+                                key={grupo}
+                                onClick={() => { setGrupoFilter(grupo); setGrupoDropdownOpen(false); }}
+                                className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === grupo ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50'}`}
+                              >
+                                {grupo.replace(/-20\d{2}/, '')}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="text-sm font-bold text-gray-700 flex items-center gap-2 whitespace-nowrap">
-                  <Users className="w-4 h-4 text-blue-600" />
-                  <span className="hidden sm:inline">Filtrar por Grupo:</span>
-                  <span className="sm:hidden">Grupo:</span>
-                </div>
-                <div className="relative flex-1">
-                  <button
-                    onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
-                    className="w-full pl-4 pr-4 py-2.5 text-xs font-bold uppercase tracking-tight text-blue-800 bg-blue-50 border border-transparent rounded-xl flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-blue-500/20 hover:bg-white hover:border-blue-200 hover:shadow-md transition-all shadow-sm cursor-pointer"
-                  >
-                    <span className="truncate">{grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter}</span>
-                    <ChevronDown className={`w-4 h-4 text-blue-600/60 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {grupoDropdownOpen && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setGrupoDropdownOpen(false)}></div>
-                      <div className="absolute z-20 w-full mt-2 bg-white border border-gray-300 rounded-xl shadow-lg max-h-96 overflow-y-auto">
-                        <div className="p-3 grid grid-cols-3 gap-2">
-                          <button
-                            onClick={() => { setGrupoFilter('todos'); setGrupoDropdownOpen(false); }}
-                            className={`px-3 py-2 rounded-lg text-sm font-medium ${grupoFilter === 'todos' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-700'}`}
-                          >
-                            Todos
-                          </button>
-                          {gruposDisponibles.map(grupo => (
-                            <button
-                              key={grupo}
-                              onClick={() => { setGrupoFilter(grupo); setGrupoDropdownOpen(false); }}
-                              className={`px-3 py-2 rounded-lg text-sm font-medium ${grupoFilter === grupo ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-700'}`}
-                            >
-                              {grupo}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="text-sm font-bold text-gray-700 flex items-center gap-2 whitespace-nowrap">
-                  <Search className="w-4 h-4 text-blue-600" />
-                  <span className="hidden sm:inline">Buscar Estudiante:</span>
-                  <span className="sm:hidden">Buscar:</span>
-                </div>
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Buscar por nombre o matrícula..."
-                    className="w-full pl-12 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-                  />
-                </div>
+              <div className="relative group">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-cyan-400 w-5 h-5 group-focus-within:text-cyan-600 transition-colors" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar estudiante o matrícula..."
+                  className="w-full pl-14 pr-6 py-4 bg-gray-50/50 border border-gray-100 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-inner transition-all font-bold text-gray-700 text-sm placeholder:text-gray-300 placeholder:font-medium"
+                />
               </div>
             </div>
 
-            {/* Estadísticas */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                <div className="text-3xl font-bold text-blue-600">{loading ? <Skeleton className="h-9 w-12" /> : estudiantesFiltrados.length}</div>
-                <div className="text-sm text-gray-600">Estudiantes</div>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-white rounded-[2rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 flex flex-col items-center justify-center text-center">
+                <div className="text-3xl font-black text-cyan-600 leading-none mb-2">
+                  {loading ? <Skeleton className="h-9 w-12" /> : estudiantesFiltrados.length}
+                </div>
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Estudiantes</div>
               </div>
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                <div className="text-3xl font-bold text-green-600">{loading ? <Skeleton className="h-9 w-16" /> : `${attendancePercentage}%`}</div>
-                <div className="text-sm text-gray-600">Asistencia Real (30d)</div>
+              <div className="bg-white rounded-[2rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 flex flex-col items-center justify-center text-center">
+                <div className="text-3xl font-black text-emerald-500 leading-none mb-2">
+                  {loading ? <Skeleton className="h-9 w-16" /> : `${attendancePercentage}%`}
+                </div>
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Asistencia Real (30d)</div>
               </div>
-            </div >
+            </div>
 
             {/* Lista de estudiantes */}
             < div className="space-y-3" >
               {
                 loading ? (
-                  [...Array(6)].map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+                  [...Array(6)].map((_, i) => <Skeleton key={i} className="h-28 rounded-[2rem]" />)
                 ) : (
                   estudiantesFiltrados.map(estudiante => (
-                    <div key={estudiante.id} className={`bg-white rounded-xl p-4 shadow-sm border border-gray-200 ${estudiante.estado === 'inactivo' ? 'opacity-50 grayscale' : ''}`}>
-                      <div className="flex items-start gap-3">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${['bg-purple-100 text-purple-600', 'bg-blue-100 text-blue-600', 'bg-pink-100 text-pink-600'][estudiante.nombre.length % 3]}`}>
-                          <span className="font-bold text-lg">{estudiante.nombre.charAt(0)}</span>
+                    <div key={estudiante.id} className={`bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100 transition-all hover:shadow-md ${estudiante.estado === 'inactivo' ? 'opacity-50 grayscale' : ''}`}>
+                      <div className="flex items-center gap-4">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-inner ${['bg-cyan-50 text-cyan-600', 'bg-emerald-50 text-emerald-600', 'bg-blue-50 text-blue-600'][estudiante.nombre.length % 3]}`}>
+                          <span className="font-black text-xl leading-none">{estudiante.nombre.charAt(0)}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-gray-900 text-sm truncate">{estudiante.nombre}</div>
-                          <div className="text-xs text-gray-500">{estudiante.matricula} • {estudiante.grado}-{estudiante.grupo}</div>
-                          <div className="flex gap-2 mt-3">
+                          <div className="font-black text-gray-900 text-sm truncate uppercase tracking-tight">{estudiante.nombre}</div>
+                          <div className="text-[10px] font-bold text-gray-400 mt-0.5">
+                            <span className="bg-gray-100 px-2 py-0.5 rounded-lg text-gray-500 mr-2">{estudiante.matricula}</span>
+                            <span className="text-cyan-600 font-black">{estudiante.grado}-{estudiante.grupo}</span>
+                          </div>
+
+                          <div className="flex gap-2 mt-4">
                             <button
                               onClick={() => setSelectedStudent(estudiante)}
-                              className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-bold"
+                              className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-cyan-100 transition-all active:scale-95"
                             >
                               Historial
                             </button>
                             <button
                               onClick={() => handleGenerateReport(estudiante)}
-                              className="px-3 py-2 bg-green-50 text-green-600 rounded-lg"
+                              className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl transition-all hover:bg-emerald-500 hover:text-white"
                             >
                               <FileDown className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleToggleEstado(estudiante)}
-                              className={`px-3 py-2 rounded-lg ${estudiante.estado === 'inactivo' ? 'bg-orange-50 text-orange-600' : 'bg-red-50 text-red-600'}`}
+                              className={`px-4 py-2 rounded-xl transition-all ${estudiante.estado === 'inactivo' ? 'bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white' : 'bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white'}`}
                             >
                               {estudiante.estado === 'inactivo' ? <UserPlus className="w-4 h-4" /> : <UserMinus className="w-4 h-4" />}
                             </button>
@@ -678,7 +702,8 @@ export default function GestionPage() {
                       </div>
                     </div>
                   ))
-                )}
+                )
+              }
             </div >
           </>
         ) : (
@@ -690,38 +715,46 @@ export default function GestionPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {loading ? (
-                <Skeleton className="h-24 rounded-xl" />
+                <Skeleton className="h-28 rounded-[2rem]" />
               ) : (
                 docentes.map(docente => (
-                  <div key={docente.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                  <div key={docente.id} className="bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all">
                     <div className="flex items-center gap-4">
                       {docente.avatar_url ? (
                         <img
                           src={docente.avatar_url}
                           alt={docente.nombre}
-                          className="w-12 h-12 rounded-full border border-gray-100"
+                          className="w-14 h-14 rounded-2xl border border-gray-100 shadow-inner object-cover"
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center font-bold text-blue-700">
-                          {docente.nombre.charAt(0)}
+                        <div className="w-14 h-14 bg-cyan-50 rounded-2xl flex items-center justify-center font-black text-cyan-600 text-xl leading-none shadow-inner">
+                          {docente.nombre.charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-gray-900 truncate">{docente.nombre}</div>
-                        <div className="text-xs text-gray-500 truncate">{docente.email}</div>
-                        <div className="flex gap-2 mt-2">
+                        <div className="font-black text-gray-900 truncate uppercase text-sm tracking-tight leading-none mb-1">{docente.nombre}</div>
+                        <div className="text-[10px] font-bold text-gray-400 truncate">{docente.email}</div>
+                        <div className="flex gap-2 mt-4">
                           <button
                             onClick={() => setSelectedDocente(docente)}
-                            className="flex-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold"
+                            className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-cyan-100 transition-all active:scale-95"
                           >
                             Actividad
                           </button>
                           <button
-                            onClick={() => handleGenerateDocenteReport(docente)}
-                            className="px-3 py-1.5 bg-green-50 text-green-600 rounded-lg"
+                            onClick={() => setDocenteParaRol(docente)}
+                            className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm flex flex-col items-center justify-center min-w-[70px]"
+                            title="Cambiar Rol"
                           >
-                            <FileDown className="w-3.5 h-3.5" />
+                            <User className="w-4 h-4" />
+                            <span className="text-[7px] font-black uppercase mt-0.5">{docente.rol}</span>
+                          </button>
+                          <button
+                            onClick={() => handleGenerateDocenteReport(docente)}
+                            className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
+                          >
+                            <FileDown className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -736,60 +769,66 @@ export default function GestionPage() {
         {/* Modal Estudiante */}
         {
           isCreateModalOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-                <div className="p-6 border-b flex justify-between items-center bg-gray-50">
-                  <h3 className="font-bold text-xl text-gray-900 flex items-center gap-2">
-                    <UserPlus className="w-5 h-5 text-blue-600" />
-                    Crear Estudiante
-                  </h3>
-                  <button onClick={() => setIsCreateModalOpen(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-500">
-                    <X className="w-5 h-5" />
-                  </button>
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300">
+              <div className="bg-white rounded-[2.5rem] max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium">
+                <div className="p-6 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white/20 p-2.5 rounded-2xl shadow-inner border border-white/10">
+                        <UserPlus className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-xl tracking-tight leading-none">Nuevo Estudiante</h3>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-80 mt-1.5 text-cyan-50">Registro Administrativo</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setIsCreateModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="p-6 space-y-4">
-                  {/* Formulario */}
-                  <div className="space-y-3">
+                <div className="p-6 md:p-8 space-y-5 bg-white">
+                  <div className="space-y-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre Completo</label>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">Nombre Completo</label>
                       <input
                         type="text"
                         placeholder="Ej: Juan Pérez"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner"
                         value={newStudent.nombre}
                         onChange={e => setNewStudent({ ...newStudent, nombre: e.target.value })}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Matrícula</label>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">Matrícula</label>
                       <input
                         type="text"
                         placeholder="Ej: 2024001"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner"
                         value={newStudent.matricula}
                         onChange={e => setNewStudent({ ...newStudent, matricula: e.target.value })}
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Grado</label>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">Grado</label>
                         <input
                           type="text"
                           placeholder="Ej: 10"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner"
                           value={newStudent.grado}
                           onChange={e => setNewStudent({ ...newStudent, grado: e.target.value })}
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Grupo</label>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">Grupo</label>
                         <input
                           type="text"
                           placeholder="Ej: 10-1"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner"
                           value={newStudent.grupo}
                           onChange={e => setNewStudent({ ...newStudent, grupo: e.target.value })}
                         />
@@ -797,192 +836,225 @@ export default function GestionPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Sede</label>
-                      <select
-                        className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
-                        value={newStudent.sede}
-                        onChange={e => setNewStudent({ ...newStudent, sede: e.target.value })}
-                      >
-                        {sedes.filter(s => s.id !== 'todas').map(s => (
-                          <option key={s.id} value={s.nombre}>{s.nombre}</option>
-                        ))}
-                      </select>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">Sede</label>
+                      <div className="relative">
+                        <select
+                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-black text-cyan-700 uppercase text-[10px] tracking-widest appearance-none cursor-pointer shadow-inner"
+                          value={newStudent.sede}
+                          onChange={e => setNewStudent({ ...newStudent, sede: e.target.value })}
+                        >
+                          {sedes.filter(s => s.id !== 'todas').map(s => (
+                            <option key={s.id} value={s.nombre}>{s.nombre.toUpperCase()}</option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                          <ChevronDown className="h-4 w-4 text-cyan-500" />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
                   {createError && (
-                    <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4" />
+                    <div className="p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-pulse">
+                      <AlertCircle className="w-5 h-5 shrink-0" />
                       {createError}
                     </div>
                   )}
-                </div>
 
-                <div className="p-4 bg-gray-50 border-t flex justify-end gap-3">
-                  <button
-                    onClick={() => setIsCreateModalOpen(false)}
-                    className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleCreateStudent}
-                    disabled={creating}
-                    className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {creating ? <Clock className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-                    {creating ? 'Guardando...' : 'Guardar Estudiante'}
-                  </button>
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      onClick={() => setIsCreateModalOpen(false)}
+                      className="flex-1 px-6 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all hover:bg-gray-200 active:scale-95"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleCreateStudent}
+                      disabled={creating}
+                      className="flex-1 px-6 py-4 bg-emerald-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-200 transition-all hover:bg-emerald-600 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {creating ? <Clock className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      {creating ? 'GUARDANDO...' : 'GUARDAR'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           )
         }
 
-        {/* Modal Estudiante Detalle (Existente) */}
+        {/* Modal Estudiante Detalle (History) */}
         {
           selectedStudent && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-                <div className="p-6 border-b flex justify-between items-center">
-                  <h3 className="font-bold text-xl">{selectedStudent.nombre}</h3>
-                  <button onClick={() => setSelectedStudent(null)} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6" /></button>
-                </div>
-                <div className="p-6 overflow-y-auto space-y-6">
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-green-50 p-3 rounded-xl border border-green-100 text-center">
-                      <div className="text-xl font-bold text-green-700">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300">
+              <div className="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="p-6 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-white/20 p-3 rounded-2xl shadow-inner border border-white/10">
+                        <Users className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-xl md:text-2xl tracking-tight leading-none uppercase">{selectedStudent.nombre}</h3>
+                        <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] opacity-80 mt-1.5 text-cyan-50">Historial Académico - PAE</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setSelectedStudent(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  <div className="mt-8 grid grid-cols-3 gap-3">
+                    <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10 text-center">
+                      <div className="text-xl md:text-2xl font-black">
                         {studentHistory.filter(a => {
                           const thirtyDaysAgo = new Date();
                           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
                           return a.fecha >= thirtyDaysAgo.toISOString().split('T')[0] && a.estado === 'recibio';
                         }).length}
                       </div>
-                      <div className="text-[10px] uppercase text-green-600 font-bold">Recibidos</div>
+                      <div className="text-[9px] uppercase font-black tracking-widest opacity-70">Recibió</div>
                     </div>
-                    <div className="bg-red-50 p-3 rounded-xl border border-red-100 text-center">
-                      <div className="text-xl font-bold text-red-700">
+                    <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10 text-center">
+                      <div className="text-xl md:text-2xl font-black">
                         {studentHistory.filter(a => {
                           const thirtyDaysAgo = new Date();
                           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
                           return a.fecha >= thirtyDaysAgo.toISOString().split('T')[0] && a.estado === 'no_recibio';
                         }).length}
                       </div>
-                      <div className="text-[10px] uppercase text-red-600 font-bold">No Recibidos</div>
+                      <div className="text-[9px] uppercase font-black tracking-widest opacity-70">No Recibió</div>
                     </div>
-                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 text-center">
-                      <div className="text-xl font-bold text-gray-700">
+                    <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10 text-center">
+                      <div className="text-xl md:text-2xl font-black text-white/60">
                         {studentHistory.filter(a => {
                           const thirtyDaysAgo = new Date();
                           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
                           return a.fecha >= thirtyDaysAgo.toISOString().split('T')[0] && a.estado === 'ausente';
                         }).length}
                       </div>
-                      <div className="text-[10px] uppercase text-gray-600 font-bold">Ausentes</div>
+                      <div className="text-[9px] uppercase font-black tracking-widest opacity-70">Ausente</div>
                     </div>
                   </div>
+                </div>
 
+                <div className="p-6 md:p-8 overflow-y-auto space-y-8 bg-white custom-scrollbar-premium">
                   {/* Vista de Calendario (Mini Grid) */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-bold text-gray-900 flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-blue-500" />
-                        Asistencia
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center px-1">
+                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-cyan-600" />
+                        Mapa de Asistencia
                       </h4>
-                      <span className="text-xs text-gray-400">Clic para detalles</span>
+                      <span className="text-[9px] font-bold text-gray-300 uppercase tracking-wider">Últimas 5 semanas</span>
                     </div>
 
-                    {/* Headers */}
-                    <div className="grid grid-cols-7 gap-1 mb-1">
-                      {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => (
-                        <div key={d} className="text-center text-[10px] font-bold text-gray-400">{d}</div>
-                      ))}
+                    <div className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100/50 shadow-inner">
+                      {/* Headers */}
+                      <div className="grid grid-cols-7 gap-1.5 mb-2">
+                        {['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO'].map(d => (
+                          <div key={d} className="text-center text-[9px] font-black text-gray-300 tracking-tighter">{d}</div>
+                        ))}
+                      </div>
+
+                      <div className="grid grid-cols-7 gap-1.5">
+                        {Array.from({ length: 35 }).map((_, i) => {
+                          const d = (() => {
+                            const today = new Date();
+                            const currentDay = today.getDay();
+                            const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
+                            const startOfWeek = new Date(today);
+                            startOfWeek.setDate(today.getDate() - daysSinceMonday);
+                            const startDate = new Date(startOfWeek);
+                            startDate.setDate(startOfWeek.getDate() - 28);
+                            const date = new Date(startDate);
+                            date.setDate(startDate.getDate() + i);
+                            return date;
+                          })();
+                          const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                          const todayStr = new Date().toISOString().split('T')[0];
+                          const record = studentHistory.find(r => r.fecha === dateStr);
+                          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                          const hasNovelty = record?.novedad_tipo || record?.novedad_descripcion;
+                          const isFuture = dateStr > todayStr;
+
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => record && setSelectedStudentDate(record)}
+                              disabled={!record}
+                              className={`aspect-square rounded-xl flex flex-col items-center justify-center relative border transition-all duration-300 ${isFuture ? 'opacity-10 bg-gray-100 border-transparent cursor-default' :
+                                record ? (
+                                  record.estado === 'recibio' ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-100 active:scale-90' :
+                                    record.estado === 'no_recibio' ? 'bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-100 active:scale-90' :
+                                      'bg-gray-400 border-gray-300 text-white active:scale-90'
+                                ) : isWeekend ? 'bg-gray-100 border-transparent text-gray-300' : 'bg-white border-gray-100 text-gray-200'
+                                }`}
+                            >
+                              <span className="text-[10px] font-black">{d.getDate()}</span>
+                              {hasNovelty && (
+                                <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse shadow-sm shadow-amber-200"></div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-7 gap-1">
-                      {Array.from({ length: 35 }).map((_, i) => {
-                        const d = (() => {
-                          const today = new Date();
-                          const currentDay = today.getDay();
-                          const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
-                          const startOfWeek = new Date(today);
-                          startOfWeek.setDate(today.getDate() - daysSinceMonday);
-                          const startDate = new Date(startOfWeek);
-                          startDate.setDate(startOfWeek.getDate() - 28);
-                          const date = new Date(startDate);
-                          date.setDate(startDate.getDate() + i);
-                          return date;
-                        })();
-                        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                        const todayStr = new Date().toISOString().split('T')[0];
-                        const record = studentHistory.find(r => r.fecha === dateStr);
-                        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                        const hasNovelty = record?.novedad_tipo || record?.novedad_descripcion;
-                        const isFuture = dateStr > todayStr;
-
-                        return (
-                          <button
-                            key={i}
-                            onClick={() => record && setSelectedStudentDate(record)}
-                            disabled={!record}
-                            className={`aspect-square rounded-xl flex flex-col items-center justify-center relative border transition-all duration-200 ${isFuture ? 'opacity-25 bg-gray-50 border-transparent text-gray-300 cursor-default' :
-                              record ? (
-                                record.estado === 'recibio' ? 'bg-green-100 border-green-200 text-green-700 hover:scale-110 shadow-sm cursor-pointer' :
-                                  record.estado === 'no_recibio' ? 'bg-red-100 border-red-200 text-red-700 hover:scale-110 shadow-sm cursor-pointer' :
-                                    'bg-gray-100 border-gray-200 text-gray-700 hover:scale-110 shadow-sm cursor-pointer'
-                              ) : isWeekend ? 'bg-gray-50 border-transparent text-gray-300' : 'bg-white border-gray-100 text-gray-300'
-                              }`}
-                          >
-                            <span className="text-xs font-bold">{d.getDate()}</span>
-                            {hasNovelty && (
-                              <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="flex gap-4 text-[10px] justify-center pt-2">
-                      <div className="flex items-center gap-1"><div className="w-2 h-2 bg-green-500 rounded-full"></div> Recibió</div>
-                      <div className="flex items-center gap-1"><div className="w-2 h-2 bg-red-500 rounded-full"></div> No Recibió</div>
-                      <div className="flex items-center gap-1"><div className="w-2 h-2 bg-yellow-500 rounded-full"></div> Con Novedad</div>
+                    <div className="flex gap-4 text-[9px] font-black uppercase tracking-widest justify-center pt-2 opacity-60">
+                      <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-emerald-500 rounded-full shadow-sm"></div> Recibió</div>
+                      <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-rose-500 rounded-full shadow-sm"></div> Faltó</div>
+                      <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-amber-400 rounded-full shadow-sm"></div> Novedad</div>
                     </div>
                   </div>
 
                   {/* Novedades Recientes */}
-                  <div className="space-y-3">
-                    <h4 className="font-bold text-gray-900 border-b pb-2">Novedades y Observaciones</h4>
-                    <div className="space-y-2">
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-500" />
+                      Observación Directiva
+                    </h4>
+                    <div className="space-y-3">
                       {studentHistory.filter(a => a.novedad_tipo || a.novedad_descripcion).length > 0 ? (
-                        studentHistory.filter(a => a.novedad_tipo || a.novedad_descripcion).map((a, i) => (
-                          <div key={i} className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
-                            <div className="flex justify-between items-start mb-1">
-                              <span className="text-xs font-bold text-yellow-800 uppercase">{a.novedad_tipo || 'Observación'}</span>
-                              <span className="text-[10px] text-yellow-600">{a.fecha}</span>
+                        studentHistory.filter(a => a.novedad_tipo || a.novedad_descripcion).slice(0, 3).map((a, i) => (
+                          <div key={i} className="bg-amber-50/50 p-5 rounded-[2rem] border border-amber-100/50 shadow-sm relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                              <School className="w-12 h-12 text-amber-600" />
                             </div>
-                            <p className="text-sm text-yellow-900">{a.novedad_descripcion || 'Sin descripción detallada'}</p>
+                            <div className="flex justify-between items-start mb-2 relative">
+                              <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">{a.novedad_tipo || 'General'}</span>
+                              <span className="text-[9px] font-black text-amber-400 uppercase">{new Date(a.fecha + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>
+                            </div>
+                            <p className="text-sm text-amber-900 font-bold leading-relaxed relative italic">"{a.novedad_descripcion || 'Sin descripción detallada'}"</p>
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-gray-500 italic text-center py-4">No hay novedades registradas recientemente</p>
+                        <div className="bg-gray-50 p-8 rounded-[2rem] border border-dashed border-gray-200 text-center">
+                          <CheckCircle2 className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Sin novedades críticas</p>
+                        </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <h4 className="font-bold text-gray-900 border-b pb-2">Registros Recientes</h4>
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Línea de Tiempo Completa</h4>
                     <div className="space-y-2">
                       {studentHistory.length > 0 ? (
-                        studentHistory.slice(0, 10).map((h, i) => (
-                          <div key={i} className={`flex justify-between items-center p-3 border rounded-xl ${h.estado === 'recibio' ? 'border-green-100 bg-white' : h.estado === 'no_recibio' ? 'border-red-100 bg-white' : 'border-gray-100 bg-white'}`}>
-                            <div className="flex items-center gap-3">
-                              <div className={`w-2 h-2 rounded-full ${h.estado === 'recibio' ? 'bg-green-500' : h.estado === 'no_recibio' ? 'bg-red-500' : 'bg-gray-400'}`}></div>
-                              <span className="text-sm font-medium">{h.fecha}</span>
+                        studentHistory.map((h, i) => (
+                          <div key={i} className="flex justify-between items-center p-4 bg-gray-50/50 border border-gray-100/50 rounded-2xl hover:bg-white transition-colors duration-300">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-3 h-3 rounded-full shadow-sm hover:scale-125 transition-transform ${h.estado === 'recibio' ? 'bg-emerald-500 shadow-emerald-100' : h.estado === 'no_recibio' ? 'bg-rose-500 shadow-rose-100' : 'bg-gray-400'}`}></div>
+                              <div>
+                                <p className="text-sm font-black text-gray-700">{new Date(h.fecha + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })}</p>
+                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{h.estado === 'recibio' ? 'Operación Normal' : 'Ausencia / Novedad'}</p>
+                              </div>
                             </div>
-                            <span className={`text-[10px] font-bold uppercase ${h.estado === 'recibio' ? 'text-green-600' : h.estado === 'no_recibio' ? 'text-red-600' : 'text-gray-600'}`}>{h.estado.replace('_', ' ')}</span>
+                            <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg ${h.estado === 'recibio' ? 'bg-emerald-50 text-emerald-600' : h.estado === 'no_recibio' ? 'bg-rose-50 text-rose-600' : 'bg-gray-100 text-gray-500'}`}>{h.estado.replace('_', ' ')}</span>
                           </div>
                         ))
                       ) : (
-                        <div className="text-center py-8 text-gray-500 text-sm">No hay registros de asistencia</div>
+                        <div className="text-center py-8 text-gray-300 text-sm font-black uppercase tracking-widest">Esperando primer registro...</div>
                       )}
                     </div>
                   </div>
@@ -995,43 +1067,45 @@ export default function GestionPage() {
         {/* Modal Detalle Día Estudiante */}
         {
           selectedStudentDate && (
-            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
               <div
-                className="bg-white/90 backdrop-blur-xl rounded-3xl w-full max-w-sm shadow-2xl border border-white/50 overflow-hidden animate-in zoom-in-95 duration-300"
+                className="bg-white rounded-[2.5rem] w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 custom-scrollbar-premium"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="p-6 border-b border-gray-100 bg-white/50 flex justify-between items-center">
+                <div className="p-6 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center">
                   <div>
-                    <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">Detalle de Asistencia</p>
-                    <h3 className="text-xl font-black text-gray-900 capitalize">{new Date(selectedStudentDate.fecha + 'T00:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+                    <p className="text-[10px] font-black text-white/60 uppercase tracking-widest leading-none mb-1.5">Detalle del Registro</p>
+                    <h3 className="text-xl font-black capitalize leading-none tracking-tight">
+                      {new Date(selectedStudentDate.fecha + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </h3>
                   </div>
                   <button
                     onClick={() => setSelectedStudentDate(null)}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
                   >
-                    <X className="w-5 h-5 text-gray-500" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="p-6 space-y-6">
+                <div className="p-8 space-y-6 bg-white">
                   {/* Status Badge */}
-                  <div className={`p-4 rounded-2xl flex items-center gap-4 ${selectedStudentDate.estado === 'recibio' ? 'bg-green-50 border border-green-100' :
-                    selectedStudentDate.estado === 'no_recibio' ? 'bg-red-50 border border-red-100' :
-                      'bg-gray-50 border border-gray-100'
+                  <div className={`p-5 rounded-3xl flex items-center gap-4 shadow-xl shadow-cyan-900/5 ${selectedStudentDate.estado === 'recibio' ? 'bg-emerald-50/50 border border-emerald-100/50' :
+                    selectedStudentDate.estado === 'no_recibio' ? 'bg-rose-50/50 border border-rose-100/50' :
+                      'bg-gray-50/50 border border-gray-100/50'
                     }`}>
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm ${selectedStudentDate.estado === 'recibio' ? 'bg-green-100 text-green-600' :
-                      selectedStudentDate.estado === 'no_recibio' ? 'bg-red-100 text-red-600' :
-                        'bg-gray-200 text-gray-600'
+                    <div className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center shadow-lg ${selectedStudentDate.estado === 'recibio' ? 'bg-emerald-500 text-white shadow-emerald-200' :
+                      selectedStudentDate.estado === 'no_recibio' ? 'bg-rose-500 text-white shadow-rose-200' :
+                        'bg-gray-400 text-white shadow-gray-200'
                       }`}>
-                      {selectedStudentDate.estado === 'recibio' && <CheckCircle2 className="w-6 h-6" />}
-                      {selectedStudentDate.estado === 'no_recibio' && <X className="w-6 h-6" />}
-                      {selectedStudentDate.estado === 'ausente' && <AlertCircle className="w-6 h-6" />}
+                      {selectedStudentDate.estado === 'recibio' && <CheckCircle2 className="w-7 h-7" />}
+                      {selectedStudentDate.estado === 'no_recibio' && <X className="w-7 h-7" />}
+                      {selectedStudentDate.estado === 'ausente' && <AlertCircle className="w-7 h-7" />}
                     </div>
                     <div>
-                      <p className="text-xs font-bold uppercase opacity-60 mb-0.5">Estado</p>
-                      <p className={`text-lg font-black uppercase ${selectedStudentDate.estado === 'recibio' ? 'text-green-700' :
-                        selectedStudentDate.estado === 'no_recibio' ? 'text-red-700' :
-                          'text-gray-700'
+                      <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1 leading-none">Status</p>
+                      <p className={`text-xl font-black uppercase tracking-tight ${selectedStudentDate.estado === 'recibio' ? 'text-emerald-600' :
+                        selectedStudentDate.estado === 'no_recibio' ? 'text-rose-600' :
+                          'text-gray-600'
                         }`}>
                         {selectedStudentDate.estado.replace('_', ' ')}
                       </p>
@@ -1039,11 +1113,13 @@ export default function GestionPage() {
                   </div>
 
                   {/* Time Info */}
-                  <div className="flex items-center gap-3 p-3 bg-blue-50/50 rounded-xl">
-                    <Clock className="w-5 h-5 text-blue-500" />
+                  <div className="flex items-center gap-4 p-4 bg-cyan-50/50 rounded-2xl border border-cyan-100/30">
+                    <div className="bg-white p-2.5 rounded-xl shadow-sm">
+                      <Clock className="w-5 h-5 text-cyan-600" />
+                    </div>
                     <div>
-                      <p className="text-xs font-bold text-blue-600 uppercase">Hora de Registro</p>
-                      <p className="text-sm font-bold text-gray-700">
+                      <p className="text-[10px] font-black text-cyan-600 uppercase tracking-widest leading-none mb-1">Hora de Registro</p>
+                      <p className="text-sm font-black text-gray-700">
                         {new Date(selectedStudentDate.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -1051,115 +1127,154 @@ export default function GestionPage() {
 
                   {/* Novelties */}
                   {(selectedStudentDate.novedad_tipo || selectedStudentDate.novedad_descripcion) && (
-                    <div className="bg-yellow-50 p-4 rounded-2xl border border-yellow-100">
-                      <div className="flex items-center gap-2 mb-2">
-                        <AlertCircle className="w-4 h-4 text-yellow-600" />
-                        <p className="text-xs font-bold text-yellow-700 uppercase">Novedad / Observación</p>
+                    <div className="bg-amber-50/50 p-6 rounded-[2rem] border border-amber-100/50 relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Info className="w-10 h-10 text-amber-600" />
+                      </div>
+                      <div className="flex items-center gap-2 mb-3 relative">
+                        <AlertCircle className="w-4 h-4 text-amber-500" />
+                        <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Novedad Registrada</p>
                       </div>
                       {selectedStudentDate.novedad_tipo && (
-                        <p className="font-bold text-yellow-900 mb-1">{selectedStudentDate.novedad_tipo}</p>
+                        <p className="font-black text-amber-900 mb-2 relative leading-tight">{selectedStudentDate.novedad_tipo}</p>
                       )}
                       {selectedStudentDate.novedad_descripcion && (
-                        <p className="text-sm text-yellow-800 italic">"{selectedStudentDate.novedad_descripcion}"</p>
+                        <p className="text-sm text-amber-800 font-bold italic border-l-2 border-amber-200 pl-3 py-1 relative leading-relaxed">"{selectedStudentDate.novedad_descripcion}"</p>
                       )}
                     </div>
                   )}
+
+                  <button
+                    onClick={() => setSelectedStudentDate(null)}
+                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-xl shadow-gray-200"
+                  >
+                    Confirmar Lectura
+                  </button>
                 </div>
               </div>
             </div>
           )
         }
 
-        {/* Modal Docente */}
+        {/* Modal Docente Detalle (Activity) */}
         {
           selectedDocente && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-                <div className="p-6 border-b flex justify-between items-center">
-                  <h3 className="font-bold text-xl">{selectedDocente.nombre}</h3>
-                  <button onClick={() => setSelectedDocente(null)} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6" /></button>
-                </div>
-                <div className="p-6 overflow-y-auto space-y-6">
-                  {/* Vista de Calendario (Mini Grid Historial Docente) */}
-                  <div className="space-y-3">
-                    <h4 className="font-bold text-gray-900 border-b pb-2 flex justify-between items-center">
-                      Actividad de Registro (Últimos 35 días)
-                      <span className="text-xs font-normal text-gray-500">Días con registros</span>
-                    </h4>
-
-                    {/* Day Headers */}
-                    <div className="grid grid-cols-7 gap-1 mb-1">
-                      {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
-                        <div key={day} className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                          {day}
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300">
+              <div className="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="p-6 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                      {selectedDocente.avatar_url ? (
+                        <img src={selectedDocente.avatar_url} className="w-16 h-16 rounded-2xl border-2 border-white/30 shadow-xl object-cover" />
+                      ) : (
+                        <div className="bg-white/20 p-4 rounded-2xl border border-white/10 shadow-inner">
+                          <User className="w-8 h-8" />
                         </div>
-                      ))}
+                      )}
+                      <div>
+                        <h3 className="font-black text-xl md:text-2xl tracking-tight leading-none uppercase">{selectedDocente.nombre}</h3>
+                        <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] opacity-80 mt-1.5 text-cyan-50">Registro de Actividad Administrativa</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setSelectedDocente(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-6 md:p-8 overflow-y-auto space-y-8 bg-white custom-scrollbar-premium">
+                  {/* Vista de Calendario (Mini Grid Historial Docente) */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center px-1">
+                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-cyan-600" />
+                        Mapa de Productividad
+                      </h4>
+                      <span className="text-[9px] font-bold text-gray-300 uppercase tracking-wider">Últimos 35 días</span>
                     </div>
 
-                    <div className="grid grid-cols-7 gap-1">
-                      {Array.from({ length: 35 }).map((_, i) => {
-                        const d = (() => {
-                          const today = new Date();
-                          const currentDay = today.getDay();
-                          const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
-                          const startOfWeek = new Date(today);
-                          startOfWeek.setDate(today.getDate() - daysSinceMonday);
-                          const startDate = new Date(startOfWeek);
-                          startDate.setDate(startOfWeek.getDate() - 28);
-                          const date = new Date(startDate);
-                          date.setDate(startDate.getDate() + i);
-                          return date;
-                        })();
-                        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                        const todayStr = new Date().toISOString().split('T')[0];
-                        const record = docenteHistory.find(r => r.fecha === dateStr);
-                        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                        const isFuture = dateStr > todayStr;
+                    <div className="bg-gray-50/50 p-5 rounded-[2rem] border border-gray-100/50 shadow-inner">
+                      {/* Day Headers */}
+                      <div className="grid grid-cols-7 gap-1.5 mb-3">
+                        {['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO'].map(day => (
+                          <div key={day} className="text-center text-[9px] font-black text-gray-300 tracking-tighter">
+                            {day}
+                          </div>
+                        ))}
+                      </div>
 
-                        return (
-                          <button
-                            key={i}
-                            onClick={() => record && setSelectedDateActivity(record)}
-                            disabled={!record}
-                            title={dateStr + (record ? ` - ${record.total} registros` : '')}
-                            className={`aspect-square rounded-xl flex flex-col items-center justify-center border transition-all duration-200
-                          ${isFuture ? 'opacity-25 bg-gray-50 border-transparent text-gray-300 cursor-default' :
-                                record
-                                  ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 hover:scale-110 cursor-pointer'
-                                  : isWeekend
-                                    ? 'bg-gray-50 border-transparent text-gray-300'
-                                    : 'bg-white border-gray-100 text-gray-300'
-                              }  }
-                      `}
-                          >
-                            <span className={`text-xs md:text-sm font-bold ${record ? 'text-white' : ''}`}>
-                              {d.getDate()}
-                            </span>
-                            {record && (
-                              <span className="text-[10px] font-medium opacity-80 mt-1">
-                                {record.total}
+                      <div className="grid grid-cols-7 gap-1.5">
+                        {Array.from({ length: 35 }).map((_, i) => {
+                          const d = (() => {
+                            const today = new Date();
+                            const currentDay = today.getDay();
+                            const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
+                            const startOfWeek = new Date(today);
+                            startOfWeek.setDate(today.getDate() - daysSinceMonday);
+                            const startDate = new Date(startOfWeek);
+                            startDate.setDate(startOfWeek.getDate() - 28);
+                            const date = new Date(startDate);
+                            date.setDate(startDate.getDate() + i);
+                            return date;
+                          })();
+                          const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                          const todayStr = new Date().toISOString().split('T')[0];
+                          const record = docenteHistory.find(r => r.fecha === dateStr);
+                          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                          const isFuture = dateStr > todayStr;
+
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => record && setSelectedDateActivity(record)}
+                              disabled={!record}
+                              title={dateStr + (record ? ` - ${record.total} registros` : '')}
+                              className={`aspect-square rounded-xl flex flex-col items-center justify-center border transition-all duration-300
+                          ${isFuture ? 'opacity-10 bg-gray-100 border-transparent cursor-default' :
+                                  record
+                                    ? 'bg-cyan-600 border-cyan-500 text-white shadow-lg shadow-cyan-100 active:scale-95 cursor-pointer'
+                                    : isWeekend
+                                      ? 'bg-gray-100 border-transparent text-gray-300'
+                                      : 'bg-white border-gray-100 text-gray-200'
+                                }
+                            `}
+                            >
+                              <span className={`text-[10px] font-black ${record ? 'text-white' : ''}`}>
+                                {d.getDate()}
                               </span>
-                            )}
-                          </button>
-                        );
-                      })}
+                              {record && (
+                                <span className="text-[8px] font-black opacity-70 mt-0.5 leading-none">
+                                  {record.total}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <h4 className="font-bold text-gray-900 border-b pb-2">Historial Detallado</h4>
-                    <div className="space-y-4">
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Sesiones de Registro</h4>
+                    <div className="space-y-3">
                       {docenteHistory.map((h, i) => (
-                        <div key={i} className="p-4 border rounded-xl bg-white shadow-sm hover:border-blue-200 transition-colors">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-bold text-blue-600 flex items-center gap-2"><Calendar className="w-4 h-4" />{h.fecha}</span>
-                            <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-full uppercase tracking-wider">{h.grupos.length} Grupos</span>
+                        <div key={i} className="p-5 bg-gradient-to-br from-white to-gray-50/30 border border-gray-100 rounded-[2rem] shadow-sm hover:shadow-md hover:border-cyan-100 transition-all group">
+                          <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-cyan-50 p-2 rounded-xl group-hover:bg-cyan-100 transition-colors">
+                                <Calendar className="w-4 h-4 text-cyan-600" />
+                              </div>
+                              <span className="text-sm font-black text-gray-700 capitalize">{new Date(h.fecha + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })}</span>
+                            </div>
+                            <span className="text-[10px] font-black bg-white border border-gray-100 text-cyan-600 px-3 py-1 rounded-full uppercase tracking-widest">{h.grupos.length} {h.grupos.length === 1 ? 'Grupo' : 'Grupos'}</span>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {h.grupos.map((g: any, idx: number) => (
-                              <span key={idx} className="bg-green-50 text-green-700 text-[10px] font-bold px-2 py-1 rounded-md border border-green-100">
-                                {g.name} ({g.count})
-                              </span>
+                              <div key={idx} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-100 shadow-xs">
+                                <span className="text-[10px] font-black text-gray-900">{g.name}</span>
+                                <div className="w-px h-2 bg-gray-200"></div>
+                                <span className="text-[9px] font-bold text-cyan-500 uppercase">{g.count} REG</span>
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -1173,60 +1288,72 @@ export default function GestionPage() {
 
                 {/* Modal de Segundo Nivel: Detalle del Día Docente */}
                 {selectedDateActivity && (
-                  <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+                  <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
                     <div
-                      className="bg-white/90 backdrop-blur-xl rounded-3xl w-full max-w-md shadow-2xl border border-white/50 overflow-hidden animate-in zoom-in-95 duration-300"
+                      className="bg-white rounded-[2.5rem] w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 custom-scrollbar-premium"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="p-6 border-b border-gray-100 bg-white/50 flex justify-between items-center">
+                      <div className="p-6 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center">
                         <div>
-                          <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">Detalle del Día</p>
-                          <h3 className="text-xl font-black text-gray-900 capitalize">{new Date(selectedDateActivity.fecha).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
+                          <p className="text-[10px] font-black text-white/50 uppercase tracking-widest leading-none mb-1.5">Bitácora de Sesión</p>
+                          <h3 className="text-lg font-black capitalize leading-none tracking-tight">
+                            {new Date(selectedDateActivity.fecha + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                          </h3>
                         </div>
                         <button
                           onClick={() => setSelectedDateActivity(null)}
-                          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                          className="p-2 hover:bg-white/10 rounded-full transition-colors"
                         >
-                          <X className="w-5 h-5 text-gray-500" />
+                          <X className="w-5 h-5 text-white" />
                         </button>
                       </div>
 
-                      <div className="p-6 space-y-6">
-
+                      <div className="p-8 space-y-8 bg-white">
                         {/* Detailed Group List with Timestamps */}
                         <div>
-                          <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                            <Users className="w-4 h-4 text-gray-400" />
-                            Grupos Atendidos
+                          <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2 px-1">
+                            <Users className="w-4 h-4 text-cyan-500" />
+                            Grupos Atendidos en esta Fecha
                           </h4>
-                          <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                          <div className="space-y-3 max-h-72 overflow-y-auto pr-2 custom-scrollbar-premium">
                             {selectedDateActivity.grupos.map((g, idx) => (
-                              <div key={idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-xs">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600 text-xs text-transform uppercase">
+                              <div key={idx} className="flex items-center justify-between p-4 bg-gray-50/50 border border-gray-100 rounded-2xl group transition-all duration-300 hover:bg-white hover:border-cyan-100">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center font-black text-cyan-600 text-xs text-transform uppercase border border-cyan-50 group-hover:bg-cyan-600 group-hover:text-white transition-colors duration-300">
                                     {g.name.split('-')[0]}
                                   </div>
                                   <div className="flex flex-col">
-                                    <span className="font-bold text-gray-700 text-sm">Grupo {g.name.split('-')[1] || g.name}</span>
-                                    <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                      <Clock className="w-3 h-3" />
+                                    <span className="font-black text-gray-700 text-sm leading-none mb-1.5 uppercase tracking-tighter">Grupo {g.name.split('-')[1] || g.name}</span>
+                                    <span className="text-[10px] text-gray-400 font-bold flex items-center gap-1.5 uppercase">
+                                      <Clock className="w-3 h-3 text-cyan-400" />
                                       {new Date(g.timestamp).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                   </div>
                                 </div>
-                                <span className="bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-lg">
-                                  {g.count}
-                                </span>
+                                <div className="flex flex-col items-end">
+                                  <span className="text-sm font-black text-gray-900 leading-none mb-1">
+                                    {g.count}
+                                  </span>
+                                  <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">REG</span>
+                                </div>
                               </div>
                             ))}
                           </div>
                         </div>
 
-                        <div className="pt-4 border-t border-gray-100 text-center">
-                          <p className="text-sm text-gray-500">
-                            Total procesado: <b className="text-gray-900">{selectedDateActivity.total} registros</b>
-                          </p>
+                        <div className="pt-6 border-t border-gray-100 flex items-center justify-between px-2">
+                          <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Resumen Total</div>
+                          <div className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-lg font-black shadow-sm shadow-emerald-50">
+                            {selectedDateActivity.total}
+                          </div>
                         </div>
+
+                        <button
+                          onClick={() => setSelectedDateActivity(null)}
+                          className="w-full py-4 bg-cyan-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-xl shadow-cyan-100"
+                        >
+                          Cerrar Detalle
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1235,7 +1362,66 @@ export default function GestionPage() {
             </div>
           )
         }
-      </div >
-    </div >
+
+        {/* Modal Cambio de Rol (Security First) */}
+        {docenteParaRol && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 z-[300] animate-in fade-in duration-500">
+            <div className="bg-white rounded-[3rem] max-w-md w-full overflow-hidden shadow-[0_32px_64px_-15px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 flex flex-col">
+              <div className="p-8 bg-gradient-to-br from-rose-600 to-rose-700 text-white relative">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="bg-white/20 p-4 rounded-3xl backdrop-blur-md border border-white/10">
+                    <AlertCircle className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-2xl tracking-tight leading-none">Aviso de Seguridad</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80 mt-2 text-rose-100">Acción Administrativa Crítica</p>
+                  </div>
+                </div>
+                <p className="text-sm font-bold opacity-90 leading-relaxed italic">
+                  Estás a punto de modificar los privilegios de acceso para <span className="underline decoration-2 underline-offset-4">{docenteParaRol.nombre}</span>. Esta acción puede comprometer la integridad de la gestión del sistema.
+                </p>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-4 text-center">Selecciona el Nuevo Nivel de Acceso</label>
+                  <div className="grid grid-cols-1 gap-3">
+                    {[
+                      { id: 'admin', label: 'Administrador Total', desc: 'Control total de usuarios y reportes', icon: 'Shield', color: 'text-rose-600', bg: 'bg-rose-50' },
+                      { id: 'coordinador_pae', label: 'Coordinador PAE', desc: 'Gestión de horarios y registros', icon: 'Clock', color: 'text-cyan-600', bg: 'bg-cyan-50' },
+                      { id: 'docente', label: 'Docente / Monitor', desc: 'Solo lectura y registros básicos', icon: 'User', color: 'text-emerald-600', bg: 'bg-emerald-50' }
+                    ].map((role) => (
+                      <button
+                        key={role.id}
+                        onClick={() => handleConfirmUpdateRol(role.id)}
+                        disabled={modificandoRol}
+                        className={`flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 group ${docenteParaRol.rol === role.id ? 'bg-gray-900 border-gray-900 text-white' : 'bg-gray-50 border-gray-100 hover:border-cyan-200 hover:bg-white'}`}
+                      >
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${docenteParaRol.rol === role.id ? 'bg-white/20' : role.bg + ' ' + role.color}`}>
+                          {role.id === 'admin' ? <Shield className="w-5 h-5" /> : role.id === 'coordinador_pae' ? <Clock className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-black uppercase tracking-tight leading-none mb-1">{role.label}</p>
+                          <p className={`text-[9px] font-bold uppercase tracking-widest opacity-60 ${docenteParaRol.rol === role.id ? 'text-white' : ''}`}>{role.desc}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    onClick={() => setDocenteParaRol(null)}
+                    className="w-full py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all hover:bg-gray-200 active:scale-95"
+                  >
+                    Abortar Operación
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

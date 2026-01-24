@@ -53,6 +53,23 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
         return `${y}-${m}-${d}`;
     };
 
+    // Helper: Sort events by time
+    const timeToMinutes = (timeStr: string) => {
+        if (!timeStr) return 9999;
+        const clean = timeStr.toLowerCase().trim();
+        let modifier = clean.includes('pm') ? 'pm' : clean.includes('am') ? 'am' : clean.includes('m') ? 'pm' : '';
+        let timePart = clean.replace(/[apm\s]/g, '');
+        let [hours, minutes] = timePart.split(':').map(Number);
+
+        if (isNaN(hours)) return 9999;
+        if (isNaN(minutes)) minutes = 0;
+
+        if (modifier === 'pm' && hours < 12) hours += 12;
+        if (modifier === 'am' && hours === 12) hours = 0;
+
+        return hours * 60 + minutes;
+    };
+
     useEffect(() => {
         if (isOpen) {
             fetchWeeklySchedule();
@@ -76,9 +93,10 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                 .in('fecha', dates)
                 .order('hora', { ascending: true });
 
-            // Map data to ensure all 5 days are present
+            // Map data and sort by time
             const mapped = dates.map(dateStr => {
-                const dayEvents = eventData?.filter(e => e.fecha === dateStr) || [];
+                const dayEvents = (eventData?.filter(e => e.fecha === dateStr) || [])
+                    .sort((a, b) => timeToMinutes(a.hora) - timeToMinutes(b.hora));
                 return {
                     date: dateStr,
                     label: new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
