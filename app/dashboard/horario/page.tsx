@@ -39,13 +39,26 @@ export default function HorarioPage() {
     const [selectedSede, setSelectedSede] = useState('Principal');
 
     const [selectedDate, setSelectedDate] = useState<string>(() => {
-        const d = new Date();
+        const now = new Date();
+        const bogota = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+
+        const d = new Date(bogota);
         const day = d.getDay();
-        if (day === 5) d.setDate(d.getDate() + 3);
-        else if (day === 6) d.setDate(d.getDate() + 2);
-        else d.setDate(d.getDate() + 1);
-        const offset = d.getTimezoneOffset() * 60000;
-        return new Date(d.getTime() - offset).toISOString().split('T')[0];
+        const hour = d.getHours();
+
+        // Smart jump: Friday > 8pm or Fri/Sat/Sun -> +1 day or Monday
+        // The user previously wanted "tomorrow" for daily, but "next week" for weekly.
+        // For Horario Page (daily view focus):
+        if (day === 5 && hour >= 20) d.setDate(d.getDate() + 3); // Fri night -> Mon
+        else if (day === 5) d.setDate(d.getDate() + 1); // Fri day -> Sat (will be handled by day 6 logic anyway?)
+        else if (day === 6) d.setDate(d.getDate() + 2); // Sat -> Mon
+        else if (day === 0) d.setDate(d.getDate() + 1); // Sun -> Mon
+        else d.setDate(d.getDate() + 1); // Mon-Thu -> Tomorrow
+
+        const y = d.getFullYear();
+        const m = (d.getMonth() + 1).toString().padStart(2, '0');
+        const dayStr = d.getDate().toString().padStart(2, '0');
+        return `${y}-${m}-${dayStr}`;
     });
 
     const [availableGroups, setAvailableGroups] = useState<GlobalGroup[]>([]);

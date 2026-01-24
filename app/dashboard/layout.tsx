@@ -52,11 +52,30 @@ export default function DashboardLayout({
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [activeNotifTab, setActiveNotifTab] = useState<'daily' | 'weekly'>('daily');
     const [weekStart, setWeekStart] = useState<Date>(() => {
-        const d = new Date();
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        return new Date(d.setDate(diff));
+        const now = new Date();
+        const bogotaNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+
+        const day = bogotaNow.getDay();
+        const hour = bogotaNow.getHours();
+
+        const d = new Date(bogotaNow);
+        if ((day === 5 && hour >= 20) || day === 6 || day === 0) {
+            const daysToAdd = day === 5 ? 3 : (day === 6 ? 2 : 1);
+            d.setDate(d.getDate() + daysToAdd);
+        } else {
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            d.setDate(diff);
+        }
+        d.setHours(12, 0, 0, 0);
+        return d;
     });
+
+    const formatLocalDate = (date: Date) => {
+        const y = date.getFullYear();
+        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+        const d = date.getDate().toString().padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    };
     const [weeklyNotifData, setWeeklyNotifData] = useState<any[]>([]);
     const [isWeeklySearching, setIsWeeklySearching] = useState(false);
     const [selectedDayInWeek, setSelectedDayInWeek] = useState(0); // 0 = Mon, 4 = Fri
@@ -87,7 +106,7 @@ export default function DashboardLayout({
             for (let i = 0; i < 5; i++) {
                 const d = new Date(weekStart);
                 d.setDate(d.getDate() + i);
-                dates.push(d.toISOString().split('T')[0]);
+                dates.push(formatLocalDate(d));
             }
 
             // Fetch PAE schedules
