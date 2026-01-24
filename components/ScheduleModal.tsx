@@ -213,7 +213,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                                             </span>
                                                             {item.studentCount !== undefined && (
                                                                 <span className="text-[10px] font-black text-white bg-cyan-600/80 px-2 py-0.5 rounded-lg shadow-sm">
-                                                                    {item.studentCount} est
+                                                                    {item.studentCount} Estudiantes
                                                                 </span>
                                                             )}
                                                         </div>
