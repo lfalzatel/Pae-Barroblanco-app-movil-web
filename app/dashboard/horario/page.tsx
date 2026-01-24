@@ -175,11 +175,16 @@ export default function HorarioPage() {
                 setAbsentGroups(absent);
 
                 // Fetch Daily Inst Events
-                const { data: dailyEvents } = await supabase
+                let dailyQuery = supabase
                     .from('novedades_institucionales')
                     .select('*')
-                    .eq('fecha', selectedDate)
-                    .order('hora', { ascending: true });
+                    .eq('fecha', selectedDate);
+
+                if (selectedSede !== 'Todas') {
+                    dailyQuery = dailyQuery.eq('sede', selectedSede);
+                }
+
+                const { data: dailyEvents } = await dailyQuery.order('hora', { ascending: true });
                 setDailyInstEvents(dailyEvents || []);
 
                 // Fetch Previous Week for Conflict Detection
@@ -219,11 +224,16 @@ export default function HorarioPage() {
                 }
                 setWeekData(dates.map(date => ({ date })));
 
-                const { data: events } = await supabase
+                let weekQuery = supabase
                     .from('novedades_institucionales')
                     .select('*')
-                    .in('fecha', dates)
-                    .order('hora', { ascending: true });
+                    .in('fecha', dates);
+
+                if (selectedSede !== 'Todas') {
+                    weekQuery = weekQuery.eq('sede', selectedSede);
+                }
+
+                const { data: events } = await weekQuery.order('hora', { ascending: true });
                 setInstEvents(events || []);
             }
         } catch (e) {
@@ -309,7 +319,11 @@ export default function HorarioPage() {
     const handleSaveInstitutionalEvent = async () => {
         if (!eventForm.titulo) return;
         setSaving(true);
-        const data = { ...eventForm, fecha: eventDate };
+        const data = {
+            ...eventForm,
+            fecha: eventDate,
+            sede: selectedSede === 'Todas' ? 'Principal' : selectedSede
+        };
         const { error } = editingEvent ? await supabase.from('novedades_institucionales').update(data).eq('id', editingEvent.id) : await supabase.from('novedades_institucionales').insert([data]);
         if (!error) {
             setNotif({ type: 'success', msg: 'Evento actualizado' });
@@ -462,14 +476,16 @@ export default function HorarioPage() {
                             </div>
                         </div>
 
-                        <button
-                            onClick={handleSave}
-                            disabled={saving}
-                            className="bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white px-4 py-[7px] rounded-xl font-black text-[11px] flex items-center gap-2 shadow-lg shadow-cyan-200/50 transition-all active:scale-95 shrink-0"
-                        >
-                            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                            Guardar
-                        </button>
+                        {viewMode === 'day' && (
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white px-4 py-[7px] rounded-xl font-black text-[11px] flex items-center gap-2 shadow-lg shadow-cyan-200/50 transition-all active:scale-95 shrink-0"
+                            >
+                                {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                                Guardar
+                            </button>
+                        )}
                     </div>
 
                     <div className="flex justify-center -mt-1 relative group/calendar">
