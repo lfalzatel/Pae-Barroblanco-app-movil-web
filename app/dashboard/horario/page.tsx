@@ -70,7 +70,7 @@ export default function HorarioPage() {
     const [eventForm, setEventForm] = useState({
         titulo: '',
         hora: '',
-        participantes: '',
+        afectados: '',
         descripcion: '',
         prioridad: 'normal'
     });
@@ -266,7 +266,7 @@ export default function HorarioPage() {
 
     const handleAddEvent = (date?: string) => {
         setEditingEvent(null);
-        setEventForm({ titulo: '', hora: '', participantes: '', descripcion: '', prioridad: 'normal' });
+        setEventForm({ titulo: '', hora: '', afectados: '', descripcion: '', prioridad: 'normal' });
         setEventDate(date || selectedDate);
         setShowEventModal(true);
     };
@@ -274,7 +274,7 @@ export default function HorarioPage() {
     const handleEditEvent = (event: any) => {
         setEditingEvent(event);
         setEventDate(event.fecha);
-        setEventForm({ titulo: event.titulo, hora: event.hora || '', participantes: event.participantes || '', descripcion: event.descripcion || '', prioridad: event.prioridad || 'normal' });
+        setEventForm({ titulo: event.titulo, hora: event.hora || '', afectados: event.afectados || '', descripcion: event.descripcion || '', prioridad: event.prioridad || 'normal' });
         setShowEventModal(true);
     };
 
@@ -616,10 +616,10 @@ export default function HorarioPage() {
                                                             </div>
                                                         </div>
                                                         <h4 className="text-[11px] font-bold text-gray-900 leading-tight mb-1">{e.titulo}</h4>
-                                                        {e.participantes && (
+                                                        {e.afectados && (
                                                             <div className="flex items-center gap-1 mb-1">
                                                                 <Users className="w-2.5 h-2.5 text-gray-400" />
-                                                                <span className="text-[9px] text-gray-500 font-medium truncate">{e.participantes}</span>
+                                                                <span className="text-[9px] text-gray-500 font-medium truncate">{e.afectados}</span>
                                                             </div>
                                                         )}
                                                         <p className="text-[9px] text-gray-400 font-bold line-clamp-2">{e.descripcion}</p>
@@ -744,8 +744,8 @@ export default function HorarioPage() {
                                 <div className="relative">
                                     <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <input
-                                        value={eventForm.participantes}
-                                        onChange={e => setEventForm({ ...eventForm, participantes: e.target.value })}
+                                        value={eventForm.afectados}
+                                        onChange={e => setEventForm({ ...eventForm, afectados: e.target.value })}
                                         className="w-full pl-12 pr-4 py-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all"
                                         placeholder="Ej: Grados 6° y 7°"
                                     />
