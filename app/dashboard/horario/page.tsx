@@ -393,9 +393,9 @@ export default function HorarioPage() {
     const formatDateLabel = (date: string) => {
         const [y, m, d] = date.split('-').map(Number);
         const dateObj = new Date(y, m - 1, d);
-        const options: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' };
+        const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
         const str = dateObj.toLocaleDateString('es-CO', options);
-        return str.charAt(0).toUpperCase() + str.slice(1).replace('.', '')
+        return str.charAt(0).toUpperCase() + str.slice(1).replace(' de ', ' de ').replace(',', '')
     };
 
     return (
