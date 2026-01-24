@@ -749,11 +749,11 @@ export default function HorarioPage() {
 
                                     return (
                                         <div key={i} id={`day-card-${d.date}`} className="flex flex-col gap-3 scroll-mt-20">
-                                            <div className={`p-4 rounded-[3xl] text-center shadow-sm border transition-all ${isSelected ? 'bg-cyan-600 text-white border-cyan-500 shadow-cyan-100' : 'bg-white border-gray-100'}`}>
-                                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isSelected ? 'text-cyan-100' : 'text-cyan-600'}`}>
+                                            <div className={`py-2.5 px-4 rounded-full flex items-center justify-center gap-2 shadow-sm border transition-all ${isSelected ? 'bg-cyan-600 text-white border-cyan-500 shadow-cyan-100' : 'bg-white border-gray-100'}`}>
+                                                <span className={`text-[10px] font-black uppercase tracking-widest ${isSelected ? 'text-cyan-100' : 'text-cyan-600'}`}>
                                                     {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'][dateObj.getDay()]}
-                                                </p>
-                                                <p className="text-xl font-black">{dateObj.getDate()}</p>
+                                                </span>
+                                                <span className="text-base font-black tracking-tight">{dateObj.getDate()}</span>
                                             </div>
 
                                             <div className="space-y-2">
