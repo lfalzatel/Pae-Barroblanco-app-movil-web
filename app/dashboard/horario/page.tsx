@@ -316,8 +316,16 @@ export default function HorarioPage() {
                     70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(75, 85, 99, 0); }
                     100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(75, 85, 99, 0); }
                 }
+                @keyframes pulse-blue {
+                    0% { transform: scale(0.98); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+                    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+                    100% { transform: scale(0.98); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+                }
                 .pulse-dark-button {
                     animation: pulse-dark 2s infinite;
+                }
+                .pulse-blue-button {
+                    animation: pulse-blue 2s infinite;
                 }
             `}</style>
 
@@ -385,7 +393,7 @@ export default function HorarioPage() {
                     <div className="flex justify-center -mt-1 scale-95 lg:scale-100">
                         <button
                             onClick={() => setShowCalendar(true)}
-                            className="flex items-center gap-2 bg-white/50 hover:bg-white px-4 py-2 rounded-2xl border border-transparent hover:border-gray-100 transition-all group"
+                            className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-blue-100 transition-all group pulse-blue-button shadow-sm hover:shadow-md"
                         >
                             <div className="bg-blue-100 p-1.5 rounded-xl text-blue-600">
                                 <CalendarIcon className="w-4 h-4" />
@@ -698,19 +706,6 @@ export default function HorarioPage() {
                         </div>
 
                         <div className="p-8 space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Fecha de la Actividad</label>
-                                <div className="relative">
-                                    <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input
-                                        type="date"
-                                        value={eventDate}
-                                        onChange={e => setEventDate(e.target.value)}
-                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all"
-                                    />
-                                </div>
-                            </div>
-
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Título de la Actividad</label>
                                 <input
