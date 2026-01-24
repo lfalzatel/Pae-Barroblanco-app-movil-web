@@ -568,20 +568,24 @@ export default function DashboardLayout({
                             </div>
                         </div>
 
-                        {/* Tabs */}
-                        <div className="flex border-b border-gray-100">
-                            <button
-                                onClick={() => setActiveNotifTab('daily')}
-                                className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeNotifTab === 'daily' ? 'text-cyan-600 border-b-2 border-cyan-600 bg-cyan-50/50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
-                            >
-                                Mañana
-                            </button>
-                            <button
-                                onClick={() => setActiveNotifTab('weekly')}
-                                className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeNotifTab === 'weekly' ? 'text-cyan-600 border-b-2 border-cyan-600 bg-cyan-50/50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
-                            >
-                                Semana
-                            </button>
+                        {/* Tabs - Redesigned as Capsule Selector */}
+                        <div className="px-6 py-4 bg-white border-b border-gray-100">
+                            <div className="flex p-1 bg-gray-50 rounded-full border border-gray-100 shadow-inner relative">
+                                <button
+                                    onClick={() => setActiveNotifTab('daily')}
+                                    className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'daily' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+                                >
+                                    Mañana
+                                </button>
+                                <button
+                                    onClick={() => setActiveNotifTab('weekly')}
+                                    className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'weekly' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+                                >
+                                    Semana
+                                </button>
+                                {/* Active Indicator (Sliding Switch) */}
+                                <div className={`absolute inset-y-1 transition-all duration-300 ease-out bg-cyan-600 rounded-full shadow-lg shadow-cyan-200/50 ${activeNotifTab === 'daily' ? 'left-1 w-[48%]' : 'left-[51%] w-[48%]'}`} />
+                            </div>
                         </div>
 
                         <div className="p-6 max-h-[60vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
@@ -638,7 +642,7 @@ export default function DashboardLayout({
                                     </div>
                                 </>
                             ) : (
-                                <div className="px-6 mb-6">
+                                <div className="px-4 mb-6">
                                     <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden animate-in fade-in duration-500">
                                         {/* Week Selector - Dark Header Style */}
                                         <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 p-3 flex items-center justify-between">
