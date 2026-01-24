@@ -605,9 +605,9 @@ export default function DashboardLayout({
                                 {/* Date Selector Capsule */}
                                 <button
                                     onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-                                    className="flex-1 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-2xl py-2.5 px-3 flex items-center justify-center gap-2 font-bold transition-all text-[10px] uppercase tracking-widest shadow-sm group"
+                                    className="flex-1 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-2xl py-2.5 px-3 flex items-center justify-center gap-2 font-bold transition-all text-[10px] uppercase tracking-widest shadow-sm group w-1/2"
                                 >
-                                    <span className="truncate">{selectedDate ? new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) : 'Consultar Fecha'}</span>
+                                    <span className="truncate">{selectedDate ? new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) : 'Fecha'}</span>
                                     <ChevronDown className={`w-3.5 h-3.5 opacity-60 transition-transform ${isCalendarOpen ? 'rotate-180' : 'group-hover:translate-y-0.5'}`} />
                                 </button>
 
