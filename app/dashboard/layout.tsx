@@ -779,10 +779,10 @@ export default function DashboardLayout({
                                                                 </p>
                                                                 {instEvents.map((item, idx) => (
                                                                     <div key={`inst-${idx}`} className="bg-cyan-50/50 p-4 rounded-2xl border border-cyan-100 flex items-start gap-4 shadow-sm">
-                                                                        <div className="bg-cyan-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0">Agenda</div>
+                                                                        <div className="bg-cyan-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0 min-w-[3.5rem] text-center">{item.hora || 'Todo el día'}</div>
                                                                         <div className="flex-1 min-w-0">
                                                                             <p className="font-black text-sm text-cyan-900 mb-0.5">{item.titulo}</p>
-                                                                            <p className="text-[10px] font-bold text-cyan-600">{item.hora || 'Todo el día'} - {item.afectados}</p>
+                                                                            <p className="text-[10px] font-bold text-cyan-600">{item.afectados}</p>
                                                                             {item.descripcion && <p className="text-[10px] text-cyan-700/80 mt-1 leading-relaxed">{item.descripcion}</p>}
                                                                         </div>
                                                                     </div>
@@ -855,10 +855,10 @@ export default function DashboardLayout({
                                                         {/* Institutional */}
                                                         {inst.map((item: any, i: number) => (
                                                             <div key={`inst-w-${i}`} className="p-4 rounded-2xl border border-cyan-100 bg-cyan-50/50 flex items-start gap-4 shadow-sm">
-                                                                <div className="bg-cyan-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0">Agenda</div>
+                                                                <div className="bg-cyan-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0 min-w-[3.5rem] text-center">{item.hora || 'Todo el día'}</div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <p className="font-black text-sm text-cyan-900 mb-0.5">{item.titulo}</p>
-                                                                    <p className="text-[10px] font-bold text-cyan-600">{item.hora || 'Todo el día'} - {item.afectados}</p>
+                                                                    <p className="text-[10px] font-bold text-cyan-600">{item.afectados}</p>
                                                                     {item.descripcion && <p className="text-[10px] text-cyan-700/80 mt-1 leading-relaxed">{item.descripcion}</p>}
                                                                 </div>
                                                             </div>

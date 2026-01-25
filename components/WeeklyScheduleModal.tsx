@@ -205,10 +205,10 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                                         {currentDayData.instEvents?.length > 0 ? (
                                             currentDayData.instEvents.map((event: any, i: number) => (
                                                 <div key={i} className="bg-cyan-50/50 p-4 rounded-2xl border border-cyan-100 flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-                                                    <div className="bg-cyan-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0">Agenda</div>
+                                                    <div className="bg-cyan-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0 min-w-[3.5rem] text-center">{event.hora || 'Todo el día'}</div>
                                                     <div className="flex-1 min-w-0">
                                                         <p className="font-black text-sm text-cyan-900 mb-0.5">{event.titulo}</p>
-                                                        <p className="text-[10px] font-bold text-cyan-600">{event.hora || 'Todo el día'} - {event.afectados}</p>
+                                                        <p className="text-[10px] font-bold text-cyan-600">{event.afectados}</p>
                                                         {event.descripcion && <p className="text-[10px] text-cyan-700/80 mt-1 leading-relaxed">{event.descripcion}</p>}
                                                     </div>
                                                 </div>
