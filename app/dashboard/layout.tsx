@@ -756,12 +756,10 @@ export default function DashboardLayout({
                                                                     <Info className="w-4 h-4" /> Otras Novedades
                                                                 </p>
                                                                 <div className="flex text-[10px] font-bold text-gray-400 mb-2 px-2">
-                                                                    <span className="w-24 uppercase tracking-widest">Horario</span>
                                                                     <span className="uppercase tracking-widest">Grupos</span>
                                                                 </div>
                                                                 {filteredPAE.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').map((item, idx) => (
                                                                     <div key={`note-${idx}`} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4 shadow-sm">
-                                                                        <div className="bg-white border border-amber-200 text-amber-600 px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0 min-w-[3.5rem] text-center">{item.time?.split(' - ')[0] || item.time_start}</div>
                                                                         <div className="flex-1 min-w-0">
                                                                             <p className="font-black text-gray-900 text-sm">{item.group.replace('-2026', '')}</p>
                                                                             <p className="text-[10px] font-medium text-amber-600 italic mt-1">{item.notes}</p>
