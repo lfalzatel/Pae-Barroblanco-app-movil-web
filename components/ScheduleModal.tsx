@@ -143,7 +143,9 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                 <Calendar className="w-6 h-6" />
                             </div>
                             <div>
-                                <h3 className="font-black text-lg tracking-tight leading-none">Horario PAE de Mañana</h3>
+                                <h3 className="font-black text-lg tracking-tight leading-none">
+                                    Horario PAE del {date ? new Date(date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long' }).charAt(0).toUpperCase() + new Date(date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long' }).slice(1) : 'Mañana'}
+                                </h3>
                                 <p className="text-[9px] font-bold uppercase tracking-[0.15em] opacity-80 mt-1">Programa Diario PAE</p>
                             </div>
                         </div>
