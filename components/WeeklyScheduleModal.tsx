@@ -58,7 +58,7 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
         if (!timeStr) return 9999;
         const clean = timeStr.toLowerCase().trim();
         let modifier = clean.includes('pm') ? 'pm' : clean.includes('am') ? 'am' : clean.includes('m') ? 'pm' : '';
-        let timePart = clean.replace(/[apm\s]/g, '');
+        let timePart = clean.replace(/[apm\s\.]/g, '');
         let [hours, minutes] = timePart.split(':').map(Number);
 
         if (isNaN(hours)) return 9999;

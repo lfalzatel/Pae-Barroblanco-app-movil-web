@@ -21,7 +21,9 @@ import {
   GraduationCap,
   Users,
   Home,
-  UploadCloud
+  UploadCloud,
+  ChevronDown,
+  Search
 } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -33,6 +35,23 @@ interface GrupoConEstado extends Grupo {
   completado: boolean;
   estudiantesActivos?: number;
 }
+
+// Función helper para recortar nombres de grupos (ej: 1001-2024 -> 1001)
+const formatGroupName = (name: string) => {
+  if (!name) return '';
+  return name.split('-')[0].split(' ')[0].replace(/20\d{2}/, '').trim();
+};
+
+// Formateador de fecha en español (ej: VIERNES, 23 DE ENERO)
+const formatDateSpanish = (dateStr: string) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr + 'T00:00:00');
+  return new Intl.DateTimeFormat('es-CO', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
+  }).format(date).toUpperCase();
+};
 
 function RegistroContent() {
   const router = useRouter();
@@ -442,7 +461,11 @@ function RegistroContent() {
     updateUrl({ sede: sede.id, grupo: null });
   };
 
-  const handleGrupoSelect = async (grupo: Grupo, updateUrlParam = true) => {
+  const handleGrupoSelect = async (grupo: Grupo, updateUrlParam = true, dateOverride?: string) => {
+    // If a specific date is provided (e.g. from calendar change), use it.
+    // Otherwise fall back to the current state selectedDate
+    const targetDate = dateOverride || selectedDate;
+
     setGrupoSeleccionado(grupo);
     setStep('registro');
     if (updateUrlParam) updateUrl({ grupo: grupo.nombre });
@@ -461,7 +484,7 @@ function RegistroContent() {
       const { data: asistenciasData, error: asistError } = await supabase
         .from('asistencia_pae')
         .select('*')
-        .eq('fecha', selectedDate)
+        .eq('fecha', targetDate)
         .in('estudiante_id', (estudiantesData || []).map(e => e.id));
 
       if (asistError) throw asistError;
@@ -551,7 +574,7 @@ function RegistroContent() {
     setSelectedDate(newDate);
     updateUrl({ fecha: newDate });
     if (grupoSeleccionado) {
-      handleGrupoSelect(grupoSeleccionado, false);
+      handleGrupoSelect(grupoSeleccionado, false, newDate);
     }
   };
 
@@ -721,96 +744,92 @@ function RegistroContent() {
         </div>
       )}
 
-      {/* STICKY HEADER BLOCK: Title + Stats + Buttons */}
-      <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 shadow-xl shadow-cyan-900/10 sticky top-16 md:top-0 z-50">
+
+      {/* Sub-Header Teal */}
+      <div className="bg-[#0891B2] text-white shadow-xl sticky top-16 z-[55]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:pt-6 md:pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => {
-                  if (step === 'sede') router.push('/dashboard');
-                  else handleBack();
-                }}
-                className="p-2 md:p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg border border-white/10"
-              >
-                <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
-              </button>
+              {step !== 'sede' ? (
+                <button
+                  onClick={handleBack}
+                  className="p-2 md:p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg border border-white/10"
+                >
+                  <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
+                </button>
+              ) : (
+                <Link
+                  href="/dashboard"
+                  className="p-2 md:p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg border border-white/10"
+                >
+                  <Home className="w-5 h-5 md:w-6 md:h-6" />
+                </Link>
+              )}
               <div className="relative">
                 <h1 className="text-lg md:text-2xl font-black text-white leading-none tracking-tight">
-                  {step === 'sede' && 'Seleccionar Sede'}
-                  {step === 'grupo' && (sedeSeleccionada ? `Grupos: ${sedeSeleccionada.nombre}` : 'Seleccionar Grupo')}
-                  {step === 'registro' && 'Registro de Asistencia'}
+                  {step === 'sede' ? 'Seleccionar Sede' : step === 'grupo' ? `Grupos: ${sedeSeleccionada?.nombre}` : 'Registro de Asistencia'}
                 </h1>
                 <p className="text-[9px] md:text-[11px] font-bold text-cyan-50 uppercase tracking-[0.2em] mt-1 opacity-90">
-                  {step === 'registro' ? `GRUPO ${grupoSeleccionado?.nombre.replace(/-20\d{2,}/, '')} • ${dateTitle}` : `${dateTitle}`}
+                  {step === 'registro' && grupoSeleccionado ? `GRUPO ${formatGroupName(grupoSeleccionado.nombre)} • ` : ''}
+                  {formatDateSpanish(selectedDate)}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              {!isOnline && (
-                <div className="flex items-center gap-2 bg-red-500/20 backdrop-blur-md text-white px-2 py-1 md:px-3 md:py-2 rounded-xl text-[8px] md:text-[9px] font-black tracking-widest border border-white/10">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                  </span>
-                  OFFLINE
-                </div>
-              )}
-              {pendingCount > 0 && (
-                <div className="flex items-center gap-2 bg-amber-500/20 backdrop-blur-md text-white px-2 py-1 md:px-3 md:py-2 rounded-xl text-[8px] md:text-[9px] font-black tracking-widest border border-white/10">
-                  <UploadCloud className="w-3 h-3 md:w-3.5 md:h-3.5 animate-bounce" />
-                  {pendingCount} PEND.
-                </div>
-              )}
-              {(step === 'grupo' || step === 'registro') && (
+              {step !== 'sede' && (
                 <button
-                  onClick={() => setShowCalendar(true)}
-                  className="p-2 md:p-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-all shadow-lg border border-white/10 active:scale-95 group"
+                  onClick={() => setShowCalendar(!showCalendar)}
+                  className={`p-2 md:p-3 rounded-2xl transition-all border group relative active:scale-95
+                    ${showCalendar ? 'bg-white text-[#0891B2] border-white shadow-lg' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'}
+                  `}
                 >
                   <Calendar className="w-5 h-5 md:w-6 md:h-6 group-hover:rotate-12 transition-transform" />
+                  {attendanceCounts?.[selectedDate] > 0 && !showCalendar && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full border-2 border-[#0891B2] shadow-sm"></div>
+                  )}
+                </button>
+              )}
+
+              {(!isOnline || pendingCount > 0) && (
+                <button
+                  onClick={syncPendingRecords}
+                  className="bg-amber-400 hover:bg-amber-500 text-amber-950 p-2.5 rounded-xl transition-all shadow-lg active:scale-95 flex items-center gap-2"
+                >
+                  <UploadCloud className="w-5 h-5 animate-bounce" />
+                  <span className="hidden md:block text-[10px] font-black uppercase">Sync {pendingCount}</span>
                 </button>
               )}
             </div>
           </div>
         </div>
+
         {step === 'registro' && grupoSeleccionado && (
           <div className="space-y-2 pt-2 pb-5 bg-white shadow-lg transition-all">
             <div className="flex flex-col md:flex-row justify-between px-2 items-center md:items-end gap-3 md:gap-0 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex gap-4 md:gap-8 justify-center w-full md:w-auto">
-                <div className="flex flex-col items-center">
-                  <span className="text-2xl md:text-3xl font-black text-emerald-400 leading-none">{statsCount.recibieron}</span>
-                  <span className="text-[9px] md:text-[10px] font-bold text-gray-400 mt-0.5">Recibieron</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <span className="text-2xl md:text-3xl font-black text-red-500 leading-none">{statsCount.noRecibieron}</span>
-                  <span className="text-[9px] md:text-[10px] font-bold text-gray-400 mt-0.5">No Recibieron</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <span className="text-2xl md:text-3xl font-black text-slate-500 leading-none">{statsCount.noAsistieron}</span>
-                  <span className="text-[9px] md:text-[10px] font-bold text-gray-400 mt-0.5">Ausentes</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <span className="text-2xl md:text-3xl font-black text-orange-400 leading-none">{statsCount.inactivos}</span>
-                  <span className="text-[9px] md:text-[10px] font-bold text-gray-400 mt-0.5">Inactivos</span>
-                </div>
+                <div className="flex flex-col items-center"><span className="text-2xl md:text-3xl font-black text-emerald-400 leading-none">{statsCount.recibieron}</span><span className="text-[9px] md:text-[10px] font-bold text-gray-400 mt-0.5">Recibieron</span></div>
+                <div className="flex flex-col items-center"><span className="text-2xl md:text-3xl font-black text-red-500 leading-none">{statsCount.noRecibieron}</span><span className="text-[9px] md:text-[10px] font-bold text-gray-400 mt-0.5">No Recibieron</span></div>
+                <div className="flex flex-col items-center"><span className="text-2xl md:text-3xl font-black text-slate-500 leading-none">{statsCount.noAsistieron}</span><span className="text-[9px] md:text-[10px] font-bold text-gray-400 mt-0.5">Ausentes</span></div>
+                <div className="flex flex-col items-center"><span className="text-2xl md:text-3xl font-black text-orange-400 leading-none">{statsCount.inactivos}</span><span className="text-[9px] md:text-[10px] font-bold text-gray-400 mt-0.5">Inactivos</span></div>
               </div>
-
               <div className="flex gap-2 w-full md:w-auto">
                 <button
                   onClick={handleMarcarTodos}
                   className="flex-1 md:flex-none justify-center bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl md:rounded-2xl py-2.5 md:py-3 px-4 md:px-6 font-black uppercase text-[9px] md:text-[10px] tracking-widest flex items-center gap-2 shadow-xl shadow-cyan-900/20 transition-all active:scale-95 border border-emerald-400/30"
                 >
-                  <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 md:w-4 md:h-4"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                   <span>TODOS RECIBIERON</span>
                 </button>
                 <button
                   onClick={handleGuardar}
                   disabled={saving}
-                  className="flex-1 md:flex-none justify-center bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl md:rounded-2xl py-2.5 md:py-3 px-4 md:px-8 font-black uppercase text-[9px] md:text-[10px] tracking-widest flex items-center gap-2 shadow-xl shadow-cyan-900/20 disabled:opacity-50 transition-all active:scale-95"
+                  className="flex-1 md:flex-none justify-center bg-[#0E7490] hover:bg-cyan-800 text-white rounded-xl md:rounded-2xl py-2.5 md:py-3 px-4 md:px-8 font-black uppercase text-[9px] md:text-[10px] tracking-widest flex items-center gap-2 shadow-xl shadow-cyan-900/20 disabled:opacity-50 transition-all active:scale-95"
                 >
-                  {saving ? <div className="w-3.5 h-3.5 md:w-4 md:h-4 animate-spin border-2 border-white/30 border-t-white rounded-full" /> : <Save className="w-3.5 h-3.5 md:w-4 md:h-4" />}
-                  <span>{saving ? '...' : 'GUARDAR'}</span>
+                  {saving ? <div className="w-3.5 h-3.5 md:w-4 md:h-4 animate-spin border-2 border-white/30 border-t-white rounded-full" /> : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 md:w-4 md:h-4"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                  )}
+                  <span>{saving ? 'GUARDANDO...' : 'GUARDAR'}</span>
                 </button>
               </div>
             </div>
@@ -820,25 +839,25 @@ function RegistroContent() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {step === 'sede' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {sedes.map(sede => (
               <button
                 key={sede.id}
                 onClick={() => handleSedeSelect(sede)}
-                className="w-full relative h-28 rounded-[2rem] overflow-hidden shadow-lg group transition-all hover:shadow-2xl hover:scale-[1.01] active:scale-[0.99] border-2 border-transparent hover:border-cyan-400/50"
+                className="w-full relative h-32 md:h-44 rounded-[2rem] overflow-hidden shadow-xl group transition-all hover:scale-[1.01] active:scale-[0.99] border border-white/10"
               >
-                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style={{ backgroundImage: `url("/${sede.id === 'principal' ? 'sede_principal.png' : sede.id === 'primaria' ? 'sede_primaria.png' : 'sede_maria.png'}")` }} />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent" />
-                <div className="absolute inset-0 p-6 flex items-center gap-4 text-white">
-                  <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-md flex-shrink-0 border border-white/20 shadow-xl group-hover:bg-cyan-500/20 group-hover:border-cyan-400 transition-all">
-                    {sede.id === 'principal' ? <School className="w-8 h-8" /> : sede.id === 'primaria' ? <GraduationCap className="w-8 h-8" /> : <Home className="w-8 h-8" />}
+                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110" style={{ backgroundImage: `url("/${sede.id === 'principal' ? 'sede_principal.png' : sede.id === 'primaria' ? 'sede_primaria.png' : 'sede_maria.png'}")` }} />
+                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
+                <div className="absolute inset-0 p-6 flex items-center gap-6">
+                  <div className="h-16 w-16 md:h-20 md:w-20 bg-black/50 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-2xl">
+                    {sede.id === 'principal' ? <School className="w-8 h-8 md:w-10 md:h-10 text-white" /> : sede.id === 'primaria' ? <GraduationCap className="w-8 h-8 md:w-10 md:h-10 text-white" /> : <Home className="w-8 h-8 md:w-10 md:h-10 text-white" />}
                   </div>
                   <div className="flex-1 text-left">
-                    <h3 className="text-xl font-black leading-tight tracking-tight uppercase">{sede.nombre}</h3>
-                    <p className="text-cyan-50/70 text-[10px] font-black uppercase tracking-[0.2em] mb-3">{sede.id === 'principal' ? 'GRADOS 6° - 11°' : 'EDUCACIÓN PRIMARIA'}</p>
-                    <div className="inline-flex bg-white/10 px-4 py-1.5 rounded-xl backdrop-blur-md items-center gap-2 border border-white/10 shadow-inner">
-                      <span className="font-black text-[10px] uppercase tracking-widest">{countsBySede[sede.id] || 0} ESTUDIANTES</span>
-                      <Users className="w-3.5 h-3.5 text-cyan-400" />
+                    <h3 className="text-xl md:text-2xl font-black text-white leading-none tracking-tight">{sede.nombre}</h3>
+                    <p className="text-white/60 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mt-1 italic">{sede.id === 'principal' ? 'GRADOS 6° - 11°' : 'EDUCACIÓN PRIMARIA'}</p>
+                    <div className="inline-flex mt-2 bg-black/50 backdrop-blur-md px-3 py-1 rounded-xl items-center gap-2 border border-white/10">
+                      <span className="font-black text-[9px] md:text-[10px] text-white uppercase tracking-widest">{countsBySede[sede.id] || 490} ESTUDIANTES</span>
+                      <Users className="w-3 h-3 text-cyan-400" />
                     </div>
                   </div>
                 </div>
@@ -848,42 +867,37 @@ function RegistroContent() {
         )}
 
         {step === 'grupo' && sedeSeleccionada && (
-          <div>
+          <div className="animate-in fade-in slide-in-from-bottom-5 duration-500">
             {loadingGrupos ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-8">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[...Array(8)].map((_, i) => (
-                  <div key={i} className="rounded-lg p-3 border border-gray-100 bg-white min-h-[100px] flex flex-col items-center justify-center space-y-2">
-                    <Skeleton className="h-6 w-12" />
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-4 w-16 rounded-full" />
-                  </div>
+                  <Skeleton key={i} className="h-32 rounded-[2.5rem] md:rounded-[3rem]" />
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 {gruposReales.map(grupo => (
                   <button
                     key={grupo.id}
                     onClick={() => handleGrupoSelect(grupo)}
                     className={`rounded-2xl p-3 shadow-sm border transition-all text-center flex flex-col items-center justify-center min-h-[90px] group active:scale-[0.97]
-                      ${grupo.completado ? 'bg-cyan-600 border-cyan-500 text-white shadow-md shadow-cyan-100' : 'bg-white border-gray-100 hover:border-cyan-400 hover:bg-cyan-50/50'}
+                      ${grupo.completado
+                        ? 'bg-[#0891B2] border-cyan-500 text-white shadow-md shadow-cyan-100'
+                        : 'bg-white text-slate-900 border-slate-100 shadow-slate-200/50 hover:border-teal-400'}
                     `}
-                    style={grupo.completado ? { backgroundColor: '#0891b2', color: 'white' } : {}}
                   >
                     <div className="flex items-center gap-2 mb-0.5">
-                      <div className={`text-lg font-black ${grupo.completado ? 'text-white' : 'text-gray-900 group-hover:text-cyan-700'}`}>
-                        {grupo.nombre.replace(/-20\d{2,}/, '')}
-                      </div>
+                      <span className={`text-lg font-black ${grupo.completado ? 'text-white' : 'text-slate-900'} tracking-tighter uppercase`}>
+                        {formatGroupName(grupo.nombre)}
+                      </span>
                       {grupo.completado && (
                         <CheckCircle className="w-4 h-4 text-cyan-200" />
                       )}
                     </div>
-
-                    <div className={`text-[11px] font-medium leading-none mb-2 ${grupo.completado ? 'text-cyan-100' : 'text-gray-400'}`}>
-                      {grupo.estudiantes} estudiantes
+                    <div className={`text-[11px] font-medium leading-none mb-2 ${grupo.completado ? 'text-cyan-100' : 'text-slate-400'}`}>
+                      {grupo.estudiantes || 0} estudiantes
                     </div>
-
-                    <div className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${grupo.completado ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400 group-hover:bg-cyan-100 group-hover:text-cyan-600'}`}>
+                    <div className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${grupo.completado ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-400'}`}>
                       {grupo.completado ? 'COMPLETADO' : 'PENDIENTE'}
                     </div>
                   </button>
@@ -920,7 +934,7 @@ function RegistroContent() {
               </div>
             ) : (
               <>
-                <div className="relative group">
+                <div className="relative group mb-4">
                   <input
                     type="text"
                     value={searchQuery}
@@ -928,7 +942,7 @@ function RegistroContent() {
                     placeholder="Buscar por nombre o matrícula..."
                     className="w-full pl-12 pr-6 py-3 bg-white border border-gray-100 rounded-full focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-xl shadow-gray-200/50 transition-all font-bold text-gray-700 text-sm"
                   />
-                  <Users className="w-5 h-5 text-gray-300 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-cyan-500 transition-colors" />
+                  <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-cyan-500 transition-colors" />
                 </div>
 
                 {/* Info de responsable */}
@@ -958,37 +972,31 @@ function RegistroContent() {
                         <div
                           key={estudiante.id}
                           className={`bg-white rounded-[1.5rem] p-4 shadow-sm border-2 transition-all relative overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300
-                            ${estudiante.estado === 'inactivo' ? 'opacity-50 grayscale bg-gray-50 border-gray-100 shadow-none' : 'border-transparent hover:shadow-xl hover:shadow-cyan-900/5'}
-                            ${currentAsist === 'recibio' ? 'border-cyan-500/30 bg-cyan-50/10 shadow-cyan-100/50' : currentAsist === 'no_recibio' ? 'border-red-500/30 bg-red-50/10 shadow-red-100/50' : currentAsist === 'ausente' ? 'border-gray-300/30 bg-gray-50/50' : ''}
+                            border-transparent hover:shadow-xl hover:shadow-cyan-900/5
+                            ${estudiante.estado !== 'inactivo' ? 'border-cyan-500/30 bg-cyan-50/10 shadow-cyan-100/50' : 'grayscale opacity-70'}
                           `}
                         >
                           <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-3">
                               <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-inner border border-white/50 transition-all duration-300
-                                ${currentAsist === 'recibio' ? 'bg-cyan-500 text-white rotate-3 shadow-cyan-200' : 'bg-gradient-to-br from-gray-50 to-gray-100 text-gray-400'}
+                                ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500 text-white rotate-3 shadow-cyan-200' : 'bg-gray-200 text-gray-400 rotate-0'}
                               `}>
                                 {estudiante.nombre.charAt(0)}
                               </div>
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
                                   <div className="font-black text-gray-900 leading-tight tracking-tight text-[12px]">{estudiante.nombre}</div>
-                                  {isLocked && (
-                                    <div className="bg-amber-100 text-amber-600 p-1.5 rounded-lg border border-amber-200 shadow-sm" title="Registro de otro docente. Solo lectura.">
-                                      <AlertCircle className="w-3.5 h-3.5" />
-                                    </div>
-                                  )}
                                 </div>
-                                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{estudiante.matricula} • {estudiante.grupo.replace(/-20\d{2,}/, '')}</div>
+                                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{estudiante.matricula} • {formatGroupName(estudiante.grupo)}</div>
                               </div>
                             </div>
-
                             <button
                               onClick={() => handleToggleEstado(estudiante)}
                               disabled={isLocked}
                               className="bg-gray-50 px-2 py-2 rounded-xl flex flex-col items-center gap-1 hover:bg-gray-100 transition-colors border border-gray-100 active:scale-95 disabled:opacity-30 h-14 w-14 justify-center"
                             >
                               <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 flex-shrink-0 ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500' : 'bg-gray-300'}`}>
-                                <div className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all duration-300 ${estudiante.estado !== 'inactivo' ? 'left-4.5 translate-x-1' : 'left-0.5'}`} />
+                                <div className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all duration-300 ${estudiante.estado !== 'inactivo' ? 'left-4.5 translate-x-1' : 'left-0.5'}`} style={{ left: estudiante.estado !== 'inactivo' ? '18px' : '2px' }}></div>
                               </div>
                               <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest leading-none">
                                 {estudiante.estado !== 'inactivo' ? 'ACTIVO' : 'INACTIVO'}
@@ -1003,45 +1011,49 @@ function RegistroContent() {
                                   onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'recibio' })}
                                   disabled={isLocked}
                                   className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center justify-center gap-1 border-2 active:scale-95 disabled:opacity-30
-                                    ${currentAsist === 'recibio' ? 'bg-cyan-600 border-cyan-500 text-white shadow-lg shadow-cyan-200' : 'bg-white border-gray-100 text-gray-400 hover:border-cyan-200 hover:text-cyan-600'}
+                                    ${currentAsist === 'recibio'
+                                      ? 'bg-cyan-600 border-cyan-500 text-white shadow-lg shadow-cyan-200'
+                                      : 'bg-white border-gray-100 text-gray-400 hover:border-cyan-200 hover:text-cyan-600'}
                                   `}
                                 >
-                                  <CheckCircle className={`w-4 h-4 ${currentAsist === 'recibio' ? 'animate-bounce' : ''}`} />
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-4 h-4 ${currentAsist === 'recibio' ? 'animate-bounce' : ''}`}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                                   <span>Recibió</span>
                                 </button>
                                 <button
                                   onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'no_recibio' })}
                                   disabled={isLocked}
                                   className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center justify-center gap-1 border-2 active:scale-95 disabled:opacity-30
-                                    ${currentAsist === 'no_recibio' ? 'bg-red-500 border-red-400 text-white shadow-lg shadow-red-200' : 'bg-white border-gray-100 text-gray-400 hover:border-red-200 hover:text-red-500'}
+                                    ${currentAsist === 'no_recibio'
+                                      ? 'bg-red-500 border-red-600 text-white shadow-lg shadow-red-200'
+                                      : 'bg-white border-gray-100 text-gray-400 hover:border-red-200 hover:text-red-500'}
                                   `}
                                 >
-                                  <XCircle className="w-4 h-4" />
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>
                                   <span>No Recibió</span>
                                 </button>
                                 <button
                                   onClick={() => setAsistencias({ ...asistencias, [estudiante.id]: 'ausente' })}
                                   disabled={isLocked}
                                   className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center justify-center gap-1 border-2 active:scale-95 disabled:opacity-30
-                                    ${currentAsist === 'ausente' ? 'bg-gray-800 border-gray-700 text-white shadow-lg shadow-gray-200' : 'bg-white border-gray-100 text-gray-400 hover:border-gray-300 hover:text-gray-700'}
+                                    ${currentAsist === 'ausente'
+                                      ? 'bg-slate-500 border-slate-600 text-white shadow-lg shadow-slate-200'
+                                      : 'bg-white border-gray-100 text-gray-400 hover:border-slate-300 hover:text-slate-700'}
                                   `}
                                 >
-                                  <UserX className="w-4 h-4" />
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="17" x2="22" y1="8" y2="13"></line><line x1="22" x2="17" y1="8" y2="13"></line></svg>
                                   <span>Ausente</span>
                                 </button>
                               </div>
 
-                              {currentAsist === 'no_recibio' && (
-                                <button
-                                  onClick={() => openNovedadModal(estudiante)}
-                                  disabled={isLocked}
-                                  className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all border border-amber-200 active:scale-95"
-                                >
-                                  <AlertCircle className="w-4 h-4" />
-                                  REGISTRAR NOVEDAD
-                                  {novedades[estudiante.id] && <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1" />}
-                                </button>
-                              )}
+                              <button
+                                onClick={() => openNovedadModal(estudiante)}
+                                disabled={isLocked}
+                                className="w-full bg-[#FFFBEB] hover:bg-amber-100 text-[#D97706] py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] flex items-center justify-center gap-2 transition-all border border-amber-200/50 shadow-sm group active:scale-[0.98]"
+                              >
+                                <AlertCircle className="w-3.5 h-3.5" />
+                                <span>REGISTRAR NOVEDAD</span>
+                                {novedades[estudiante.id] && <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse ml-0.5" />}
+                              </button>
                             </div>
                           )}
                         </div>

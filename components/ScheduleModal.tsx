@@ -76,6 +76,23 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                     if (s.sede) sedeMap[s.grupo] = s.sede;
                 });
 
+                // Helper: Sort events by time
+                const timeToMinutes = (timeStr: string) => {
+                    if (!timeStr) return 9999;
+                    const clean = timeStr.toLowerCase().trim();
+                    let modifier = clean.includes('pm') ? 'pm' : clean.includes('am') ? 'am' : clean.includes('m') ? 'pm' : '';
+                    let timePart = clean.replace(/[apm\s\.]/g, ''); // Handled dots too
+                    let [hours, minutes] = timePart.split(':').map(Number);
+
+                    if (isNaN(hours)) return 9999;
+                    if (isNaN(minutes)) minutes = 0;
+
+                    if (modifier === 'pm' && hours < 12) hours += 12;
+                    if (modifier === 'am' && hours === 12) hours = 0;
+
+                    return hours * 60 + minutes;
+                };
+
                 // 3. Map everything together and sort by time
                 const sortedItems = rawItems.map((i: any) => ({
                     time: i.time || i.time_start,
@@ -83,7 +100,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                     notes: i.notes,
                     studentCount: countsMap[i.group] || 0,
                     sede: sedeMap[i.group] || 'Principal'
-                })).sort((a: any, b: any) => a.time.localeCompare(b.time));
+                })).sort((a: any, b: any) => timeToMinutes(a.time) - timeToMinutes(b.time));
 
                 setSchedule(sortedItems);
             } else {

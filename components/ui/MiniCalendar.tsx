@@ -32,8 +32,10 @@ export function MiniCalendar({
 }: MiniCalendarProps) {
     const [currentDate, setCurrentDate] = useState(() => {
         if (!selectedDate) return new Date();
-        const d = new Date(selectedDate);
-        return isNaN(d.getTime()) ? new Date() : d;
+        const [y, m, d] = selectedDate.split('-').map(Number);
+        // Create date in local time (months are 0-indexed)
+        const date = new Date(y, m - 1, d);
+        return isNaN(date.getTime()) ? new Date() : date;
     });
     const [internalDates, setInternalDates] = useState<string[]>([]);
     const [loading, setLoading] = useState(mode === 'schedules');

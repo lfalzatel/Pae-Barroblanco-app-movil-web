@@ -118,26 +118,37 @@ export default function ReportesPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const today = new Date();
-        const offset = today.getTimezoneOffset() * 60000;
-        let startDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        let startDate = new Date(now.getTime() - offset).toISOString().split('T')[0];
+        let endDate = startDate;
         let isSpecificDate = false;
 
         // Calcular rango de fechas
         if (periodo === 'semana') {
-          const firstDay = new Date(today.setDate(today.getDate() - today.getDay() + 1)); // Lunes
-          startDate = new Date(firstDay.getTime() - firstDay.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+          const d = new Date(now.getTime() - offset);
+          const day = d.getDay();
+          const first = d.getDate() - (day === 0 ? 6 : day - 1);
+          const firstDay = new Date(d.setDate(first));
+          startDate = new Date(firstDay.getTime()).toISOString().split('T')[0];
+
+          const lastDay = new Date(firstDay.getTime());
+          lastDay.setDate(firstDay.getDate() + 6);
+          endDate = new Date(lastDay.getTime()).toISOString().split('T')[0];
         } else if (periodo === 'mes') {
-          const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+          const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
           startDate = new Date(firstDay.getTime() - firstDay.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+
+          const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          endDate = new Date(lastDay.getTime() - lastDay.getTimezoneOffset() * 60000).toISOString().split('T')[0];
         } else if (periodo === 'fecha') {
           startDate = selectedDate;
+          endDate = selectedDate;
           isSpecificDate = true;
         } else {
           // Hoy
-          const now = new Date();
-          const offset = now.getTimezoneOffset() * 60000;
           startDate = new Date(now.getTime() - offset).toISOString().split('T')[0];
+          endDate = startDate;
           isSpecificDate = true;
         }
 
@@ -425,13 +436,20 @@ export default function ReportesPage() {
         let ausentes = 0;
         const registeredDaysSet = new Set<string>();
 
-        if (studentIds.length > 0) {
-          const { data: attendanceData } = await supabase
+        if (students.length > 0) {
+          // FIX: Use join filtering instead of large .in() to avoid URL length error 400
+          let query = supabase
             .from('asistencia_pae')
-            .select('estado, fecha')
-            .in('estudiante_id', studentIds)
+            .select('estado, fecha, estudiantes!inner(sede)')
+            .eq('estudiantes.sede', sede)
             .gte('fecha', startDate)
             .lte('fecha', endDate);
+
+          if (grupoFilter !== 'todos') {
+            query = query.eq('estudiantes.grupo', grupoFilter);
+          }
+
+          const { data: attendanceData } = await query;
 
           (attendanceData || []).forEach(a => {
             if (a.estado === 'recibio') recibieron++;
@@ -461,10 +479,12 @@ export default function ReportesPage() {
         const [grupo, sede] = grupoKey.split('-');
         const studentIds = students.map(s => s.id);
 
+        // FIX: Use join filtering instead of .in() to avoid 400 Bad Request
         const { data: attendanceData } = await supabase
           .from('asistencia_pae')
-          .select('estado, fecha')
-          .in('estudiante_id', studentIds)
+          .select('estado, fecha, estudiantes!inner(grupo, sede)')
+          .eq('estudiantes.grupo', grupo)
+          .eq('estudiantes.sede', sede)
           .gte('fecha', startDate)
           .lte('fecha', endDate);
 
@@ -1030,76 +1050,82 @@ export default function ReportesPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      {/* Header Premium (Synced with Gestion) */}
+      <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 shadow-xl shadow-cyan-900/10 sticky top-16 md:top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:pt-6 md:pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="p-2 hover:bg-gray-100 rounded-lg">
-                <ArrowLeft className="w-6 h-6" />
+              <Link
+                href="/dashboard"
+                className="p-2 md:p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg border border-white/10"
+              >
+                <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
               </Link>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Reportes</h1>
-                <p className="text-[10px] text-gray-400 font-mono">ESTABLE v1.1</p>
-                <p className="text-sm text-gray-600">
-                  {periodo === 'fecha'
-                    ? `Datos del ${selectedDate}`
-                    : periodo === 'hoy' ? 'Datos de Hoy' : periodo === 'semana' ? 'Esta Semana' : 'Este Mes'
-                  }
-                </p>
+              <div className="relative">
+                <h1 className="text-lg md:text-2xl font-black text-white leading-none tracking-tight">Reportes del Sistema</h1>
+                <div className="flex items-center gap-2 mt-1 opacity-90">
+                  <p className="text-[9px] md:text-[11px] font-bold text-cyan-50 uppercase tracking-[0.2em]">
+                    {periodo === 'fecha'
+                      ? `Datos del ${selectedDate}`
+                      : periodo === 'hoy' ? 'Datos de Hoy' : periodo === 'semana' ? 'Esta Semana' : 'Este Mes'
+                    }
+                  </p>
+                  <span className="w-1 h-1 rounded-full bg-cyan-200/50"></span>
+                  <p className="text-[9px] md:text-[10px] font-black text-cyan-100/60 uppercase tracking-widest">ESTABLE v1.2</p>
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-2">
-              {/* Export Dropdown */}
-              <div className="relative">
+            <div className="flex items-center gap-2">
+              {/* Export Button Premium */}
+              <div className="relative group">
                 <button
                   onClick={() => setShowExportMenu(!showExportMenu)}
-                  className="p-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors relative"
+                  className="p-2 md:p-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-all shadow-lg border border-white/10 active:scale-95 flex items-center gap-2"
                 >
-                  <FileDown className="w-6 h-6 text-green-600" />
+                  <FileDown className="w-5 h-5 md:w-6 md:h-6" />
+                  <span className="hidden md:block text-[10px] font-black tracking-widest uppercase">Exportar</span>
                 </button>
 
                 {showExportMenu && (
                   <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setShowExportMenu(false)}
-                    />
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-50 py-1">
+                    <div className="fixed inset-0 z-[60]" onClick={() => setShowExportMenu(false)} />
+                    <div className="absolute right-0 mt-3 w-56 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-cyan-100 z-[70] py-3 p-2 animate-in fade-in zoom-in-95 duration-200">
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest px-4 mb-2">Formato de salida</p>
                       <button
                         onClick={handleExportExcel}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
+                        className="w-full text-left px-4 py-3 hover:bg-cyan-50 rounded-2xl flex items-center gap-3 transition-colors group/item"
                       >
-                        <span className="text-green-600 font-bold">XLS</span> Descargar Excel
+                        <div className="bg-emerald-100 p-2 rounded-xl group-hover/item:bg-emerald-500 group-hover/item:text-white transition-colors">
+                          <span className="font-black text-[10px]">XLS</span>
+                        </div>
+                        <span className="text-sm font-bold text-gray-700">Descargar Excel</span>
                       </button>
                       <button
                         onClick={handleExportPDF}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 border-t border-gray-100"
+                        className="w-full text-left px-4 py-3 hover:bg-cyan-50 rounded-2xl flex items-center gap-3 transition-colors border-t border-gray-50 mt-2 group/item"
                       >
-                        <span className="text-red-500 font-bold">PDF</span> Descargar PDF
+                        <div className="bg-rose-100 p-2 rounded-xl group-hover/item:bg-rose-500 group-hover/item:text-white transition-colors">
+                          <span className="font-black text-[10px]">PDF</span>
+                        </div>
+                        <span className="text-sm font-bold text-gray-700">Descargar PDF</span>
                       </button>
                     </div>
                   </>
                 )}
               </div>
 
-              {/* Date Picker Button */}
+              {/* Date Picker Premium */}
               <div className="relative">
                 <button
                   onClick={() => {
-                    // Intentar abrir el picker nativo
                     if (dateInputRef.current) {
-                      try {
-                        dateInputRef.current.showPicker();
-                      } catch (e) {
-                        dateInputRef.current.click(); // Fallback
-                      }
+                      try { dateInputRef.current.showPicker(); } catch (e) { dateInputRef.current.click(); }
                     }
                   }}
-                  className={`p-2 rounded-lg transition-colors ${periodo === 'fecha' ? 'bg-blue-100 ring-2 ring-blue-500' : 'bg-blue-50 hover:bg-blue-100'}`}
+                  className={`p-2 md:p-3 rounded-2xl transition-all shadow-lg border active:scale-95 ${periodo === 'fecha' ? 'bg-white text-cyan-700 border-white' : 'bg-white/10 hover:bg-white/20 text-white border-white/10'}`}
                 >
-                  <Calendar className="w-6 h-6 text-blue-600" />
+                  <Calendar className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
                 <input
                   ref={dateInputRef}
@@ -1120,70 +1146,68 @@ export default function ReportesPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filtros de período */}
-        {/* Filtros de período (Premium Segmented Control) */}
+        {/* Filtros de período (Premium Segmented Control - Synced with Gestion) */}
         <div className="flex justify-center mb-8">
-          <div className="bg-gray-100/80 p-1.5 rounded-2xl flex gap-1 shadow-sm border border-gray-200/50">
+          <div className="bg-white/50 backdrop-blur-md p-1.5 rounded-[2rem] flex gap-1 shadow-xl shadow-cyan-900/5 border border-white/50">
             {['hoy', 'semana', 'mes'].map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriodo(p as any)}
-                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all duration-300 capitalize ${periodo === p
-                  ? 'bg-white text-blue-600 shadow-md transform scale-105'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
+                className={`px-8 py-2.5 rounded-[1.5rem] text-[10px] font-black tracking-widest transition-all duration-300 capitalize ${periodo === p
+                  ? 'bg-gradient-to-br from-cyan-600 to-cyan-700 text-white shadow-lg transform scale-105'
+                  : 'text-gray-400 hover:text-cyan-600 hover:bg-cyan-50'
                   }`}
               >
-                {p}
+                {p.toUpperCase()}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Filtro de sede (Inline) */}
+        {/* Filtro de sede (Inline Premium) */}
         <div className="mb-6">
           <div className="flex items-center gap-3">
-            <div className="text-sm font-bold text-gray-700 flex items-center gap-2 whitespace-nowrap">
-              <School className="w-4 h-4 text-gray-500" />
-              <span className="hidden sm:inline">Filtrar por Sede:</span>
-              <span className="sm:hidden">Sede:</span>
+            <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] flex items-center gap-2 whitespace-nowrap pl-2">
+              <School className="w-3.5 h-3.5 text-cyan-500" />
+              Sede:
             </div>
-            <div className="relative flex-1">
+            <div className="relative flex-1 group">
               <select
                 value={sedeFilter}
                 onChange={(e) => {
                   setSedeFilter(e.target.value);
                   setGrupoFilter('todos');
                 }}
-                className="block w-full pl-4 pr-10 py-2.5 text-xs font-bold uppercase tracking-tight text-blue-800 bg-blue-50 border border-transparent rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500/20 hover:bg-white hover:border-blue-200 hover:shadow-md transition-all shadow-sm cursor-pointer appearance-none"
+                className="block w-full pl-5 pr-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-white border border-cyan-100/50 rounded-[1.5rem] focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:border-cyan-300 transition-all shadow-sm cursor-pointer appearance-none"
               >
-                <option value="todas">Todas las Sedes</option>
-                <option value="principal">Sede Principal</option>
-                <option value="primaria">Sede Primaria</option>
-                <option value="maria-inmaculada">Maria Inmaculada</option>
+                <option value="todas">TODAS LAS SEDES</option>
+                <option value="principal">SEDE PRINCIPAL</option>
+                <option value="primaria">SEDE PRIMARIA</option>
+                <option value="maria-inmaculada">MARÍA INMACULADA</option>
               </select>
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <ChevronDown className="h-4 w-4 text-blue-600/60" />
+              <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none group-hover:scale-110 transition-transform">
+                <ChevronDown className="h-4 w-4 text-cyan-500" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Filtro de grupo (Inline) */}
-        <div className="mb-6">
+        {/* Filtro de grupo (Inline Premium) */}
+        <div className="mb-8">
           <div className="flex items-center gap-3">
-            <div className="text-sm font-bold text-gray-700 flex items-center gap-2 whitespace-nowrap">
-              <Users className="w-4 h-4 text-gray-500" />
-              <span className="hidden sm:inline">Filtrar por Grupo:</span>
-              <span className="sm:hidden">Grupo:</span>
+            <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] flex items-center gap-2 whitespace-nowrap pl-2">
+              <Users className="w-3.5 h-3.5 text-cyan-500" />
+              Grupo:
             </div>
             <div className="relative flex-1">
               <button
                 onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
-                className="w-full pl-4 pr-4 py-2.5 text-xs font-bold uppercase tracking-tight text-blue-800 bg-blue-50 border border-transparent rounded-xl flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-blue-500/20 hover:bg-white hover:border-blue-200 hover:shadow-md transition-all shadow-sm cursor-pointer"
+                className="w-full pl-5 pr-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-white border border-cyan-100/50 rounded-[1.5rem] flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:border-cyan-300 transition-all shadow-sm cursor-pointer"
               >
                 <span className="truncate">
-                  {grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter}
+                  {grupoFilter === 'todos' ? 'TODOS LOS GRUPOS' : grupoFilter}
                 </span>
-                <ChevronDown className={`w-4 h-4 text-blue-600/60 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-cyan-500 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {grupoDropdownOpen && (
@@ -1193,19 +1217,19 @@ export default function ReportesPage() {
                     onClick={() => setGrupoDropdownOpen(false)}
                   ></div>
 
-                  <div className="absolute z-20 w-full mt-2 bg-white border border-gray-300 rounded-xl shadow-lg max-h-96 overflow-y-auto">
-                    <div className="p-3 grid grid-cols-3 gap-2">
+                  <div className="absolute z-60 w-full mt-3 bg-white/95 backdrop-blur-md border border-cyan-100 rounded-[2.5rem] shadow-2xl overflow-y-auto max-h-96 p-4 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="grid grid-cols-3 gap-2">
                       <button
                         onClick={() => {
                           setGrupoFilter('todos');
                           setGrupoDropdownOpen(false);
                         }}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${grupoFilter === 'todos'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        className={`px-3 py-3 rounded-2xl text-[10px] font-black tracking-widest transition-all ${grupoFilter === 'todos'
+                          ? 'bg-cyan-600 text-white shadow-lg'
+                          : 'bg-gray-50 text-gray-400 hover:bg-cyan-50 hover:text-cyan-600'
                           }`}
                       >
-                        Todos
+                        TODOS
                       </button>
                       {gruposDisponibles.map(grupo => (
                         <button
@@ -1214,9 +1238,9 @@ export default function ReportesPage() {
                             setGrupoFilter(grupo);
                             setGrupoDropdownOpen(false);
                           }}
-                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${grupoFilter === grupo
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                          className={`px-3 py-3 rounded-2xl text-[10px] font-black tracking-widest transition-all ${grupoFilter === grupo
+                            ? 'bg-cyan-600 text-white shadow-lg'
+                            : 'bg-gray-50 text-gray-400 hover:bg-cyan-50 hover:text-cyan-600'
                             }`}
                         >
                           {grupo}
@@ -1255,29 +1279,28 @@ export default function ReportesPage() {
           </div>
 
           {/* Recibieron */}
-          {/* Recibieron */}
           <button
             onClick={() => openGroupModal('recibieron')}
             disabled={stats.recibieron === 0}
-            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-50 transition-all text-left"
+            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-black text-emerald-500 tracking-tighter">
+                <div className="text-3xl font-black text-emerald-500 tracking-tighter">
                   {loading ? (
                     <Skeleton className="h-8 w-16 mb-1" />
                   ) : (
                     stats.recibieron.toLocaleString()
                   )}
                 </div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">RECIBIERON</div>
+                <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">RECIBIERON</div>
               </div>
-              <div className="bg-emerald-50 p-2 rounded-xl group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300">
+              <div className="bg-emerald-50 p-2.5 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300 shadow-inner">
                 <CheckCircle className="w-5 h-5 text-emerald-500 group-hover:text-white transition-colors" />
               </div>
             </div>
-            <div className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-              {stats.porcentajeAsistencia}% - Ver detalle <Info className="w-3 h-3" />
+            <div className="text-[9px] text-emerald-500 font-black uppercase tracking-widest flex items-center gap-1 mt-2">
+              {stats.porcentajeAsistencia}% • DETALLE <Info className="w-3 h-3 ml-0.5" />
             </div>
           </button>
 
@@ -1285,25 +1308,25 @@ export default function ReportesPage() {
           <button
             onClick={() => openGroupModal('noRecibieron')}
             disabled={stats.noRecibieron === 0}
-            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-amber-400 hover:shadow-lg hover:shadow-amber-50 transition-all text-left"
+            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-black text-amber-500 tracking-tighter">
+                <div className="text-3xl font-black text-amber-500 tracking-tighter">
                   {loading ? (
                     <Skeleton className="h-8 w-16 mb-1" />
                   ) : (
                     stats.noRecibieron.toLocaleString()
                   )}
                 </div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">NO RECIBIERON</div>
+                <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">NO RECIBIERON</div>
               </div>
-              <div className="bg-amber-50 p-2 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
+              <div className="bg-amber-50 p-2.5 rounded-2xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 shadow-inner">
                 <XCircle className="w-5 h-5 text-amber-600 group-hover:text-white transition-colors" />
               </div>
             </div>
-            <div className="text-[10px] text-amber-600 font-bold flex items-center gap-1">
-              Ver grupos <Info className="w-3 h-3" />
+            <div className="text-[9px] text-amber-500 font-black uppercase tracking-widest flex items-center gap-1 mt-2">
+              VER GRUPOS <Info className="w-3 h-3 ml-0.5" />
             </div>
           </button>
 
@@ -1311,25 +1334,25 @@ export default function ReportesPage() {
           <button
             onClick={() => openGroupModal('ausentes')}
             disabled={stats.ausentes === 0}
-            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-rose-400 hover:shadow-lg hover:shadow-rose-50 transition-all text-left"
+            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-black text-rose-500 tracking-tighter">
+                <div className="text-3xl font-black text-rose-500 tracking-tighter">
                   {loading ? (
                     <Skeleton className="h-8 w-16 mb-1" />
                   ) : (
                     stats.ausentes.toLocaleString()
                   )}
                 </div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">NO ASISTIERON</div>
+                <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">NO ASISTIERON</div>
               </div>
-              <div className="bg-rose-50 p-2 rounded-xl group-hover:bg-rose-500 group-hover:text-white transition-colors duration-300">
+              <div className="bg-rose-50 p-2.5 rounded-2xl group-hover:bg-rose-500 group-hover:text-white transition-all duration-300 shadow-inner">
                 <UserX className="w-5 h-5 text-rose-500 group-hover:text-white transition-colors" />
               </div>
             </div>
-            <div className="text-[10px] text-rose-600 font-bold flex items-center gap-1">
-              Ver grupos <Info className="w-3 h-3" />
+            <div className="text-[9px] text-rose-500 font-black uppercase tracking-widest flex items-center gap-1 mt-2">
+              VER GRUPOS <Info className="w-3 h-3 ml-0.5" />
             </div>
           </button>
 
@@ -1337,25 +1360,25 @@ export default function ReportesPage() {
           <button
             onClick={() => openGroupModal('inactivos')}
             disabled={stats.inactivos === 0}
-            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-blue-400 hover:shadow-lg hover:shadow-blue-50 transition-all text-left"
+            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-black text-gray-700 tracking-tighter">
+                <div className="text-3xl font-black text-gray-700 tracking-tighter">
                   {loading ? (
                     <Skeleton className="h-8 w-16 mb-1" />
                   ) : (
                     stats.inactivos.toLocaleString()
                   )}
                 </div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">INACTIVOS</div>
+                <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">INACTIVOS</div>
               </div>
-              <div className="bg-gray-100 p-2 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+              <div className="bg-gray-100 p-2.5 rounded-2xl group-hover:bg-cyan-600 group-hover:text-white transition-all duration-300 shadow-inner">
                 <UserMinus className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
               </div>
             </div>
-            <div className="text-[10px] text-gray-500 font-bold flex items-center gap-1">
-              Ver detalles <Info className="w-3 h-3" />
+            <div className="text-[9px] text-gray-400 font-black uppercase tracking-widest flex items-center gap-1 mt-2">
+              VER DETALLES <Info className="w-3 h-3 ml-0.5" />
             </div>
           </button>
         </div>
@@ -1363,33 +1386,33 @@ export default function ReportesPage() {
         {/* Análisis Visual */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Distribución de Asistencia */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-6">Distribución de Asistencia</h3>
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-cyan-900/5 border border-gray-100">
+            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-8 px-1">Distribución Operativa</h3>
             <div className="h-[250px] w-full">
               {loading || !isMounted ? (
                 <div className="flex items-center justify-center h-full">
-                  <div className="w-40 h-40 rounded-full border-8 border-gray-100 border-t-blue-500 animate-spin" />
+                  <div className="w-32 h-32 rounded-full border-8 border-gray-50 border-t-cyan-500 animate-spin" />
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={distributionData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
+                      innerRadius={70}
+                      outerRadius={95}
+                      paddingAngle={8}
                       dataKey="value"
                     >
                       {distributionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '16px' }}
                     />
-                    <Legend verticalAlign="bottom" height={36} />
+                    <Legend iconType="circle" verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', paddingTop: '20px' }} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -1397,48 +1420,47 @@ export default function ReportesPage() {
           </div>
 
           {/* Tendencia Temporal */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-6">
-              {periodo === 'hoy' || periodo === 'fecha' ? 'Detalle por Sede' : 'Tendencia de Asistencia'}
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-cyan-900/5 border border-gray-100">
+            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-8 px-1">
+              {periodo === 'hoy' || periodo === 'fecha' ? 'Dinamismo por Sedes' : 'Evolución de Asistencia'}
             </h3>
             <div className="h-[250px] w-full">
               {loading || !isMounted ? (
-                <div className="space-y-3 pt-4">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-20 w-full" />
-                  <Skeleton className="h-4 w-full" />
+                <div className="space-y-4 pt-10 px-4">
+                  <Skeleton className="h-4 w-full rounded-full" />
+                  <Skeleton className="h-28 w-full rounded-3xl" />
                 </div>
               ) : chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis
                       dataKey="fecha"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 10, fill: '#9ca3af' }}
+                      tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 'bold' }}
                       tickFormatter={(val) => {
                         const d = new Date(val + 'T12:00:00');
-                        return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+                        return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }).toUpperCase();
                       }}
                     />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 'bold' }} />
                     <Tooltip
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      cursor={{ fill: '#f8fafc' }}
+                      contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '16px' }}
                       labelFormatter={(val) => {
                         const d = new Date(val + 'T12:00:00');
-                        const s = d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }).toLowerCase();
-                        return s.charAt(0).toUpperCase() + s.slice(1);
+                        return d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
                       }}
                     />
-                    <Bar dataKey="recibio" name="Recibieron" fill="#10B981" radius={[4, 4, 0, 0]} barSize={20} />
-                    <Bar dataKey="no_recibio" name="No Recibieron" fill="#EF4444" radius={[4, 4, 0, 0]} barSize={20} />
+                    <Bar dataKey="recibio" name="RECIBIÓ" fill="#10B981" radius={[6, 6, 0, 0]} barSize={16} />
+                    <Bar dataKey="no_recibio" name="NO RECIBIÓ" fill="#EF4444" radius={[6, 6, 0, 0]} barSize={16} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-400">
-                  <Calendar className="w-12 h-12 mb-2 opacity-20" />
-                  <p className="text-sm">Selecciona una semana o mes para ver tendencias temporales</p>
+                <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
+                  <Calendar className="w-12 h-12 mb-4 text-cyan-200" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Amplía el periodo para ver tendencias</p>
                 </div>
               )}
             </div>
@@ -1446,49 +1468,51 @@ export default function ReportesPage() {
         </div>
 
         {/* Registros recientes */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-lg font-bold text-gray-900">Registros Recientes</h2>
+        <div className="bg-white rounded-[2.5rem] shadow-xl shadow-cyan-900/5 border border-gray-100 overflow-hidden mb-8">
+          <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+            <h2 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.2em]">Registros Recientes</h2>
+            <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse shadow-sm shadow-cyan-200" />
           </div>
 
           <div className="overflow-x-auto">
             {registros.length === 0 ? (
-              <div className="p-6 text-center text-gray-500 py-8">
-                No hay registros recientes para este periodo
+              <div className="p-16 text-center text-gray-400 py-8">
+                <Users className="w-12 h-12 mx-auto mb-4 opacity-10" />
+                <p className="text-[10px] font-black uppercase tracking-widest">Sin actividad en este rango</p>
               </div>
             ) : (
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50/80">
                   <tr>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estudiante</th>
-                    <th className="px-3 sm:px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
-                    <th className="px-3 sm:px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Hora</th>
+                    <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Estudiante</th>
+                    <th className="px-6 py-4 text-center text-[9px] font-black text-gray-400 uppercase tracking-widest">Estado</th>
+                    <th className="px-6 py-4 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Instante</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-100">
                   {registros.map((registro: any) => {
                     const fecha = new Date(registro.created_at);
                     const hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     const fechaStr = fecha.toLocaleDateString();
 
                     return (
-                      <tr key={registro.id}>
-                        <td className="px-3 sm:px-6 py-3 max-w-[140px] sm:max-w-none">
-                          <div className="text-sm font-bold text-gray-900 line-clamp-2 leading-tight">{registro.estudiantes?.nombre}</div>
-                          <div className="text-xs text-gray-500">{registro.estudiantes?.grupo}</div>
+                      <tr key={registro.id} className="hover:bg-cyan-50/30 transition-colors group">
+                        <td className="px-6 py-5">
+                          <div className="text-xs font-black text-gray-800 uppercase leading-tight group-hover:text-cyan-600 transition-colors">{registro.estudiantes?.nombre}</div>
+                          <div className="text-[9px] font-bold text-gray-400 mt-1 uppercase tracking-tight">{registro.estudiantes?.grupo}</div>
                         </td>
-                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-center">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${registro.estado === 'recibio' ? 'bg-green-100 text-green-800' :
-                            registro.estado === 'no_recibio' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
+                        <td className="px-6 py-5 text-center">
+                          <span className={`px-4 py-1.5 inline-flex text-[9px] font-black uppercase tracking-widest rounded-full shadow-sm border ${registro.estado === 'recibio' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                            registro.estado === 'no_recibio' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                              'bg-gray-50 text-gray-500 border-gray-100'
                             }`}>
                             {registro.estado === 'recibio' ? 'Recibió' :
-                              registro.estado === 'no_recibio' ? 'No Recibió' : 'Ausente'}
+                              registro.estado === 'no_recibio' ? 'Faltó' : 'Ausente'}
                           </span>
                         </td>
-                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-right">
-                          <div className="text-sm text-gray-900">{hora}</div>
-                          <div className="text-xs text-gray-500">{fechaStr}</div>
+                        <td className="px-6 py-5 text-right">
+                          <div className="text-[10px] font-black text-gray-700">{hora}</div>
+                          <div className="text-[9px] font-bold text-gray-400 uppercase">{fechaStr}</div>
                         </td>
                       </tr>
                     );
