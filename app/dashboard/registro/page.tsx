@@ -439,9 +439,29 @@ function RegistroContent() {
         });
       }
 
+      const extractGrade = (name: string) => {
+        // Try to match leading numbers: "601" -> 6, "11A" -> 11
+        const match = name.match(/^(\d+)/);
+        if (match) {
+          const num = parseInt(match[1]);
+          // Heuristic: if num > 11 (e.g. 601), take first digit(s). 
+          // 601 -> 6, 1101 -> 11.
+          if (num > 11) {
+            if (num >= 1000) return Math.floor(num / 100); // 1001 -> 10
+            if (num >= 600) return Math.floor(num / 100); // 601 -> 6
+          }
+          return num;
+        }
+        return 0;
+      };
+
       gruposUnicos.sort((a, b) => {
-        const gradeA = parseInt(a.grado) || 0;
-        const gradeB = parseInt(b.grado) || 0;
+        let gradeA = parseInt(a.grado) || 0;
+        let gradeB = parseInt(b.grado) || 0;
+
+        if (gradeA === 0) gradeA = extractGrade(a.nombre);
+        if (gradeB === 0) gradeB = extractGrade(b.nombre);
+
         if (gradeA !== gradeB) return gradeA - gradeB;
         return a.nombre.localeCompare(b.nombre);
       });
@@ -746,7 +766,7 @@ function RegistroContent() {
 
 
       {/* Sub-Header Teal */}
-      <div className="bg-[#0891B2] text-white shadow-xl sticky top-16 z-[55]">
+      <div className="bg-[#0891B2] text-white shadow-xl sticky top-16 md:top-0 z-[55]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:pt-6 md:pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
