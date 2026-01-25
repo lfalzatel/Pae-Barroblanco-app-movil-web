@@ -440,6 +440,9 @@ function RegistroContent() {
       }
 
       const extractGrade = (name: string) => {
+        // 'TS' (Talento, Técnica, or special groups) usually go to the end if grade is unknown.
+        if (name.toUpperCase().includes('TS')) return 999;
+
         // Try to match leading numbers: "601" -> 6, "11A" -> 11
         const match = name.match(/^(\d+)/);
         if (match) {
@@ -766,7 +769,7 @@ function RegistroContent() {
 
 
       {/* Sub-Header Teal */}
-      <div className="bg-[#0891B2] text-white shadow-xl sticky top-16 md:top-0 z-[55]">
+      <div className="bg-[#0891B2] text-white shadow-xl sticky top-16 md:top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:pt-6 md:pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
