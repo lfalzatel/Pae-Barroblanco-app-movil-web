@@ -755,14 +755,13 @@ export default function DashboardLayout({
                                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-1">
                                                                     <Info className="w-4 h-4" /> Otras Novedades
                                                                 </p>
-                                                                <div className="flex text-[10px] font-bold text-gray-400 mb-2 px-2">
-                                                                    <span className="uppercase tracking-widest">Grupos</span>
-                                                                </div>
                                                                 {filteredPAE.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').map((item, idx) => (
                                                                     <div key={`note-${idx}`} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4 shadow-sm">
                                                                         <div className="flex-1 min-w-0">
-                                                                            <p className="font-black text-gray-900 text-sm">{item.group.replace('-2026', '')}</p>
-                                                                            <p className="text-[10px] font-medium text-amber-600 italic mt-1">{item.notes}</p>
+                                                                            <p className="text-sm leading-snug">
+                                                                                <span className="font-black text-gray-900 mr-2 text-base">{item.group.replace('-2026', '')}</span>
+                                                                                <span className="font-bold text-amber-700/90">{item.notes}</span>
+                                                                            </p>
                                                                         </div>
                                                                     </div>
                                                                 ))}
