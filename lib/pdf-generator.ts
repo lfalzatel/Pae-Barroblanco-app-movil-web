@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export const generateSchedulePDF = (scheduleData: any[], date: string, sede: string = 'Todas') => {
+export const generateSchedulePDF = (scheduleData: any[], date: string, sede: string = 'Todas', returnBlob: boolean = false) => {
     const doc = new jsPDF();
 
     // Header
@@ -18,7 +18,8 @@ export const generateSchedulePDF = (scheduleData: any[], date: string, sede: str
 
     doc.setFontSize(12);
     doc.setTextColor(100);
-    doc.text(`Fecha: ${date}`, 105, 40, { align: 'center' });
+    const formattedDate = new Date(date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    doc.text(`Fecha: ${formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1)}`, 105, 40, { align: 'center' });
 
     // Columns for the table
     const columns = [
@@ -119,10 +120,14 @@ export const generateSchedulePDF = (scheduleData: any[], date: string, sede: str
         doc.text(`Generado por: Sistema PAE`, 20, 287);
     }
 
-    doc.save(`Horario_Restaurante_${date}.pdf`);
+    if (returnBlob) {
+        return doc.output('bloburl');
+    } else {
+        doc.save(`Horario_Restaurante_${date}.pdf`);
+    }
 };
 
-export const generateWeeklySchedulePDF = (weeklyData: any[], weekStart: Date) => {
+export const generateWeeklySchedulePDF = (weeklyData: any[], weekStart: Date, returnBlob: boolean = false) => {
     const doc = new jsPDF();
     const weekRange = `${weekStart.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} - ${new Date(new Date(weekStart).setDate(weekStart.getDate() + 4)).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}`;
 
@@ -215,5 +220,9 @@ export const generateWeeklySchedulePDF = (weeklyData: any[], weekStart: Date) =>
         doc.text(`Página ${i} de ${pageCount}`, 105, 287, { align: 'center' });
     }
 
-    doc.save(`Horario_Semanal_${weekRange.replace(/ /g, '_')}.pdf`);
+    if (returnBlob) {
+        return doc.output('bloburl');
+    } else {
+        doc.save(`Horario_Semanal_${weekRange.replace(/ /g, '_')}.pdf`);
+    }
 };

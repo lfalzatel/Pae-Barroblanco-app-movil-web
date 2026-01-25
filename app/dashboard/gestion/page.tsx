@@ -542,7 +542,7 @@ export default function GestionPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         {/* Pestañas */}
-        {usuario?.rol === 'admin' && (
+        {(usuario?.rol === 'admin' || usuario?.rol === 'coordinador_pae') && (
           <div className="bg-gray-100/80 p-0.5 rounded-2xl flex items-center shrink-0 relative w-full md:w-auto mb-4">
             <button
               onClick={() => setActiveTab('estudiantes')}
@@ -742,14 +742,16 @@ export default function GestionPage() {
                           >
                             Actividad
                           </button>
-                          <button
-                            onClick={() => setDocenteParaRol(docente)}
-                            className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm flex flex-col items-center justify-center min-w-[70px]"
-                            title="Cambiar Rol"
-                          >
-                            <User className="w-4 h-4" />
-                            <span className="text-[7px] font-black uppercase mt-0.5">{docente.rol}</span>
-                          </button>
+                          {usuario?.rol === 'admin' && (
+                            <button
+                              onClick={() => setDocenteParaRol(docente)}
+                              className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm flex flex-col items-center justify-center min-w-[70px]"
+                              title="Cambiar Rol"
+                            >
+                              <User className="w-4 h-4" />
+                              <span className="text-[7px] font-black uppercase mt-0.5">{docente.rol}</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => handleGenerateDocenteReport(docente)}
                             className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm"

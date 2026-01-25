@@ -23,6 +23,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
     const [loading, setLoading] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
     const [selectedSede, setSelectedSede] = useState('Principal');
+    const [previewUrl, setPreviewUrl] = useState<URL | string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -116,7 +117,21 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
     const handleDownload = () => {
         const filteredSchedule = schedule.filter(s => selectedSede === 'Todas' || s.sede === selectedSede);
-        generateSchedulePDF(filteredSchedule, date, selectedSede);
+        const url = generateSchedulePDF(filteredSchedule, date, selectedSede, true);
+        if (url) setPreviewUrl(url);
+    };
+
+    const confirmDownload = () => {
+        const filteredSchedule = schedule.filter(s => selectedSede === 'Todas' || s.sede === selectedSede);
+        generateSchedulePDF(filteredSchedule, date, selectedSede, false); // False triggers save
+        setPreviewUrl(null);
+    };
+
+    const closePreview = () => {
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl as string);
+            setPreviewUrl(null);
+        }
     };
 
     if (!isOpen) return null;
@@ -383,6 +398,57 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                     </div>
                 </div>
             </div>
+            {/* PDF Preview Modal Overlay */}
+            {previewUrl && (
+                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2rem] w-full max-w-2xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+                        {/* Preview Header */}
+                        <div className="p-4 bg-gray-900 text-white flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-white/10 p-2 rounded-xl">
+                                    <FileText className="w-5 h-5 text-cyan-400" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-base">Vista Previa del Documento</h3>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">Verificar antes de descargar</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={closePreview}
+                                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* PDF Viewer - Iframe */}
+                        <div className="flex-1 bg-gray-100 relative">
+                            <iframe
+                                src={previewUrl as string}
+                                className="w-full h-full border-none"
+                                title="PDF Preview"
+                            />
+                        </div>
+
+                        {/* Preview Footer Actions */}
+                        <div className="p-4 border-t border-gray-100 bg-white flex justify-end gap-3 shrink-0">
+                            <button
+                                onClick={closePreview}
+                                className="px-5 py-2.5 rounded-xl border border-gray-200 font-bold text-gray-600 text-sm hover:bg-gray-50 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmDownload}
+                                className="px-5 py-2.5 rounded-xl bg-cyan-600 text-white font-bold text-sm hover:bg-cyan-700 shadow-lg shadow-cyan-200 transition-all flex items-center gap-2 active:scale-95"
+                            >
+                                <Download className="w-4 h-4" />
+                                Descargar Archivo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
