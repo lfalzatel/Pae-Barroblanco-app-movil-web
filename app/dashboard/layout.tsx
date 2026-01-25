@@ -741,7 +741,7 @@ export default function DashboardLayout({
                                                                     <div key={`abs-${idx}`} className="bg-red-50 p-4 rounded-2xl border border-red-100 flex items-start gap-4 shadow-sm">
                                                                         <div className="bg-red-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0">No Asiste</div>
                                                                         <div className="flex-1 min-w-0">
-                                                                            <p className="font-black text-red-900 text-sm">{item.group}</p>
+                                                                            <p className="font-black text-red-900 text-sm">{item.group.replace('-2026', '')}</p>
                                                                             {item.notes && <p className="text-[10px] font-medium text-red-600 italic mt-1">{item.notes}</p>}
                                                                         </div>
                                                                     </div>
@@ -755,11 +755,15 @@ export default function DashboardLayout({
                                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-1">
                                                                     <Info className="w-4 h-4" /> Otras Novedades
                                                                 </p>
+                                                                <div className="flex text-[10px] font-bold text-gray-400 mb-2 px-2">
+                                                                    <span className="w-24 uppercase tracking-widest">Horario</span>
+                                                                    <span className="uppercase tracking-widest">Grupos</span>
+                                                                </div>
                                                                 {filteredPAE.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').map((item, idx) => (
                                                                     <div key={`note-${idx}`} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4 shadow-sm">
-                                                                        <div className="bg-white border border-amber-200 text-amber-600 px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0">{item.time?.split(' - ')[0] || item.time_start}</div>
+                                                                        <div className="bg-white border border-amber-200 text-amber-600 px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0 min-w-[3.5rem] text-center">{item.time?.split(' - ')[0] || item.time_start}</div>
                                                                         <div className="flex-1 min-w-0">
-                                                                            <p className="font-black text-gray-900 text-sm">{item.group}</p>
+                                                                            <p className="font-black text-gray-900 text-sm">{item.group.replace('-2026', '')}</p>
                                                                             <p className="text-[10px] font-medium text-amber-600 italic mt-1">{item.notes}</p>
                                                                         </div>
                                                                     </div>
@@ -779,6 +783,7 @@ export default function DashboardLayout({
                                                                         <div className="flex-1 min-w-0">
                                                                             <p className="font-black text-sm text-cyan-900 mb-0.5">{item.titulo}</p>
                                                                             <p className="text-[10px] font-bold text-cyan-600">{item.hora || 'Todo el día'} - {item.afectados}</p>
+                                                                            {item.descripcion && <p className="text-[10px] text-cyan-700/80 mt-1 leading-relaxed">{item.descripcion}</p>}
                                                                         </div>
                                                                     </div>
                                                                 ))}
@@ -854,6 +859,7 @@ export default function DashboardLayout({
                                                                 <div className="flex-1 min-w-0">
                                                                     <p className="font-black text-sm text-cyan-900 mb-0.5">{item.titulo}</p>
                                                                     <p className="text-[10px] font-bold text-cyan-600">{item.hora || 'Todo el día'} - {item.afectados}</p>
+                                                                    {item.descripcion && <p className="text-[10px] text-cyan-700/80 mt-1 leading-relaxed">{item.descripcion}</p>}
                                                                 </div>
                                                             </div>
                                                         ))}
