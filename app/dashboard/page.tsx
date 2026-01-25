@@ -535,7 +535,7 @@ export default function DashboardPage() {
           <div className="bg-white/20 p-1.5 rounded-lg group-hover:rotate-12 transition-transform">
             <Calendar className="w-5 h-5" />
           </div>
-          <span className="text-sm md:text-base leading-none">Horario Mañana</span>
+          <span className="text-sm md:text-base leading-none">Horario Restaurante</span>
         </button>
 
         <button

@@ -204,24 +204,13 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                                     <div className="space-y-3">
                                         {currentDayData.instEvents?.length > 0 ? (
                                             currentDayData.instEvents.map((event: any, i: number) => (
-                                                <div key={i} className={`p-4 rounded-3xl border shadow-sm animate-in fade-in slide-in-from-bottom-2 bg-gradient-to-br from-white to-gray-50/30 ${event.prioridad === 'alta' ? 'border-red-100 ring-1 ring-red-500/10' : 'border-gray-100'}`}>
-                                                    <div className="flex items-start justify-between gap-4 mb-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={`w-2 h-2 rounded-full ${event.prioridad === 'alta' ? 'bg-red-500 animate-pulse shadow-sm shadow-red-200' : 'bg-cyan-500 shadow-sm shadow-cyan-200'}`} />
-                                                            <span className="font-black text-gray-900 tracking-tight">{event.titulo}</span>
-                                                        </div>
-                                                        {event.hora && (
-                                                            <div className="bg-gray-100 px-2 py-1 rounded-lg flex items-center gap-1.5">
-                                                                <FileText className="w-3 h-3 text-gray-400" />
-                                                                <span className="text-[9px] font-black text-gray-500 uppercase">{event.hora}</span>
-                                                            </div>
-                                                        )}
+                                                <div key={i} className="bg-cyan-50/50 p-4 rounded-2xl border border-cyan-100 flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+                                                    <div className="bg-cyan-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0">Agenda</div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-black text-sm text-cyan-900 mb-0.5">{event.titulo}</p>
+                                                        <p className="text-[10px] font-bold text-cyan-600">{event.hora || 'Todo el día'} - {event.afectados}</p>
+                                                        {event.descripcion && <p className="text-[10px] text-cyan-700/80 mt-1 leading-relaxed">{event.descripcion}</p>}
                                                     </div>
-                                                    {event.afectados && (
-                                                        <div className="pl-4 border-l-2 border-gray-100">
-                                                            <p className="text-[10px] text-gray-500 font-bold leading-relaxed">{event.afectados}</p>
-                                                        </div>
-                                                    )}
                                                 </div>
                                             ))
                                         ) : (

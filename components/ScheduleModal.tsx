@@ -143,7 +143,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                 <Calendar className="w-6 h-6" />
                             </div>
                             <div>
-                                <h3 className="font-black text-lg tracking-tight leading-none">Horario de mañana</h3>
+                                <h3 className="font-black text-lg tracking-tight leading-none">Horario PAE de Mañana</h3>
                                 <p className="text-[9px] font-bold uppercase tracking-[0.15em] opacity-80 mt-1">Programa Diario PAE</p>
                             </div>
                         </div>
