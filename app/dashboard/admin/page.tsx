@@ -587,19 +587,24 @@ export default function AdminPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-32">
-            <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+            <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 shadow-xl shadow-cyan-900/10 sticky top-16 md:top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Link href="/dashboard" className="p-2 hover:bg-gray-100 rounded-lg">
-                            <ArrowLeft className="w-6 h-6 text-gray-600" />
+                    <div className="flex items-center gap-4">
+                        <Link href="/dashboard" className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10 shadow-lg">
+                            <ArrowLeft className="w-6 h-6 text-white" />
                         </Link>
-                        <h1 className="text-xl font-bold text-gray-900">Panel de Administración</h1>
+                        <div>
+                            <h1 className="text-2xl font-black text-white tracking-tight leading-none text-shadow-sm">Panel de Administración</h1>
+                            <p className="text-[10px] font-bold text-cyan-100/80 uppercase tracking-widest mt-0.5">Control Total</p>
+                        </div>
                     </div>
-                    <ShieldAlert className="w-6 h-6 text-red-500" />
+                    <div className="bg-white/10 p-2 rounded-xl border border-white/10 animate-pulse shadow-inner">
+                        <ShieldAlert className="w-6 h-6 text-cyan-50" />
+                    </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+            <div className="max-w-7xl mx-auto px-4 py-6 space-y-8">
                 {/* Tabs de Herramientas */}
                 {/* Tabs de Herramientas (Responsive) */}
 
@@ -995,65 +1000,79 @@ export default function AdminPage() {
                     <Settings className="absolute -bottom-4 -right-4 w-32 h-32 text-white/10" />
                 </div>
 
-                {/* Buscador */}
-                <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                {/* Buscador Premium */}
+                <div className="relative mb-8">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                        <Search className="h-5 w-5 text-gray-400" />
+                    </div>
                     <input
                         type="text"
                         placeholder="Buscar por nombre, matrícula o grupo..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
+                        className="block w-full pl-12 pr-4 py-4 bg-white border-none rounded-full text-gray-900 placeholder:text-gray-400 placeholder:font-bold focus:outline-none focus:ring-2 focus:ring-[#0891B2]/20 shadow-xl transition-all duration-300"
                     />
                 </div>
 
                 {/* Lista de estudiantes */}
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    <th className="px-3 py-3 w-10">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-cyan-50/80 border-b border-cyan-100">
+                                    <th className="px-6 py-4 w-16 text-center">
                                         <input
                                             type="checkbox"
                                             onChange={(e) => {
                                                 if (e.target.checked) setSelectedStudents(filteredEstudiantes.map(e => e.id));
                                                 else setSelectedStudents([]);
                                             }}
-                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                                            className="rounded-md border-gray-300 text-[#0891B2] focus:ring-[#0891B2] h-5 w-5 cursor-pointer transition-all"
                                         />
                                     </th>
-                                    <th className="px-2 py-3 text-[10px] font-bold text-gray-500 uppercase">Estudiante</th>
-                                    <th className="px-2 py-3 text-[10px] font-bold text-gray-500 uppercase text-right">Información</th>
+                                    <th className="px-4 py-4 text-xs font-black text-cyan-800 uppercase tracking-wider">Estudiante</th>
+                                    <th className="px-4 py-4 text-xs font-black text-cyan-800 uppercase tracking-wider text-right">Información Académica</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-gray-50">
                                 {filteredEstudiantes.map(est => (
                                     <tr
                                         key={est.id}
-                                        className={`hover:bg-blue-50/50 transition-colors cursor-pointer ${selectedStudents.includes(est.id) ? 'bg-blue-50' : ''}`}
+                                        className={`group transition-all duration-200 cursor-pointer ${selectedStudents.includes(est.id) ? 'bg-cyan-50/60' : 'hover:bg-gray-50'}`}
                                         onClick={() => toggleSelect(est.id)}
                                     >
-                                        <td className="px-3 py-3">
+                                        <td className="px-6 py-4 text-center">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedStudents.includes(est.id)}
-                                                onChange={() => { }} // Se maneja en el onClick de la fila
-                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                                                onChange={() => { }}
+                                                className="rounded-md border-gray-300 text-[#0891B2] focus:ring-[#0891B2] h-5 w-5 cursor-pointer"
                                             />
                                         </td>
-                                        <td className="px-2 py-3 min-w-0">
-                                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                                <div className={`font-bold text-xs ${est.estado === 'inactivo' ? 'text-gray-400' : 'text-gray-900'} truncate`}>{est.nombre}</div>
-                                                {est.estado === 'inactivo' && (
-                                                    <span className="bg-gray-100 text-gray-500 text-[7px] font-black px-1 py-0.5 rounded leading-none">INACTIVO</span>
-                                                )}
+                                        <td className="px-4 py-4">
+                                            <div className="flex flex-col gap-1">
+                                                <div className={`font-bold text-sm ${est.estado === 'inactivo' ? 'text-gray-400 line-through decoration-2' : 'text-gray-900'}`}>
+                                                    {est.nombre}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                                                        {est.matricula}
+                                                    </span>
+                                                    {est.estado === 'inactivo' && (
+                                                        <span className="bg-red-100 text-red-600 text-[9px] font-black px-2 py-0.5 rounded-full">INACTIVO</span>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="text-[10px] text-gray-500">{est.matricula}</div>
                                         </td>
-                                        <td className="px-2 py-3 text-right">
-                                            <div className={`text-[10px] font-bold ${est.estado === 'inactivo' ? 'text-gray-300' : 'text-blue-600'}`}>{est.grupo}</div>
-                                            <div className={`text-[9px] ${est.estado === 'inactivo' ? 'text-gray-300' : 'text-gray-500'}`}>{est.sede}</div>
+                                        <td className="px-4 py-4 text-right">
+                                            <div className="flex flex-col items-end gap-1">
+                                                <div className="bg-[#0891B2]/10 text-[#0891B2] px-3 py-1 rounded-lg text-xs font-black inline-block">
+                                                    {est.grupo}
+                                                </div>
+                                                <div className="text-[10px] font-bold text-cyan-600/80 uppercase tracking-wide">
+                                                    {est.sede}
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -1066,9 +1085,11 @@ export default function AdminPage() {
             {/* Modal de Carga Masiva (Año Nuevo) */}
             {
                 activeTab === 'backup' && (
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            <UploadCloud className="w-5 h-5 text-blue-600" />
+                    <div className="bg-white rounded-3xl shadow-xl border-none ring-1 ring-black/5 p-8">
+                        <h2 className="text-2xl font-black text-[#0891B2] mb-6 flex items-center gap-3">
+                            <div className="p-2 bg-cyan-50 rounded-xl">
+                                <UploadCloud className="w-6 h-6 text-[#0891B2]" />
+                            </div>
                             Carga Masiva y Cambio de Año
                         </h2>
 
@@ -1155,45 +1176,47 @@ export default function AdminPage() {
             </div>
 
             {/* Confirmation Modal */}
-            {confirmModal.isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200 border border-white/20">
-                        <div className="flex flex-col items-center text-center gap-4">
-                            <div className={`p-4 rounded-full ${confirmModal.type === 'danger' ? 'bg-red-100 text-red-600' :
-                                confirmModal.type === 'warning' ? 'bg-amber-100 text-amber-600' :
-                                    'bg-blue-100 text-blue-600'
-                                }`}>
-                                {confirmModal.type === 'danger' && <AlertTriangle className="w-8 h-8" />}
-                                {confirmModal.type === 'warning' && <AlertTriangle className="w-8 h-8" />}
-                                {confirmModal.type === 'info' && <Info className="w-8 h-8" />}
-                            </div>
+            {
+                confirmModal.isOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200 border border-white/20">
+                            <div className="flex flex-col items-center text-center gap-4">
+                                <div className={`p-4 rounded-full ${confirmModal.type === 'danger' ? 'bg-red-100 text-red-600' :
+                                    confirmModal.type === 'warning' ? 'bg-amber-100 text-amber-600' :
+                                        'bg-blue-100 text-blue-600'
+                                    }`}>
+                                    {confirmModal.type === 'danger' && <AlertTriangle className="w-8 h-8" />}
+                                    {confirmModal.type === 'warning' && <AlertTriangle className="w-8 h-8" />}
+                                    {confirmModal.type === 'info' && <Info className="w-8 h-8" />}
+                                </div>
 
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-2">{confirmModal.title}</h3>
-                                <p className="text-sm text-gray-500">{confirmModal.message}</p>
-                            </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-900 mb-2">{confirmModal.title}</h3>
+                                    <p className="text-sm text-gray-500">{confirmModal.message}</p>
+                                </div>
 
-                            <div className="flex gap-3 w-full mt-2">
-                                <button
-                                    onClick={confirmModal.onCancel}
-                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
-                                >
-                                    {confirmModal.cancelText || 'Cancelar'}
-                                </button>
-                                <button
-                                    onClick={confirmModal.onConfirm}
-                                    className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all transform active:scale-95 ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-500 shadow-red-500/30' :
-                                        confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/30' :
-                                            'bg-blue-600 hover:bg-blue-500 shadow-blue-500/30'
-                                        }`}
-                                >
-                                    {confirmModal.confirmText || 'Confirmar'}
-                                </button>
+                                <div className="flex gap-3 w-full mt-2">
+                                    <button
+                                        onClick={confirmModal.onCancel}
+                                        className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                                    >
+                                        {confirmModal.cancelText || 'Cancelar'}
+                                    </button>
+                                    <button
+                                        onClick={confirmModal.onConfirm}
+                                        className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all transform active:scale-95 ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-500 shadow-red-500/30' :
+                                            confirmModal.type === 'warning' ? 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/30' :
+                                                'bg-blue-600 hover:bg-blue-500 shadow-blue-500/30'
+                                            }`}
+                                    >
+                                        {confirmModal.confirmText || 'Confirmar'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }
