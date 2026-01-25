@@ -117,8 +117,16 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
     const handleDownload = () => {
         const filteredSchedule = schedule.filter(s => selectedSede === 'Todas' || s.sede === selectedSede);
-        const url = generateSchedulePDF(filteredSchedule, date, selectedSede, true);
-        if (url) setPreviewUrl(url);
+
+        // Detect mobile (simple width check or user agent) - Mobile browsers don't support iframe PDF preview well
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024; // iPad/Tablets often struggle too with iframes, safer to download directly on smaller screens
+
+        if (isMobile) {
+            generateSchedulePDF(filteredSchedule, date, selectedSede, false);
+        } else {
+            const url = generateSchedulePDF(filteredSchedule, date, selectedSede, true);
+            if (url) setPreviewUrl(url);
+        }
     };
 
     const confirmDownload = () => {

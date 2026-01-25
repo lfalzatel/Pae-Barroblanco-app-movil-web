@@ -120,8 +120,14 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
     };
 
     const handleDownloadPDF = () => {
-        const url = generateWeeklySchedulePDF(weeklyData, weekStart, true);
-        if (url) setPreviewUrl(url);
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+
+        if (isMobile) {
+            generateWeeklySchedulePDF(weeklyData, weekStart, false);
+        } else {
+            const url = generateWeeklySchedulePDF(weeklyData, weekStart, true);
+            if (url) setPreviewUrl(url);
+        }
     };
 
     const confirmDownload = () => {
