@@ -21,6 +21,7 @@ export default function ReportesPage() {
   const [usuario, setUsuario] = useState<any | null>(null);
   const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes' | 'fecha'>('hoy');
   const [sedeFilter, setSedeFilter] = useState('todas');
+  const [showSedeDropdown, setShowSedeDropdown] = useState(false);
   const [grupoFilter, setGrupoFilter] = useState('todos');
   const [grupoDropdownOpen, setGrupoDropdownOpen] = useState(false);
   const [gruposDisponibles, setGruposDisponibles] = useState<string[]>([]);
@@ -1172,22 +1173,51 @@ export default function ReportesPage() {
               Sede:
             </div>
             <div className="relative flex-1 group">
-              <select
-                value={sedeFilter}
-                onChange={(e) => {
-                  setSedeFilter(e.target.value);
-                  setGrupoFilter('todos');
-                }}
-                className="block w-full pl-5 pr-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-white border border-cyan-100/50 rounded-[1.5rem] focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:border-cyan-300 transition-all shadow-sm cursor-pointer appearance-none"
+              <button
+                onClick={() => setShowSedeDropdown(!showSedeDropdown)}
+                className="w-full pl-5 pr-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-white border border-cyan-100/50 rounded-[1.5rem] flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:border-cyan-300 transition-all shadow-sm cursor-pointer"
               >
-                <option value="todas">TODAS LAS SEDES</option>
-                <option value="principal">SEDE PRINCIPAL</option>
-                <option value="primaria">SEDE PRIMARIA</option>
-                <option value="maria-inmaculada">MARÍA INMACULADA</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none group-hover:scale-110 transition-transform">
-                <ChevronDown className="h-4 w-4 text-cyan-500" />
-              </div>
+                <span className="truncate">
+                  {sedeFilter === 'todas' ? 'TODAS LAS SEDES' :
+                    sedeFilter === 'principal' ? 'SEDE PRINCIPAL' :
+                      sedeFilter === 'primaria' ? 'SEDE PRIMARIA' : 'MARÍA INMACULADA'}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-cyan-500 transition-transform ${showSedeDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showSedeDropdown && (
+                <>
+                  <div className="fixed inset-0 z-[60]" onClick={() => setShowSedeDropdown(false)}></div>
+                  <div className="absolute z-[70] w-full mt-2 bg-white/95 backdrop-blur-md border border-cyan-100 rounded-[2rem] shadow-2xl overflow-hidden p-2 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => { setSedeFilter('todas'); setGrupoFilter('todos'); setShowSedeDropdown(false); }}
+                        className={`w-full text-left px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${sedeFilter === 'todas' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:bg-cyan-50 hover:text-cyan-700'}`}
+                      >
+                        TODAS LAS SEDES
+                      </button>
+                      <button
+                        onClick={() => { setSedeFilter('principal'); setGrupoFilter('todos'); setShowSedeDropdown(false); }}
+                        className={`w-full text-left px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${sedeFilter === 'principal' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:bg-cyan-50 hover:text-cyan-700'}`}
+                      >
+                        SEDE PRINCIPAL
+                      </button>
+                      <button
+                        onClick={() => { setSedeFilter('primaria'); setGrupoFilter('todos'); setShowSedeDropdown(false); }}
+                        className={`w-full text-left px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${sedeFilter === 'primaria' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:bg-cyan-50 hover:text-cyan-700'}`}
+                      >
+                        SEDE PRIMARIA
+                      </button>
+                      <button
+                        onClick={() => { setSedeFilter('maria-inmaculada'); setGrupoFilter('todos'); setShowSedeDropdown(false); }}
+                        className={`w-full text-left px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${sedeFilter === 'maria-inmaculada' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:bg-cyan-50 hover:text-cyan-700'}`}
+                      >
+                        MARÍA INMACULADA
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

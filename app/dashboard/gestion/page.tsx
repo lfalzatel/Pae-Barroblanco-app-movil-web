@@ -42,6 +42,7 @@ export default function GestionPage() {
   const [docenteHistory, setDocenteHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [grupoDropdownOpen, setGrupoDropdownOpen] = useState(false);
+  const [showSedeDropdown, setShowSedeDropdown] = useState(false);
   const [selectedDateActivity, setSelectedDateActivity] = useState<{
     fecha: string;
     grupos: { name: string; count: number; timestamp: string }[];
@@ -573,24 +574,40 @@ export default function GestionPage() {
               <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
                 <div className="flex items-center">
                   <div className="relative flex-1">
-                    <select
-                      value={sedeFilter}
-                      onChange={(e) => {
-                        setSedeFilter(e.target.value);
-                        setGrupoFilter('todos');
-                      }}
-                      className="block w-full pl-3 pr-8 md:pl-5 md:pr-10 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer appearance-none"
+                    <button
+                      onClick={() => setShowSedeDropdown(!showSedeDropdown)}
+                      className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer"
                     >
-                      <option value="todas">SEDES</option>
-                      {sedes.filter((s) => s.id !== 'todas').map((sede) => (
-                        <option key={sede.id} value={sede.id}>
-                          {sede.nombre.toUpperCase()}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 pr-3 md:pr-4 flex items-center pointer-events-none">
-                      <ChevronDown className="h-4 w-4 text-cyan-500" />
-                    </div>
+                      <span className="truncate">{sedeFilter === 'todas' ? 'SEDES' : sedes.find(s => s.id === sedeFilter)?.nombre.toUpperCase()}</span>
+                      <ChevronDown className={`w-4 h-4 text-cyan-500 transition-transform ${showSedeDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {showSedeDropdown && (
+                      <>
+                        <div className="fixed inset-0 z-[60]" onClick={() => setShowSedeDropdown(false)}></div>
+                        <div className="absolute z-[70] w-full mt-2 bg-white/90 backdrop-blur-md border border-cyan-100 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                          <div className="p-1.5 space-y-1">
+                            <button
+                              onClick={() => { setSedeFilter('todas'); setGrupoFilter('todos'); setShowSedeDropdown(false); }}
+                              className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === 'todas' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700'}`}
+                            >
+                              SEDES
+                              {sedeFilter === 'todas' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                            </button>
+                            {sedes.filter((s) => s.id !== 'todas').map((sede) => (
+                              <button
+                                key={sede.id}
+                                onClick={() => { setSedeFilter(sede.id); setGrupoFilter('todos'); setShowSedeDropdown(false); }}
+                                className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === sede.id ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700'}`}
+                              >
+                                {sede.nombre.toUpperCase()}
+                                {sedeFilter === sede.id && <CheckCircle2 className="w-3.5 h-3.5" />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
