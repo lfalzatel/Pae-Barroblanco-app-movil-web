@@ -68,7 +68,7 @@ export default function GestionPage() {
 
   const sedes = [
     { id: 'todas', nombre: 'Todas' },
-    { id: 'Principal', nombre: 'Principal' },
+    { id: 'Principal', nombre: 'Sede Principal' },
     { id: 'Primaria', nombre: 'Primaria' },
     { id: 'Maria Inmaculada', nombre: 'Maria Inmaculada' }
   ];

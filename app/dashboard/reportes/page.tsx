@@ -18,9 +18,10 @@ import { Skeleton } from '@/components/ui/Skeleton';
 export default function ReportesPage() {
   const router = useRouter();
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [usuario, setUsuario] = useState<any | null>(null);
   const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes' | 'fecha'>('hoy');
-  const [sedeFilter, setSedeFilter] = useState('todas');
+  const [sedeFilter, setSedeFilter] = useState('principal');
   const [showSedeDropdown, setShowSedeDropdown] = useState(false);
   const [grupoFilter, setGrupoFilter] = useState('todos');
   const [grupoDropdownOpen, setGrupoDropdownOpen] = useState(false);
@@ -1145,135 +1146,98 @@ export default function ReportesPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filtros de período */}
-        {/* Filtros de período (Premium Segmented Control - Synced with Gestion) */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-white/50 backdrop-blur-md p-1.5 rounded-[2rem] flex gap-1 shadow-xl shadow-cyan-900/5 border border-white/50">
-            {['hoy', 'semana', 'mes'].map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriodo(p as any)}
-                className={`px-8 py-2.5 rounded-[1.5rem] text-[10px] font-black tracking-widest transition-all duration-300 capitalize ${periodo === p
-                  ? 'bg-gradient-to-br from-cyan-600 to-cyan-700 text-white shadow-lg transform scale-105'
-                  : 'text-gray-400 hover:text-cyan-600 hover:bg-cyan-50'
-                  }`}
-              >
-                {p.toUpperCase()}
-              </button>
-            ))}
-          </div>
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-8">
+        {/* Filtros de período (Estilo Tabs Gestión) */}
+        <div className="bg-gray-100/80 p-0.5 rounded-2xl flex items-center shrink-0 relative w-full mb-4">
+          {(['hoy', 'semana', 'mes'] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriodo(p)}
+              className={`flex-1 md:px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${periodo === p ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              {p}
+            </button>
+          ))}
+          {/* Sliding Indicator */}
+          <div
+            className={`absolute inset-y-0.5 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-gradient-to-br from-cyan-600 to-cyan-700 rounded-xl shadow-md shadow-cyan-200/50 ${periodo === 'hoy' ? 'left-0.5 w-[calc(33.33%-2px)]' :
+              periodo === 'semana' ? 'left-[calc(33.33%)] w-[calc(33.33%-2px)]' :
+                'left-[calc(66.66%)] w-[calc(33.33%-2px)]'
+              }`}
+          />
         </div>
 
-        {/* Filtro de sede (Inline Premium) */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3">
-            <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] flex items-center gap-2 whitespace-nowrap pl-2">
-              <School className="w-3.5 h-3.5 text-cyan-500" />
-              Sede:
-            </div>
-            <div className="relative flex-1 group">
+        {/* Filters Container (Estilo Card Gestión) */}
+        <div className="bg-white p-3 rounded-[2rem] shadow-xl shadow-cyan-900/5 border border-gray-100 mb-8 space-y-3">
+          <div className="grid grid-cols-2 gap-3 md:gap-4">
+            {/* Sede Filter */}
+            <div className="relative z-20" ref={dropdownRef}>
               <button
                 onClick={() => setShowSedeDropdown(!showSedeDropdown)}
-                className="w-full pl-5 pr-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-white border border-cyan-100/50 rounded-[1.5rem] flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:border-cyan-300 transition-all shadow-sm cursor-pointer"
+                className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer"
               >
-                <span className="truncate">
-                  {sedeFilter === 'todas' ? 'TODAS LAS SEDES' :
-                    sedeFilter === 'principal' ? 'SEDE PRINCIPAL' :
-                      sedeFilter === 'primaria' ? 'SEDE PRIMARIA' : 'MARÍA INMACULADA'}
+                <span className="truncate mr-2">
+                  {sedeFilter === 'todas' ? 'SEDES' : sedes.find(s => s.id === sedeFilter)?.nombre.toUpperCase()}
                 </span>
-                <ChevronDown className={`w-4 h-4 text-cyan-500 transition-transform ${showSedeDropdown ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3 h-3 text-cyan-400 transition-transform duration-300 ${showSedeDropdown ? 'rotate-180' : ''}`} />
               </button>
 
               {showSedeDropdown && (
                 <>
                   <div className="fixed inset-0 z-[60]" onClick={() => setShowSedeDropdown(false)}></div>
-                  <div className="absolute z-[70] w-full mt-2 bg-white/95 backdrop-blur-md border border-cyan-100 rounded-[2rem] shadow-2xl overflow-hidden p-2 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="space-y-1">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-cyan-100/50 rounded-2xl shadow-xl shadow-cyan-100/50 overflow-hidden transition-all duration-300 origin-top z-[70] animate-in fade-in zoom-in-95 duration-200">
+                    <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 space-y-1">
                       <button
-                        onClick={() => { setSedeFilter('todas'); setGrupoFilter('todos'); setShowSedeDropdown(false); }}
-                        className={`w-full text-left px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${sedeFilter === 'todas' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:bg-cyan-50 hover:text-cyan-700'}`}
+                        onClick={() => { setSedeFilter('todas'); setShowSedeDropdown(false); }}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === 'todas' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700'}`}
                       >
                         TODAS LAS SEDES
+                        {sedeFilter === 'todas' && <CheckCircle className="w-3.5 h-3.5" />}
                       </button>
-                      <button
-                        onClick={() => { setSedeFilter('principal'); setGrupoFilter('todos'); setShowSedeDropdown(false); }}
-                        className={`w-full text-left px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${sedeFilter === 'principal' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:bg-cyan-50 hover:text-cyan-700'}`}
-                      >
-                        SEDE PRINCIPAL
-                      </button>
-                      <button
-                        onClick={() => { setSedeFilter('primaria'); setGrupoFilter('todos'); setShowSedeDropdown(false); }}
-                        className={`w-full text-left px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${sedeFilter === 'primaria' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:bg-cyan-50 hover:text-cyan-700'}`}
-                      >
-                        SEDE PRIMARIA
-                      </button>
-                      <button
-                        onClick={() => { setSedeFilter('maria-inmaculada'); setGrupoFilter('todos'); setShowSedeDropdown(false); }}
-                        className={`w-full text-left px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${sedeFilter === 'maria-inmaculada' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:bg-cyan-50 hover:text-cyan-700'}`}
-                      >
-                        MARÍA INMACULADA
-                      </button>
+                      {sedes.map((sede) => (
+                        <button
+                          key={sede.id}
+                          onClick={() => { setSedeFilter(sede.id); setShowSedeDropdown(false); }}
+                          className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === sede.id ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700'}`}
+                        >
+                          {sede.nombre.toUpperCase()}
+                          {sedeFilter === sede.id && <CheckCircle className="w-3.5 h-3.5" />}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </>
               )}
             </div>
-          </div>
-        </div>
 
-        {/* Filtro de grupo (Inline Premium) */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3">
-            <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] flex items-center gap-2 whitespace-nowrap pl-2">
-              <Users className="w-3.5 h-3.5 text-cyan-500" />
-              Grupo:
-            </div>
-            <div className="relative flex-1">
+            {/* Group Filter (Identical to Gestion) */}
+            <div className="relative z-10">
               <button
                 onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
-                className="w-full pl-5 pr-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-white border border-cyan-100/50 rounded-[1.5rem] flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:border-cyan-300 transition-all shadow-sm cursor-pointer"
+                className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer"
               >
-                <span className="truncate">
-                  {grupoFilter === 'todos' ? 'TODOS LOS GRUPOS' : grupoFilter}
-                </span>
-                <ChevronDown className={`w-4 h-4 text-cyan-500 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
+                <span className="truncate">{grupoFilter === 'todos' ? 'GRUPOS' : `${grupoFilter}`}</span>
+                <ChevronDown className={`w-3 h-3 text-cyan-400 transition-transform duration-300 ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {grupoDropdownOpen && (
                 <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setGrupoDropdownOpen(false)}
-                  ></div>
-
-                  <div className="absolute z-60 w-full mt-3 bg-white/95 backdrop-blur-md border border-cyan-100 rounded-[2.5rem] shadow-2xl overflow-y-auto max-h-96 p-4 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="fixed inset-0 z-[60]" onClick={() => setGrupoDropdownOpen(false)}></div>
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-cyan-100/50 rounded-3xl shadow-xl shadow-cyan-100/50 max-h-72 overflow-y-auto p-4 animate-in fade-in zoom-in-95 duration-200 z-[70]">
                     <div className="grid grid-cols-3 gap-2">
                       <button
-                        onClick={() => {
-                          setGrupoFilter('todos');
-                          setGrupoDropdownOpen(false);
-                        }}
-                        className={`px-3 py-3 rounded-2xl text-[10px] font-black tracking-widest transition-all ${grupoFilter === 'todos'
-                          ? 'bg-cyan-600 text-white shadow-lg'
-                          : 'bg-gray-50 text-gray-400 hover:bg-cyan-50 hover:text-cyan-600'
-                          }`}
+                        onClick={() => { setGrupoFilter('todos'); setGrupoDropdownOpen(false); }}
+                        className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === 'todos' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50'}`}
                       >
                         TODOS
                       </button>
                       {gruposDisponibles.map(grupo => (
                         <button
                           key={grupo}
-                          onClick={() => {
-                            setGrupoFilter(grupo);
-                            setGrupoDropdownOpen(false);
-                          }}
-                          className={`px-3 py-3 rounded-2xl text-[10px] font-black tracking-widest transition-all ${grupoFilter === grupo
-                            ? 'bg-cyan-600 text-white shadow-lg'
-                            : 'bg-gray-50 text-gray-400 hover:bg-cyan-50 hover:text-cyan-600'
-                            }`}
+                          onClick={() => { setGrupoFilter(grupo); setGrupoDropdownOpen(false); }}
+                          className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === grupo ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50'}`}
                         >
-                          {grupo}
+                          {grupo.replace(/-20\d{2}/, '')}
                         </button>
                       ))}
                     </div>
