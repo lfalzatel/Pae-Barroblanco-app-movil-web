@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { Utensils, Eye, EyeOff, LogIn } from 'lucide-react';
 import Image from 'next/image';
+import InstallPrompt from '../components/InstallPrompt';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@paebarroblanco.edu.co');
-  const [password, setPassword] = useState('admin123'); // Pre-filled for convenience
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -233,8 +234,10 @@ export default function LoginPage() {
             <span className="text-xl">👆</span>
             Ingresar con Huella
           </button>
+
+          <InstallPrompt />
         </form>
       </div>
-    </div>
+    </div >
   );
 }

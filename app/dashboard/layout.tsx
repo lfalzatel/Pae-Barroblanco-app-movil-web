@@ -350,8 +350,15 @@ export default function DashboardLayout({
     }, [router, notifModalOpen, activeNotifTab]);
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
-        router.push('/');
+        try {
+            await supabase.auth.signOut();
+        } catch (error) {
+            console.error('Error signing out:', error);
+        } finally {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/';
+        }
     };
 
     const navItems = [
@@ -638,8 +645,8 @@ export default function DashboardLayout({
                                                             key={sede.id}
                                                             onClick={() => { setSelectedSede(sede.id); setShowSedeDropdown(false); }}
                                                             className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${selectedSede === sede.id
-                                                                    ? 'bg-cyan-50 text-cyan-700'
-                                                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                                                ? 'bg-cyan-50 text-cyan-700'
+                                                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                                                                 }`}
                                                         >
                                                             {sede.label}
