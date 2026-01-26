@@ -22,6 +22,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
     const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
+    const [showSedeDropdown, setShowSedeDropdown] = useState(false);
     const [selectedSede, setSelectedSede] = useState('Principal');
     const [previewUrl, setPreviewUrl] = useState<URL | string | null>(null);
 
@@ -193,17 +194,42 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
                         {/* Sede Selector */}
                         <div className="relative flex-1">
-                            <select
-                                value={selectedSede}
-                                onChange={(e) => setSelectedSede(e.target.value)}
-                                className="w-full appearance-none bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-2xl py-2.5 pl-4 pr-10 font-bold transition-all text-[10px] uppercase tracking-widest cursor-pointer focus:outline-none"
+                            <button
+                                onClick={() => setShowSedeDropdown(!showSedeDropdown)}
+                                className="w-full bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-2xl py-2.5 px-3 flex items-center justify-between gap-2 font-bold transition-all text-[10px] uppercase tracking-widest shadow-sm group"
                             >
-                                <option value="Todas" className="text-gray-900">Todas las sedes</option>
-                                <option value="Principal" className="text-gray-900">Sede Principal</option>
-                                <option value="Primaria" className="text-gray-900">Sede Primaria</option>
-                                <option value="Maria Inmaculada" className="text-gray-900">M. Inmaculada</option>
-                            </select>
-                            <ChevronDown className="w-3.5 h-3.5 text-white opacity-60 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <span className="truncate">{selectedSede === 'Todas' ? 'Todas' : selectedSede}</span>
+                                {showSedeDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60 group-hover:translate-y-0.5 transition-transform" />}
+                            </button>
+                            
+                            {showSedeDropdown && (
+                                <>
+                                    <div className="fixed inset-0 z-[60]" onClick={() => setShowSedeDropdown(false)}></div>
+                                    <div className="absolute top-full right-0 mt-2 w-full min-w-[140px] bg-white rounded-2xl shadow-xl overflow-hidden z-[70] animate-in zoom-in-95 duration-200 border border-gray-100">
+                                        <div className="p-1.5 space-y-1">
+                                            {[
+                                                { id: 'Todas', label: 'Todas las sedes' },
+                                                { id: 'Principal', label: 'Principal' },
+                                                { id: 'Primaria', label: 'Primaria' },
+                                                { id: 'Maria Inmaculada', label: 'M. Inmaculada' }
+                                            ].map((sede) => (
+                                                <button
+                                                    key={sede.id}
+                                                    onClick={() => { setSelectedSede(sede.id); setShowSedeDropdown(false); }}
+                                                    className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${
+                                                        selectedSede === sede.id 
+                                                            ? 'bg-cyan-50 text-cyan-700' 
+                                                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                                    }`}
+                                                >
+                                                    {sede.label}
+                                                    {selectedSede === sede.id && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full" />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
 
