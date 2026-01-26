@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   icons: {
     apple: "/icon-512x512.png",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "PAE Barroblanco",
+  },
 };
 
 export const viewport = {
