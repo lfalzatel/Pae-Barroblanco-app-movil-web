@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
-import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X, ChevronLeft, School } from 'lucide-react';
+import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X, ChevronLeft, School, Clock } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -42,7 +42,9 @@ export default function ReportesPage() {
     noRecibieron: 0,
     inactivos: 0,
     porcentajeAsistencia: '0',
-    groupDetails: { recibieron: [], noRecibieron: [], ausentes: [], inactivos: [] }
+    groupDetails: { recibieron: [], noRecibieron: [], ausentes: [], inactivos: [] },
+    pendingGroupsCount: 0,
+    totalActiveGroups: 0
   });
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -261,19 +263,48 @@ export default function ReportesPage() {
           }).sort((a, b) => b.count - a.count);
         };
 
+        // Calculate Active Groups for Pending Logic
+        const uniqueActiveGroups = new Set<string>();
+        ests.forEach(e => {
+          if (e.grupo && (e.estado === 'activo' || e.estado === 'active')) uniqueActiveGroups.add(e.grupo);
+        });
+
+        const uniqueReportedGroups = new Set<string>();
+        asistenciaData?.forEach((a: any) => {
+          // Find group from ests array since a.estudiantes might be array or object depending on join
+          // a.estudiantes is object due to select
+          if (a.estudiantes && a.estudiantes.grupo) uniqueReportedGroups.add(a.estudiantes.grupo);
+        });
+
+        // Calculate Business Days in Range
+        let businessDays = 0;
+        let d = new Date(startDate);
+        const dEnd = new Date(endDate);
+        while (d <= dEnd) {
+          const day = d.getDay();
+          if (day !== 0 && day !== 6) businessDays++;
+          d.setDate(d.getDate() + 1);
+        }
+        if (businessDays === 0) businessDays = 1; // Fallback
+
+        // Formula: Recibieron / (Total Activos * Business Days)
+        const totalPotentialRations = (totalCount || 0) * businessDays;
+
         setStats({
           totalEstudiantes: totalCount || 0,
           recibieron: recibieronCount,
           noRecibieron: noRecibieronCount,
           ausentes: ausentesCount,
           inactivos: inactivosCount,
-          porcentajeAsistencia: (totalCount && totalCount > 0) ? (((totalCount - ausentesCount) / totalCount) * 100).toFixed(1) : '0',
+          porcentajeAsistencia: totalPotentialRations > 0 ? ((recibieronCount / totalPotentialRations) * 100).toFixed(1) : '0',
           groupDetails: {
             recibieron: mapDetails(groupAgg.recibieron),
             noRecibieron: mapDetails(groupAgg.noRecibieron),
             ausentes: mapDetails(groupAgg.ausentes),
             inactivos: mapDetails(groupAgg.inactivos)
-          }
+          },
+          pendingGroupsCount: uniqueActiveGroups.size - uniqueReportedGroups.size,
+          totalActiveGroups: uniqueActiveGroups.size
         });
 
         setAllPeriodRecords(asistenciaData || []);
@@ -1249,7 +1280,24 @@ export default function ReportesPage() {
         </div>
 
         {/* Estadísticas principales */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+          {/* Pending Groups - New Card */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-2xl font-black text-orange-500 tracking-tighter">
+                  {loading ? <Skeleton className="h-8 w-16" /> : stats.pendingGroupsCount}
+                </div>
+                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">GRUPOS PENDIENTES</div>
+              </div>
+              <div className="bg-orange-50 p-2 rounded-xl">
+                <Clock className="w-5 h-5 text-orange-500" />
+              </div>
+            </div>
+            <div className="text-[10px] text-orange-400 font-bold">
+              {stats.totalActiveGroups > 0 ? ((stats.pendingGroupsCount / stats.totalActiveGroups) * 100).toFixed(0) : 0}% sin reportar
+            </div>
+          </div>
           {/* Total Estudiantes */}
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
             <div className="flex justify-between items-start mb-2">
