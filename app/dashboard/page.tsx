@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import ScheduleModal from '../../components/ScheduleModal';
 import WeeklyScheduleModal from '../../components/WeeklyScheduleModal';
+import StatsDetailModal from '../../components/StatsDetailModal';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { Usuario, calcularEstadisticasHoy } from '../data/demoData';
@@ -194,7 +195,7 @@ export default function DashboardPage() {
         recibieron,
         noRecibieron,
         ausentes,
-        porcentajeAsistencia: activos.length > 0 ? (((activos.length - ausentes) / activos.length) * 100).toFixed(1) : '0',
+        porcentajeAsistencia: activos.length > 0 ? ((recibieron / activos.length) * 100).toFixed(1) : '0',
         groupDetails: {
           recibieron: mapDetails(groupAgg.recibieron),
           noRecibieron: mapDetails(groupAgg.noRecibieron),
@@ -365,154 +366,20 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto pb-24 md:pb-8">
-      {/* Modal de Detalle por Grupo (Nivel 1) */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setModalOpen(false)}></div>
-          <div className="bg-white/90 backdrop-blur-2xl rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden border border-white/20 ring-1 ring-black/5">
-            <div className="p-6 flex items-center justify-between border-b border-gray-100/50 bg-white/40">
-              <div className="flex items-center gap-4">
-                <div className={`${modalCategory?.color.split(' ')[0].replace('text-', 'bg-').replace('600', '100').replace('700', '100')} ${modalCategory?.color.split(' ')[0]} p-3 rounded-2xl shadow-sm ring-1 ring-black/5`}>
-                  {modalCategory?.icon && <modalCategory.icon className="w-6 h-6" />}
-                </div>
-                <div>
-                  <h3 className="font-black text-gray-900 leading-tight text-lg">{modalCategory?.title}</h3>
-                  <p className="text-xs font-medium text-gray-500 mt-0.5">Desglose por grupos</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="p-2.5 hover:bg-black/5 rounded-full transition-all duration-200 text-gray-400 hover:text-gray-900 hover:rotate-90"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar relative">
-              <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-white/40 to-transparent z-10 pointer-events-none" />
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 px-1 flex items-center gap-2">
-                <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                Distribución Acumulada
-              </p>
-              <div className="space-y-3 pb-2">
-                {modalData.map((item, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => openDeepDetail(item.grupo)}
-                    className="w-full flex items-center justify-between p-4 rounded-2xl border border-gray-100/80 hover:border-blue-300/50 hover:bg-blue-50/40 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 text-left bg-white/60 backdrop-blur-sm group animate-in slide-in-from-bottom-2 fade-in fill-mode-both"
-                    style={{ animationDelay: `${idx * 50}ms` }}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 flex items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200/60 shadow-inner text-sm font-black text-gray-700 group-hover:from-blue-500 group-hover:to-blue-600 group-hover:text-white group-hover:border-blue-500 group-hover:shadow-blue-200 transition-all duration-300">
-                        {item.grupo.replace('Grado ', '').split('-')[0]}
-                      </div>
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[10px] font-medium text-gray-500 bg-gray-100/80 px-1.5 py-0.5 rounded-md group-hover:bg-blue-100/50 group-hover:text-blue-600 transition-colors">Ver estudiantes</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-0.5 pr-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-400">{item.count}/{item.total}</span>
-                        <span className="text-2xl font-black text-gray-900 tracking-tight group-hover:scale-110 transition-transform duration-300">{item.percentage}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 rounded-full h-1.5 w-24">
-                        <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${item.percentage}%` }}></div>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white/60 to-transparent z-10 pointer-events-none" />
-            </div>
-
-            <div className="p-4 bg-gray-50/80 backdrop-blur-md border-t border-gray-100/50 flex justify-center">
-              <button
-                onClick={() => setModalOpen(false)}
-                className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold shadow-xl shadow-gray-200 hover:bg-black hover:shadow-2xl hover:shadow-gray-300 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
-              >
-                Cerrar Vista
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <ScheduleModal
-        isOpen={scheduleModalOpen}
-        onClose={() => setScheduleModalOpen(false)}
+      <StatsDetailModal
+        isOpen={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setDeepDetailOpen(false); // Reset deep detail on close to be safe
+        }}
+        category={modalCategory}
+        data={modalData}
+        deepDetailOpen={deepDetailOpen}
+        deepDetailTitle={deepDetailTitle}
+        deepDetailData={deepDetailData}
+        onGroupSelect={openDeepDetail}
+        onBackToSummary={() => setDeepDetailOpen(false)}
       />
-
-      {/* Modal de Horario Semanal */}
-      <WeeklyScheduleModal
-        isOpen={weeklyModalOpen}
-        onClose={() => setWeeklyModalOpen(false)}
-      />
-
-      {/* Modal Premium de Detalle Estudiante (Nivel 2) */}
-      {deepDetailOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-md" onClick={() => setDeepDetailOpen(false)}></div>
-          <div className="bg-white/90 backdrop-blur-xl rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in slide-in-from-bottom-5 duration-300 overflow-hidden border border-white/20">
-            <div className="p-6 flex items-center justify-between border-b border-gray-100 bg-white/50">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setDeepDetailOpen(false)}
-                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400 hover:text-gray-900"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <h3 className="font-black text-gray-900 leading-tight truncate max-w-[200px]">{deepDetailTitle}</h3>
-              </div>
-              <button
-                onClick={() => {
-                  setDeepDetailOpen(false);
-                  setModalOpen(false);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 max-h-[65vh] overflow-y-auto">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">LISTADO DETALLADO</p>
-              <div className="space-y-4">
-                {deepDetailData.length > 0 ? (
-                  deepDetailData.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
-                      style={{ animationDelay: `${idx * 50}ms` }}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-black text-blue-600/70">{item.fecha}</span>
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500/20" />
-                      </div>
-                      <p className="font-bold text-gray-900 uppercase text-sm leading-tight">{item.nombre}</p>
-                      <p className="text-xs text-gray-500 mt-1">{item.estado}</p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="py-20 text-center">
-                    <p className="text-gray-400 font-medium">No hay registros detallados</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="p-4 bg-gray-50/50 border-t border-gray-100 flex justify-center">
-              <button
-                onClick={() => setDeepDetailOpen(false)}
-                className="w-full py-4 bg-white text-gray-900 border border-gray-200 rounded-2xl font-black hover:bg-gray-50 transition-colors shadow-sm"
-              >
-                Volver al resumen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Dynamic Notification */}
       {notif && (

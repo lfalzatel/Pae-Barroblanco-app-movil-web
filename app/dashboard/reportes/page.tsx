@@ -14,6 +14,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { Skeleton } from '@/components/ui/Skeleton';
+import StatsDetailModal from '@/components/StatsDetailModal';
 
 export default function ReportesPage() {
   const router = useRouter();
