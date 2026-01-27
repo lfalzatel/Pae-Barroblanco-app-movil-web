@@ -101,7 +101,18 @@ export default function DashboardLayout({
     };
     const [weeklyNotifData, setWeeklyNotifData] = useState<any[]>([]);
     const [isWeeklySearching, setIsWeeklySearching] = useState(false);
-    const [selectedDayInWeek, setSelectedDayInWeek] = useState(0); // 0 = Mon, 4 = Fri
+    const [selectedDayInWeek, setSelectedDayInWeek] = useState(() => {
+        const now = new Date();
+        const bogota = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+        const day = bogota.getDay();
+        const hour = bogota.getHours();
+
+        // If weekend or Friday night (next week view), default to Monday (0)
+        if ((day === 5 && hour >= 18) || day === 6 || day === 0) return 0;
+
+        // Otherwise Mon(1)-Fri(5) -> 0-4
+        return Math.max(0, Math.min(4, day - 1));
+    });
     const [selectedSede, setSelectedSede] = useState('Principal');
     const [showSedeDropdown, setShowSedeDropdown] = useState(false);
     const [groupSedeMap, setGroupSedeMap] = useState<Record<string, string>>({});

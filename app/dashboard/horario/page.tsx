@@ -46,14 +46,20 @@ export default function HorarioPage() {
         const day = d.getDay();
         const hour = d.getHours();
 
-        // Smart jump: Friday > 8pm or Fri/Sat/Sun -> +1 day or Monday
-        // The user previously wanted "tomorrow" for daily, but "next week" for weekly.
-        // For Horario Page (daily view focus):
-        if (day === 5 && hour >= 20) d.setDate(d.getDate() + 3); // Fri night -> Mon
-        else if (day === 5) d.setDate(d.getDate() + 1); // Fri day -> Sat (will be handled by day 6 logic anyway?)
-        else if (day === 6) d.setDate(d.getDate() + 2); // Sat -> Mon
-        else if (day === 0) d.setDate(d.getDate() + 1); // Sun -> Mon
-        else d.setDate(d.getDate() + 1); // Mon-Thu -> Tomorrow
+        // Logic:
+        // if Fri >= 18 (6pm) or Sat or Sun -> next Monday
+        // else if hour >= 18 (6pm) -> Tomorrow
+        // else -> Today
+
+        if ((day === 5 && hour >= 18) || day === 6 || day === 0) {
+            // Jump to next Monday
+            const daysToAdd = day === 5 ? 3 : day === 6 ? 2 : 1;
+            d.setDate(d.getDate() + daysToAdd);
+        } else if (hour >= 18) {
+            // Mon-Thu after 6pm -> Tomorrow
+            d.setDate(d.getDate() + 1);
+        }
+        // Else keep today
 
         const y = d.getFullYear();
         const m = (d.getMonth() + 1).toString().padStart(2, '0');
