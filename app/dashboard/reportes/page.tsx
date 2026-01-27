@@ -255,10 +255,8 @@ export default function ReportesPage() {
 
         const mapDetails = (agg: Record<string, number>) => {
           return Object.entries(agg).map(([grupo, count]) => {
-            const total = totalByGroup[grupo] || 0;
-            // Si es inactivo, el total debería ser sobre inactivos? No, el usuario pide ranking.
-            // Para inactivos, el total podría ser distinto, pero usaremos activos como base o total general?
-            // Para simplicidad y consistencia con Dashboard, usaremos total activos para Recibieron/NoRecibieron/Ausentes.
+            const total = (totalByGroup[grupo] || 0) * businessDays;
+
             const percentage = total > 0 ? ((count / total) * 100).toFixed(0) : '0';
             return { grupo, count, total, percentage };
 
