@@ -19,7 +19,8 @@ import {
   X,
   ChevronDown,
   ChevronLeft,
-  FileText
+  FileText,
+  Clock
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import * as XLSX from 'xlsx';
@@ -99,9 +100,28 @@ export default function DashboardPage() {
       const asistenciasHoy = asistencias || [];
 
       const asistMap: Record<string, string> = {};
+      const groupsReportedToday = new Set<string>();
+      const activeGroupsSet = new Set<string>();
+      const reportedGroupsSet = new Set<string>();
+
       asistenciasHoy.forEach(a => {
         asistMap[a.estudiante_id] = a.estado;
+        const student = estudiantes.find(e => e.id === a.estudiante_id);
+        if (student && student.grupo) {
+          reportedGroupsSet.add(student.grupo);
+        }
       });
+
+      // Let's optimize: map student id to group first
+      const studentGroupMap: Record<string, string> = {};
+      const activeGroups = new Set<string>();
+
+      estudiantes.forEach(e => {
+        if (e.grupo && (e.estado === 'activo' || e.estado === 'active')) {
+          activeGroupsSet.add(e.grupo);
+        }
+      });
+
 
       // Guardar datos crudos para los modales
       setAllStudents(estudiantes);
@@ -180,7 +200,9 @@ export default function DashboardPage() {
           noRecibieron: mapDetails(groupAgg.noRecibieron),
           ausentes: mapDetails(groupAgg.ausentes),
           inactivos: mapDetails(groupAgg.inactivos)
-        }
+        },
+        pendingGroupsCount: activeGroupsSet.size - reportedGroupsSet.size,
+        totalActiveGroups: activeGroupsSet.size
       });
     } catch (error) {
       console.error('Error cargando estadísticas:', error);
@@ -222,7 +244,10 @@ export default function DashboardPage() {
     noRecibieron: 0,
     ausentes: 0,
     porcentajeAsistencia: 0,
-    groupDetails: { noRecibieron: [], ausentes: [], inactivos: [] }
+
+    groupDetails: { noRecibieron: [], ausentes: [], inactivos: [] },
+    pendingGroupsCount: 0,
+    totalActiveGroups: 0
   });
 
   const openGroupModal = (category: string) => {
@@ -561,7 +586,7 @@ export default function DashboardPage() {
             ACTUALIZADO EN VIVO
           </div>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {/* Total Estudiantes */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
             <div className="flex justify-between items-start mb-2">
@@ -688,6 +713,29 @@ export default function DashboardPage() {
               Ver detalles <Info className="w-3 h-3" />
             </div>
           </button>
+
+
+          {/* Pending Groups - New Card */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-2xl md:text-3xl font-black text-orange-500 tracking-tighter">
+                  {loading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    stats.pendingGroupsCount
+                  )}
+                </div>
+                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">GRUPOS PENDIENTES</div>
+              </div>
+              <div className="bg-orange-50 p-2 rounded-xl">
+                <Clock className="w-5 h-5 text-orange-500" />
+              </div>
+            </div>
+            <div className="text-[10px] text-orange-400 font-bold">
+              {stats.totalActiveGroups > 0 ? ((stats.pendingGroupsCount / stats.totalActiveGroups) * 100).toFixed(0) : 0}% sin reportar
+            </div>
+          </div>
         </div>
       </div>
     </div>
