@@ -23,7 +23,18 @@ interface WeeklyScheduleModalProps {
 export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProps) {
     const [loading, setLoading] = useState(false);
     const [weeklyData, setWeeklyData] = useState<any[]>([]);
-    const [selectedDay, setSelectedDay] = useState(0); // 0 = Lun, 4 = Vie
+    const [selectedDay, setSelectedDay] = useState(() => {
+        const now = new Date();
+        const bogota = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+        const day = bogota.getDay();
+        const hour = bogota.getHours();
+
+        // If weekend or Friday night (next week view), default to Monday (0)
+        if ((day === 5 && hour >= 18) || day === 6 || day === 0) return 0;
+
+        // Otherwise Mon(1)-Fri(5) -> 0-4
+        return Math.max(0, Math.min(4, day - 1));
+    });
     const [weekStart, setWeekStart] = useState<Date>(() => {
         const now = new Date();
         const bogotaNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));

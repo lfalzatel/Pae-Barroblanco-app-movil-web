@@ -28,19 +28,39 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
     useEffect(() => {
         if (isOpen) {
-            // Smart Business Day logic:
-            // Fri/Sat -> Mon
-            // Others -> +1 Day
             const now = new Date();
-            const day = now.getDay();
+            const bogota = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
 
-            const target = new Date(now);
-            if (day === 5) target.setDate(target.getDate() + 3); // Fri -> Mon
-            else if (day === 6) target.setDate(target.getDate() + 2); // Sat -> Mon
-            else target.setDate(target.getDate() + 1); // Others -> Tomorrow
+            const day = bogota.getDay(); // 0-6
+            const hour = bogota.getHours(); // 0-23
+
+            const target = new Date(bogota);
+
+            // Logic:
+            // Fri >= 18 (6pm) or Sat or Sun -> Next Monday
+            // Mon-Thu >= 18 (6pm) -> Tomorrow
+            // Else -> Today
+
+            if ((day === 5 && hour >= 18) || day === 6 || day === 0) {
+                const daysToAdd = day === 5 ? 3 : day === 6 ? 2 : 1;
+                target.setDate(target.getDate() + daysToAdd);
+            } else if (hour >= 18) {
+                target.setDate(target.getDate() + 1);
+            }
+            // Else keep Today
 
             const offset = target.getTimezoneOffset() * 60000;
-            setDate(new Date(target.getTime() - offset).toISOString().split('T')[0]);
+            // Adjust back to local ISO string without timezone shift issues
+            // (Using the simple date construction from bogota date object directly)
+            // Ideally just use string formatting but keeping existing pattern style for minimal diff risk,
+            // though `target` (bogota) is already shifted? No, `new Date(string)` keeps simple.
+
+            // Simpler approach to get YYYY-MM-DD from the `target` object which represents the correct 'local' time
+            const y = target.getFullYear();
+            const m = (target.getMonth() + 1).toString().padStart(2, '0');
+            const d = target.getDate().toString().padStart(2, '0');
+            setDate(`${y}-${m}-${d}`);
+
             setShowCalendar(false);
         }
     }, [isOpen]);
@@ -201,7 +221,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                 <span className="truncate">{selectedSede === 'Todas' ? 'Todas' : selectedSede}</span>
                                 {showSedeDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60 group-hover:translate-y-0.5 transition-transform" />}
                             </button>
-                            
+
                             {showSedeDropdown && (
                                 <>
                                     <div className="fixed inset-0 z-[60]" onClick={() => setShowSedeDropdown(false)}></div>
@@ -216,11 +236,10 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                                 <button
                                                     key={sede.id}
                                                     onClick={() => { setSelectedSede(sede.id); setShowSedeDropdown(false); }}
-                                                    className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${
-                                                        selectedSede === sede.id 
-                                                            ? 'bg-cyan-50 text-cyan-700' 
+                                                    className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${selectedSede === sede.id
+                                                            ? 'bg-cyan-50 text-cyan-700'
                                                             : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {sede.label}
                                                     {selectedSede === sede.id && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full" />}
