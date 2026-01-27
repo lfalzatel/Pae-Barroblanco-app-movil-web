@@ -1401,7 +1401,7 @@ export default function ReportesPage() {
           {/* Tarjeta Grupos Pendientes */}
           <button
             onClick={() => openGroupModal('pendientes')}
-            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-orange-100 border border-orange-50 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left"
+            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left"
           >
             <div className="flex justify-between items-start mb-2">
               <div>

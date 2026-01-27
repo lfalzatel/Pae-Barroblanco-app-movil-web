@@ -513,10 +513,10 @@ export default function DashboardLayout({
                                 }`}
                         >
                             <div className={`relative ${isRegistrar ? 'animate-pulse' : ''}`}>
-                                <Icon className={`w-6 h-6 mb-1 ${isActive ? 'fill-current' : ''} ${isRegistrar ? 'text-blue-600 drop-shadow-[0_0_8px_rgba(37,99,235,0.5)]' : ''}`} />
+                                <Icon className={`w-6 h-6 mb-1 ${isActive ? 'fill-current' : ''} ${isRegistrar ? 'text-gray-500 drop-shadow-[0_0_8px_rgba(37,99,235,0.5)]' : ''}`} />
                                 {isRegistrar && <span className="absolute inset-0 bg-blue-400/30 rounded-full blur-md animate-ping opacity-20"></span>}
                             </div>
-                            <span className={`text-[10px] font-medium ${isRegistrar ? 'font-black text-blue-600' : ''}`}>{item.label}</span>
+                            <span className={`text-[10px] font-medium ${isRegistrar ? 'font-black text-gray-500' : ''}`}>{item.label}</span>
                         </Link>
                     );
                 })}
