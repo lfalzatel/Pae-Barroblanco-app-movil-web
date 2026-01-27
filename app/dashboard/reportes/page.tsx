@@ -1297,22 +1297,7 @@ export default function ReportesPage() {
         {/* Estadísticas principales */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
           {/* Pending Groups - New Card */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <div className="text-2xl font-black text-orange-500 tracking-tighter">
-                  {loading ? <Skeleton className="h-8 w-16" /> : stats.pendingGroupsCount}
-                </div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">GRUPOS PENDIENTES</div>
-              </div>
-              <div className="bg-orange-50 p-2 rounded-xl">
-                <Clock className="w-5 h-5 text-orange-500" />
-              </div>
-            </div>
-            <div className="text-[10px] text-orange-400 font-bold">
-              {stats.totalActiveGroups > 0 ? ((stats.pendingGroupsCount / stats.totalActiveGroups) * 100).toFixed(0) : 0}% sin reportar
-            </div>
-          </div>
+
           {/* Total Estudiantes */}
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
             <div className="flex justify-between items-start mb-2">
