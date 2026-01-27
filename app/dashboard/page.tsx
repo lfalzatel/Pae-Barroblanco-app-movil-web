@@ -188,6 +188,15 @@ export default function DashboardPage() {
         }).sort((a, b) => b.count - a.count);
       };
 
+      // Calculate Pending Groups List
+      const pendingGroupsList = Array.from(activeGroupsSet)
+        .filter(g => !reportedGroupsSet.has(g))
+        .map(g => {
+          const count = estudiantes.filter(e => e.grupo === g).length;
+          return { grupo: g, count, total: count, percentage: '0' };
+        })
+        .sort((a, b) => a.grupo.localeCompare(b.grupo));
+
       setStats({
         totalEstudiantes: estudiantes.length,
         activos: activos.length,
@@ -200,7 +209,8 @@ export default function DashboardPage() {
           recibieron: mapDetails(groupAgg.recibieron),
           noRecibieron: mapDetails(groupAgg.noRecibieron),
           ausentes: mapDetails(groupAgg.ausentes),
-          inactivos: mapDetails(groupAgg.inactivos)
+          inactivos: mapDetails(groupAgg.inactivos),
+          pendientes: pendingGroupsList
         },
         pendingGroupsCount: activeGroupsSet.size - reportedGroupsSet.size,
         totalActiveGroups: activeGroupsSet.size
@@ -282,6 +292,11 @@ export default function DashboardPage() {
       data = stats.groupDetails.recibieron;
       color = "text-emerald-600 bg-emerald-50";
       Icon = CheckCircle;
+    } else if (category === 'pendientes') {
+      title = "Grupos Pendientes";
+      data = stats.groupDetails.pendientes || [];
+      color = "text-orange-500 bg-orange-50";
+      Icon = Clock;
     }
 
     if (data.length > 0) {
@@ -555,6 +570,27 @@ export default function DashboardPage() {
             </div>
           </button>
 
+          {/* Tarjeta Grupos Pendientes */}
+          <button
+            onClick={() => openGroupModal('pendientes')}
+            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-orange-400 hover:shadow-lg hover:shadow-orange-50 transition-all text-left"
+          >
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-2xl md:text-3xl font-black text-orange-500 tracking-tighter">
+                  {loading ? <Skeleton className="h-8 w-16" /> : stats.pendingGroupsCount}
+                </div>
+                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">GRUPOS PENDIENTES</div>
+              </div>
+              <div className="bg-orange-50 p-2 rounded-xl group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">
+                <Clock className="w-5 h-5 text-orange-500 group-hover:text-white transition-colors" />
+              </div>
+            </div>
+            <div className="text-[10px] text-orange-400 font-bold">
+              {stats.totalActiveGroups > 0 ? ((stats.pendingGroupsCount / stats.totalActiveGroups) * 100).toFixed(0) : 0}% sin reportar
+            </div>
+          </button>
+
           {/* Inactivos (Renunciaron) */}
           <button
             onClick={() => openGroupModal('inactivos')}
@@ -582,29 +618,9 @@ export default function DashboardPage() {
           </button>
 
 
-          {/* Pending Groups - New Card */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <div className="text-2xl md:text-3xl font-black text-orange-500 tracking-tighter">
-                  {loading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
-                  ) : (
-                    stats.pendingGroupsCount
-                  )}
-                </div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">GRUPOS PENDIENTES</div>
-              </div>
-              <div className="bg-orange-50 p-2 rounded-xl">
-                <Clock className="w-5 h-5 text-orange-500" />
-              </div>
-            </div>
-            <div className="text-[10px] text-orange-400 font-bold">
-              {stats.totalActiveGroups > 0 ? ((stats.pendingGroupsCount / stats.totalActiveGroups) * 100).toFixed(0) : 0}% sin reportar
-            </div>
-          </div>
         </div>
       </div>
     </div>
+
   );
 }

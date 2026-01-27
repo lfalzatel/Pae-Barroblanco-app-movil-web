@@ -503,15 +503,20 @@ export default function DashboardLayout({
                 {navItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
+                    const isRegistrar = item.label === 'Registrar';
+
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex flex-col items-center justify-center w-full py-1 rounded-lg transition-colors ${isActive ? 'text-blue-600' : 'text-gray-500 hover:bg-gray-50'
+                            className={`flex flex-col items-center justify-center w-full py-1 rounded-lg transition-colors relative ${isActive ? 'text-blue-600' : 'text-gray-500 hover:bg-gray-50'
                                 }`}
                         >
-                            <Icon className={`w-6 h-6 mb-1 ${isActive ? 'fill-current' : ''}`} />
-                            <span className="text-[10px] font-medium">{item.label}</span>
+                            <div className={`relative ${isRegistrar ? 'animate-pulse' : ''}`}>
+                                <Icon className={`w-6 h-6 mb-1 ${isActive ? 'fill-current' : ''} ${isRegistrar ? 'text-blue-600 drop-shadow-[0_0_8px_rgba(37,99,235,0.5)]' : ''}`} />
+                                {isRegistrar && <span className="absolute inset-0 bg-blue-400/30 rounded-full blur-md animate-ping opacity-20"></span>}
+                            </div>
+                            <span className={`text-[10px] font-medium ${isRegistrar ? 'font-black text-blue-600' : ''}`}>{item.label}</span>
                         </Link>
                     );
                 })}

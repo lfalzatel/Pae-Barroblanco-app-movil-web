@@ -77,7 +77,7 @@ export default function StatsDetailModal({
                 { color: 'text-blue-500 bg-blue-50', icon: UserMinus };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}></div>
 
             {/* Main Modal Container */}
@@ -145,7 +145,7 @@ export default function StatsDetailModal({
                                             {item.grupo.replace('Grado ', '').split('-')[0]}
                                         </div>
                                         <div className="flex flex-col">
-                                            <div className="font-bold text-gray-800 group-hover:text-blue-700 transition-colors">{item.grupo}</div>
+                                            <div className="font-bold text-gray-800 group-hover:text-blue-700 transition-colors">{item.grupo.replace('Grado ', '').split('-')[0]}</div>
                                             <div className="flex items-center gap-1.5 mt-0.5">
                                                 <span className="text-[10px] font-medium text-gray-500 bg-gray-100/80 px-1.5 py-0.5 rounded-md group-hover:bg-blue-100/50 group-hover:text-blue-600 transition-colors">Ver estudiantes</span>
                                             </div>

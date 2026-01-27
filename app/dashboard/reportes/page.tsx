@@ -261,10 +261,11 @@ export default function ReportesPage() {
             // Para simplicidad y consistencia con Dashboard, usaremos total activos para Recibieron/NoRecibieron/Ausentes.
             const percentage = total > 0 ? ((count / total) * 100).toFixed(0) : '0';
             return { grupo, count, total, percentage };
+
           }).sort((a, b) => b.count - a.count);
         };
 
-        // Calculate Active Groups for Pending Logic
+        // Calculate Pending Groups
         const uniqueActiveGroups = new Set<string>();
         ests.forEach(e => {
           if (e.grupo && (e.estado === 'activo' || e.estado === 'active')) uniqueActiveGroups.add(e.grupo);
@@ -272,10 +273,17 @@ export default function ReportesPage() {
 
         const uniqueReportedGroups = new Set<string>();
         asistenciaData?.forEach((a: any) => {
-          // Find group from ests array since a.estudiantes might be array or object depending on join
-          // a.estudiantes is object due to select
           if (a.estudiantes && a.estudiantes.grupo) uniqueReportedGroups.add(a.estudiantes.grupo);
         });
+
+        const pendingGroupsList = Array.from(uniqueActiveGroups)
+          .filter(g => !uniqueReportedGroups.has(g))
+          .map(g => {
+            const count = ests.filter(e => e.grupo === g && (e.estado === 'activo' || e.estado === 'active')).length;
+            // Filter out empty groups if needed, but keeping them for visibility is better
+            return { grupo: g, count, total: count, percentage: '0' };
+          })
+          .sort((a, b) => a.grupo.localeCompare(b.grupo));
 
         // Calculate Business Days in Range
         let businessDays = 0;
@@ -302,7 +310,8 @@ export default function ReportesPage() {
             recibieron: mapDetails(groupAgg.recibieron),
             noRecibieron: mapDetails(groupAgg.noRecibieron),
             ausentes: mapDetails(groupAgg.ausentes),
-            inactivos: mapDetails(groupAgg.inactivos)
+            inactivos: mapDetails(groupAgg.inactivos),
+            pendientes: pendingGroupsList
           },
           pendingGroupsCount: uniqueActiveGroups.size - uniqueReportedGroups.size,
           totalActiveGroups: uniqueActiveGroups.size
@@ -904,6 +913,11 @@ export default function ReportesPage() {
       data = stats.groupDetails.recibieron;
       color = "text-emerald-600 bg-emerald-50";
       Icon = CheckCircle;
+    } else if (category === 'pendientes') {
+      title = "Grupos Pendientes";
+      data = stats.groupDetails.pendientes || [];
+      color = "text-orange-500 bg-orange-50";
+      Icon = Clock;
     }
 
     if (data.length > 0) {
@@ -1396,6 +1410,27 @@ export default function ReportesPage() {
             </div>
             <div className="text-[9px] text-rose-500 font-black uppercase tracking-widest flex items-center gap-1 mt-2">
               VER GRUPOS <Info className="w-3 h-3 ml-0.5" />
+            </div>
+          </button>
+
+          {/* Tarjeta Grupos Pendientes */}
+          <button
+            onClick={() => openGroupModal('pendientes')}
+            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-orange-100 border border-orange-50 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left"
+          >
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-3xl font-black text-orange-500 tracking-tighter">
+                  {loading ? <Skeleton className="h-8 w-16" /> : stats.pendingGroupsCount}
+                </div>
+                <div className="text-orange-300 text-[9px] font-black uppercase tracking-widest">GRUPOS PENDIENTES</div>
+              </div>
+              <div className="bg-orange-50 p-2.5 rounded-2xl group-hover:bg-orange-500 group-hover:text-white transition-all duration-300 shadow-inner">
+                <Clock className="w-5 h-5 text-orange-400 group-hover:text-white transition-colors" />
+              </div>
+            </div>
+            <div className="text-[10px] text-orange-400/80 font-bold">
+              {stats.totalActiveGroups > 0 ? ((stats.pendingGroupsCount / stats.totalActiveGroups) * 100).toFixed(0) : 0}% sin reportar
             </div>
           </button>
 
