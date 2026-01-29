@@ -381,6 +381,14 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto pb-24 md:pb-8">
+      <ScheduleModal
+        isOpen={scheduleModalOpen}
+        onClose={() => setScheduleModalOpen(false)}
+      />
+      <WeeklyScheduleModal
+        isOpen={weeklyModalOpen}
+        onClose={() => setWeeklyModalOpen(false)}
+      />
       <StatsDetailModal
         isOpen={modalOpen}
         onClose={() => {
