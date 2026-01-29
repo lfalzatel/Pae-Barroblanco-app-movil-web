@@ -296,18 +296,29 @@ export default function GestionPage() {
     return matchSearch && matchGrupo;
   });
 
+  /* New State for Stats Modal */
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [statsDetail, setStatsDetail] = useState<{
+    avgDaily: number;
+    totalStudents: number;
+    daysCounted: number;
+    dailyHistory: { date: string; count: number; percentage: number }[];
+  } | null>(null);
+
   const calcularAsistenciaReal = async () => {
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const studentIds = estudiantesFiltrados.map(e => e.id);
-      if (studentIds.length === 0) return 0;
+      if (studentIds.length === 0) return { percentage: '0.0', details: null };
 
+      // Fetch all 'recibio' events for these students in last 30 days
       const { data, error } = await supabase
         .from('asistencia_pae')
-        .select('estado')
+        .select('fecha, estado')
         .in('estudiante_id', studentIds)
+        .eq('estado', 'recibio')
         .gte(
           'fecha',
           new Date(thirtyDaysAgo.getTime() - thirtyDaysAgo.getTimezoneOffset() * 60000)
@@ -316,13 +327,42 @@ export default function GestionPage() {
         );
 
       if (error) throw error;
-      if (!data || data.length === 0) return 0;
+      if (!data || data.length === 0) return { percentage: '0.0', details: null };
 
-      const recibieron = data.filter((a: any) => a.estado === 'recibio').length;
-      return ((recibieron / data.length) * 100).toFixed(1);
+      // Group by date to find unique days and daily counts
+      const dailyCounts: Record<string, number> = {};
+      data.forEach((r: any) => {
+        dailyCounts[r.fecha] = (dailyCounts[r.fecha] || 0) + 1;
+      });
+
+      const uniqueDays = Object.keys(dailyCounts).sort((a, b) => b.localeCompare(a)); // Descending
+      const totalRecibio = data.length;
+      const numberOfDays = uniqueDays.length;
+
+      if (numberOfDays === 0) return { percentage: '0.0', details: null };
+
+      const avgDailyAttendance = totalRecibio / numberOfDays;
+      const coveragePercentage = (avgDailyAttendance / studentIds.length) * 100;
+
+      // Build detail history
+      const history = uniqueDays.map(date => ({
+        date,
+        count: dailyCounts[date],
+        percentage: (dailyCounts[date] / studentIds.length) * 100
+      }));
+
+      return {
+        percentage: coveragePercentage.toFixed(1),
+        details: {
+          avgDaily: Math.round(avgDailyAttendance),
+          totalStudents: studentIds.length,
+          daysCounted: numberOfDays,
+          dailyHistory: history
+        }
+      };
     } catch (error) {
       console.error('Error calculando asistencia:', error);
-      return 0;
+      return { percentage: '0.0', details: null };
     }
   };
 
@@ -330,11 +370,14 @@ export default function GestionPage() {
 
   useEffect(() => {
     const updateStats = async () => {
-      const percentage = await calcularAsistenciaReal();
-      setAttendancePercentage(String(percentage));
+      const result = await calcularAsistenciaReal();
+      setAttendancePercentage(result.percentage);
+      setStatsDetail(result.details);
     };
     updateStats();
   }, [estudiantesFiltrados]);
+
+  // ... (Report Generation functions remain the same) ...
 
   const handleGenerateDocenteReport = async (docente: Docente) => {
     try {
@@ -666,18 +709,78 @@ export default function GestionPage() {
                 <div className="text-3xl font-black text-cyan-600 leading-none mb-2">
                   {loading ? <Skeleton className="h-9 w-12" /> : estudiantesFiltrados.length}
                 </div>
-                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Estudiantes</div>
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Estudiantes</div>
               </div>
-              <div className="bg-white rounded-[2rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 flex flex-col items-center justify-center text-center">
-                <div className="text-3xl font-black text-emerald-500 leading-none mb-2">
+              <button
+                onClick={() => setShowStatsModal(true)}
+                className="bg-white rounded-[2rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 flex flex-col items-center justify-center text-center hover:bg-cyan-50 transition-all cursor-pointer active:scale-95 group relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-cyan-100/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="text-3xl font-black text-emerald-500 leading-none mb-2 relative z-10 flex items-center gap-1">
                   {loading ? <Skeleton className="h-9 w-16" /> : `${attendancePercentage}%`}
+                  <Info className="w-4 h-4 text-emerald-300 group-hover:text-emerald-500 transition-colors" />
                 </div>
-                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Asistencia Real (30d)</div>
-              </div>
+                <div className="text-[10px] font-black text-gray-400 group-hover:text-cyan-600 uppercase tracking-widest px-1 relative z-10">Cobertura Real (30d)</div>
+              </button>
             </div>
 
-            {/* Lista de estudiantes */}
-            < div className="space-y-3" >
+            {/* Modal de Estadísticas Detalladas */}
+            {showStatsModal && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300" onClick={() => setShowStatsModal(false)}>
+                <div className="bg-white rounded-[3rem] p-8 w-full max-w-sm shadow-2xl relative animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                  <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-t-[3rem] -z-10" />
+                  <button onClick={() => setShowStatsModal(false)} className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors">
+                    <X size={20} />
+                  </button>
+
+                  <div className="text-center mb-6 pt-4">
+                    <div className="w-20 h-20 bg-white rounded-3xl mx-auto flex items-center justify-center shadow-xl mb-4 text-emerald-500 transform -rotate-3">
+                      <Users size={32} />
+                    </div>
+                    <h3 className="text-white font-black text-2xl tracking-tight mb-1">Cobertura PAE</h3>
+                    <p className="text-emerald-100 text-[10px] font-bold uppercase tracking-widest opacity-90">Últimos 30 días</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-center">
+                        <div className="text-2xl font-black text-emerald-600">{statsDetail?.avgDaily}</div>
+                        <div className="text-[9px] font-black text-emerald-400 uppercase tracking-tight">Promedio Diario</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-center">
+                        <div className="text-2xl font-black text-gray-700">{statsDetail?.totalStudents}</div>
+                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-tight">Estudiantes Activos</div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 max-h-60 overflow-y-auto custom-scrollbar">
+                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Historial Diario</h4>
+                      <div className="space-y-2">
+                        {statsDetail?.dailyHistory.map((day, i) => (
+                          <div key={i} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                            <div className="flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                              <span className="text-xs font-bold text-gray-600 capitalize">
+                                {new Date(day.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-black text-gray-900">{day.count}</span>
+                              <span className="text-[10px] font-bold text-gray-400 w-8 text-right">{day.percentage.toFixed(0)}%</span>
+                            </div>
+                          </div>
+                        ))}
+                        {(!statsDetail?.dailyHistory || statsDetail.dailyHistory.length === 0) && (
+                          <div className="text-center text-xs text-gray-400 py-4 italic">No hay registros recientes</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3">
               {
                 loading ? (
                   [...Array(6)].map((_, i) => <Skeleton key={i} className="h-28 rounded-[2rem]" />)
@@ -721,7 +824,7 @@ export default function GestionPage() {
                   ))
                 )
               }
-            </div >
+            </div>
           </>
         ) : (
           /* Vista de Docentes */

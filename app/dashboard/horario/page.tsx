@@ -85,6 +85,7 @@ export default function HorarioPage() {
 
     const [showEventModal, setShowEventModal] = useState(false);
     const [eventDate, setEventDate] = useState<string>('');
+    const [showEventDateSelector, setShowEventDateSelector] = useState(false);
     const [editingEvent, setEditingEvent] = useState<any | null>(null);
     const [eventForm, setEventForm] = useState({
         titulo: '',
@@ -933,52 +934,76 @@ export default function HorarioPage() {
             {showEventModal && (
                 <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowEventModal(false)}></div>
-                    <div className="bg-white rounded-[3rem] w-full max-w-lg relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl">
-                        <div className="p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden">
+                    <div className="bg-white rounded-3xl md:rounded-[3rem] w-full max-w-lg relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl max-h-[90vh]">
+                        <div className="p-5 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden shrink-0">
                             <div className="relative z-10">
-                                <h3 className="text-2xl font-black">{editingEvent ? 'Editar Actividad' : 'Nueva Actividad'}</h3>
-                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">
+                                <h3 className="text-xl md:text-2xl font-black">{editingEvent ? 'Editar Actividad' : 'Nueva Actividad'}</h3>
+                                <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">
                                     {eventDate ? formatDateLabel(eventDate) : 'Programación Escolar'}
                                 </p>
                             </div>
-                            <button onClick={() => setShowEventModal(false)} className="relative z-10 p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
-                            <CalendarIcon className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 rotate-12" />
+                            <button onClick={() => setShowEventModal(false)} className="relative z-10 p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-5 h-5 md:w-6 md:h-6" /></button>
+                            <CalendarIcon className="absolute -right-4 -bottom-4 w-24 h-24 md:w-32 md:h-32 opacity-10 rotate-12" />
                         </div>
 
-                        <div className="p-6 space-y-4">
+                        <div className="p-4 md:p-6 space-y-3 overflow-y-auto custom-scrollbar-premium">
                             {eventForm.prioridad === 'alta' && (
-                                <div className="bg-red-50 border border-red-100 p-3 rounded-2xl flex items-center gap-3 animate-pulse">
+                                <div className="bg-red-50 border border-red-100 p-2.5 md:p-3 rounded-2xl flex items-center gap-3 animate-pulse">
                                     <AlertTriangle className="w-4 h-4 text-red-600" />
-                                    <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">ACTIVIDAD DE ALTA PRIORIDAD / URGENTE</p>
+                                    <p className="text-[9px] md:text-[10px] font-black text-red-600 uppercase tracking-widest">ACTIVIDAD DE ALTA PRIORIDAD / URGENTE</p>
                                 </div>
                             )}
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Título de la Actividad</label>
+                            {/* Date Selector Field */}
+                            <div className="space-y-1.5 md:space-y-2">
+                                <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Fecha Programada</label>
+                                <button
+                                    onClick={() => setShowEventDateSelector(true)}
+                                    className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 flex items-center justify-between group hover:bg-white hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-50 transition-all active:scale-[0.98]"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-1.5 md:p-2 bg-white rounded-lg md:rounded-xl shadow-sm border border-gray-100 group-hover:border-cyan-100">
+                                            <CalendarIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-400 group-hover:text-cyan-500 transition-colors" />
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="text-xs md:text-[13px] font-black text-gray-700 group-hover:text-cyan-700 transition-colors uppercase tracking-tight">
+                                                {eventDate ? formatDateLabel(eventDate) : 'SELECCIONAR FECHA'}
+                                            </div>
+                                            <div className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                                                Tocar para cambiar
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-cyan-500 transition-colors" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-1.5 md:space-y-2">
+                                <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Título de la Actividad</label>
                                 <input
                                     value={eventForm.titulo}
                                     onChange={e => setEventForm({ ...eventForm, titulo: e.target.value })}
-                                    className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all"
+                                    className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all text-sm"
                                     placeholder="Ej: Izada de Bandera"
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hora (Opcional)</label>
+                            <div className="grid grid-cols-2 gap-3 md:gap-4">
+                                <div className="space-y-1.5 md:space-y-2">
+                                    <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hora (Opcional)</label>
                                     <input
                                         value={eventForm.hora}
                                         onChange={e => setEventForm({ ...eventForm, hora: e.target.value })}
-                                        className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all text-xs lg:text-sm"
+                                        className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all text-xs lg:text-sm"
                                         placeholder="08:00 AM"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Prioridad</label>
+                                <div className="space-y-1.5 md:space-y-2">
+                                    <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Prioridad</label>
                                     <select
                                         value={eventForm.prioridad}
                                         onChange={e => setEventForm({ ...eventForm, prioridad: e.target.value })}
-                                        className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none text-xs lg:text-sm"
+                                        className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none text-xs lg:text-sm"
                                     >
                                         <option value="normal">Normal 😊</option>
                                         <option value="alta">Urgente ⚠️</option>
@@ -986,14 +1011,14 @@ export default function HorarioPage() {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Dirigido a / Participantes</label>
+                            <div className="space-y-1.5 md:space-y-2">
+                                <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Dirigido a / Participantes</label>
                                 <div className="relative">
                                     <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                                     <select
                                         value={eventForm.afectados}
                                         onChange={e => setEventForm({ ...eventForm, afectados: e.target.value })}
-                                        className="w-full pl-12 pr-10 py-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none text-xs lg:text-sm"
+                                        className="w-full pl-12 pr-10 py-3 md:py-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none text-xs lg:text-sm"
                                     >
                                         <option value="">Seleccionar destinatarios...</option>
                                         <option value="Estudiantes">Estudiantes 🎓</option>
@@ -1008,19 +1033,19 @@ export default function HorarioPage() {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descripción / Detalles</label>
+                            <div className="space-y-1.5 md:space-y-2">
+                                <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descripción / Detalles</label>
                                 <textarea
                                     value={eventForm.descripcion}
                                     onChange={e => setEventForm({ ...eventForm, descripcion: e.target.value })}
-                                    className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all min-h-[80px] lg:min-h-[100px] resize-none text-xs lg:text-sm"
+                                    className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all min-h-[80px] lg:min-h-[100px] resize-none text-xs lg:text-sm"
                                     placeholder="Detalles adicionales de la actividad..."
                                 />
                             </div>
                         </div>
 
-                        <div className="p-6 pt-0 flex gap-3">
-                            <button onClick={() => setShowEventModal(false)} className="px-5 py-4 bg-gray-50 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-100 transition-all">
+                        <div className="p-4 md:p-6 pt-0 flex gap-3 shrink-0">
+                            <button onClick={() => setShowEventModal(false)} className="px-4 md:px-5 py-3 md:py-4 bg-gray-50 text-gray-500 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-100 transition-all">
                                 CANCELAR
                             </button>
                             {editingEvent && (
@@ -1029,16 +1054,33 @@ export default function HorarioPage() {
                                         handleDeleteInstitutionalEvent(editingEvent.id);
                                         setShowEventModal(false);
                                     }}
-                                    className="p-4 bg-red-50 text-red-600 rounded-2xl hover:bg-red-100 transition-all border border-red-100"
+                                    className="p-3 md:p-4 bg-red-50 text-red-600 rounded-xl md:rounded-2xl hover:bg-red-100 transition-all border border-red-100"
                                     title="Eliminar Actividad"
                                 >
                                     <Trash2 className="w-5 h-5" />
                                 </button>
                             )}
-                            <button onClick={handleSaveInstitutionalEvent} className="flex-1 py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-cyan-100 transition-all active:scale-[0.98]">
+                            <button onClick={handleSaveInstitutionalEvent} className="flex-1 py-3 md:py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-cyan-100 transition-all active:scale-[0.98]">
                                 {editingEvent ? 'GUARDAR' : 'CREAR'}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Event Date Selector Overlay */}
+            {showEventDateSelector && (
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowEventDateSelector(false)}></div>
+                    <div className="relative animate-in zoom-in-95 z-[610]">
+                        <MiniCalendar
+                            selectedDate={eventDate}
+                            onSelectDate={(d) => {
+                                setEventDate(d);
+                                setShowEventDateSelector(false);
+                            }}
+                            className="shadow-2xl border-8 border-white rounded-[3rem]"
+                        />
                     </div>
                 </div>
             )}
