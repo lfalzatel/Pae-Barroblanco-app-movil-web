@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useModalBack } from '@/hooks/useModalBack';
 import { ArrowLeft, Search, Eye, FileDown, Users, User, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2, School, ChevronDown, Info, Shield } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
@@ -37,7 +38,11 @@ export default function GestionPage() {
   const [docentes, setDocentes] = useState<Docente[]>([]);
   const [gruposDisponibles, setGruposDisponibles] = useState<string[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Estudiante | null>(null);
+  useModalBack(!!selectedStudent, () => setSelectedStudent(null), 'student-history-modal');
+
   const [selectedDocente, setSelectedDocente] = useState<Docente | null>(null);
+  useModalBack(!!selectedDocente, () => setSelectedDocente(null), 'teacher-activity-modal');
+
   const [studentHistory, setStudentHistory] = useState<any[]>([]);
   const [docenteHistory, setDocenteHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,12 +55,22 @@ export default function GestionPage() {
     firstRegister?: string;
     lastRegister?: string;
   } | null>(null);
+
+  useModalBack(!!selectedDateActivity, () => setSelectedDateActivity(null), 'teacher-date-detail-modal');
+
   const [selectedStudentDate, setSelectedStudentDate] = useState<any | null>(null);
+  useModalBack(!!selectedStudentDate, () => setSelectedStudentDate(null), 'student-date-detail-modal');
+
   const [docenteParaRol, setDocenteParaRol] = useState<Docente | null>(null);
+  useModalBack(!!docenteParaRol, () => setDocenteParaRol(null), 'role-change-modal');
+
   const [modificandoRol, setModificandoRol] = useState(false);
 
   // Create Student State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  useModalBack(isCreateModalOpen, () => setIsCreateModalOpen(false), 'create-student-modal');
+
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [newStudent, setNewStudent] = useState({
@@ -298,6 +313,10 @@ export default function GestionPage() {
 
   /* New State for Stats Modal */
   const [showStatsModal, setShowStatsModal] = useState(false);
+
+  // Hook for Stats Modal
+  useModalBack(showStatsModal, () => setShowStatsModal(false), 'stats-modal');
+
   const [statsDetail, setStatsDetail] = useState<{
     avgDaily: number;
     totalStudents: number;
