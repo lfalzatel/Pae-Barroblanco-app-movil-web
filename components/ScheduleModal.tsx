@@ -3,6 +3,7 @@ import { X, Calendar, Download, Clock, Users, FileText, ChevronDown, ChevronUp }
 import { generateSchedulePDF } from '../lib/pdf-generator';
 import { supabase } from '@/lib/supabase';
 import { MiniCalendar } from './ui/MiniCalendar';
+import { useModalBack } from '@/hooks/useModalBack';
 
 interface ScheduleItem {
     time: string;
@@ -25,6 +26,8 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
     const [showSedeDropdown, setShowSedeDropdown] = useState(false);
     const [selectedSede, setSelectedSede] = useState('Principal');
     const [previewUrl, setPreviewUrl] = useState<URL | string | null>(null);
+
+    useModalBack(isOpen, onClose, 'schedule-modal');
 
     useEffect(() => {
         if (isOpen) {

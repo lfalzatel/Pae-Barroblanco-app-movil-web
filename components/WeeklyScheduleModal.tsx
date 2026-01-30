@@ -14,6 +14,7 @@ import {
     School
 } from 'lucide-react';
 import { generateWeeklySchedulePDF } from '../lib/pdf-generator';
+import { useModalBack } from '@/hooks/useModalBack';
 
 interface WeeklyScheduleModalProps {
     isOpen: boolean;
@@ -56,6 +57,8 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
         return d;
     });
     const [previewUrl, setPreviewUrl] = useState<URL | string | null>(null);
+
+    useModalBack(isOpen, onClose, 'weekly-schedule-modal');
 
     // Helper: Format date as YYYY-MM-DD using LOCAL components (no UTC shift)
     const formatLocalDate = (date: Date) => {

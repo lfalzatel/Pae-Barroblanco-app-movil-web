@@ -1,5 +1,6 @@
 import { ChevronLeft, X, CheckCircle, XCircle, UserX, UserMinus } from 'lucide-react';
 import { useRef, useEffect } from 'react';
+import { useModalBack } from '@/hooks/useModalBack';
 
 // Helper to generate consistent avatar colors based on name
 const getAvatarColor = (name: string) => {
@@ -67,6 +68,8 @@ export default function StatsDetailModal({
     onGroupSelect,
     onBackToSummary
 }: StatsDetailModalProps) {
+    useModalBack(isOpen, onClose, 'stats-detail-modal');
+
     if (!isOpen) return null;
 
     // Determine deep detail icon/color based on category or individual items
