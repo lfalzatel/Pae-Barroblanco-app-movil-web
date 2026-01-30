@@ -176,7 +176,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
             />
 
             {/* Modal Content */}
-            <div className="bg-white rounded-[2rem] w-full max-w-lg relative z-10 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-lg relative z-10 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden flex flex-col max-h-[90vh]">
 
                 {/* Header - Premium Cyan Style */}
                 <div className="p-5 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
@@ -225,7 +225,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                             {showSedeDropdown && (
                                 <>
                                     <div className="fixed inset-0 z-[60]" onClick={() => setShowSedeDropdown(false)}></div>
-                                    <div className="absolute top-full right-0 mt-2 w-full min-w-[140px] bg-white rounded-2xl shadow-xl overflow-hidden z-[70] animate-in zoom-in-95 duration-200 border border-gray-100">
+                                    <div className="absolute top-full right-0 mt-2 w-full min-w-[140px] bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden z-[70] animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-700">
                                         <div className="p-1.5 space-y-1">
                                             {[
                                                 { id: 'Todas', label: 'Todas las sedes' },
@@ -237,8 +237,8 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                                     key={sede.id}
                                                     onClick={() => { setSelectedSede(sede.id); setShowSedeDropdown(false); }}
                                                     className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${selectedSede === sede.id
-                                                            ? 'bg-cyan-50 text-cyan-700'
-                                                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                                        ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300'
+                                                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'
                                                         }`}
                                                 >
                                                     {sede.label}
@@ -254,7 +254,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
                     {/* Calendar Collapse */}
                     {showCalendar && (
-                        <div className="mt-4 animate-in slide-in-from-top-2 fade-in duration-200 flex justify-center bg-white p-3 rounded-2xl shadow-xl">
+                        <div className="mt-4 animate-in slide-in-from-top-2 fade-in duration-200 flex justify-center bg-white dark:bg-gray-800 p-3 rounded-2xl shadow-xl">
                             <MiniCalendar
                                 selectedDate={date}
                                 onSelectDate={(d) => { setDate(d); setShowCalendar(false); }}
@@ -265,7 +265,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                 </div>
 
                 {/* Body */}
-                <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/30">
+                <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/30 dark:bg-black/20">
                     {loading ? (
                         <div className="py-20 flex flex-col items-center justify-center gap-4">
                             <div className="animate-spin rounded-full h-8 w-8 border-4 border-cyan-600/20 border-t-cyan-600"></div>
@@ -288,26 +288,26 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                                     return (
                                                         <div
                                                             key={idx}
-                                                            className="bg-amber-50/40 border border-amber-100 rounded-[2rem] p-4 flex items-center gap-4 animate-in fade-in duration-300"
+                                                            className="bg-amber-50/40 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-[2rem] p-4 flex items-center gap-4 animate-in fade-in duration-300"
                                                         >
-                                                            <div className="bg-white border border-amber-200 px-3 py-1.5 rounded-xl shadow-sm shrink-0 flex items-center gap-1.5">
+                                                            <div className="bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 px-3 py-1.5 rounded-xl shadow-sm shrink-0 flex items-center gap-1.5">
                                                                 <Clock className="w-3 h-3 text-amber-500" />
-                                                                <span className="text-[10px] font-black text-amber-700 uppercase tracking-wider">
+                                                                <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">
                                                                     {item.time.split(' - ')[0]}
                                                                 </span>
                                                             </div>
                                                             <div className="flex flex-col">
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="font-black text-lg text-gray-900 leading-none tracking-tight">
+                                                                    <span className="font-black text-lg text-gray-900 dark:text-white leading-none tracking-tight">
                                                                         {item.group.replace('-2026', '')}
                                                                     </span>
                                                                     {item.studentCount !== undefined && (
-                                                                        <span className="text-[9px] font-black text-amber-700/60 bg-white border border-amber-100 px-1.5 py-0.5 rounded-md">
+                                                                        <span className="text-[9px] font-black text-amber-700/60 dark:text-amber-400/80 bg-white dark:bg-gray-800 border border-amber-100 dark:border-amber-900/30 px-1.5 py-0.5 rounded-md">
                                                                             {item.studentCount} Estudiantes
                                                                         </span>
                                                                     )}
                                                                 </div>
-                                                                <span className="text-[11px] font-bold text-amber-600/80 mt-1 italic leading-tight">
+                                                                <span className="text-[11px] font-bold text-amber-600/80 dark:text-amber-400/70 mt-1 italic leading-tight">
                                                                     {item.notes}
                                                                 </span>
                                                             </div>
@@ -318,22 +318,22 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                                 return (
                                                     <div
                                                         key={idx}
-                                                        className="flex items-center gap-4 p-4 rounded-3xl bg-white border border-gray-100 hover:border-cyan-100 hover:shadow-xl hover:shadow-cyan-600/5 transition-all duration-300 group"
+                                                        className="flex items-center gap-4 p-4 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-cyan-100 dark:hover:border-cyan-900 hover:shadow-xl hover:shadow-cyan-600/5 transition-all duration-300 group"
                                                     >
-                                                        <div className="flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-50 rounded-2xl border border-gray-100 group-hover:bg-cyan-50 group-hover:border-cyan-100 transition-colors shrink-0 shadow-sm min-w-[85px]">
-                                                            <Clock className="w-3.5 h-3.5 text-gray-400 group-hover:text-cyan-600" />
-                                                            <span className="text-[10px] font-black text-gray-700 group-hover:text-cyan-900 leading-tight">
+                                                        <div className="flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-900/20 group-hover:border-cyan-100 dark:group-hover:border-cyan-800 transition-colors shrink-0 shadow-sm min-w-[85px]">
+                                                            <Clock className="w-3.5 h-3.5 text-gray-400 dark:text-gray-400 group-hover:text-cyan-600 dark:group-hover:text-cyan-400" />
+                                                            <span className="text-[10px] font-black text-gray-700 dark:text-gray-300 group-hover:text-cyan-900 dark:group-hover:text-cyan-300 leading-tight">
                                                                 {item.time.split(' - ')[0]}
                                                             </span>
                                                         </div>
 
                                                         <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="font-black text-xl text-gray-900 whitespace-nowrap tracking-tight">
+                                                                <span className="font-black text-xl text-gray-900 dark:text-white whitespace-nowrap tracking-tight">
                                                                     {item.group.replace('-2026', '')}
                                                                 </span>
                                                                 {item.studentCount !== undefined && (
-                                                                    <span className="text-[10px] font-black text-white bg-cyan-600/80 px-2 py-0.5 rounded-lg shadow-sm">
+                                                                    <span className="text-[10px] font-black text-white bg-cyan-600/80 dark:bg-cyan-600/60 px-2 py-0.5 rounded-lg shadow-sm">
                                                                         {item.studentCount} Estudiantes
                                                                     </span>
                                                                 )}
@@ -354,25 +354,25 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                                         {notAttending.map((item, idx) => (
                                                             <div
                                                                 key={idx}
-                                                                className="bg-red-50/40 border border-red-100 rounded-[2rem] p-4 flex items-center gap-4 animate-in slide-in-from-bottom-2 duration-300"
+                                                                className="bg-red-50/40 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-[2rem] p-4 flex items-center gap-4 animate-in slide-in-from-bottom-2 duration-300"
                                                             >
-                                                                <div className="bg-white border border-red-200 px-3 py-1.5 rounded-xl shadow-sm shrink-0 flex items-center gap-1.5">
+                                                                <div className="bg-white dark:bg-gray-800 border border-red-200 dark:border-red-800 px-3 py-1.5 rounded-xl shadow-sm shrink-0 flex items-center gap-1.5">
                                                                     <X className="w-3 h-3 text-red-500" />
-                                                                    <span className="text-[10px] font-black text-red-700 uppercase tracking-wider">NO ASISTE</span>
+                                                                    <span className="text-[10px] font-black text-red-700 dark:text-red-400 uppercase tracking-wider">NO ASISTE</span>
                                                                 </div>
                                                                 <div className="flex flex-col">
                                                                     <div className="flex items-center gap-2">
-                                                                        <span className="font-black text-lg text-red-900 leading-none">
+                                                                        <span className="font-black text-lg text-red-900 dark:text-red-200 leading-none">
                                                                             {item.group.replace('-2026', '')}
                                                                         </span>
                                                                         {item.studentCount !== undefined && (
-                                                                            <span className="text-[9px] font-black text-red-700/60 bg-white border border-red-100 px-1.5 py-0.5 rounded-md">
+                                                                            <span className="text-[9px] font-black text-red-700/60 dark:text-red-300/60 bg-white dark:bg-gray-800 border border-red-100 dark:border-red-900/30 px-1.5 py-0.5 rounded-md">
                                                                                 {item.studentCount} Estudiantes
                                                                             </span>
                                                                         )}
                                                                     </div>
                                                                     {item.notes && (
-                                                                        <span className="text-[11px] font-bold text-red-600/70 mt-1 italic leading-tight">
+                                                                        <span className="text-[11px] font-bold text-red-600/70 dark:text-red-400/80 mt-1 italic leading-tight">
                                                                             {item.notes}
                                                                         </span>
                                                                     )}
@@ -388,35 +388,35 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                             </div>
 
                             {/* Standard Footer Notes */}
-                            <div className="mt-8 pt-6 border-t border-gray-100 space-y-4">
+                            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700 space-y-4">
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest">NOTA: ESTAR ATENTOS A LAS NOVEDADES.</p>
-                                    <p className="text-[11px] font-black text-cyan-700 uppercase">CONSEJO ACADÉMICO DE DOCENTES</p>
+                                    <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">NOTA: ESTAR ATENTOS A LAS NOVEDADES.</p>
+                                    <p className="text-[11px] font-black text-cyan-700 dark:text-cyan-400 uppercase">CONSEJO ACADÉMICO DE DOCENTES</p>
                                 </div>
 
-                                <p className="text-[10px] font-bold text-gray-600 uppercase leading-tight">
+                                <p className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase leading-tight">
                                     RECORDEMOS QUE EL HORARIO DE BACHILLERATO DE 7 A.M A 1.00. PM
                                 </p>
 
-                                <div className="bg-cyan-50/50 p-3 rounded-2xl border border-cyan-100/50">
-                                    <p className="text-[10px] font-black text-cyan-800 uppercase mb-2">RECUERDA</p>
+                                <div className="bg-cyan-50/50 dark:bg-cyan-900/10 p-3 rounded-2xl border border-cyan-100/50 dark:border-cyan-800/30">
+                                    <p className="text-[10px] font-black text-cyan-800 dark:text-cyan-300 uppercase mb-2">RECUERDA</p>
                                     <ul className="space-y-1.5">
-                                        <li className="flex items-center gap-2 text-[10px] font-bold text-gray-600 italic">
+                                        <li className="flex items-center gap-2 text-[10px] font-bold text-gray-600 dark:text-gray-400 italic">
                                             <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full" />
                                             Puntualidad
                                         </li>
-                                        <li className="flex items-center gap-2 text-[10px] font-bold text-gray-600 italic">
+                                        <li className="flex items-center gap-2 text-[10px] font-bold text-gray-600 dark:text-gray-400 italic">
                                             <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full" />
                                             Uso adecuado del uniforme
                                         </li>
-                                        <li className="flex items-center gap-2 text-[10px] font-bold text-gray-600 italic">
+                                        <li className="flex items-center gap-2 text-[10px] font-bold text-gray-600 dark:text-gray-400 italic">
                                             <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full" />
                                             Seguir las recomendaciones escritas en estas novedades
                                         </li>
                                     </ul>
                                 </div>
 
-                                <div className="pt-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                <div className="pt-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter">
                                     <p>Equipo directivo</p>
                                     <p>I.E Barro Blanco</p>
                                 </div>
@@ -424,14 +424,14 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                         </>
                     ) : (
                         <div className="text-center py-10 opacity-60">
-                            <Calendar className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                            <p className="text-gray-500 font-medium">No hay horario programado para esta fecha.</p>
+                            <Calendar className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+                            <p className="text-gray-500 dark:text-gray-400 font-medium">No hay horario programado para esta fecha.</p>
                         </div>
                     )}
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-4 md:p-6 bg-gray-50 border-t border-gray-100 shrink-0">
+                <div className="p-4 md:p-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 shrink-0">
                     <div className="flex gap-3">
                         <button
                             onClick={handleDownload}
@@ -444,7 +444,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
                         <button
                             onClick={onClose}
-                            className="flex-1 px-4 py-3 bg-white text-gray-900 border border-gray-200 rounded-2xl font-black text-sm hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+                            className="flex-1 px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-2xl font-black text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all shadow-sm active:scale-95"
                         >
                             Cerrar
                         </button>

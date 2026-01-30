@@ -81,43 +81,43 @@ export default function StatsDetailModal({
             <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}></div>
 
             {/* Main Modal Container */}
-            <div className="bg-white/90 backdrop-blur-2xl rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden border border-white/20 ring-1 ring-black/5 flex flex-col max-h-[85vh]">
+            <div className="bg-white/90 dark:bg-gray-900/95 backdrop-blur-2xl rounded-3xl w-full max-w-md relative z-10 shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden border border-white/20 ring-1 ring-black/5 flex flex-col max-h-[85vh]">
 
                 {/* Header - Switching based on View Level */}
                 {!deepDetailOpen ? (
                     // Level 1: Summary Header
-                    <div className="p-6 flex items-center justify-between border-b border-gray-100/50 bg-white/40 shrink-0">
+                    <div className="p-6 flex items-center justify-between border-b border-gray-100/50 dark:border-white/10 bg-white/40 dark:bg-white/5 shrink-0">
                         <div className="flex items-center gap-4">
                             <div className={`${category?.color.split(' ')[0].replace('text-', 'bg-').replace('600', '100').replace('700', '100')} ${category?.color.split(' ')[0]} p-3 rounded-2xl shadow-sm ring-1 ring-black/5`}>
                                 {category?.icon && <category.icon className="w-6 h-6" />}
                             </div>
                             <div>
-                                <h3 className="font-black text-gray-900 leading-tight text-lg">{category?.title}</h3>
-                                <p className="text-xs font-medium text-gray-500 mt-0.5">Desglose por grupos</p>
+                                <h3 className="font-black text-gray-900 dark:text-white leading-tight text-lg">{category?.title}</h3>
+                                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">Desglose por grupos</p>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2.5 hover:bg-black/5 rounded-full transition-all duration-200 text-gray-400 hover:text-gray-900 hover:rotate-90"
+                            className="p-2.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-all duration-200 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:rotate-90"
                         >
                             <X className="w-5 h-5" />
                         </button>
                     </div>
                 ) : (
                     // Level 2: Detail Header
-                    <div className="p-6 flex items-center justify-between border-b border-gray-100 bg-white/50 shrink-0 animate-in slide-in-from-right-4 duration-300">
+                    <div className="p-6 flex items-center justify-between border-b border-gray-100 dark:border-white/10 bg-white/50 dark:bg-white/5 shrink-0 animate-in slide-in-from-right-4 duration-300">
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={onBackToSummary}
-                                className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400 hover:text-gray-900 group"
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-colors text-gray-400 hover:text-gray-900 dark:hover:text-white group"
                             >
                                 <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
                             </button>
-                            <h3 className="font-black text-gray-900 leading-tight truncate max-w-[200px] text-lg">{deepDetailTitle}</h3>
+                            <h3 className="font-black text-gray-900 dark:text-white leading-tight truncate max-w-[200px] text-lg">{deepDetailTitle}</h3>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors text-gray-400"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -130,33 +130,33 @@ export default function StatsDetailModal({
                         // Level 1: Group List
                         <div className="p-6 space-y-3 pb-20">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 px-1 flex items-center gap-2">
-                                <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
                                 Distribución Acumulada
                             </p>
                             {data.map((item, idx) => (
                                 <button
                                     key={idx}
                                     onClick={() => onGroupSelect(item.grupo)}
-                                    className="w-full flex items-center justify-between p-4 rounded-2xl border border-gray-100/80 hover:border-blue-300/50 hover:bg-blue-50/40 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 text-left bg-white/60 backdrop-blur-sm group animate-in slide-in-from-bottom-2 fade-in fill-mode-both"
+                                    className="w-full flex items-center justify-between p-4 rounded-2xl border border-gray-100/80 dark:border-white/10 hover:border-blue-300/50 hover:bg-blue-50/40 dark:hover:bg-white/5 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 text-left bg-white/60 dark:bg-gray-800/50 backdrop-blur-sm group animate-in slide-in-from-bottom-2 fade-in fill-mode-both"
                                     style={{ animationDelay: `${idx * 40}ms` }}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 flex items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200/60 shadow-inner text-sm font-black text-gray-700 group-hover:from-blue-500 group-hover:to-blue-600 group-hover:text-white group-hover:border-blue-500 group-hover:shadow-blue-200 transition-all duration-300">
+                                        <div className="w-12 h-12 flex items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 border border-gray-200/60 dark:border-gray-600 shadow-inner text-sm font-black text-gray-700 dark:text-gray-200 group-hover:from-blue-500 group-hover:to-blue-600 group-hover:text-white group-hover:border-blue-500 group-hover:shadow-blue-200 transition-all duration-300">
                                             {item.grupo.replace('Grado ', '').split('-')[0]}
                                         </div>
                                         <div className="flex flex-col">
-                                            <div className="font-bold text-gray-800 group-hover:text-blue-700 transition-colors">{item.grupo.replace('Grado ', '').split('-')[0]}</div>
+                                            <div className="font-bold text-gray-800 dark:text-gray-200 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">{item.grupo.replace('Grado ', '').split('-')[0]}</div>
                                             <div className="flex items-center gap-1.5 mt-0.5">
-                                                <span className="text-[10px] font-medium text-gray-500 bg-gray-100/80 px-1.5 py-0.5 rounded-md group-hover:bg-blue-100/50 group-hover:text-blue-600 transition-colors">Ver estudiantes</span>
+                                                <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100/80 dark:bg-gray-700 px-1.5 py-0.5 rounded-md group-hover:bg-blue-100/50 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">Ver estudiantes</span>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-0.5 pr-1">
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm font-medium text-gray-400">{item.count}/{item.total}</span>
-                                            <span className="text-2xl font-black text-gray-900 tracking-tight group-hover:scale-110 transition-transform duration-300">{item.percentage}%</span>
+                                            <span className="text-2xl font-black text-gray-900 dark:text-white tracking-tight group-hover:scale-110 transition-transform duration-300">{item.percentage}%</span>
                                         </div>
-                                        <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                        <div className="w-24 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                                             <div className={`h-full rounded-full ${category?.color.split(' ')[0].replace('text-', 'bg-')}`} style={{ width: `${item.percentage}%` }}></div>
                                         </div>
                                     </div>
@@ -171,7 +171,7 @@ export default function StatsDetailModal({
                                 deepDetailData.map((item, idx) => (
                                     <div
                                         key={idx}
-                                        className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both flex items-center justify-between group"
+                                        className="bg-white dark:bg-gray-800 p-3 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both flex items-center justify-between group"
                                         style={{ animationDelay: `${idx * 30}ms` }}
                                     >
                                         <div className="flex items-center gap-3">
@@ -179,12 +179,12 @@ export default function StatsDetailModal({
                                                 {getInitials(item.nombre)}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-900 text-sm leading-tight group-hover:text-blue-600 transition-colors">{item.nombre}</p>
+                                                <p className="font-bold text-gray-900 dark:text-white text-sm leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.nombre}</p>
                                                 <p className="text-[10px] font-bold text-gray-400 mt-0.5 uppercase tracking-wide">{item.estado}</p>
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-end">
-                                            <span className="text-[10px] font-black text-gray-300 bg-gray-50 px-2 py-1 rounded-lg">{item.fecha}</span>
+                                            <span className="text-[10px] font-black text-gray-300 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded-lg">{item.fecha}</span>
                                         </div>
                                     </div>
                                 ))
@@ -198,18 +198,18 @@ export default function StatsDetailModal({
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-4 bg-gray-50/80 backdrop-blur-md border-t border-gray-100/50 flex justify-center shrink-0">
+                <div className="p-4 bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-md border-t border-gray-100/50 dark:border-white/10 flex justify-center shrink-0">
                     {!deepDetailOpen ? (
                         <button
                             onClick={onClose}
-                            className="w-full py-3.5 bg-gray-900 text-white rounded-2xl font-bold shadow-xl shadow-gray-200 hover:bg-black hover:shadow-2xl hover:shadow-gray-300 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
+                            className="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl font-bold shadow-xl shadow-gray-200 dark:shadow-none hover:bg-black dark:hover:bg-gray-100 hover:shadow-2xl hover:shadow-gray-300 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
                         >
                             Cerrar Vista
                         </button>
                     ) : (
                         <button
                             onClick={onBackToSummary}
-                            className="w-full py-3.5 bg-white text-gray-900 border border-gray-200 rounded-2xl font-black hover:bg-gray-50 transition-colors shadow-sm active:scale-[0.99]"
+                            className="w-full py-3.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-2xl font-black hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm active:scale-[0.99]"
                         >
                             Volver al resumen
                         </button>

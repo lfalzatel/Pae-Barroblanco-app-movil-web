@@ -160,7 +160,7 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}></div>
-            <div className="bg-white rounded-[2rem] w-full max-w-lg relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-lg relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
                 {/* Header - More Compact */}
                 <div className="p-4 md:p-5 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
                     <div className="flex items-center justify-between">
@@ -192,15 +192,15 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                 </div>
 
                 {/* Day Tab Selector - Custom Capsule Style */}
-                <div className="p-4 bg-white border-b border-gray-100 shrink-0">
-                    <div className="flex p-1.5 bg-gray-50 rounded-full border border-gray-100 shadow-sm">
+                <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-white/5 shrink-0">
+                    <div className="flex p-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-full border border-gray-100 dark:border-white/5 shadow-sm">
                         {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((day, idx) => (
                             <button
                                 key={day}
                                 onClick={() => setSelectedDay(idx)}
                                 className={`flex-1 py-2 text-[11px] font-black rounded-full transition-all duration-300 ${selectedDay === idx
-                                    ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-200'
-                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                                    ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-200 dark:shadow-none'
+                                    : 'text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'}`}
                             >
                                 {day}
                             </button>
@@ -209,7 +209,7 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                 </div>
 
                 {/* Content - Focused on Institutional Agenda */}
-                <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar bg-white">
+                <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar bg-white dark:bg-gray-900">
                     {loading ? (
                         <div className="h-40 flex flex-col items-center justify-center gap-4">
                             <div className="w-8 h-8 border-4 border-cyan-600/20 border-t-cyan-600 rounded-full animate-spin" />
@@ -220,14 +220,14 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                             {currentDayData && (
                                 <div className="space-y-6">
                                     <div className="flex items-center gap-3 mb-2">
-                                        <div className="bg-cyan-50 p-2 rounded-xl">
-                                            <School className="w-5 h-5 text-cyan-600" />
+                                        <div className="bg-cyan-50 dark:bg-cyan-900/20 p-2 rounded-xl">
+                                            <School className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-cyan-600 uppercase tracking-widest leading-none mb-1">Agenda del día</p>
-                                            <p className="text-xl font-black text-gray-900 leading-none">
+                                            <p className="text-[10px] font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-widest leading-none mb-1">Agenda del día</p>
+                                            <p className="text-xl font-black text-gray-900 dark:text-white leading-none">
                                                 {currentDayData.label.split(',')[0]}
-                                                <span className="text-gray-300 ml-2 font-black">{currentDayData.label.split(',')[1]}</span>
+                                                <span className="text-gray-300 dark:text-gray-600 ml-2 font-black">{currentDayData.label.split(',')[1]}</span>
                                             </p>
                                         </div>
                                     </div>
@@ -235,22 +235,22 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                                     <div className="space-y-3">
                                         {currentDayData.instEvents?.length > 0 ? (
                                             currentDayData.instEvents.map((event: any, i: number) => (
-                                                <div key={i} className="bg-cyan-50/50 p-4 rounded-2xl border border-cyan-100 flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+                                                <div key={i} className="bg-cyan-50/50 dark:bg-cyan-900/10 p-4 rounded-2xl border border-cyan-100 dark:border-cyan-800/30 flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
                                                     <div className="bg-cyan-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0 min-w-[3.5rem] text-center">{event.hora || 'Todo el día'}</div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-black text-sm text-cyan-900 mb-0.5">{event.titulo}</p>
-                                                        <p className="text-[10px] font-bold text-cyan-600">{event.afectados}</p>
-                                                        {event.descripcion && <p className="text-[10px] text-cyan-700/80 mt-1 leading-relaxed">{event.descripcion}</p>}
+                                                        <p className="font-black text-sm text-cyan-900 dark:text-cyan-200 mb-0.5">{event.titulo}</p>
+                                                        <p className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400">{event.afectados}</p>
+                                                        {event.descripcion && <p className="text-[10px] text-cyan-700/80 dark:text-cyan-300/70 mt-1 leading-relaxed">{event.descripcion}</p>}
                                                     </div>
                                                 </div>
                                             ))
                                         ) : (
                                             <div className="py-12 flex flex-col items-center justify-center text-center px-6">
-                                                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-gray-100">
-                                                    <Info className="w-8 h-8 text-gray-200" />
+                                                <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 border border-gray-100 dark:border-gray-700">
+                                                    <Info className="w-8 h-8 text-gray-200 dark:text-gray-600" />
                                                 </div>
-                                                <h4 className="font-black text-gray-400 text-lg">Sin novedades</h4>
-                                                <p className="text-xs text-gray-300 font-medium mt-1 leading-relaxed">No hay actividades institucionales programadas para este día.</p>
+                                                <h4 className="font-black text-gray-400 dark:text-gray-500 text-lg">Sin novedades</h4>
+                                                <p className="text-xs text-gray-300 dark:text-gray-600 font-medium mt-1 leading-relaxed">No hay actividades institucionales programadas para este día.</p>
                                             </div>
                                         )}
                                     </div>
@@ -261,7 +261,7 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                 </div>
 
                 {/* Footer Actions - Compact */}
-                <div className="p-4 md:p-6 bg-gray-50 border-t border-gray-100 shrink-0">
+                <div className="p-4 md:p-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 shrink-0">
                     <div className="flex gap-3">
                         <button
                             onClick={handleDownloadPDF}
@@ -273,7 +273,7 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                         </button>
                         <button
                             onClick={onClose}
-                            className="flex-1 px-4 py-3 bg-white text-gray-900 border border-gray-200 rounded-2xl font-black text-sm hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+                            className="flex-1 px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-2xl font-black text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all shadow-sm active:scale-95"
                         >
                             Cerrar
                         </button>
@@ -283,9 +283,9 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
             {/* PDF Preview Modal Overlay */}
             {previewUrl && (
                 <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-[2rem] w-full max-w-2xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-2xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
                         {/* Preview Header */}
-                        <div className="p-4 bg-gray-900 text-white flex items-center justify-between shrink-0">
+                        <div className="p-4 bg-gray-900 dark:bg-black text-white flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="bg-white/10 p-2 rounded-xl">
                                     <FileText className="w-5 h-5 text-cyan-400" />
@@ -304,7 +304,7 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                         </div>
 
                         {/* PDF Viewer - Iframe */}
-                        <div className="flex-1 bg-gray-100 relative">
+                        <div className="flex-1 bg-gray-100 dark:bg-gray-800 relative">
                             <iframe
                                 src={previewUrl as string}
                                 className="w-full h-full border-none"
@@ -313,10 +313,10 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                         </div>
 
                         {/* Preview Footer Actions */}
-                        <div className="p-4 border-t border-gray-100 bg-white flex justify-end gap-3 shrink-0">
+                        <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 flex justify-end gap-3 shrink-0">
                             <button
                                 onClick={closePreview}
-                                className="px-5 py-2.5 rounded-xl border border-gray-200 font-bold text-gray-600 text-sm hover:bg-gray-50 transition-colors"
+                                className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 font-bold text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                             >
                                 Cancelar
                             </button>

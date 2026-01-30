@@ -25,9 +25,11 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import * as XLSX from 'xlsx';
+import { useHaptics } from '../../hooks/useHaptics';
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { triggerLight, triggerMedium, triggerSuccess } = useHaptics();
   const [usuario, setUsuario] = useState<any | null>(null);
   const [notif, setNotif] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
@@ -46,6 +48,7 @@ export default function DashboardPage() {
   // Estado para Modal de Horario
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [weeklyModalOpen, setWeeklyModalOpen] = useState(false);
+  const [creditsOpen, setCreditsOpen] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -262,6 +265,7 @@ export default function DashboardPage() {
   });
 
   const openGroupModal = (category: string) => {
+    triggerLight(); // Haptic feedback on open
     let title = "";
     let data = [];
     let color = "";
@@ -444,7 +448,7 @@ export default function DashboardPage() {
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <button
-          onClick={() => setScheduleModalOpen(true)}
+          onClick={() => { triggerMedium(); setScheduleModalOpen(true); }}
           className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl py-3 px-4 flex flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-orange-200 transition-all active:scale-95 group"
         >
           <div className="bg-white/20 p-1.5 rounded-lg group-hover:rotate-12 transition-transform">
@@ -454,7 +458,7 @@ export default function DashboardPage() {
         </button>
 
         <button
-          onClick={() => setWeeklyModalOpen(true)}
+          onClick={() => { triggerMedium(); setWeeklyModalOpen(true); }}
           className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl py-3 px-4 flex flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-cyan-200 transition-all active:scale-95 group"
         >
           <div className="bg-white/20 p-1.5 rounded-lg group-hover:rotate-12 transition-transform">
@@ -470,58 +474,57 @@ export default function DashboardPage() {
       {/* Statistics */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-black text-gray-900 tracking-tight">Estadísticas de Hoy</h3>
-          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-md flex items-center gap-2">
+          <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Estadísticas de Hoy</h3>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
             ACTUALIZADO EN VIVO
           </div>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {/* Total Estudiantes */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-black text-blue-600 tracking-tighter">
+                <div className="text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tighter">
                   {loading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
+                    <Skeleton className="h-8 w-16 mb-1 dark:bg-gray-700" />
                   ) : (
                     stats.totalEstudiantes.toLocaleString()
                   )}
                 </div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">TOTAL</div>
+                <div className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-wider">TOTAL</div>
               </div>
-              <div className="bg-blue-50 p-2 rounded-xl">
-                <Users className="w-5 h-5 text-blue-600" />
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-xl">
+                <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
-            <div className="text-[10px] text-blue-400 font-bold">
+            <div className="text-[10px] text-blue-400 dark:text-blue-300 font-bold">
               {stats.activos} Activos
             </div>
           </div>
 
           {/* Recibieron */}
-          {/* Recibieron */}
           <button
             onClick={() => openGroupModal('recibieron')}
             disabled={stats.recibieron === 0}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-50 transition-all text-left"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group hover:border-emerald-400 dark:hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-50 dark:hover:shadow-emerald-900/10 transition-all text-left"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-black text-emerald-500 tracking-tighter">
+                <div className="text-2xl md:text-3xl font-black text-emerald-500 dark:text-emerald-400 tracking-tighter">
                   {loading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
+                    <Skeleton className="h-8 w-16 mb-1 dark:bg-gray-700" />
                   ) : (
                     stats.recibieron.toLocaleString()
                   )}
                 </div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">RECIBIERON</div>
+                <div className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-wider">RECIBIERON</div>
               </div>
-              <div className="bg-emerald-50 p-2 rounded-xl group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300">
-                <CheckCircle className="w-5 h-5 text-emerald-500 group-hover:text-white transition-colors" />
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 p-2 rounded-xl group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300">
+                <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400 group-hover:text-white transition-colors" />
               </div>
             </div>
-            <div className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
               {stats.porcentajeAsistencia}% - Ver detalle <Info className="w-3 h-3" />
             </div>
           </button>
@@ -530,24 +533,24 @@ export default function DashboardPage() {
           <button
             onClick={() => openGroupModal('noRecibieron')}
             disabled={stats.noRecibieron === 0}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-amber-400 hover:shadow-lg hover:shadow-amber-50 transition-all text-left"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-50 dark:hover:shadow-amber-900/10 transition-all text-left"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-black text-amber-500 tracking-tighter">
+                <div className="text-2xl md:text-3xl font-black text-amber-500 dark:text-amber-400 tracking-tighter">
                   {loading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
+                    <Skeleton className="h-8 w-16 mb-1 dark:bg-gray-700" />
                   ) : (
                     stats.noRecibieron.toLocaleString()
                   )}
                 </div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">NO RECIBIERON</div>
+                <div className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-wider">NO RECIBIERON</div>
               </div>
-              <div className="bg-amber-50 p-2 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
-                <XCircle className="w-5 h-5 text-amber-600 group-hover:text-white transition-colors" />
+              <div className="bg-amber-50 dark:bg-amber-900/20 p-2 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
+                <XCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 group-hover:text-white transition-colors" />
               </div>
             </div>
-            <div className="text-[10px] text-amber-600 font-bold flex items-center gap-1">
+            <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
               Ver grupos <Info className="w-3 h-3" />
             </div>
           </button>
@@ -556,24 +559,24 @@ export default function DashboardPage() {
           <button
             onClick={() => openGroupModal('ausentes')}
             disabled={stats.ausentes === 0}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-rose-400 hover:shadow-lg hover:shadow-rose-50 transition-all text-left"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group hover:border-rose-400 dark:hover:border-rose-500/50 hover:shadow-lg hover:shadow-rose-50 dark:hover:shadow-rose-900/10 transition-all text-left"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-black text-rose-500 tracking-tighter">
+                <div className="text-2xl md:text-3xl font-black text-rose-500 dark:text-rose-400 tracking-tighter">
                   {loading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
+                    <Skeleton className="h-8 w-16 mb-1 dark:bg-gray-700" />
                   ) : (
                     stats.ausentes.toLocaleString()
                   )}
                 </div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">NO ASISTIERON</div>
+                <div className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-wider">NO ASISTIERON</div>
               </div>
-              <div className="bg-rose-50 p-2 rounded-xl group-hover:bg-rose-500 group-hover:text-white transition-colors duration-300">
-                <UserX className="w-5 h-5 text-rose-500 group-hover:text-white transition-colors" />
+              <div className="bg-rose-50 dark:bg-rose-900/20 p-2 rounded-xl group-hover:bg-rose-500 group-hover:text-white transition-colors duration-300">
+                <UserX className="w-5 h-5 text-rose-500 dark:text-rose-400 group-hover:text-white transition-colors" />
               </div>
             </div>
-            <div className="text-[10px] text-rose-600 font-bold flex items-center gap-1">
+            <div className="text-[10px] text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1">
               Ver grupos <Info className="w-3 h-3" />
             </div>
           </button>
@@ -581,20 +584,20 @@ export default function DashboardPage() {
           {/* Tarjeta Grupos Pendientes */}
           <button
             onClick={() => openGroupModal('pendientes')}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-orange-400 hover:shadow-lg hover:shadow-orange-50 transition-all text-left"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group hover:border-orange-400 dark:hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-50 dark:hover:shadow-orange-900/10 transition-all text-left"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-black text-orange-500 tracking-tighter">
-                  {loading ? <Skeleton className="h-8 w-16" /> : stats.pendingGroupsCount}
+                <div className="text-2xl md:text-3xl font-black text-orange-500 dark:text-orange-400 tracking-tighter">
+                  {loading ? <Skeleton className="h-8 w-16 dark:bg-gray-700" /> : stats.pendingGroupsCount}
                 </div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">GRUPOS PENDIENTES</div>
+                <div className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-wider">GRUPOS PENDIENTES</div>
               </div>
-              <div className="bg-orange-50 p-2 rounded-xl group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">
-                <Clock className="w-5 h-5 text-orange-500 group-hover:text-white transition-colors" />
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-2 rounded-xl group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">
+                <Clock className="w-5 h-5 text-orange-500 dark:text-orange-400 group-hover:text-white transition-colors" />
               </div>
             </div>
-            <div className="text-[10px] text-orange-400 font-bold">
+            <div className="text-[10px] text-orange-400 dark:text-orange-300 font-bold">
               {stats.totalActiveGroups > 0 ? ((stats.pendingGroupsCount / stats.totalActiveGroups) * 100).toFixed(0) : 0}% sin reportar
             </div>
           </button>
@@ -603,24 +606,24 @@ export default function DashboardPage() {
           <button
             onClick={() => openGroupModal('inactivos')}
             disabled={stats.inactivos === 0}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:border-blue-400 hover:shadow-lg hover:shadow-blue-50 transition-all text-left"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group hover:border-blue-400 dark:hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-50 dark:hover:shadow-blue-900/10 transition-all text-left"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-2xl md:text-3xl font-black text-gray-700 tracking-tighter">
+                <div className="text-2xl md:text-3xl font-black text-gray-700 dark:text-gray-200 tracking-tighter">
                   {loading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
+                    <Skeleton className="h-8 w-16 mb-1 dark:bg-gray-700" />
                   ) : (
                     stats.inactivos.toLocaleString()
                   )}
                 </div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">INACTIVOS</div>
+                <div className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-wider">INACTIVOS</div>
               </div>
-              <div className="bg-gray-100 p-2 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
-                <UserMinus className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+              <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                <UserMinus className="w-5 h-5 text-gray-400 dark:text-gray-400 group-hover:text-white transition-colors" />
               </div>
             </div>
-            <div className="text-[10px] text-gray-500 font-bold flex items-center gap-1">
+            <div className="text-[10px] text-gray-500 dark:text-gray-400 font-bold flex items-center gap-1">
               Ver detalles <Info className="w-3 h-3" />
             </div>
           </button>
@@ -628,6 +631,56 @@ export default function DashboardPage() {
 
         </div>
       </div>
+
+      {/* Footer / Credits */}
+      <div className="mt-8 text-center">
+        <button
+          onClick={() => setCreditsOpen(true)}
+          className="text-[10px] text-gray-400 font-bold uppercase tracking-widest hover:text-cyan-600 transition-colors"
+        >
+          © 2026 PAE Barroblanco - Versión Académica SENA
+        </button>
+      </div>
+
+      {/* Credits Modal */}
+      {creditsOpen && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setCreditsOpen(false)}></div>
+          <div className="bg-white dark:bg-gray-900 rounded-[2rem] p-8 max-w-md relative animate-in zoom-in-95 duration-200 shadow-2xl overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-cyan-500 to-blue-600"></div>
+
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-cyan-50 dark:bg-cyan-900/30 rounded-2xl mx-auto flex items-center justify-center mb-4 text-cyan-600 dark:text-cyan-400">
+                <FileText className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-black text-gray-900 dark:text-white">Créditos y Autoría</h3>
+              <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mt-1">Información Legal</p>
+            </div>
+
+            <div className="space-y-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+              <p>
+                <span className="font-bold text-gray-900 dark:text-white">Autor:</span> Luis Fernando Alzate Lopez
+              </p>
+              <p className="text-justify text-xs">
+                "El presente desarrollo de software, denominado Sistema PAE Barroblanco, es una obra original de Luis Fernando Alzate Lopez. Si bien los derechos patrimoniales se rigen por el reglamento del SENA/Secretaría de Educación, el autor se reserva de forma permanente e irrenunciable los derechos morales sobre la obra (Art. 30, Ley 23 de 1982)."
+              </p>
+              <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-[10px] uppercase font-bold text-gray-400">Nota sobre Propiedad Intelectual</p>
+                <p className="text-[10px] mt-1 text-justify">
+                  Cualquier versión posterior, mejora incremental o software derivado desarrollado fuera del marco institucional, constituirá una propiedad intelectual distinta y autónoma.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setCreditsOpen(false)}
+              className="mt-6 w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black dark:hover:bg-gray-200 transition-all"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
 
   );

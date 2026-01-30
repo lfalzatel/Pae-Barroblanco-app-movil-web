@@ -26,9 +26,13 @@ import {
     ChevronLeft as ChevronLeftIcon,
     ChevronRight as ChevronRightIcon,
     Download,
-    School
+    School,
+    Sun,
+    Moon,
+    Monitor
 } from 'lucide-react';
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
+import { useTheme } from '@/components/ThemeProvider';
 
 export default function DashboardLayout({
     children,
@@ -37,6 +41,7 @@ export default function DashboardLayout({
 }) {
     const pathname = usePathname();
     const router = useRouter();
+    const { theme, setTheme } = useTheme();
     const [usuario, setUsuario] = useState<any | null>(null);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
@@ -390,7 +395,7 @@ export default function DashboardLayout({
     if (!usuario) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-600"></div>
             </div>
         );
     }
@@ -480,6 +485,32 @@ export default function DashboardLayout({
                                     <User className="w-4 h-4 text-blue-600" />
                                     Mi Perfil
                                 </Link>
+                                <div className="px-4 py-2 border-t border-gray-100">
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Tema</p>
+                                    <div className="flex bg-gray-100/50 p-1 rounded-lg">
+                                        <button
+                                            onClick={() => setTheme('light')}
+                                            className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'light' ? 'bg-white text-yellow-500 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                            title="Modo Claro"
+                                        >
+                                            <Sun className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => setTheme('dark')}
+                                            className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                            title="Modo Oscuro"
+                                        >
+                                            <Moon className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => setTheme('system')}
+                                            className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'system' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                            title="Sistema"
+                                        >
+                                            <Monitor className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
                                 <button
                                     onClick={handleLogout}
                                     className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors text-left border-t border-gray-50"
@@ -582,6 +613,29 @@ export default function DashboardLayout({
                                         <User className="w-4 h-4 text-blue-600" />
                                         Mi Perfil
                                     </Link>
+                                    <div className="px-4 py-2 border-t border-gray-100">
+                                        <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Tema</p>
+                                        <div className="flex bg-gray-100/50 p-1 rounded-lg mb-2">
+                                            <button
+                                                onClick={() => setTheme('light')}
+                                                className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'light' ? 'bg-white text-yellow-500 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                            >
+                                                <Sun className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => setTheme('dark')}
+                                                className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                            >
+                                                <Moon className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => setTheme('system')}
+                                                className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'system' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                            >
+                                                <Monitor className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div className="px-4 py-2 border-t border-gray-100">
                                         <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-1">Cuenta</p>
                                         <p className="text-xs text-gray-600 truncate font-medium">{usuario.nombre}</p>

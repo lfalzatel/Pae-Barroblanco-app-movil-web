@@ -6,9 +6,6 @@ import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
 import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X, ChevronLeft, School, Clock } from 'lucide-react';
 import Link from 'next/link';
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import {
   PieChart, Pie, Cell,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -374,6 +371,9 @@ export default function ReportesPage() {
 
   const handleExportExcel = async () => {
     try {
+      // Dynamic import for XLSX
+      const XLSX = await import('xlsx');
+
       // Determine period label and date range
       let periodoLabel = '';
       let reportDate = selectedDate; // Default to selected date
@@ -792,6 +792,10 @@ export default function ReportesPage() {
 
   const handleExportPDF = async () => {
     try {
+      // Dynamic imports for PDF generation
+      const jsPDF = (await import('jspdf')).default;
+      const autoTable = (await import('jspdf-autotable')).default;
+
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.width;
       const todayStr = new Date().toLocaleDateString('es-CO');
