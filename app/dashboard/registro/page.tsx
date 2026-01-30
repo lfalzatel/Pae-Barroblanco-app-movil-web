@@ -65,21 +65,21 @@ function RegistroContent() {
   // Estados derivados de la URL o por defecto
   const [step, setStep] = useState<'sede' | 'grupo' | 'registro'>('sede');
 
-  // Integración botón atrás móvil
+  // Integración botón atrás móvil - DESHABILITADO POR CONFLICTO DE NAVEGACIÓN
   // Cuando estamos en 'grupo' (viendo sedes), el back debe llevar a 'sede' (Home/Selección)
-  useModalBack(step === 'grupo', () => {
-    updateUrl({ sede: null, grupo: null });
-    setStep('sede');
-    setSedeSeleccionada(null);
-  }, 'step-grupo');
+  // useModalBack(step === 'grupo', () => {
+  //   updateUrl({ sede: null, grupo: null });
+  //   setStep('sede');
+  //   setSedeSeleccionada(null);
+  // }, 'step-grupo');
 
   // Cuando estamos en 'registro' (listado), el back debe llevar a 'grupo'
-  useModalBack(step === 'registro', () => {
-    updateUrl({ grupo: null });
-    setStep('grupo');
-    setGrupoSeleccionado(null);
-    if (sedeSeleccionada) fetchGruposReales(); // Refresh groups
-  }, 'step-registro');
+  // useModalBack(step === 'registro', () => {
+  //   updateUrl({ grupo: null });
+  //   setStep('grupo');
+  //   setGrupoSeleccionado(null);
+  //   if (sedeSeleccionada) fetchGruposReales(); // Refresh groups
+  // }, 'step-registro');
 
   const [sedeSeleccionada, setSedeSeleccionada] = useState<Sede | null>(null);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState<Grupo | null>(null);
@@ -512,7 +512,7 @@ function RegistroContent() {
 
     setGrupoSeleccionado(grupo);
     setStep('registro');
-    if (updateUrlParam) updateUrl({ grupo: grupo.nombre });
+    // if (updateUrlParam) updateUrl({ grupo: grupo.nombre }); // DISABLED TEMPORARILY TO FIX NAVIGATION
 
     setLoadingGrupos(true);
     try {
@@ -523,6 +523,11 @@ function RegistroContent() {
         .order('nombre');
 
       if (error) throw error;
+
+      if (!estudiantesData || estudiantesData.length === 0) {
+        showToast('Atención: Este grupo no tiene estudiantes registrados.', 'error');
+      }
+
       setEstudiantes(estudiantesData || []);
 
       const { data: asistenciasData, error: asistError } = await supabase
@@ -917,6 +922,12 @@ function RegistroContent() {
                 {[...Array(8)].map((_, i) => (
                   <Skeleton key={i} className="h-32 rounded-[2.5rem] md:rounded-[3rem]" />
                 ))}
+              </div>
+            ) : gruposReales.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
+                <School className="w-16 h-16 text-gray-300 mb-4" />
+                <p className="text-xl font-bold text-gray-400">No se encontraron grupos para esta sede.</p>
+                <p className="text-sm text-gray-400 mt-2">Intenta verificar la base de datos o seleccionar otra sede.</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">

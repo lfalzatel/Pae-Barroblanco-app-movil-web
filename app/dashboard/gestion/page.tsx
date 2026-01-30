@@ -1144,7 +1144,7 @@ export default function GestionPage() {
 
                     <div className="flex gap-4 text-[9px] font-black uppercase tracking-widest justify-center pt-2 opacity-60">
                       <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-emerald-500 rounded-full shadow-sm"></div> Recibió</div>
-                      <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-rose-500 rounded-full shadow-sm"></div> Faltó</div>
+                      <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-rose-500 rounded-full shadow-sm"></div> No recibió</div>
                       <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-amber-400 rounded-full shadow-sm"></div> Novedad</div>
                     </div>
                   </div>

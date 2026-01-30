@@ -1452,7 +1452,7 @@ export default function ReportesPage() {
                               'bg-gray-50 text-gray-500 border-gray-100 dark:bg-gray-700/50 dark:text-gray-400 dark:border-gray-600'
                             }`}>
                             {registro.estado === 'recibio' ? 'Recibió' :
-                              registro.estado === 'no_recibio' ? 'Faltó' : 'Ausente'}
+                              registro.estado === 'no_recibio' ? 'No recibió' : 'Ausente'}
                           </span>
                         </td>
                         <td className="px-6 py-5 text-right">
