@@ -233,10 +233,17 @@ export default function DashboardLayout({
         const initSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
+                // 1. Fetch real profile from DB to sync with 'public.usuarios'
+                const { data: dbUser } = await supabase
+                    .from('usuarios')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+
                 setUsuario({
                     ...session.user,
-                    nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
-                    rol: session.user.user_metadata?.rol || 'docente',
+                    nombre: dbUser?.nombre || session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
+                    rol: dbUser?.rol || session.user.user_metadata?.rol || 'docente',
                     foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
                 });
             }
@@ -421,12 +428,12 @@ export default function DashboardLayout({
             if (diffX > 0) {
                 // Swipe Left -> Next Tab
                 if (currentNavIndex < navItems.length - 1) {
-                    router.push(navItems[currentNavIndex + 1].href);
+                    router.replace(navItems[currentNavIndex + 1].href);
                 }
             } else {
                 // Swipe Right -> Prev Tab
                 if (currentNavIndex > 0) {
-                    router.push(navItems[currentNavIndex - 1].href);
+                    router.replace(navItems[currentNavIndex - 1].href);
                 }
             }
         }
