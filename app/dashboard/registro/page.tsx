@@ -65,21 +65,21 @@ function RegistroContent() {
   // Estados derivados de la URL o por defecto
   const [step, setStep] = useState<'sede' | 'grupo' | 'registro'>('sede');
 
-  // Integración botón atrás móvil - DESHABILITADO POR CONFLICTO DE NAVEGACIÓN
+  // Integración botón atrás móvil
   // Cuando estamos en 'grupo' (viendo sedes), el back debe llevar a 'sede' (Home/Selección)
-  // useModalBack(step === 'grupo', () => {
-  //   updateUrl({ sede: null, grupo: null });
-  //   setStep('sede');
-  //   setSedeSeleccionada(null);
-  // }, 'step-grupo');
+  useModalBack(step === 'grupo', () => {
+    updateUrl({ sede: null, grupo: null });
+    setStep('sede');
+    setSedeSeleccionada(null);
+  }, 'step-grupo');
 
   // Cuando estamos en 'registro' (listado), el back debe llevar a 'grupo'
-  // useModalBack(step === 'registro', () => {
-  //   updateUrl({ grupo: null });
-  //   setStep('grupo');
-  //   setGrupoSeleccionado(null);
-  //   if (sedeSeleccionada) fetchGruposReales(); // Refresh groups
-  // }, 'step-registro');
+  useModalBack(step === 'registro', () => {
+    updateUrl({ grupo: null });
+    setStep('grupo');
+    setGrupoSeleccionado(null);
+    if (sedeSeleccionada) fetchGruposReales(); // Refresh groups
+  }, 'step-registro');
 
   const [sedeSeleccionada, setSedeSeleccionada] = useState<Sede | null>(null);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState<Grupo | null>(null);
@@ -512,7 +512,7 @@ function RegistroContent() {
 
     setGrupoSeleccionado(grupo);
     setStep('registro');
-    // if (updateUrlParam) updateUrl({ grupo: grupo.nombre }); // DISABLED TEMPORARILY TO FIX NAVIGATION
+    if (updateUrlParam) updateUrl({ grupo: grupo.nombre });
 
     setLoadingGrupos(true);
     try {
