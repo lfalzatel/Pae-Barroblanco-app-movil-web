@@ -24,6 +24,16 @@ export const useModalBack = (isOpen: boolean, onClose: () => void, modalId: stri
 
             // 2. Handler for back button
             const handlePopState = (event: PopStateEvent) => {
+                // Check if this specific modal's state is still present in the new history entry
+                // If it IS present, it means we moved forward to it (or didn't leave it), so don't close.
+                // If it is NOT present, we popped it, so we close.
+
+                // Note: event.state is the state of the entry we are activating.
+                if (event.state && event.state[modalId]) {
+                    // We are still in a history state that "owns" this modal. Do nothing.
+                    return;
+                }
+
                 // If the user pressed back, we are closing via navigation
                 isBackRef.current = true;
                 if (onCloseRef.current) {
