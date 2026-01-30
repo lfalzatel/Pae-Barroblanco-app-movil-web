@@ -419,7 +419,7 @@ function RegistroContent() {
 
       const gruposMap = new Map();
       allStudents?.forEach((item: any) => {
-        // if (item.grupo && item.grupo.includes('2025')) return; // Filter removed to ensure groups show up
+        if (item.grupo && item.grupo.includes('2025')) return; // Filter out 2025 groups
 
         if (!gruposMap.has(item.grupo)) {
           gruposMap.set(item.grupo, {
@@ -512,7 +512,7 @@ function RegistroContent() {
 
     setGrupoSeleccionado(grupo);
     setStep('registro');
-    if (updateUrlParam) updateUrl({ grupo: grupo.nombre });
+    // if (updateUrlParam) updateUrl({ grupo: grupo.nombre }); // DISABLED by user request
 
     setLoadingGrupos(true);
     try {
