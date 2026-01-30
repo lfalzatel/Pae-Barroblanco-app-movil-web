@@ -589,12 +589,12 @@ export default function DashboardLayout({
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex flex-col items-center justify-center w-full py-1 rounded-lg transition-colors relative ${isActive ? 'text-blue-600' : 'text-gray-500 hover:bg-gray-50'
+                            className={`flex flex-col items-center justify-center flex-1 py-1 rounded-lg transition-colors relative ${isActive ? 'text-blue-600' : 'text-gray-500 hover:bg-gray-50'
                                 }`}
                         >
                             <div className={`relative ${isRegistrar ? 'animate-pulse' : ''}`}>
                                 <Icon className={`w-6 h-6 mb-1 ${isActive ? 'fill-current' : ''} ${isRegistrar ? 'text-gray-500 drop-shadow-[0_0_8px_rgba(37,99,235,0.5)]' : ''}`} />
-                                {isRegistrar && <span className="absolute inset-0 bg-blue-400/30 rounded-full blur-md animate-ping opacity-20"></span>}
+                                {isRegistrar && <span className="absolute inset-0 bg-blue-400/30 rounded-full blur-md animate-ping opacity-20 pointer-events-none"></span>}
                             </div>
                             <span className={`text-[10px] font-medium ${isRegistrar ? 'font-black text-gray-500' : ''}`}>{item.label}</span>
                         </Link>
