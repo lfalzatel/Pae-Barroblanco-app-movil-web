@@ -419,7 +419,7 @@ function RegistroContent() {
 
       const gruposMap = new Map();
       allStudents?.forEach((item: any) => {
-        if (item.grupo && item.grupo.includes('2025')) return; // Filter out 2025 groups
+        // if (item.grupo && item.grupo.includes('2025')) return; // Filter removed to ensure groups show up
 
         if (!gruposMap.has(item.grupo)) {
           gruposMap.set(item.grupo, {
