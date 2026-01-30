@@ -7,7 +7,14 @@ import { useEffect, useRef } from 'react';
  * When the modal is closed manually, it removes the history state.
  */
 export const useModalBack = (isOpen: boolean, onClose: () => void, modalId: string = 'modal') => {
+    // Use a ref for onClose to avoid re-triggering the effect when the callback identity changes
+    const onCloseRef = useRef(onClose);
     const isBackRef = useRef(false);
+
+    // Update the ref whenever onClose changes
+    useEffect(() => {
+        onCloseRef.current = onClose;
+    }, [onClose]);
 
     useEffect(() => {
         if (isOpen) {
@@ -19,7 +26,9 @@ export const useModalBack = (isOpen: boolean, onClose: () => void, modalId: stri
             const handlePopState = (event: PopStateEvent) => {
                 // If the user pressed back, we are closing via navigation
                 isBackRef.current = true;
-                onClose();
+                if (onCloseRef.current) {
+                    onCloseRef.current();
+                }
             };
 
             window.addEventListener('popstate', handlePopState);
@@ -33,10 +42,14 @@ export const useModalBack = (isOpen: boolean, onClose: () => void, modalId: stri
                     isBackRef.current = false;
                 } else {
                     // Closed via UI (Cancel/Close button) -> We must manually pop the state we added
-                    // Check if we can safely go back (optional, but good practice)
+                    // This should only happen if the component is unmounting while open OR if isOpen becomes false
+                    // We need to be careful not to call this during a re-render if isOpen is still true
+                    // But this cleanup ONLY runs if dependencies change or unmount.
+                    // Since we removed onClose from dependencies, this now ONLY runs when isOpen changes to false or component unmounts.
+                    // Perfect.
                     window.history.back();
                 }
             };
         }
-    }, [isOpen, onClose, modalId]);
+    }, [isOpen, modalId]); // Removed onClose from dependencies
 };
