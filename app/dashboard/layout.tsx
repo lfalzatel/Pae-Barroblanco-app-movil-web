@@ -450,8 +450,6 @@ export default function DashboardLayout({
     return (
         <div
             className="min-h-screen bg-gray-50 flex flex-col md:flex-row"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
         >
             {/* Desktop Sidebar */}
             <aside className="hidden md:flex w-64 flex-col fixed inset-y-0 bg-white border-r border-gray-200">
