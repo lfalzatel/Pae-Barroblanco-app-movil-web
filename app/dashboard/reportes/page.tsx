@@ -963,7 +963,7 @@ export default function ReportesPage() {
   if (!usuario) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-50 pb-24 dark:bg-gray-900 transition-colors">
       {/* Modal de Detalle por Grupo */}
       <StatsDetailModal
         isOpen={modalOpen}
@@ -1020,8 +1020,8 @@ export default function ReportesPage() {
                 {showExportMenu && (
                   <>
                     <div className="fixed inset-0 z-[60]" onClick={() => setShowExportMenu(false)} />
-                    <div className="absolute right-0 mt-3 w-56 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-cyan-100 z-[70] py-3 p-2 animate-in fade-in zoom-in-95 duration-200">
-                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest px-4 mb-2">Formato de salida</p>
+                    <div className="absolute right-0 mt-3 w-56 bg-white/95 dark:bg-gray-800 backdrop-blur-md rounded-3xl shadow-2xl border border-cyan-100 dark:border-gray-700 z-[70] py-3 p-2 animate-in fade-in zoom-in-95 duration-200">
+                      <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest px-4 mb-2">Formato de salida</p>
                       <button
                         onClick={handleExportExcel}
                         className="w-full text-left px-4 py-3 hover:bg-cyan-50 rounded-2xl flex items-center gap-3 transition-colors group/item"
@@ -1029,7 +1029,7 @@ export default function ReportesPage() {
                         <div className="bg-emerald-100 p-2 rounded-xl group-hover/item:bg-emerald-500 group-hover/item:text-white transition-colors">
                           <span className="font-black text-[10px]">XLS</span>
                         </div>
-                        <span className="text-sm font-bold text-gray-700">Descargar Excel</span>
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Descargar Excel</span>
                       </button>
                       <button
                         onClick={handleExportPDF}
@@ -1038,7 +1038,7 @@ export default function ReportesPage() {
                         <div className="bg-rose-100 p-2 rounded-xl group-hover/item:bg-rose-500 group-hover/item:text-white transition-colors">
                           <span className="font-black text-[10px]">PDF</span>
                         </div>
-                        <span className="text-sm font-bold text-gray-700">Descargar PDF</span>
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Descargar PDF</span>
                       </button>
                     </div>
                   </>
@@ -1076,12 +1076,12 @@ export default function ReportesPage() {
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-8">
         {/* Filtros de período (Estilo Tabs Gestión) */}
-        <div className="bg-gray-100/80 p-0.5 rounded-2xl flex items-center shrink-0 relative w-full mb-4">
+        <div className="bg-gray-100/80 dark:bg-gray-800 p-0.5 rounded-2xl flex items-center shrink-0 relative w-full mb-4">
           {(['hoy', 'semana', 'mes'] as const).map((p) => (
             <button
               key={p}
               onClick={() => setPeriodo(p)}
-              className={`flex-1 md:px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${periodo === p ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`flex-1 md:px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${periodo === p ? 'text-white' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
             >
               {p}
             </button>
@@ -1096,13 +1096,13 @@ export default function ReportesPage() {
         </div>
 
         {/* Filters Container (Estilo Card Gestión) */}
-        <div className="bg-white p-3 rounded-[2rem] shadow-xl shadow-cyan-900/5 border border-gray-100 mb-8 space-y-3">
+        <div className="bg-white p-3 rounded-[2rem] shadow-xl shadow-cyan-900/5 border border-gray-100 mb-8 space-y-3 dark:bg-gray-800 dark:border-gray-700">
           <div className="grid grid-cols-2 gap-3 md:gap-4">
             {/* Sede Filter */}
             <div className="relative z-20" ref={dropdownRef}>
               <button
                 onClick={() => setShowSedeDropdown(!showSedeDropdown)}
-                className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer"
+                className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-800/30 dark:hover:bg-cyan-900/40"
               >
                 <span className="truncate mr-2">
                   {sedeFilter === 'todas' ? 'SEDES' : sedes.find(s => s.id === sedeFilter)?.nombre.toUpperCase()}
@@ -1113,11 +1113,11 @@ export default function ReportesPage() {
               {showSedeDropdown && (
                 <>
                   <div className="fixed inset-0 z-[60]" onClick={() => setShowSedeDropdown(false)}></div>
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-cyan-100/50 rounded-2xl shadow-xl shadow-cyan-100/50 overflow-hidden transition-all duration-300 origin-top z-[70] animate-in fade-in zoom-in-95 duration-200">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 dark:bg-gray-800 backdrop-blur-xl border border-cyan-100/50 dark:border-gray-700 rounded-2xl shadow-xl shadow-cyan-100/50 dark:shadow-black/20 overflow-hidden transition-all duration-300 origin-top z-[70] animate-in fade-in zoom-in-95 duration-200">
                     <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 space-y-1">
                       <button
                         onClick={() => { setSedeFilter('todas'); setShowSedeDropdown(false); }}
-                        className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === 'todas' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700'}`}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === 'todas' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-cyan-900/30 dark:hover:text-cyan-400'}`}
                       >
                         TODAS LAS SEDES
                         {sedeFilter === 'todas' && <CheckCircle className="w-3.5 h-3.5" />}
@@ -1126,7 +1126,7 @@ export default function ReportesPage() {
                         <button
                           key={sede.id}
                           onClick={() => { setSedeFilter(sede.id); setShowSedeDropdown(false); }}
-                          className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === sede.id ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700'}`}
+                          className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === sede.id ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-cyan-900/30 dark:hover:text-cyan-400'}`}
                         >
                           {sede.nombre.toUpperCase()}
                           {sedeFilter === sede.id && <CheckCircle className="w-3.5 h-3.5" />}
@@ -1142,7 +1142,7 @@ export default function ReportesPage() {
             <div className="relative z-10">
               <button
                 onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
-                className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer"
+                className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-800/30 dark:hover:bg-cyan-900/40"
               >
                 <span className="truncate">{grupoFilter === 'todos' ? 'GRUPOS' : `${grupoFilter}`}</span>
                 <ChevronDown className={`w-3 h-3 text-cyan-400 transition-transform duration-300 ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
@@ -1151,11 +1151,11 @@ export default function ReportesPage() {
               {grupoDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-[60]" onClick={() => setGrupoDropdownOpen(false)}></div>
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-cyan-100/50 rounded-3xl shadow-xl shadow-cyan-100/50 max-h-72 overflow-y-auto p-4 animate-in fade-in zoom-in-95 duration-200 z-[70]">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 dark:bg-gray-800 backdrop-blur-xl border border-cyan-100/50 dark:border-gray-700 rounded-3xl shadow-xl shadow-cyan-100/50 dark:shadow-black/20 max-h-72 overflow-y-auto p-4 animate-in fade-in zoom-in-95 duration-200 z-[70]">
                     <div className="grid grid-cols-3 gap-2">
                       <button
                         onClick={() => { setGrupoFilter('todos'); setGrupoDropdownOpen(false); }}
-                        className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === 'todos' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50'}`}
+                        className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === 'todos' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-cyan-900/30'}`}
                       >
                         TODOS
                       </button>
@@ -1163,7 +1163,7 @@ export default function ReportesPage() {
                         <button
                           key={grupo}
                           onClick={() => { setGrupoFilter(grupo); setGrupoDropdownOpen(false); }}
-                          className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === grupo ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50'}`}
+                          className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === grupo ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-cyan-900/30'}`}
                         >
                           {grupo.replace(/-20\d{2}/, '')}
                         </button>
@@ -1181,7 +1181,7 @@ export default function ReportesPage() {
           {/* Pending Groups - New Card */}
 
           {/* Total Estudiantes */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group dark:bg-gray-800 dark:border-gray-700">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <div className="text-2xl md:text-3xl font-black text-blue-600 tracking-tighter">
@@ -1193,7 +1193,7 @@ export default function ReportesPage() {
                 </div>
                 <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">TOTAL</div>
               </div>
-              <div className="bg-blue-50 p-2 rounded-xl">
+              <div className="bg-blue-50 p-2 rounded-xl dark:bg-blue-900/20">
                 <Users className="w-5 h-5 text-blue-600" />
               </div>
             </div>
@@ -1206,7 +1206,7 @@ export default function ReportesPage() {
           <button
             onClick={() => openGroupModal('recibieron')}
             disabled={stats.recibieron === 0}
-            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left"
+            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
@@ -1219,7 +1219,7 @@ export default function ReportesPage() {
                 </div>
                 <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">RECIBIERON</div>
               </div>
-              <div className="bg-emerald-50 p-2.5 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300 shadow-inner">
+              <div className="bg-emerald-50 p-2.5 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-emerald-900/20">
                 <CheckCircle className="w-5 h-5 text-emerald-500 group-hover:text-white transition-colors" />
               </div>
             </div>
@@ -1232,7 +1232,7 @@ export default function ReportesPage() {
           <button
             onClick={() => openGroupModal('noRecibieron')}
             disabled={stats.noRecibieron === 0}
-            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left"
+            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
@@ -1245,7 +1245,7 @@ export default function ReportesPage() {
                 </div>
                 <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">NO RECIBIERON</div>
               </div>
-              <div className="bg-amber-50 p-2.5 rounded-2xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 shadow-inner">
+              <div className="bg-amber-50 p-2.5 rounded-2xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-amber-900/20">
                 <XCircle className="w-5 h-5 text-amber-600 group-hover:text-white transition-colors" />
               </div>
             </div>
@@ -1258,7 +1258,7 @@ export default function ReportesPage() {
           <button
             onClick={() => openGroupModal('ausentes')}
             disabled={stats.ausentes === 0}
-            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left"
+            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
@@ -1271,7 +1271,7 @@ export default function ReportesPage() {
                 </div>
                 <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">NO ASISTIERON</div>
               </div>
-              <div className="bg-rose-50 p-2.5 rounded-2xl group-hover:bg-rose-500 group-hover:text-white transition-all duration-300 shadow-inner">
+              <div className="bg-rose-50 p-2.5 rounded-2xl group-hover:bg-rose-500 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-rose-900/20">
                 <UserX className="w-5 h-5 text-rose-500 group-hover:text-white transition-colors" />
               </div>
             </div>
@@ -1283,7 +1283,7 @@ export default function ReportesPage() {
           {/* Tarjeta Grupos Pendientes */}
           <button
             onClick={() => openGroupModal('pendientes')}
-            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left"
+            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
@@ -1292,7 +1292,7 @@ export default function ReportesPage() {
                 </div>
                 <div className="text-orange-300 text-[9px] font-black uppercase tracking-widest">GRUPOS PENDIENTES</div>
               </div>
-              <div className="bg-orange-50 p-2.5 rounded-2xl group-hover:bg-orange-500 group-hover:text-white transition-all duration-300 shadow-inner">
+              <div className="bg-orange-50 p-2.5 rounded-2xl group-hover:bg-orange-500 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-orange-900/20">
                 <Clock className="w-5 h-5 text-orange-400 group-hover:text-white transition-colors" />
               </div>
             </div>
@@ -1305,11 +1305,11 @@ export default function ReportesPage() {
           <button
             onClick={() => openGroupModal('inactivos')}
             disabled={stats.inactivos === 0}
-            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left"
+            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
-                <div className="text-3xl font-black text-gray-700 tracking-tighter">
+                <div className="text-3xl font-black text-gray-700 tracking-tighter dark:text-gray-300">
                   {loading ? (
                     <Skeleton className="h-8 w-16 mb-1" />
                   ) : (
@@ -1318,7 +1318,7 @@ export default function ReportesPage() {
                 </div>
                 <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">INACTIVOS</div>
               </div>
-              <div className="bg-gray-100 p-2.5 rounded-2xl group-hover:bg-cyan-600 group-hover:text-white transition-all duration-300 shadow-inner">
+              <div className="bg-gray-100 p-2.5 rounded-2xl group-hover:bg-cyan-600 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-gray-700">
                 <UserMinus className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
               </div>
             </div>
@@ -1331,8 +1331,8 @@ export default function ReportesPage() {
         {/* Análisis Visual */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Distribución de Asistencia */}
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-cyan-900/5 border border-gray-100">
-            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-8 px-1">Distribución Operativa</h3>
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-cyan-900/5 border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+            <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-8 px-1">Distribución Operativa</h3>
             <div className="h-[250px] w-full">
               {loading || !isMounted ? (
                 <div className="flex items-center justify-center h-full">
@@ -1365,8 +1365,8 @@ export default function ReportesPage() {
           </div>
 
           {/* Tendencia Temporal */}
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-cyan-900/5 border border-gray-100">
-            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-8 px-1">
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-cyan-900/5 border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+            <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-8 px-1">
               {periodo === 'hoy' || periodo === 'fecha' ? 'Dinamismo por Sedes' : 'Evolución de Asistencia'}
             </h3>
             <div className="h-[250px] w-full">
@@ -1403,9 +1403,9 @@ export default function ReportesPage() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
-                  <Calendar className="w-12 h-12 mb-4 text-cyan-200" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Amplía el periodo para ver tendencias</p>
+                <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-gray-50/50 dark:bg-gray-700/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-600">
+                  <Calendar className="w-12 h-12 mb-4 text-cyan-200 dark:text-cyan-800" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Amplía el periodo para ver tendencias</p>
                 </div>
               )}
             </div>
@@ -1413,9 +1413,9 @@ export default function ReportesPage() {
         </div>
 
         {/* Registros recientes */}
-        <div className="bg-white rounded-[2.5rem] shadow-xl shadow-cyan-900/5 border border-gray-100 overflow-hidden mb-8">
-          <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-            <h2 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.2em]">Registros Recientes</h2>
+        <div className="bg-white rounded-[2.5rem] shadow-xl shadow-cyan-900/5 border border-gray-100 overflow-hidden mb-8 dark:bg-gray-800 dark:border-gray-700">
+          <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 flex items-center justify-between">
+            <h2 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.2em] dark:text-gray-400">Registros Recientes</h2>
             <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse shadow-sm shadow-cyan-200" />
           </div>
 
@@ -1427,36 +1427,36 @@ export default function ReportesPage() {
               </div>
             ) : (
               <table className="w-full">
-                <thead className="bg-gray-50/80">
+                <thead className="bg-gray-50/80 dark:bg-gray-700/50">
                   <tr>
                     <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Estudiante</th>
                     <th className="px-6 py-4 text-center text-[9px] font-black text-gray-400 uppercase tracking-widest">Estado</th>
                     <th className="px-6 py-4 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Instante</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
+                <tbody className="bg-white divide-y divide-gray-100 dark:bg-gray-800 dark:divide-gray-700">
                   {registros.map((registro: any) => {
                     const fecha = new Date(registro.created_at);
                     const hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     const fechaStr = fecha.toLocaleDateString();
 
                     return (
-                      <tr key={registro.id} className="hover:bg-cyan-50/30 transition-colors group">
+                      <tr key={registro.id} className="hover:bg-cyan-50/30 dark:hover:bg-gray-700/30 transition-colors group">
                         <td className="px-6 py-5">
-                          <div className="text-xs font-black text-gray-800 uppercase leading-tight group-hover:text-cyan-600 transition-colors">{registro.estudiantes?.nombre}</div>
+                          <div className="text-xs font-black text-gray-800 uppercase leading-tight group-hover:text-cyan-600 transition-colors dark:text-gray-200">{registro.estudiantes?.nombre}</div>
                           <div className="text-[9px] font-bold text-gray-400 mt-1 uppercase tracking-tight">{registro.estudiantes?.grupo}</div>
                         </td>
                         <td className="px-6 py-5 text-center">
-                          <span className={`px-4 py-1.5 inline-flex text-[9px] font-black uppercase tracking-widest rounded-full shadow-sm border ${registro.estado === 'recibio' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                            registro.estado === 'no_recibio' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                              'bg-gray-50 text-gray-500 border-gray-100'
+                          <span className={`px-4 py-1.5 inline-flex text-[9px] font-black uppercase tracking-widest rounded-full shadow-sm border ${registro.estado === 'recibio' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' :
+                            registro.estado === 'no_recibio' ? 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800' :
+                              'bg-gray-50 text-gray-500 border-gray-100 dark:bg-gray-700/50 dark:text-gray-400 dark:border-gray-600'
                             }`}>
                             {registro.estado === 'recibio' ? 'Recibió' :
                               registro.estado === 'no_recibio' ? 'Faltó' : 'Ausente'}
                           </span>
                         </td>
                         <td className="px-6 py-5 text-right">
-                          <div className="text-[10px] font-black text-gray-700">{hora}</div>
+                          <div className="text-[10px] font-black text-gray-700 dark:text-gray-300">{hora}</div>
                           <div className="text-[9px] font-bold text-gray-400 uppercase">{fechaStr}</div>
                         </td>
                       </tr>

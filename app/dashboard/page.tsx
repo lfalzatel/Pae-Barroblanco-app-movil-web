@@ -410,7 +410,7 @@ export default function DashboardPage() {
 
       {/* Dynamic Notification */}
       {notif && (
-        <div className={`mb-4 p-4 rounded-xl flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-4 duration-300 ${notif.type === 'success' ? 'bg-emerald-50 border border-emerald-100 text-emerald-800' : 'bg-red-50 border border-red-100 text-red-800'
+        <div className={`mb-4 p-4 rounded-xl flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-4 duration-300 ${notif.type === 'success' ? 'bg-emerald-50 border border-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-300' : 'bg-red-50 border border-red-100 text-red-800 dark:bg-red-900/30 dark:border-red-800 dark:text-red-300'
           }`}>
           <div className="flex items-center gap-3">
             {notif.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}

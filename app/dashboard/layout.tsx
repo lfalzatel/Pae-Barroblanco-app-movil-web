@@ -449,19 +449,19 @@ export default function DashboardLayout({
 
     return (
         <div
-            className="min-h-screen bg-gray-50 flex flex-col md:flex-row"
+            className="min-h-screen bg-gray-50 flex flex-col md:flex-row dark:bg-gray-900 transition-colors duration-300"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
         >
             {/* Desktop Sidebar */}
-            <aside className="hidden md:flex w-64 flex-col fixed inset-y-0 bg-white border-r border-gray-200">
-                <div className="p-6 border-b border-gray-100 flex items-center justify-start gap-3 bg-blue-50/50">
-                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+            <aside className="hidden md:flex w-64 flex-col fixed inset-y-0 bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700 transition-colors">
+                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-start gap-3 bg-blue-50/50 dark:bg-gray-800">
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none">
                         <Users className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-lg font-black text-gray-900 leading-tight">Sistema PAE</h1>
-                        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Barroblanco</p>
+                        <h1 className="text-lg font-black text-gray-900 dark:text-white leading-tight">Sistema PAE</h1>
+                        <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Barroblanco</p>
                     </div>
                 </div>
 
@@ -472,16 +472,16 @@ export default function DashboardLayout({
                             setNotifModalOpen(true);
                             setHasNotification(false);
                         }}
-                        className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:bg-white hover:border-blue-200 transition-all group"
+                        className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:bg-white hover:border-blue-200 transition-all group dark:bg-gray-700/50 dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-500"
                     >
                         <div className="flex items-center gap-3">
                             <div className="relative">
-                                <Bell className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
-                                {hasNotification && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />}
+                                <Bell className="w-5 h-5 text-gray-400 group-hover:text-blue-600 dark:text-gray-300 dark:group-hover:text-blue-400" />
+                                {hasNotification && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-800 animate-pulse" />}
                             </div>
-                            <span className="text-xs font-bold text-gray-600">Notificaciones</span>
+                            <span className="text-xs font-bold text-gray-600 dark:text-gray-300">Notificaciones</span>
                         </div>
-                        {hasNotification && <span className="bg-red-100 text-red-600 text-[8px] font-black px-1.5 py-0.5 rounded-full">NUEVO</span>}
+                        {hasNotification && <span className="bg-red-100 text-red-600 text-[8px] font-black px-1.5 py-0.5 rounded-full dark:bg-red-900/30 dark:text-red-400">NUEVO</span>}
                     </button>
                 </div>
 
@@ -494,8 +494,8 @@ export default function DashboardLayout({
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${isActive
-                                    ? 'bg-blue-50 text-blue-600'
-                                    : 'text-gray-600 hover:bg-gray-50'
+                                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                                    : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
                                     }`}
                             >
                                 <Icon className="w-5 h-5" />
@@ -505,13 +505,13 @@ export default function DashboardLayout({
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+                <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
                     <div className="relative">
                         <button
                             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                            className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200 shadow-sm w-full hover:bg-gray-50 transition-colors text-left"
+                            className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200 shadow-sm w-full hover:bg-gray-50 transition-colors text-left dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600"
                         >
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold overflow-hidden shadow-inner">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold overflow-hidden shadow-inner dark:bg-blue-900/30 dark:text-blue-400">
                                 {usuario.foto ? (
                                     <img src={usuario.foto} alt={usuario.nombre} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                 ) : (
@@ -519,43 +519,43 @@ export default function DashboardLayout({
                                 )}
                             </div>
                             <div className="flex flex-col min-w-0 flex-1">
-                                <span className="text-xs font-bold text-gray-900 truncate">{usuario.nombre}</span>
-                                <span className="text-[10px] font-medium text-gray-500 uppercase">{usuario.rol === 'coordinador_pae' ? 'Coordinador' : usuario.rol}</span>
+                                <span className="text-xs font-bold text-gray-900 truncate dark:text-white">{usuario.nombre}</span>
+                                <span className="text-[10px] font-medium text-gray-500 uppercase dark:text-gray-400">{usuario.rol === 'coordinador_pae' ? 'Coordinador' : usuario.rol}</span>
                             </div>
                             <ChevronUp className={`w-4 h-4 text-gray-400 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {/* Dropdown Menu Desktop */}
                         {isProfileMenuOpen && (
-                            <div className="absolute bottom-full mb-2 left-0 w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200">
+                            <div className="absolute bottom-full mb-2 left-0 w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200 dark:bg-gray-800 dark:border-gray-700">
                                 <Link
                                     href="/dashboard/perfil"
-                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:text-gray-200 dark:hover:bg-gray-700"
                                     onClick={() => setIsProfileMenuOpen(false)}
                                 >
-                                    <User className="w-4 h-4 text-blue-600" />
+                                    <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                     Mi Perfil
                                 </Link>
-                                <div className="px-4 py-2 border-t border-gray-100">
+                                <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700">
                                     <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Tema</p>
-                                    <div className="flex bg-gray-100/50 p-1 rounded-lg">
+                                    <div className="flex bg-gray-100/50 p-1 rounded-lg dark:bg-gray-700/50">
                                         <button
                                             onClick={() => setTheme('light')}
-                                            className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'light' ? 'bg-white text-yellow-500 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                            className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'light' ? 'bg-white text-yellow-500 shadow-sm dark:bg-gray-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                                             title="Modo Claro"
                                         >
                                             <Sun className="w-4 h-4" />
                                         </button>
                                         <button
                                             onClick={() => setTheme('dark')}
-                                            className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                            className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm dark:bg-gray-900' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                                             title="Modo Oscuro"
                                         >
                                             <Moon className="w-4 h-4" />
                                         </button>
                                         <button
                                             onClick={() => setTheme('system')}
-                                            className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'system' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                            className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'system' ? 'bg-white text-gray-800 shadow-sm dark:bg-gray-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                                             title="Sistema"
                                         >
                                             <Monitor className="w-4 h-4" />
@@ -564,7 +564,7 @@ export default function DashboardLayout({
                                 </div>
                                 <button
                                     onClick={handleLogout}
-                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors text-left border-t border-gray-50"
+                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors text-left border-t border-gray-50 dark:border-gray-700 dark:hover:bg-red-900/20 dark:text-red-400"
                                 >
                                     <LogOut className="w-4 h-4" />
                                     Cerrar Sesión
@@ -581,7 +581,7 @@ export default function DashboardLayout({
             </main>
 
             {/* Mobile Bottom Navigation */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 z-[100] safe-area-bottom">
+            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 z-[100] safe-area-bottom dark:bg-gray-800 dark:border-gray-700 transition-colors">
                 {navItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
@@ -591,14 +591,14 @@ export default function DashboardLayout({
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex flex-col items-center justify-center flex-1 py-1 rounded-lg transition-colors relative ${isActive ? 'text-blue-600' : 'text-gray-500 hover:bg-gray-50'
+                            className={`flex flex-col items-center justify-center flex-1 py-1 rounded-lg transition-colors relative ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'
                                 }`}
                         >
                             <div className={`relative ${isRegistrar ? 'animate-pulse' : ''}`}>
-                                <Icon className={`w-6 h-6 mb-1 ${isActive ? 'fill-current' : ''} ${isRegistrar ? 'text-gray-500 drop-shadow-[0_0_8px_rgba(37,99,235,0.5)]' : ''}`} />
+                                <Icon className={`w-6 h-6 mb-1 ${isActive ? 'fill-current' : ''} ${isRegistrar ? 'text-gray-500 drop-shadow-[0_0_8px_rgba(37,99,235,0.5)] dark:text-gray-400' : ''}`} />
                                 {isRegistrar && <span className="absolute inset-0 bg-blue-400/30 rounded-full blur-md animate-ping opacity-20 pointer-events-none"></span>}
                             </div>
-                            <span className={`text-[10px] font-medium ${isRegistrar ? 'font-black text-gray-500' : ''}`}>{item.label}</span>
+                            <span className={`text-[10px] font-medium ${isRegistrar ? 'font-black text-gray-500 dark:text-gray-300' : ''}`}>{item.label}</span>
                         </Link>
                     );
                 })}
@@ -658,43 +658,43 @@ export default function DashboardLayout({
                                 <div className="absolute top-full mt-2 right-0 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in slide-in-from-top-2 fade-in duration-200">
                                     <Link
                                         href="/dashboard/perfil"
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors bg-gray-50/50"
+                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors bg-gray-50/50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                                         onClick={() => setIsProfileMenuOpen(false)}
                                     >
-                                        <User className="w-4 h-4 text-blue-600" />
+                                        <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                         Mi Perfil
                                     </Link>
-                                    <div className="px-4 py-2 border-t border-gray-100">
+                                    <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800">
                                         <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Tema</p>
-                                        <div className="flex bg-gray-100/50 p-1 rounded-lg mb-2">
+                                        <div className="flex bg-gray-100/50 p-1 rounded-lg mb-2 dark:bg-gray-700/50">
                                             <button
                                                 onClick={() => setTheme('light')}
-                                                className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'light' ? 'bg-white text-yellow-500 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                                className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'light' ? 'bg-white text-yellow-500 shadow-sm dark:bg-gray-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                                             >
                                                 <Sun className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => setTheme('dark')}
-                                                className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                                className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm dark:bg-gray-900' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                                             >
                                                 <Moon className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => setTheme('system')}
-                                                className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'system' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                                className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'system' ? 'bg-white text-gray-800 shadow-sm dark:bg-gray-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                                             >
                                                 <Monitor className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </div>
-                                    <div className="px-4 py-2 border-t border-gray-100">
+                                    <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800">
                                         <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-1">Cuenta</p>
-                                        <p className="text-xs text-gray-600 truncate font-medium">{usuario.nombre}</p>
+                                        <p className="text-xs text-gray-600 truncate font-medium dark:text-gray-300">{usuario.nombre}</p>
                                         <p className="text-[10px] text-gray-400 truncate">{usuario.email}</p>
                                     </div>
                                     <button
                                         onClick={handleLogout}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors text-left border-t border-gray-100"
+                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors text-left border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20"
                                     >
                                         <LogOut className="w-4 h-4" />
                                         Cerrar Sesión

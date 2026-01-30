@@ -575,7 +575,7 @@ export default function GestionPage() {
   if (!usuario) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
       <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 shadow-xl shadow-cyan-900/10 sticky top-16 md:top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:pt-6 md:pb-4">
@@ -606,16 +606,16 @@ export default function GestionPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         {/* Pestañas */}
         {(usuario?.rol === 'admin' || usuario?.rol === 'coordinador_pae') && (
-          <div className="bg-gray-100/80 p-0.5 rounded-2xl flex items-center shrink-0 relative w-full md:w-auto mb-4">
+          <div className="bg-gray-100/80 p-0.5 rounded-2xl flex items-center shrink-0 relative w-full md:w-auto mb-4 dark:bg-gray-800">
             <button
               onClick={() => setActiveTab('estudiantes')}
-              className={`flex-1 md:px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${activeTab === 'estudiantes' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`flex-1 md:px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${activeTab === 'estudiantes' ? 'text-white' : 'text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200'}`}
             >
               Estudiantes
             </button>
             <button
               onClick={() => setActiveTab('docentes')}
-              className={`flex-1 md:px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${activeTab === 'docentes' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`flex-1 md:px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${activeTab === 'docentes' ? 'text-white' : 'text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200'}`}
             >
               Docentes
             </button>
@@ -632,13 +632,13 @@ export default function GestionPage() {
 
         {activeTab === 'estudiantes' ? (
           <>
-            <div className="bg-white p-3 rounded-[2rem] shadow-xl shadow-cyan-900/5 border border-gray-100 mb-4 space-y-3">
+            <div className="bg-white p-3 rounded-[2rem] shadow-xl shadow-cyan-900/5 border border-gray-100 mb-4 space-y-3 dark:bg-gray-800 dark:border-gray-700">
               <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
                 <div className="flex items-center">
                   <div className="relative flex-1">
                     <button
                       onClick={() => setShowSedeDropdown(!showSedeDropdown)}
-                      className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer"
+                      className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer dark:bg-cyan-900/20 dark:border-cyan-800/30 dark:text-cyan-400 dark:hover:bg-gray-700 dark:hover:border-cyan-700"
                     >
                       <span className="truncate">{sedeFilter === 'todas' ? 'SEDES' : sedes.find(s => s.id === sedeFilter)?.nombre.toUpperCase()}</span>
                       <ChevronDown className={`w-4 h-4 text-cyan-500 transition-transform ${showSedeDropdown ? 'rotate-180' : ''}`} />
@@ -647,11 +647,11 @@ export default function GestionPage() {
                     {showSedeDropdown && (
                       <>
                         <div className="fixed inset-0 z-[60]" onClick={() => setShowSedeDropdown(false)}></div>
-                        <div className="absolute z-[70] w-full mt-2 bg-white/90 backdrop-blur-md border border-cyan-100 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="absolute z-[70] w-full mt-2 bg-white/90 backdrop-blur-md border border-cyan-100 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 dark:bg-gray-800/95 dark:border-gray-700">
                           <div className="p-1.5 space-y-1">
                             <button
                               onClick={() => { setSedeFilter('todas'); setGrupoFilter('todos'); setShowSedeDropdown(false); }}
-                              className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === 'todas' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700'}`}
+                              className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === 'todas' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700 dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-cyan-400'}`}
                             >
                               SEDES
                               {sedeFilter === 'todas' && <CheckCircle2 className="w-3.5 h-3.5" />}
@@ -660,7 +660,7 @@ export default function GestionPage() {
                               <button
                                 key={sede.id}
                                 onClick={() => { setSedeFilter(sede.id); setGrupoFilter('todos'); setShowSedeDropdown(false); }}
-                                className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === sede.id ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700'}`}
+                                className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === sede.id ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700 dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-cyan-400'}`}
                               >
                                 {sede.nombre.toUpperCase()}
                                 {sedeFilter === sede.id && <CheckCircle2 className="w-3.5 h-3.5" />}
@@ -677,7 +677,7 @@ export default function GestionPage() {
                   <div className="relative flex-1">
                     <button
                       onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
-                      className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer"
+                      className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer dark:bg-cyan-900/20 dark:border-cyan-800/30 dark:text-cyan-400 dark:hover:bg-gray-700 dark:hover:border-cyan-700"
                     >
                       <span className="truncate">{grupoFilter === 'todos' ? 'GRUPOS' : `${grupoFilter}`}</span>
                       <ChevronDown className={`w-4 h-4 text-cyan-500 transition-transform ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
@@ -686,11 +686,11 @@ export default function GestionPage() {
                     {grupoDropdownOpen && (
                       <>
                         <div className="fixed inset-0 z-[60]" onClick={() => setGrupoDropdownOpen(false)}></div>
-                        <div className="absolute z-[70] w-full mt-2 bg-white/90 backdrop-blur-md border border-cyan-100 rounded-3xl shadow-2xl max-h-72 overflow-y-auto p-4 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="absolute z-[70] w-full mt-2 bg-white/90 backdrop-blur-md border border-cyan-100 rounded-3xl shadow-2xl max-h-72 overflow-y-auto p-4 animate-in fade-in zoom-in-95 duration-200 dark:bg-gray-800/95 dark:border-gray-700">
                           <div className="grid grid-cols-3 gap-2">
                             <button
                               onClick={() => { setGrupoFilter('todos'); setGrupoDropdownOpen(false); }}
-                              className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === 'todos' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50'}`}
+                              className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === 'todos' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600'}`}
                             >
                               TODOS
                             </button>
@@ -698,7 +698,7 @@ export default function GestionPage() {
                               <button
                                 key={grupo}
                                 onClick={() => { setGrupoFilter(grupo); setGrupoDropdownOpen(false); }}
-                                className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === grupo ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50'}`}
+                                className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === grupo ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600'}`}
                               >
                                 {grupo.replace(/-20\d{2}/, '')}
                               </button>
@@ -718,21 +718,21 @@ export default function GestionPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Buscar estudiante o matrícula..."
-                  className="w-full pl-14 pr-6 py-4 bg-gray-50/50 border border-gray-100 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-inner transition-all font-bold text-gray-700 text-sm placeholder:text-gray-300 placeholder:font-medium"
+                  className="w-full pl-14 pr-6 py-4 bg-gray-50/50 border border-gray-100 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-inner transition-all font-bold text-gray-700 text-sm placeholder:text-gray-300 placeholder:font-medium dark:bg-gray-700/50 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-white rounded-[2rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 flex flex-col items-center justify-center text-center">
-                <div className="text-3xl font-black text-cyan-600 leading-none mb-2">
+              <div className="bg-white rounded-[2rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 flex flex-col items-center justify-center text-center dark:bg-gray-800 dark:border-gray-700">
+                <div className="text-3xl font-black text-cyan-600 leading-none mb-2 dark:text-cyan-400">
                   {loading ? <Skeleton className="h-9 w-12" /> : estudiantesFiltrados.length}
                 </div>
-                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Estudiantes</div>
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest dark:text-gray-500">Total Estudiantes</div>
               </div>
               <button
                 onClick={() => setShowStatsModal(true)}
-                className="bg-white rounded-[2rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 flex flex-col items-center justify-center text-center hover:bg-cyan-50 transition-all cursor-pointer active:scale-95 group relative overflow-hidden"
+                className="bg-white rounded-[2rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 flex flex-col items-center justify-center text-center hover:bg-cyan-50 transition-all cursor-pointer active:scale-95 group relative overflow-hidden dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700"
               >
                 <div className="absolute inset-0 bg-cyan-100/50 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="text-3xl font-black text-emerald-500 leading-none mb-2 relative z-10 flex items-center gap-1">
@@ -746,7 +746,7 @@ export default function GestionPage() {
             {/* Modal de Estadísticas Detalladas */}
             {showStatsModal && (
               <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300" onClick={() => setShowStatsModal(false)}>
-                <div className="bg-white rounded-[3rem] p-8 w-full max-w-sm shadow-2xl relative animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                <div className="bg-white rounded-[3rem] p-8 w-full max-w-sm shadow-2xl relative animate-in zoom-in-95 duration-200 dark:bg-gray-900" onClick={e => e.stopPropagation()}>
                   <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-t-[3rem] -z-10" />
                   <button onClick={() => setShowStatsModal(false)} className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors">
                     <X size={20} />
@@ -762,29 +762,29 @@ export default function GestionPage() {
 
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-center">
-                        <div className="text-2xl font-black text-emerald-600">{statsDetail?.avgDaily}</div>
-                        <div className="text-[9px] font-black text-emerald-400 uppercase tracking-tight">Promedio Diario</div>
+                      <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-center dark:bg-emerald-900/20 dark:border-emerald-800/30">
+                        <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{statsDetail?.avgDaily}</div>
+                        <div className="text-[9px] font-black text-emerald-400 uppercase tracking-tight dark:text-emerald-600">Promedio Diario</div>
                       </div>
-                      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-center">
-                        <div className="text-2xl font-black text-gray-700">{statsDetail?.totalStudents}</div>
-                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-tight">Estudiantes Activos</div>
+                      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-center dark:bg-gray-800 dark:border-gray-700/50">
+                        <div className="text-2xl font-black text-gray-700 dark:text-gray-200">{statsDetail?.totalStudents}</div>
+                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-tight dark:text-gray-500">Estudiantes Activos</div>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 max-h-60 overflow-y-auto custom-scrollbar">
-                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Historial Diario</h4>
+                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 max-h-60 overflow-y-auto custom-scrollbar dark:bg-gray-800 dark:border-gray-700">
+                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 dark:text-gray-500">Historial Diario</h4>
                       <div className="space-y-2">
                         {statsDetail?.dailyHistory.map((day, i) => (
-                          <div key={i} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                          <div key={i} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0 dark:border-gray-700">
                             <div className="flex items-center gap-2">
                               <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                              <span className="text-xs font-bold text-gray-600 capitalize">
+                              <span className="text-xs font-bold text-gray-600 capitalize dark:text-gray-300">
                                 {new Date(day.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
                               </span>
                             </div>
                             <div className="flex items-center gap-3">
-                              <span className="text-xs font-black text-gray-900">{day.count}</span>
+                              <span className="text-xs font-black text-gray-900 dark:text-white">{day.count}</span>
                               <span className="text-[10px] font-bold text-gray-400 w-8 text-right">{day.percentage.toFixed(0)}%</span>
                             </div>
                           </div>
@@ -805,16 +805,16 @@ export default function GestionPage() {
                   [...Array(6)].map((_, i) => <Skeleton key={i} className="h-28 rounded-[2rem]" />)
                 ) : (
                   estudiantesFiltrados.map(estudiante => (
-                    <div key={estudiante.id} className={`bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100 transition-all hover:shadow-md ${estudiante.estado === 'inactivo' ? 'opacity-50 grayscale' : ''}`}>
+                    <div key={estudiante.id} className={`bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100 transition-all hover:shadow-md ${estudiante.estado === 'inactivo' ? 'opacity-50 grayscale' : ''} dark:bg-gray-800 dark:border-gray-700`}>
                       <div className="flex items-center gap-4">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-inner ${['bg-cyan-50 text-cyan-600', 'bg-emerald-50 text-emerald-600', 'bg-blue-50 text-blue-600'][estudiante.nombre.length % 3]}`}>
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-inner ${['bg-cyan-50 text-cyan-600 dark:bg-cyan-900/20 dark:text-cyan-400', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400', 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'][estudiante.nombre.length % 3]}`}>
                           <span className="font-black text-xl leading-none">{estudiante.nombre.charAt(0)}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-black text-gray-900 text-sm truncate uppercase tracking-tight">{estudiante.nombre}</div>
-                          <div className="text-[10px] font-bold text-gray-400 mt-0.5">
-                            <span className="bg-gray-100 px-2 py-0.5 rounded-lg text-gray-500 mr-2">{estudiante.matricula}</span>
-                            <span className="text-cyan-600 font-black">{estudiante.grado}-{estudiante.grupo}</span>
+                          <div className="font-black text-gray-900 text-sm truncate uppercase tracking-tight dark:text-white">{estudiante.nombre}</div>
+                          <div className="text-[10px] font-bold text-gray-400 mt-0.5 dark:text-gray-500">
+                            <span className="bg-gray-100 px-2 py-0.5 rounded-lg text-gray-500 mr-2 dark:bg-gray-700 dark:text-gray-300">{estudiante.matricula}</span>
+                            <span className="text-cyan-600 font-black dark:text-cyan-400">{estudiante.grado}-{estudiante.grupo}</span>
                           </div>
 
                           <div className="flex gap-2 mt-4">
@@ -857,7 +857,7 @@ export default function GestionPage() {
                 <Skeleton className="h-28 rounded-[2rem]" />
               ) : (
                 docentes.map(docente => (
-                  <div key={docente.id} className="bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all">
+                  <div key={docente.id} className="bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all dark:bg-gray-800 dark:border-gray-700">
                     <div className="flex items-center gap-4">
                       {docente.avatar_url ? (
                         <img
@@ -867,13 +867,13 @@ export default function GestionPage() {
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <div className="w-14 h-14 bg-cyan-50 rounded-2xl flex items-center justify-center font-black text-cyan-600 text-xl leading-none shadow-inner">
+                        <div className="w-14 h-14 bg-cyan-50 rounded-2xl flex items-center justify-center font-black text-cyan-600 text-xl leading-none shadow-inner dark:bg-cyan-900/20 dark:text-cyan-400">
                           {docente.nombre.charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="font-black text-gray-900 truncate uppercase text-sm tracking-tight leading-none mb-1">{docente.nombre}</div>
-                        <div className="text-[10px] font-bold text-gray-400 truncate">{docente.email}</div>
+                        <div className="font-black text-gray-900 truncate uppercase text-sm tracking-tight leading-none mb-1 dark:text-white">{docente.nombre}</div>
+                        <div className="text-[10px] font-bold text-gray-400 truncate dark:text-gray-500">{docente.email}</div>
                         <div className="flex gap-2 mt-4">
                           <button
                             onClick={() => setSelectedDocente(docente)}
@@ -911,7 +911,7 @@ export default function GestionPage() {
         {
           isCreateModalOpen && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300">
-              <div className="bg-white rounded-[2.5rem] max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium">
+              <div className="bg-white rounded-[2.5rem] max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium dark:bg-gray-800">
                 <div className="p-6 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
@@ -929,25 +929,25 @@ export default function GestionPage() {
                   </div>
                 </div>
 
-                <div className="p-6 md:p-8 space-y-5 bg-white">
+                <div className="p-6 md:p-8 space-y-5 bg-white dark:bg-gray-800">
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">Nombre Completo</label>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Nombre Completo</label>
                       <input
                         type="text"
                         placeholder="Ej: Juan Pérez"
-                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                         value={newStudent.nombre}
                         onChange={e => setNewStudent({ ...newStudent, nombre: e.target.value })}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">Matrícula</label>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Matrícula</label>
                       <input
                         type="text"
                         placeholder="Ej: 2024001"
-                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                         value={newStudent.matricula}
                         onChange={e => setNewStudent({ ...newStudent, matricula: e.target.value })}
                       />
@@ -955,21 +955,21 @@ export default function GestionPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">Grado</label>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Grado</label>
                         <input
                           type="text"
                           placeholder="Ej: 10"
-                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner"
+                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                           value={newStudent.grado}
                           onChange={e => setNewStudent({ ...newStudent, grado: e.target.value })}
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">Grupo</label>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Grupo</label>
                         <input
                           type="text"
                           placeholder="Ej: 10-1"
-                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner"
+                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                           value={newStudent.grupo}
                           onChange={e => setNewStudent({ ...newStudent, grupo: e.target.value })}
                         />
@@ -977,10 +977,10 @@ export default function GestionPage() {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">Sede</label>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Sede</label>
                       <div className="relative">
                         <select
-                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-black text-cyan-700 uppercase text-[10px] tracking-widest appearance-none cursor-pointer shadow-inner"
+                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-black text-cyan-700 uppercase text-[10px] tracking-widest appearance-none cursor-pointer shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-cyan-400"
                           value={newStudent.sede}
                           onChange={e => setNewStudent({ ...newStudent, sede: e.target.value })}
                         >
@@ -1005,7 +1005,7 @@ export default function GestionPage() {
                   <div className="flex gap-4 pt-4">
                     <button
                       onClick={() => setIsCreateModalOpen(false)}
-                      className="flex-1 px-6 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all hover:bg-gray-200 active:scale-95"
+                      className="flex-1 px-6 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all hover:bg-gray-200 active:scale-95 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                     >
                       Cancelar
                     </button>
@@ -1028,7 +1028,7 @@ export default function GestionPage() {
         {
           selectedStudent && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300">
-              <div className="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-gray-800">
                 <div className="p-6 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-4">
@@ -1079,7 +1079,7 @@ export default function GestionPage() {
                   </div>
                 </div>
 
-                <div className="p-6 md:p-8 overflow-y-auto space-y-8 bg-white custom-scrollbar-premium">
+                <div className="p-6 md:p-8 overflow-y-auto space-y-8 bg-white custom-scrollbar-premium dark:bg-gray-800">
                   {/* Vista de Calendario (Mini Grid) */}
                   <div className="space-y-4">
                     <div className="flex justify-between items-center px-1">
@@ -1090,7 +1090,7 @@ export default function GestionPage() {
                       <span className="text-[9px] font-bold text-gray-300 uppercase tracking-wider">Últimas 5 semanas</span>
                     </div>
 
-                    <div className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100/50 shadow-inner">
+                    <div className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100/50 shadow-inner dark:bg-gray-900/50 dark:border-gray-700/50">
                       {/* Headers */}
                       <div className="grid grid-cols-7 gap-1.5 mb-2">
                         {['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO'].map(d => (
@@ -1124,12 +1124,12 @@ export default function GestionPage() {
                               key={i}
                               onClick={() => record && setSelectedStudentDate(record)}
                               disabled={!record}
-                              className={`aspect-square rounded-xl flex flex-col items-center justify-center relative border transition-all duration-300 ${isFuture ? 'opacity-10 bg-gray-100 border-transparent cursor-default' :
+                              className={`aspect-square rounded-xl flex flex-col items-center justify-center relative border transition-all duration-300 ${isFuture ? 'opacity-10 bg-gray-100 border-transparent cursor-default dark:bg-gray-800' :
                                 record ? (
                                   record.estado === 'recibio' ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-100 active:scale-90' :
                                     record.estado === 'no_recibio' ? 'bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-100 active:scale-90' :
                                       'bg-gray-400 border-gray-300 text-white active:scale-90'
-                                ) : isWeekend ? 'bg-gray-100 border-transparent text-gray-300' : 'bg-white border-gray-100 text-gray-200'
+                                ) : isWeekend ? 'bg-gray-100 border-transparent text-gray-300 dark:bg-gray-700/50 dark:text-gray-500' : 'bg-white border-gray-100 text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-500'
                                 }`}
                             >
                               <span className="text-[10px] font-black">{d.getDate()}</span>
@@ -1158,7 +1158,7 @@ export default function GestionPage() {
                     <div className="space-y-3">
                       {studentHistory.filter(a => a.novedad_tipo || a.novedad_descripcion).length > 0 ? (
                         studentHistory.filter(a => a.novedad_tipo || a.novedad_descripcion).slice(0, 3).map((a, i) => (
-                          <div key={i} className="bg-amber-50/50 p-5 rounded-[2rem] border border-amber-100/50 shadow-sm relative overflow-hidden group">
+                          <div key={i} className="bg-amber-50/50 p-5 rounded-[2rem] border border-amber-100/50 shadow-sm relative overflow-hidden group dark:bg-amber-900/10 dark:border-amber-800/30">
                             <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                               <School className="w-12 h-12 text-amber-600" />
                             </div>
@@ -1170,9 +1170,9 @@ export default function GestionPage() {
                           </div>
                         ))
                       ) : (
-                        <div className="bg-gray-50 p-8 rounded-[2rem] border border-dashed border-gray-200 text-center">
-                          <CheckCircle2 className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Sin novedades críticas</p>
+                        <div className="bg-gray-50 p-8 rounded-[2rem] border border-dashed border-gray-200 text-center dark:bg-gray-800/50 dark:border-gray-700">
+                          <CheckCircle2 className="w-10 h-10 text-gray-200 mx-auto mb-3 dark:text-gray-600" />
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest dark:text-gray-500">Sin novedades críticas</p>
                         </div>
                       )}
                     </div>
@@ -1183,15 +1183,15 @@ export default function GestionPage() {
                     <div className="space-y-2">
                       {studentHistory.length > 0 ? (
                         studentHistory.map((h, i) => (
-                          <div key={i} className="flex justify-between items-center p-4 bg-gray-50/50 border border-gray-100/50 rounded-2xl hover:bg-white transition-colors duration-300">
+                          <div key={i} className="flex justify-between items-center p-4 bg-gray-50/50 border border-gray-100/50 rounded-2xl hover:bg-white transition-colors duration-300 dark:bg-gray-700/20 dark:border-gray-700/30 dark:hover:bg-gray-700/50">
                             <div className="flex items-center gap-4">
                               <div className={`w-3 h-3 rounded-full shadow-sm hover:scale-125 transition-transform ${h.estado === 'recibio' ? 'bg-emerald-500 shadow-emerald-100' : h.estado === 'no_recibio' ? 'bg-rose-500 shadow-rose-100' : 'bg-gray-400'}`}></div>
                               <div>
-                                <p className="text-sm font-black text-gray-700">{new Date(h.fecha + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })}</p>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{h.estado === 'recibio' ? 'Operación Normal' : 'Ausencia / Novedad'}</p>
+                                <p className="text-sm font-black text-gray-700 dark:text-gray-200">{new Date(h.fecha + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })}</p>
+                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest dark:text-gray-500">{h.estado === 'recibio' ? 'Operación Normal' : 'Ausencia / Novedad'}</p>
                               </div>
                             </div>
-                            <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg ${h.estado === 'recibio' ? 'bg-emerald-50 text-emerald-600' : h.estado === 'no_recibio' ? 'bg-rose-50 text-rose-600' : 'bg-gray-100 text-gray-500'}`}>{h.estado.replace('_', ' ')}</span>
+                            <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg ${h.estado === 'recibio' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : h.estado === 'no_recibio' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300'}`}>{h.estado.replace('_', ' ')}</span>
                           </div>
                         ))
                       ) : (
@@ -1210,7 +1210,7 @@ export default function GestionPage() {
           selectedStudentDate && (
             <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
               <div
-                className="bg-white rounded-[2.5rem] w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 custom-scrollbar-premium"
+                className="bg-white rounded-[2.5rem] w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 custom-scrollbar-premium dark:bg-gray-800"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="p-6 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center">
@@ -1228,11 +1228,11 @@ export default function GestionPage() {
                   </button>
                 </div>
 
-                <div className="p-8 space-y-6 bg-white">
+                <div className="p-8 space-y-6 bg-white dark:bg-gray-800">
                   {/* Status Badge */}
-                  <div className={`p-5 rounded-3xl flex items-center gap-4 shadow-xl shadow-cyan-900/5 ${selectedStudentDate.estado === 'recibio' ? 'bg-emerald-50/50 border border-emerald-100/50' :
-                    selectedStudentDate.estado === 'no_recibio' ? 'bg-rose-50/50 border border-rose-100/50' :
-                      'bg-gray-50/50 border border-gray-100/50'
+                  <div className={`p-5 rounded-3xl flex items-center gap-4 shadow-xl shadow-cyan-900/5 ${selectedStudentDate.estado === 'recibio' ? 'bg-emerald-50/50 border border-emerald-100/50 dark:bg-emerald-900/10 dark:border-emerald-800/30' :
+                    selectedStudentDate.estado === 'no_recibio' ? 'bg-rose-50/50 border border-rose-100/50 dark:bg-rose-900/10 dark:border-rose-800/30' :
+                      'bg-gray-50/50 border border-gray-100/50 dark:bg-gray-700/30 dark:border-gray-600/30'
                     }`}>
                     <div className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center shadow-lg ${selectedStudentDate.estado === 'recibio' ? 'bg-emerald-500 text-white shadow-emerald-200' :
                       selectedStudentDate.estado === 'no_recibio' ? 'bg-rose-500 text-white shadow-rose-200' :
@@ -1254,13 +1254,13 @@ export default function GestionPage() {
                   </div>
 
                   {/* Time Info */}
-                  <div className="flex items-center gap-4 p-4 bg-cyan-50/50 rounded-2xl border border-cyan-100/30">
+                  <div className="flex items-center gap-4 p-4 bg-cyan-50/50 rounded-2xl border border-cyan-100/30 dark:bg-cyan-900/10 dark:border-cyan-800/20">
                     <div className="bg-white p-2.5 rounded-xl shadow-sm">
                       <Clock className="w-5 h-5 text-cyan-600" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-black text-cyan-600 uppercase tracking-widest leading-none mb-1">Hora de Registro</p>
-                      <p className="text-sm font-black text-gray-700">
+                      <p className="text-[10px] font-black text-cyan-600 uppercase tracking-widest leading-none mb-1 dark:text-cyan-400">Hora de Registro</p>
+                      <p className="text-sm font-black text-gray-700 dark:text-gray-200">
                         {new Date(selectedStudentDate.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -1268,7 +1268,7 @@ export default function GestionPage() {
 
                   {/* Novelties */}
                   {(selectedStudentDate.novedad_tipo || selectedStudentDate.novedad_descripcion) && (
-                    <div className="bg-amber-50/50 p-6 rounded-[2rem] border border-amber-100/50 relative overflow-hidden group">
+                    <div className="bg-amber-50/50 p-6 rounded-[2rem] border border-amber-100/50 relative overflow-hidden group dark:bg-amber-900/10 dark:border-amber-800/30">
                       <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                         <Info className="w-10 h-10 text-amber-600" />
                       </div>
@@ -1301,7 +1301,7 @@ export default function GestionPage() {
         {
           selectedDocente && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300">
-              <div className="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-gray-800">
                 <div className="p-6 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-4">
@@ -1323,7 +1323,7 @@ export default function GestionPage() {
                   </div>
                 </div>
 
-                <div className="p-6 md:p-8 overflow-y-auto space-y-8 bg-white custom-scrollbar-premium">
+                <div className="p-6 md:p-8 overflow-y-auto space-y-8 bg-white custom-scrollbar-premium dark:bg-gray-800">
                   {/* Vista de Calendario (Mini Grid Historial Docente) */}
                   <div className="space-y-4">
                     <div className="flex justify-between items-center px-1">
@@ -1334,7 +1334,7 @@ export default function GestionPage() {
                       <span className="text-[9px] font-bold text-gray-300 uppercase tracking-wider">Últimos 35 días</span>
                     </div>
 
-                    <div className="bg-gray-50/50 p-5 rounded-[2rem] border border-gray-100/50 shadow-inner">
+                    <div className="bg-gray-50/50 p-5 rounded-[2rem] border border-gray-100/50 shadow-inner dark:bg-gray-900/50 dark:border-gray-700/50">
                       {/* Day Headers */}
                       <div className="grid grid-cols-7 gap-1.5 mb-3">
                         {['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO'].map(day => (
@@ -1371,12 +1371,12 @@ export default function GestionPage() {
                               disabled={!record}
                               title={dateStr + (record ? ` - ${record.total} registros` : '')}
                               className={`aspect-square rounded-xl flex flex-col items-center justify-center border transition-all duration-300
-                          ${isFuture ? 'opacity-10 bg-gray-100 border-transparent cursor-default' :
+                          ${isFuture ? 'opacity-10 bg-gray-100 border-transparent cursor-default dark:bg-gray-700' :
                                   record
                                     ? 'bg-cyan-600 border-cyan-500 text-white shadow-lg shadow-cyan-100 active:scale-95 cursor-pointer'
                                     : isWeekend
-                                      ? 'bg-gray-100 border-transparent text-gray-300'
-                                      : 'bg-white border-gray-100 text-gray-200'
+                                      ? 'bg-gray-100 border-transparent text-gray-300 dark:bg-gray-700/50 dark:text-gray-500'
+                                      : 'bg-white border-gray-100 text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-500'
                                 }
                             `}
                             >
@@ -1399,22 +1399,22 @@ export default function GestionPage() {
                     <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Sesiones de Registro</h4>
                     <div className="space-y-3">
                       {docenteHistory.map((h, i) => (
-                        <div key={i} className="p-5 bg-gradient-to-br from-white to-gray-50/30 border border-gray-100 rounded-[2rem] shadow-sm hover:shadow-md hover:border-cyan-100 transition-all group">
+                        <div key={i} className="p-5 bg-gradient-to-br from-white to-gray-50/30 border border-gray-100 rounded-[2rem] shadow-sm hover:shadow-md hover:border-cyan-100 transition-all group dark:from-gray-800 dark:to-gray-900 dark:border-gray-700">
                           <div className="flex justify-between items-center mb-4">
                             <div className="flex items-center gap-3">
-                              <div className="bg-cyan-50 p-2 rounded-xl group-hover:bg-cyan-100 transition-colors">
-                                <Calendar className="w-4 h-4 text-cyan-600" />
+                              <div className="bg-cyan-50 p-2 rounded-xl group-hover:bg-cyan-100 transition-colors dark:bg-cyan-900/20">
+                                <Calendar className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                               </div>
-                              <span className="text-sm font-black text-gray-700 capitalize">{new Date(h.fecha + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })}</span>
+                              <span className="text-sm font-black text-gray-700 capitalize dark:text-gray-200">{new Date(h.fecha + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })}</span>
                             </div>
-                            <span className="text-[10px] font-black bg-white border border-gray-100 text-cyan-600 px-3 py-1 rounded-full uppercase tracking-widest">{h.grupos.length} {h.grupos.length === 1 ? 'Grupo' : 'Grupos'}</span>
+                            <span className="text-[10px] font-black bg-white border border-gray-100 text-cyan-600 px-3 py-1 rounded-full uppercase tracking-widest dark:bg-gray-700 dark:border-gray-600 dark:text-cyan-400">{h.grupos.length} {h.grupos.length === 1 ? 'Grupo' : 'Grupos'}</span>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {h.grupos.map((g: any, idx: number) => (
-                              <div key={idx} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-100 shadow-xs">
-                                <span className="text-[10px] font-black text-gray-900">{g.name}</span>
-                                <div className="w-px h-2 bg-gray-200"></div>
-                                <span className="text-[9px] font-bold text-cyan-500 uppercase">{g.count} REG</span>
+                              <div key={idx} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-100 shadow-xs dark:bg-gray-700 dark:border-gray-600">
+                                <span className="text-[10px] font-black text-gray-900 dark:text-gray-200">{g.name}</span>
+                                <div className="w-px h-2 bg-gray-200 dark:bg-gray-600"></div>
+                                <span className="text-[9px] font-bold text-cyan-500 uppercase dark:text-cyan-400">{g.count} REG</span>
                               </div>
                             ))}
                           </div>
@@ -1431,7 +1431,7 @@ export default function GestionPage() {
                 {selectedDateActivity && (
                   <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
                     <div
-                      className="bg-white rounded-[2.5rem] w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 custom-scrollbar-premium"
+                      className="bg-white rounded-[2.5rem] w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 custom-scrollbar-premium dark:bg-gray-800"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="p-6 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center">
@@ -1449,7 +1449,7 @@ export default function GestionPage() {
                         </button>
                       </div>
 
-                      <div className="p-8 space-y-8 bg-white">
+                      <div className="p-8 space-y-8 bg-white dark:bg-gray-800">
                         {/* Detailed Group List with Timestamps */}
                         <div>
                           <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2 px-1">
@@ -1458,13 +1458,13 @@ export default function GestionPage() {
                           </h4>
                           <div className="space-y-3 max-h-72 overflow-y-auto pr-2 custom-scrollbar-premium">
                             {selectedDateActivity.grupos.map((g, idx) => (
-                              <div key={idx} className="flex items-center justify-between p-4 bg-gray-50/50 border border-gray-100 rounded-2xl group transition-all duration-300 hover:bg-white hover:border-cyan-100">
+                              <div key={idx} className="flex items-center justify-between p-4 bg-gray-50/50 border border-gray-100 rounded-2xl group transition-all duration-300 hover:bg-white hover:border-cyan-100 dark:bg-gray-700/30 dark:border-gray-600/30 dark:hover:bg-gray-700">
                                 <div className="flex items-center gap-4">
-                                  <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center font-black text-cyan-600 text-xs text-transform uppercase border border-cyan-50 group-hover:bg-cyan-600 group-hover:text-white transition-colors duration-300">
+                                  <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center font-black text-cyan-600 text-xs text-transform uppercase border border-cyan-50 group-hover:bg-cyan-600 group-hover:text-white transition-colors duration-300 dark:bg-gray-700 dark:border-gray-600 dark:text-cyan-400">
                                     {g.name.split('-')[0]}
                                   </div>
                                   <div className="flex flex-col">
-                                    <span className="font-black text-gray-700 text-sm leading-none mb-1.5 uppercase tracking-tighter">Grupo {g.name.split('-')[1] || g.name}</span>
+                                    <span className="font-black text-gray-700 text-sm leading-none mb-1.5 uppercase tracking-tighter dark:text-gray-200">Grupo {g.name.split('-')[1] || g.name}</span>
                                     <span className="text-[10px] text-gray-400 font-bold flex items-center gap-1.5 uppercase">
                                       <Clock className="w-3 h-3 text-cyan-400" />
                                       {new Date(g.timestamp).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
@@ -1472,17 +1472,17 @@ export default function GestionPage() {
                                   </div>
                                 </div>
                                 <div className="flex flex-col items-end">
-                                  <span className="text-sm font-black text-gray-900 leading-none mb-1">
+                                  <span className="text-sm font-black text-gray-900 leading-none mb-1 dark:text-white">
                                     {g.count}
                                   </span>
-                                  <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">REG</span>
+                                  <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest dark:text-gray-500">REG</span>
                                 </div>
                               </div>
                             ))}
                           </div>
                         </div>
 
-                        <div className="pt-6 border-t border-gray-100 flex items-center justify-between px-2">
+                        <div className="pt-6 border-t border-gray-100 flex items-center justify-between px-2 dark:border-gray-700">
                           <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Resumen Total</div>
                           <div className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-lg font-black shadow-sm shadow-emerald-50">
                             {selectedDateActivity.total}
@@ -1507,7 +1507,7 @@ export default function GestionPage() {
         {/* Modal Cambio de Rol (Security First) */}
         {docenteParaRol && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 z-[300] animate-in fade-in duration-500">
-            <div className="bg-white rounded-[3rem] max-w-md w-full overflow-hidden shadow-[0_32px_64px_-15px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 flex flex-col">
+            <div className="bg-white rounded-[3rem] max-w-md w-full overflow-hidden shadow-[0_32px_64px_-15px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 flex flex-col dark:bg-gray-800">
               <div className="p-8 bg-gradient-to-br from-rose-600 to-rose-700 text-white relative">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="bg-white/20 p-4 rounded-3xl backdrop-blur-md border border-white/10">
@@ -1536,7 +1536,7 @@ export default function GestionPage() {
                         key={role.id}
                         onClick={() => handleConfirmUpdateRol(role.id)}
                         disabled={modificandoRol}
-                        className={`flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 group ${docenteParaRol.rol === role.id ? 'bg-gray-900 border-gray-900 text-white' : 'bg-gray-50 border-gray-100 hover:border-cyan-200 hover:bg-white'}`}
+                        className={`flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 group ${docenteParaRol.rol === role.id ? 'bg-gray-900 border-gray-900 text-white dark:bg-black dark:border-black' : 'bg-gray-50 border-gray-100 hover:border-cyan-200 hover:bg-white dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600'}`}
                       >
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${docenteParaRol.rol === role.id ? 'bg-white/20' : role.bg + ' ' + role.color}`}>
                           {role.id === 'admin' ? <Shield className="w-5 h-5" /> : role.id === 'coordinador_pae' ? <Clock className="w-5 h-5" /> : <User className="w-5 h-5" />}
@@ -1553,7 +1553,7 @@ export default function GestionPage() {
                 <div className="pt-4">
                   <button
                     onClick={() => setDocenteParaRol(null)}
-                    className="w-full py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all hover:bg-gray-200 active:scale-95"
+                    className="w-full py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all hover:bg-gray-200 active:scale-95 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                   >
                     Abortar Operación
                   </button>

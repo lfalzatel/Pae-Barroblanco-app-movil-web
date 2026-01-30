@@ -725,22 +725,22 @@ function RegistroContent() {
   if (!usuario) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* Modal de Novedad */}
       {modalNovedad && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900">Registrar Novedad</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Registrar Novedad</h3>
               <button onClick={() => setModalNovedad(null)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500">
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
             <div className="p-6">
-              <p className="text-sm text-gray-500 mb-4">{modalNovedad.nombre}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{modalNovedad.nombre}</p>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Novedad</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de Novedad</label>
                 <div className="flex flex-wrap gap-2">
                   {['Alergia', 'Rechazo Alimento', 'Problema Calidad', 'Porción Insuficiente', 'Otro'].map(tipo => (
                     <button
@@ -748,7 +748,7 @@ function RegistroContent() {
                       onClick={() => setTempNovedad(prev => ({ ...prev, tipo }))}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${tempNovedad.tipo === tipo
                         ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400'}`}
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-blue-400'}`}
                     >
                       {tipo}
                     </button>
@@ -757,17 +757,17 @@ function RegistroContent() {
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción</label>
                 <textarea
                   value={tempNovedad.descripcion}
                   onChange={(e) => setTempNovedad(prev => ({ ...prev, descripcion: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-24 resize-none"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-24 resize-none dark:bg-gray-700 dark:text-white"
                   placeholder="Describa la novedad..."
                 />
               </div>
 
               <div className="flex gap-3">
-                <button onClick={() => setModalNovedad(null)} className="flex-1 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50">
+                <button onClick={() => setModalNovedad(null)} className="flex-1 py-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700">
                   Cancelar
                 </button>
                 <button onClick={saveNovedad} className="flex-1 py-3 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white font-bold shadow-md shadow-yellow-200">
@@ -849,7 +849,7 @@ function RegistroContent() {
         </div>
 
         {step === 'registro' && grupoSeleccionado && (
-          <div className="space-y-2 pt-2 pb-5 bg-white shadow-lg transition-all">
+          <div className="space-y-2 pt-2 pb-5 bg-white dark:bg-gray-800 shadow-lg transition-all border-b border-gray-100 dark:border-gray-700">
             <div className="flex flex-col md:flex-row justify-between px-2 items-center md:items-end gap-3 md:gap-0 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex gap-4 md:gap-8 justify-center w-full md:w-auto">
                 <div className="flex flex-col items-center"><span className="text-2xl md:text-3xl font-black text-emerald-400 leading-none">{statsCount.recibieron}</span><span className="text-[9px] md:text-[10px] font-bold text-gray-400 mt-0.5">Recibieron</span></div>
@@ -927,21 +927,21 @@ function RegistroContent() {
                     className={`rounded-2xl p-3 shadow-sm border transition-all text-center flex flex-col items-center justify-center min-h-[90px] group active:scale-[0.97]
                       ${grupo.completado
                         ? 'bg-[#0891B2] border-cyan-500 text-white shadow-md shadow-cyan-100'
-                        : 'bg-white text-slate-900 border-slate-100 shadow-slate-200/50 hover:border-teal-400'}
+                        : 'bg-white dark:bg-gray-800 text-slate-900 dark:text-white border-slate-100 dark:border-gray-700 shadow-slate-200/50 dark:shadow-none hover:border-teal-400 dark:hover:border-teal-500'}
                     `}
                   >
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className={`text-lg font-black ${grupo.completado ? 'text-white' : 'text-slate-900'} tracking-tighter uppercase`}>
+                      <span className={`text-lg font-black ${grupo.completado ? 'text-white' : 'text-slate-900 dark:text-white'} tracking-tighter uppercase`}>
                         {formatGroupName(grupo.nombre)}
                       </span>
                       {grupo.completado && (
                         <CheckCircle className="w-4 h-4 text-cyan-200" />
                       )}
                     </div>
-                    <div className={`text-[11px] font-medium leading-none mb-2 ${grupo.completado ? 'text-cyan-100' : 'text-slate-400'}`}>
+                    <div className={`text-[11px] font-medium leading-none mb-2 ${grupo.completado ? 'text-cyan-100' : 'text-slate-400 dark:text-slate-500'}`}>
                       {grupo.estudiantes || 0} estudiantes
                     </div>
-                    <div className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${grupo.completado ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                    <div className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${grupo.completado ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-300'}`}>
                       {grupo.completado ? 'COMPLETADO' : 'PENDIENTE'}
                     </div>
                   </button>
@@ -955,9 +955,9 @@ function RegistroContent() {
           <div>
             {loadingGrupos ? (
               <div className="space-y-4">
-                <div className="h-12 bg-gray-100 rounded-xl mb-6 animate-pulse" />
+                <div className="h-12 bg-gray-100 dark:bg-gray-800 rounded-xl mb-6 animate-pulse" />
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                  <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
                         <Skeleton className="w-12 h-12 rounded-full" />
@@ -984,7 +984,7 @@ function RegistroContent() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Buscar por nombre o matrícula..."
-                    className="w-full pl-12 pr-6 py-3 bg-white border border-gray-100 rounded-full focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-xl shadow-gray-200/50 transition-all font-bold text-gray-700 text-sm"
+                    className="w-full pl-12 pr-6 py-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-xl shadow-gray-200/50 dark:shadow-black/20 transition-all font-bold text-gray-700 dark:text-gray-200 text-sm"
                   />
                   <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-cyan-500 transition-colors" />
                 </div>
@@ -1015,31 +1015,31 @@ function RegistroContent() {
                       return (
                         <div
                           key={estudiante.id}
-                          className={`bg-white rounded-[1.5rem] p-4 shadow-sm border-2 transition-all relative overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300
-                            border-transparent hover:shadow-xl hover:shadow-cyan-900/5
-                            ${estudiante.estado !== 'inactivo' ? 'border-cyan-500/30 bg-cyan-50/10 shadow-cyan-100/50' : 'grayscale opacity-70'}
+                          className={`bg-white dark:bg-gray-800 rounded-[1.5rem] p-4 shadow-sm border-2 transition-all relative overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300
+                            border-transparent dark:border-white/5 hover:shadow-xl hover:shadow-cyan-900/5
+                            ${estudiante.estado !== 'inactivo' ? 'border-cyan-500/30 bg-cyan-50/10 dark:bg-cyan-900/10 shadow-cyan-100/50 dark:shadow-none' : 'grayscale opacity-70'}
                           `}
                         >
                           <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-inner border border-white/50 transition-all duration-300
-                                ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500 text-white rotate-3 shadow-cyan-200' : 'bg-gray-200 text-gray-400 rotate-0'}
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-inner border border-white/50 dark:border-white/10 transition-all duration-300
+                                ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500 text-white rotate-3 shadow-cyan-200 dark:shadow-none' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rotate-0'}
                               `}>
                                 {estudiante.nombre.charAt(0)}
                               </div>
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
-                                  <div className="font-black text-gray-900 leading-tight tracking-tight text-[12px]">{estudiante.nombre}</div>
+                                  <div className="font-black text-gray-900 dark:text-white leading-tight tracking-tight text-[12px]">{estudiante.nombre}</div>
                                 </div>
-                                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{estudiante.matricula} • {formatGroupName(estudiante.grupo)}</div>
+                                <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{estudiante.matricula} • {formatGroupName(estudiante.grupo)}</div>
                               </div>
                             </div>
                             <button
                               onClick={() => handleToggleEstado(estudiante)}
                               disabled={isLocked}
-                              className="bg-gray-50 px-2 py-2 rounded-xl flex flex-col items-center gap-1 hover:bg-gray-100 transition-colors border border-gray-100 active:scale-95 disabled:opacity-30 h-14 w-14 justify-center"
+                              className="bg-gray-50 dark:bg-gray-700/50 px-2 py-2 rounded-xl flex flex-col items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-700 active:scale-95 disabled:opacity-30 h-14 w-14 justify-center"
                             >
-                              <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 flex-shrink-0 ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500' : 'bg-gray-300'}`}>
+                              <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 flex-shrink-0 ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
                                 <div className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all duration-300 ${estudiante.estado !== 'inactivo' ? 'left-4.5 translate-x-1' : 'left-0.5'}`} style={{ left: estudiante.estado !== 'inactivo' ? '18px' : '2px' }}></div>
                               </div>
                               <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest leading-none">
@@ -1057,7 +1057,7 @@ function RegistroContent() {
                                   className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center justify-center gap-1 border-2 active:scale-95 disabled:opacity-30
                                     ${currentAsist === 'recibio'
                                       ? 'bg-cyan-600 border-cyan-500 text-white shadow-lg shadow-cyan-200'
-                                      : 'bg-white border-gray-100 text-gray-400 hover:border-cyan-200 hover:text-cyan-600'}
+                                      : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:border-cyan-200 dark:hover:border-cyan-700 hover:text-cyan-600 dark:hover:text-cyan-400'}
                                   `}
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-4 h-4 ${currentAsist === 'recibio' ? 'animate-bounce' : ''}`}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
@@ -1069,7 +1069,7 @@ function RegistroContent() {
                                   className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center justify-center gap-1 border-2 active:scale-95 disabled:opacity-30
                                     ${currentAsist === 'no_recibio'
                                       ? 'bg-red-500 border-red-600 text-white shadow-lg shadow-red-200'
-                                      : 'bg-white border-gray-100 text-gray-400 hover:border-red-200 hover:text-red-500'}
+                                      : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:border-red-200 dark:hover:border-red-800 hover:text-red-500 dark:hover:text-red-400'}
                                   `}
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>
@@ -1081,7 +1081,7 @@ function RegistroContent() {
                                   className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center justify-center gap-1 border-2 active:scale-95 disabled:opacity-30
                                     ${currentAsist === 'ausente'
                                       ? 'bg-slate-500 border-slate-600 text-white shadow-lg shadow-slate-200'
-                                      : 'bg-white border-gray-100 text-gray-400 hover:border-slate-300 hover:text-slate-700'}
+                                      : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-700 dark:hover:text-slate-300'}
                                   `}
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="17" x2="22" y1="8" y2="13"></line><line x1="22" x2="17" y1="8" y2="13"></line></svg>
@@ -1092,7 +1092,7 @@ function RegistroContent() {
                               <button
                                 onClick={() => openNovedadModal(estudiante)}
                                 disabled={isLocked}
-                                className="w-full bg-[#FFFBEB] hover:bg-amber-100 text-[#D97706] py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] flex items-center justify-center gap-2 transition-all border border-amber-200/50 shadow-sm group active:scale-[0.98]"
+                                className="w-full bg-[#FFFBEB] dark:bg-amber-900/10 hover:bg-amber-100 dark:hover:bg-amber-900/20 text-[#D97706] dark:text-amber-500 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] flex items-center justify-center gap-2 transition-all border border-amber-200/50 dark:border-amber-900/30 shadow-sm group active:scale-[0.98]"
                               >
                                 <AlertCircle className="w-3.5 h-3.5" />
                                 <span>REGISTRAR NOVEDAD</span>
@@ -1115,8 +1115,8 @@ function RegistroContent() {
       {showCalendar && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowCalendar(false)}></div>
-          <div className="bg-white/95 backdrop-blur-2xl rounded-[2.5rem] w-full max-w-[90vw] md:max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20 mx-auto">
-            <div className="p-6 border-b border-gray-100 bg-gradient-to-br from-cyan-600 to-cyan-700 flex items-center justify-between text-white">
+          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-[2.5rem] w-full max-w-[90vw] md:max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20 mx-auto">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-br from-cyan-600 to-cyan-700 flex items-center justify-between text-white">
               <h3 className="font-black flex items-center gap-3 uppercase text-[11px] tracking-[0.2em]">
                 <Calendar className="w-5 h-5" />
                 Seleccionar Fecha
@@ -1128,7 +1128,7 @@ function RegistroContent() {
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
-            <div className="p-6 bg-white">
+            <div className="p-6 bg-white dark:bg-gray-900">
               <MiniCalendar
                 selectedDate={selectedDate}
                 onSelectDate={(date) => {
@@ -1143,7 +1143,7 @@ function RegistroContent() {
                 }}
               />
             </div>
-            <div className="p-6 pt-0 bg-white">
+            <div className="p-6 pt-0 bg-white dark:bg-gray-900">
               <button
                 onClick={() => setShowCalendar(false)}
                 className="w-full py-4 bg-cyan-600 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-cyan-100 hover:bg-cyan-700 active:scale-[0.98] transition-all"

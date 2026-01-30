@@ -134,19 +134,19 @@ export function MiniCalendar({
 
     const styles = {
         emerald: {
-            bg: 'bg-emerald-50',
-            text: 'text-emerald-700',
-            hover: 'hover:bg-emerald-100',
-            border: 'border-emerald-100',
-            count: 'text-emerald-600',
+            bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+            text: 'text-emerald-700 dark:text-emerald-400',
+            hover: 'hover:bg-emerald-100 dark:hover:bg-emerald-900/40',
+            border: 'border-emerald-100 dark:border-emerald-800/50',
+            count: 'text-emerald-600 dark:text-emerald-400',
             dot: 'bg-emerald-500'
         },
         blue: {
-            bg: 'bg-blue-50',
-            text: 'text-blue-700',
-            hover: 'hover:bg-blue-100',
-            border: 'border-blue-100',
-            count: 'text-blue-600',
+            bg: 'bg-blue-50 dark:bg-blue-900/20',
+            text: 'text-blue-700 dark:text-blue-400',
+            hover: 'hover:bg-blue-100 dark:hover:bg-blue-900/40',
+            border: 'border-blue-100 dark:border-blue-800/50',
+            count: 'text-blue-600 dark:text-blue-400',
             dot: 'bg-blue-500'
         }
     };
@@ -154,15 +154,15 @@ export function MiniCalendar({
     const color = (mode === 'attendance' || mode === 'schedules') ? styles.emerald : styles.blue;
 
     return (
-        <div className={`bg-white rounded-2xl shadow-xl border border-gray-100 p-4 w-full ${className}`}>
+        <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-4 w-full ${className}`}>
             <div className="flex items-center justify-between mb-4 px-2">
-                <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-900">
+                <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-gray-900 dark:hover:text-white">
                     <ChevronLeft className="w-5 h-5" />
                 </button>
-                <div className="font-bold text-gray-900 capitalize text-sm">
+                <div className="font-bold text-gray-900 dark:text-white capitalize text-sm">
                     {monthNames[month]} {year}
                 </div>
-                <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-900">
+                <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-gray-900 dark:hover:text-white">
                     <ChevronRight className="w-5 h-5" />
                 </button>
             </div>
@@ -177,8 +177,8 @@ export function MiniCalendar({
 
             <div className="grid grid-cols-7 gap-2 justify-items-center relative">
                 {loading && (
-                    <div className="absolute inset-0 z-20 bg-white/50 backdrop-blur-[1px] flex items-center justify-center">
-                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                    <div className="absolute inset-0 z-20 bg-white/50 dark:bg-gray-800/50 backdrop-blur-[1px] flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
                     </div>
                 )}
                 {days.map((day, idx) => {
@@ -200,8 +200,8 @@ export function MiniCalendar({
                                     ? 'bg-blue-600 text-white shadow-md scale-105 z-10'
                                     : hasData
                                         ? `${color.bg} ${color.text} ${color.hover} border ${color.border}`
-                                        : 'text-gray-700 hover:bg-gray-50 border border-transparent hover:border-gray-100'}
-                                ${isToday && !isSelected ? 'ring-2 ring-blue-600 border-transparent text-blue-600' : ''}
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-transparent hover:border-gray-100 dark:hover:border-gray-700'}
+                                ${isToday && !isSelected ? 'ring-2 ring-blue-600 border-transparent text-blue-600 dark:text-blue-400' : ''}
                             `}
                         >
                             <span className={`font-bold ${isSelected || hasData ? 'text-base' : 'text-sm'} ${count > 0 && showCounters ? '-mt-1' : ''}`}>
@@ -222,7 +222,7 @@ export function MiniCalendar({
                 })}
             </div>
 
-            <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-gray-400 border-t border-gray-100 pt-3">
+            <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-700 pt-3">
                 <div className="flex items-center gap-1.5">
                     <div className={`w-1.5 h-1.5 rounded-full ${color.dot}`}></div>
                     <span>{mode === 'attendance' ? 'Con Asistencia' : mode === 'schedules' ? 'Con Horario' : 'Registrado'}</span>

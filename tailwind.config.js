@@ -6,6 +6,12 @@ module.exports = {
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  safelist: [
+    'dark:bg-gray-800',
+    'dark:bg-gray-900',
+    'dark:text-white',
+    'dark:border-gray-700',
+  ],
   theme: {
     extend: {
       colors: {

@@ -586,7 +586,7 @@ export default function AdminPage() {
     if (!usuario) return null;
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-32">
+        <div className="min-h-screen bg-gray-50 pb-32 dark:bg-gray-900 transition-colors">
             <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 shadow-xl shadow-cyan-900/10 sticky top-16 md:top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -613,7 +613,7 @@ export default function AdminPage() {
                 <div className="md:hidden relative z-30">
                     <button
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className="w-full bg-white border border-gray-200 shadow-sm rounded-xl p-4 flex items-center justify-between active:bg-gray-50 transition-all active:scale-[0.99]"
+                        className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl p-4 flex items-center justify-between active:bg-gray-50 dark:active:bg-gray-700 transition-all active:scale-[0.99]"
                     >
                         <div className="flex items-center gap-4">
                             <div className={`p-3 rounded-xl ${activeTab === 'move' ? 'bg-blue-100 text-blue-600' :
@@ -629,8 +629,8 @@ export default function AdminPage() {
                                 {activeTab === 'backup' && <Database className="w-6 h-6" />}
                             </div>
                             <div className="text-left">
-                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-0.5">Herramienta Activa</p>
-                                <p className="text-lg font-black text-gray-900 leading-none">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider mb-0.5">Herramienta Activa</p>
+                                <p className="text-lg font-black text-gray-900 dark:text-white leading-none">
                                     {activeTab === 'move' && 'Mover Masa'}
                                     {activeTab === 'rename' && 'Renombrar Grupos'}
                                     {activeTab === 'sede' && 'Cambiar Sede'}
@@ -648,7 +648,7 @@ export default function AdminPage() {
                     {isMobileMenuOpen && (
                         <>
                             <div className="fixed inset-0 bg-black/5 z-40" onClick={() => setIsMobileMenuOpen(false)} />
-                            <div className="absolute top-full left-0 right-0 mt-3 bg-white rounded-2xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden divide-y divide-gray-100 animate-in fade-in slide-in-from-top-4 duration-200">
+                            <div className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-gray-800 rounded-2xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden divide-y divide-gray-100 dark:divide-gray-700 animate-in fade-in slide-in-from-top-4 duration-200">
                                 {[
                                     { id: 'move', label: 'Mover Masa', icon: ArrowRightLeft, color: 'text-blue-600', bg: 'bg-blue-50' },
                                     { id: 'rename', label: 'Renombrar Grupos', icon: Edit3, color: 'text-purple-600', bg: 'bg-purple-50' },
@@ -662,13 +662,13 @@ export default function AdminPage() {
                                             setActiveTab(tool.id as any);
                                             setIsMobileMenuOpen(false);
                                         }}
-                                        className={`w-full p-4 flex items-center justify-between transition-colors ${activeTab === tool.id ? 'bg-gray-50' : 'hover:bg-gray-50'}`}
+                                        className={`w-full p-4 flex items-center justify-between transition-colors ${activeTab === tool.id ? 'bg-gray-50 dark:bg-gray-700' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className={`p-2 rounded-lg ${tool.bg} ${tool.color}`}>
                                                 <tool.icon className="w-5 h-5" />
                                             </div>
-                                            <span className={`font-bold ${activeTab === tool.id ? 'text-gray-900' : 'text-gray-600'}`}>
+                                            <span className={`font-bold ${activeTab === tool.id ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}>
                                                 {tool.label}
                                             </span>
                                         </div>
@@ -681,38 +681,38 @@ export default function AdminPage() {
                 </div>
 
                 {/* Desktop: Tabs Horizontales */}
-                <div className="hidden md:flex bg-white p-1 rounded-xl shadow-sm border border-gray-200 overflow-x-auto no-scrollbar gap-2">
+                <div className="hidden md:flex bg-white dark:bg-gray-800 p-1 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto no-scrollbar gap-2">
                     <button
                         onClick={() => setActiveTab('move')}
-                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'move' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'move' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                     >
                         <ArrowRightLeft className="w-4 h-4" />
                         Mover Masa
                     </button>
                     <button
                         onClick={() => setActiveTab('rename')}
-                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'rename' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'rename' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                     >
                         <Edit3 className="w-4 h-4" />
                         Renombrar Grupos
                     </button>
                     <button
                         onClick={() => setActiveTab('sede')}
-                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'sede' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'sede' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                     >
                         <MapPin className="w-4 h-4" />
                         Cambiar Sede
                     </button>
                     <button
                         onClick={() => setActiveTab('status')}
-                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'status' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'status' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                     >
                         <ShieldAlert className="w-4 h-4" />
                         Gestión de Estados
                     </button>
                     <button
                         onClick={() => setActiveTab('backup')}
-                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'backup' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'backup' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                     >
                         <Database className="w-4 h-4" />
                         Respaldo
@@ -1010,16 +1010,16 @@ export default function AdminPage() {
                         placeholder="Buscar por nombre, matrícula o grupo..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="block w-full pl-12 pr-4 py-4 bg-white border-none rounded-full text-gray-900 placeholder:text-gray-400 placeholder:font-bold focus:outline-none focus:ring-2 focus:ring-[#0891B2]/20 shadow-xl transition-all duration-300"
+                        className="block w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-none rounded-full text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:font-bold focus:outline-none focus:ring-2 focus:ring-[#0891B2]/20 shadow-xl transition-all duration-300"
                     />
                 </div>
 
                 {/* Lista de estudiantes */}
-                <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-cyan-50/80 border-b border-cyan-100">
+                                <tr className="bg-cyan-50/80 dark:bg-cyan-900/40 border-b border-cyan-100 dark:border-cyan-800/30">
                                     <th className="px-6 py-4 w-16 text-center">
                                         <input
                                             type="checkbox"
@@ -1030,15 +1030,15 @@ export default function AdminPage() {
                                             className="rounded-md border-gray-300 text-[#0891B2] focus:ring-[#0891B2] h-5 w-5 cursor-pointer transition-all"
                                         />
                                     </th>
-                                    <th className="px-4 py-4 text-xs font-black text-cyan-800 uppercase tracking-wider">Estudiante</th>
-                                    <th className="px-4 py-4 text-xs font-black text-cyan-800 uppercase tracking-wider text-right">Información Académica</th>
+                                    <th className="px-4 py-4 text-xs font-black text-cyan-800 dark:text-cyan-300 uppercase tracking-wider">Estudiante</th>
+                                    <th className="px-4 py-4 text-xs font-black text-cyan-800 dark:text-cyan-300 uppercase tracking-wider text-right">Información Académica</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                                 {filteredEstudiantes.map(est => (
                                     <tr
                                         key={est.id}
-                                        className={`group transition-all duration-200 cursor-pointer ${selectedStudents.includes(est.id) ? 'bg-cyan-50/60' : 'hover:bg-gray-50'}`}
+                                        className={`group transition-all duration-200 cursor-pointer ${selectedStudents.includes(est.id) ? 'bg-cyan-50/60 dark:bg-cyan-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
                                         onClick={() => toggleSelect(est.id)}
                                     >
                                         <td className="px-6 py-4 text-center">
@@ -1051,11 +1051,11 @@ export default function AdminPage() {
                                         </td>
                                         <td className="px-4 py-4">
                                             <div className="flex flex-col gap-1">
-                                                <div className={`font-bold text-sm ${est.estado === 'inactivo' ? 'text-gray-400 line-through decoration-2' : 'text-gray-900'}`}>
+                                                <div className={`font-bold text-sm ${est.estado === 'inactivo' ? 'text-gray-400 dark:text-gray-500 line-through decoration-2' : 'text-gray-900 dark:text-gray-100'}`}>
                                                     {est.nombre}
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
                                                         {est.matricula}
                                                     </span>
                                                     {est.estado === 'inactivo' && (
@@ -1066,10 +1066,10 @@ export default function AdminPage() {
                                         </td>
                                         <td className="px-4 py-4 text-right">
                                             <div className="flex flex-col items-end gap-1">
-                                                <div className="bg-[#0891B2]/10 text-[#0891B2] px-3 py-1 rounded-lg text-xs font-black inline-block">
+                                                <div className="bg-[#0891B2]/10 dark:bg-[#0891B2]/20 text-[#0891B2] dark:text-cyan-300 px-3 py-1 rounded-lg text-xs font-black inline-block">
                                                     {est.grupo}
                                                 </div>
-                                                <div className="text-[10px] font-bold text-cyan-600/80 uppercase tracking-wide">
+                                                <div className="text-[10px] font-bold text-cyan-600/80 dark:text-cyan-400/80 uppercase tracking-wide">
                                                     {est.sede}
                                                 </div>
                                             </div>
@@ -1085,21 +1085,21 @@ export default function AdminPage() {
             {/* Modal de Carga Masiva (Año Nuevo) */}
             {
                 activeTab === 'backup' && (
-                    <div className="bg-white rounded-3xl shadow-xl border-none ring-1 ring-black/5 p-8">
-                        <h2 className="text-2xl font-black text-[#0891B2] mb-6 flex items-center gap-3">
-                            <div className="p-2 bg-cyan-50 rounded-xl">
+                    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border-none ring-1 ring-black/5 dark:ring-white/10 p-8">
+                        <h2 className="text-2xl font-black text-[#0891B2] dark:text-cyan-400 mb-6 flex items-center gap-3">
+                            <div className="p-2 bg-cyan-50 dark:bg-cyan-900/30 rounded-xl">
                                 <UploadCloud className="w-6 h-6 text-[#0891B2]" />
                             </div>
                             Carga Masiva y Cambio de Año
                         </h2>
 
-                        <p className="text-sm text-gray-600 mb-6">
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
                             Sube el archivo de listas de estudiantes (Excel con múltiples hojas) para actualizar el sistema al nuevo año escolar.
                             El sistema usará la <strong>Matrícula</strong> para identificar a los estudiantes y preservar su historial.
                         </p>
 
                         <div className="space-y-6 max-w-xl">
-                            <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                            <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-800/30">
                                 <label className="flex items-start gap-3 cursor-pointer">
                                     <input
                                         type="checkbox"
@@ -1108,8 +1108,8 @@ export default function AdminPage() {
                                         onChange={e => setInactivateAll(e.target.checked)}
                                     />
                                     <div>
-                                        <span className="font-bold text-gray-900 block text-sm">Inactivar a todos los estudiantes actuales</span>
-                                        <span className="text-xs text-orange-800 mt-1 block">
+                                        <span className="font-bold text-gray-900 dark:text-white block text-sm">Inactivar a todos los estudiantes actuales</span>
+                                        <span className="text-xs text-orange-800 dark:text-orange-300 mt-1 block">
                                             Recomendado para inicio de año. Todos los estudiantes pasarán a estado "Inactivo".
                                             Solo se reactivarán los que aparezcan en el nuevo archivo excel.
                                         </span>
@@ -1118,13 +1118,13 @@ export default function AdminPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="block text-sm font-bold text-gray-700">Seleccionar Archivo Excel (.xlsx)</label>
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">Seleccionar Archivo Excel (.xlsx)</label>
                                 <input
                                     type="file"
                                     accept=".xlsx, .xls"
                                     onChange={handleBulkUpload}
                                     disabled={uploading}
-                                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all border border-gray-200 rounded-xl cursor-pointer"
+                                    className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/50 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-900 transition-all border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer"
                                 />
                             </div>
 
@@ -1145,9 +1145,9 @@ export default function AdminPage() {
                             )}
 
                             {importLog.length > 0 && (
-                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 max-h-40 overflow-y-auto text-xs font-mono space-y-1">
+                                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-700 max-h-40 overflow-y-auto text-xs font-mono space-y-1">
                                     {importLog.map((log, i) => (
-                                        <div key={i} className={log.includes('Error') ? 'text-red-600 font-bold' : 'text-gray-600'}>
+                                        <div key={i} className={log.includes('Error') ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-600 dark:text-gray-400'}>
                                             {log}
                                         </div>
                                     ))}
@@ -1179,7 +1179,7 @@ export default function AdminPage() {
             {
                 confirmModal.isOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200 border border-white/20">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200 border border-white/20 dark:border-gray-700">
                             <div className="flex flex-col items-center text-center gap-4">
                                 <div className={`p-4 rounded-full ${confirmModal.type === 'danger' ? 'bg-red-100 text-red-600' :
                                     confirmModal.type === 'warning' ? 'bg-amber-100 text-amber-600' :
@@ -1191,14 +1191,14 @@ export default function AdminPage() {
                                 </div>
 
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-900 mb-2">{confirmModal.title}</h3>
-                                    <p className="text-sm text-gray-500">{confirmModal.message}</p>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{confirmModal.title}</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">{confirmModal.message}</p>
                                 </div>
 
                                 <div className="flex gap-3 w-full mt-2">
                                     <button
                                         onClick={confirmModal.onCancel}
-                                        className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                                        className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                                     >
                                         {confirmModal.cancelText || 'Cancelar'}
                                     </button>

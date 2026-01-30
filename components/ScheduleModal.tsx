@@ -457,9 +457,9 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
             {/* PDF Preview Modal Overlay */}
             {previewUrl && (
                 <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-[2rem] w-full max-w-2xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-2xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
                         {/* Preview Header */}
-                        <div className="p-4 bg-gray-900 text-white flex items-center justify-between shrink-0">
+                        <div className="p-4 bg-gray-900 dark:bg-black text-white flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="bg-white/10 p-2 rounded-xl">
                                     <FileText className="w-5 h-5 text-cyan-400" />
@@ -478,7 +478,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                         </div>
 
                         {/* PDF Viewer - Iframe */}
-                        <div className="flex-1 bg-gray-100 relative">
+                        <div className="flex-1 bg-gray-100 dark:bg-gray-800 relative">
                             <iframe
                                 src={previewUrl as string}
                                 className="w-full h-full border-none"
@@ -487,10 +487,10 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                         </div>
 
                         {/* Preview Footer Actions */}
-                        <div className="p-4 border-t border-gray-100 bg-white flex justify-end gap-3 shrink-0">
+                        <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 flex justify-end gap-3 shrink-0">
                             <button
                                 onClick={closePreview}
-                                className="px-5 py-2.5 rounded-xl border border-gray-200 font-bold text-gray-600 text-sm hover:bg-gray-50 transition-colors"
+                                className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 font-bold text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                             >
                                 Cancelar
                             </button>

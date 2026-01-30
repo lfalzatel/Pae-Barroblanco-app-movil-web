@@ -439,7 +439,7 @@ export default function HorarioPage() {
                 }
             `}</style>
 
-            <div className="p-1 lg:p-6 max-w-7xl mx-auto h-screen flex flex-col overflow-hidden bg-gray-50/50">
+            <div className="p-1 lg:p-6 max-w-7xl mx-auto h-screen flex flex-col overflow-hidden bg-gray-50/50 dark:bg-gray-900 transition-colors">
 
                 {/* Fixed Title Header - Premium Modal Style Integration */}
                 <div className="flex items-center justify-between px-4 mb-4 shrink-0 bg-gradient-to-r from-cyan-600 to-cyan-700 p-4 rounded-[2rem] text-white shadow-lg shadow-cyan-100">
@@ -462,9 +462,9 @@ export default function HorarioPage() {
 
                 {/* Fixed Header Toolbar */}
                 <div className="flex flex-col gap-2 mb-2 px-1 shrink-0">
-                    <div className="bg-white p-2 lg:p-3 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between gap-2 overflow-hidden">
+                    <div className="bg-white p-2 lg:p-3 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between gap-2 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
                         <div className="flex items-center gap-1 lg:gap-2">
-                            <div className="bg-gray-100/80 p-0.5 rounded-2xl flex items-center shrink-0 relative">
+                            <div className="bg-gray-100/80 p-0.5 rounded-2xl flex items-center shrink-0 relative dark:bg-gray-700">
                                 <button
                                     onClick={() => setViewMode('day')}
                                     className={`px-4 py-1.5 rounded-xl text-[11px] font-black transition-all relative z-10 ${viewMode === 'day' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
@@ -532,10 +532,10 @@ export default function HorarioPage() {
                         ) : (
                             <div className="flex flex-col gap-3 animate-in slide-in-from-top-2 duration-300">
                                 {/* Agenda Header (Now on Top of Weekly Navigation) */}
-                                <div className="flex justify-between items-center bg-white p-3 rounded-3xl border border-gray-100 shadow-sm">
+                                <div className="flex justify-between items-center bg-white p-3 rounded-3xl border border-gray-100 shadow-sm dark:bg-gray-800 dark:border-gray-700">
                                     <div>
-                                        <h2 className="text-lg font-black text-gray-900 tracking-tight">Agenda Institucional</h2>
-                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Actividades Semanales</p>
+                                        <h2 className="text-lg font-black text-gray-900 tracking-tight dark:text-white">Agenda Institucional</h2>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest dark:text-gray-500">Actividades Semanales</p>
                                     </div>
                                     <button
                                         onClick={() => handleAddEvent()}
@@ -568,7 +568,7 @@ export default function HorarioPage() {
                                     </div>
 
                                     {/* Day Selector */}
-                                    <div className="bg-white p-0.5 lg:p-1 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-0.5 lg:gap-1 tracking-tight shrink-0 overflow-x-auto no-scrollbar">
+                                    <div className="bg-white p-0.5 lg:p-1 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-0.5 lg:gap-1 tracking-tight shrink-0 overflow-x-auto no-scrollbar dark:bg-gray-800 dark:border-gray-700">
                                         {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((d, i) => {
                                             const dayIdx = i + 1;
                                             const dateObj = new Date(selectedDate + 'T12:00:00');
@@ -601,9 +601,9 @@ export default function HorarioPage() {
                 {viewMode === 'day' ? (
                     <div className="grid grid-cols-12 gap-2 flex-1 overflow-hidden pb-4 px-1 animate-in fade-in duration-300">
                         {/* Left: Timeline (Col 8) */}
-                        <div className="col-span-8 bg-white rounded-[2rem] shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full">
-                            <div className="p-3 lg:p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0 rounded-t-[2rem]">
-                                <h3 className="font-black text-gray-900 flex items-center gap-2 text-[10px] lg:text-xs uppercase tracking-widest">
+                        <div className="col-span-8 bg-white rounded-[2rem] shadow-sm border border-gray-100 flex flex-col overflow-hidden h-full dark:bg-gray-800 dark:border-gray-700">
+                            <div className="p-3 lg:p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0 rounded-t-[2rem] dark:border-gray-700 dark:bg-gray-800">
+                                <h3 className="font-black text-gray-900 flex items-center gap-2 text-[10px] lg:text-xs uppercase tracking-widest dark:text-white">
                                     <Clock className="w-4 h-4 text-cyan-600" />
                                     <span>Línea de Tiempo</span>
                                     {selectedGroup && (
@@ -618,7 +618,7 @@ export default function HorarioPage() {
                                 </p>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-2 lg:p-4 bg-gray-50/30 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-2 lg:p-4 bg-gray-50/30 custom-scrollbar dark:bg-gray-900/50">
                                 <div className="space-y-1.5 lg:space-y-2 pb-20">
                                     {timeSlots.map(time => {
                                         const slots = (assignments[time] || []).filter(s => selectedSede === 'Todas' || (s.group as any).sede === selectedSede);
@@ -630,13 +630,13 @@ export default function HorarioPage() {
                                                 onClick={() => handleSlotClick(time)}
                                                 className={`
                                                     relative w-full flex items-start gap-2 lg:gap-3 p-1.5 lg:p-2 rounded-xl lg:rounded-2xl border transition-all text-left group/item
-                                                    ${slots.length > 0 ? 'bg-white border-blue-400 shadow-sm ring-1 ring-blue-50' : isBreak ? 'bg-amber-50/30 border-amber-200/50' : 'bg-white border-blue-50 shadow-sm'}
-                                                    ${selectedGroup ? 'hover:border-blue-400 active:scale-[0.99]' : ''}
+                                                    ${slots.length > 0 ? 'bg-white border-blue-400 shadow-sm ring-1 ring-blue-50 dark:bg-gray-800 dark:border-blue-500' : isBreak ? 'bg-amber-50/30 border-amber-200/50 dark:bg-amber-900/10 dark:border-amber-800/30' : 'bg-white border-blue-50 shadow-sm dark:bg-gray-800 dark:border-gray-700'}
+                                                    ${selectedGroup ? 'hover:border-blue-400 active:scale-[0.99] dark:hover:border-blue-500' : ''}
                                                 `}
                                             >
                                                 <div className={`
                                                     w-16 lg:w-20 py-1 rounded-lg text-center text-[10px] lg:text-xs font-black font-mono shrink-0
-                                                    ${slots.length > 0 ? 'bg-blue-100/50 text-blue-600' : isBreak ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400'}
+                                                    ${slots.length > 0 ? 'bg-blue-100/50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : isBreak ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500' : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'}
                                                 `}>
                                                     {time}
                                                 </div>
@@ -647,7 +647,7 @@ export default function HorarioPage() {
                                                             {slots.map((s, idx) => (
                                                                 <div key={idx} className="flex flex-col gap-1.5 p-1">
                                                                     <div className="flex items-center gap-2">
-                                                                        <span className="font-black text-gray-900 text-[14px] lg:text-lg tracking-tight">{s.group.label.replace('-2026', '')}</span>
+                                                                        <span className="font-black text-gray-900 text-[14px] lg:text-lg tracking-tight dark:text-white">{s.group.label.replace('-2026', '')}</span>
                                                                         <span className="text-[10px] font-black text-white bg-cyan-600/80 px-2 py-0.5 rounded-lg shadow-sm uppercase tracking-tighter">
                                                                             {s.group.studentCount} ESTUDIANTES
                                                                         </span>
@@ -688,11 +688,11 @@ export default function HorarioPage() {
                         {/* Right Column: Groups (60%) + Novedades (40%) */}
                         <div className="col-span-4 flex flex-col gap-1.5 h-full overflow-hidden">
                             {/* Groups Section (60%) */}
-                            <div className="flex-[6] bg-white rounded-[2rem] shadow-sm border border-gray-100 flex flex-col overflow-hidden">
-                                <div className="p-3 border-b text-center shrink-0">
+                            <div className="flex-[6] bg-white rounded-[2rem] shadow-sm border border-gray-100 flex flex-col overflow-hidden dark:bg-gray-800 dark:border-gray-700">
+                                <div className="p-3 border-b text-center shrink-0 dark:border-gray-700">
                                     <div className="flex items-center justify-center gap-1 mb-1">
-                                        <Users className="w-4 h-4 text-cyan-600" />
-                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Grupos</h3>
+                                        <Users className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-widest dark:text-white">Grupos</h3>
                                         <span className="text-[10px] font-black text-cyan-200 ml-1">
                                             {availableGroups.filter(g => (selectedSede === 'Todas' || (g as any).sede === selectedSede) && !isAssigned(g)).length}
                                         </span>
@@ -707,11 +707,13 @@ export default function HorarioPage() {
                                                 onClick={() => setSelectedGroup(selectedGroup?.id === g.id ? null : g)}
                                                 className={`
                                                     p-2.5 lg:p-3 rounded-2xl border transition-all text-center relative
-                                                    ${selectedGroup?.id === g.id ? 'bg-cyan-600 border-cyan-600 text-white shadow-lg shadow-cyan-100 scale-105 z-10' : 'bg-white border-gray-100 hover:border-cyan-200'}
+                                                    ${selectedGroup?.id === g.id
+                                                        ? 'bg-cyan-600 border-cyan-600 text-white shadow-lg shadow-cyan-100 scale-105 z-10'
+                                                        : 'bg-white border-gray-100 hover:border-cyan-200 dark:bg-gray-700/50 dark:border-gray-600 dark:hover:border-cyan-500/50'}
                                                 `}
                                             >
-                                                <div className="font-black text-[10px] lg:text-xs truncate">{g.label}</div>
-                                                <div className={`text-[8px] font-bold ${selectedGroup?.id === g.id ? 'text-cyan-100' : 'text-gray-400'}`}>{g.studentCount} est</div>
+                                                <div className={`font-black text-[10px] lg:text-xs truncate ${selectedGroup?.id === g.id ? 'text-white' : 'text-gray-900 dark:text-gray-200'}`}>{g.label}</div>
+                                                <div className={`text-[8px] font-bold ${selectedGroup?.id === g.id ? 'text-cyan-100' : 'text-gray-400 dark:text-gray-400'}`}>{g.studentCount} est</div>
                                             </button>
                                         ))}
                                     </div>
@@ -719,7 +721,7 @@ export default function HorarioPage() {
                             </div>
 
                             {/* Novedades Section (40%) */}
-                            <div className="flex-[4] p-3 lg:p-4 bg-white rounded-[2rem] border border-gray-100 shadow-sm flex flex-col gap-2 overflow-hidden">
+                            <div className="flex-[4] p-3 lg:p-4 bg-white rounded-[2rem] border border-gray-100 shadow-sm flex flex-col gap-2 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
                                 <div className="flex items-center gap-1.5 justify-center shrink-0">
                                     <Info className="w-4 h-4 text-red-500" />
                                     <h3 className="text-[10px] font-black text-red-500 uppercase">Novedades</h3>
@@ -816,357 +818,371 @@ export default function HorarioPage() {
                         </div>
                     </div>
                 )}
-            </div>
+            </div >
 
             {/* Modals */}
-            {editingSlot && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setEditingSlot(null)}></div>
-                    <div className="bg-white rounded-[3rem] w-full max-w-xl relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl">
-                        {/* Header Premium */}
-                        <div className="p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden">
-                            <div className="relative z-10">
-                                <h3 className="text-2xl font-black">Gestionar Grupos</h3>
-                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">
-                                    Franja Horaria: {editingSlot}
-                                </p>
+            {
+                editingSlot && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setEditingSlot(null)}></div>
+                        <div className="bg-white rounded-[3rem] w-full max-w-xl relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl">
+                            {/* Header Premium */}
+                            <div className="p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden">
+                                <div className="relative z-10">
+                                    <h3 className="text-2xl font-black">Gestionar Grupos</h3>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">
+                                        Franja Horaria: {editingSlot}
+                                    </p>
+                                </div>
+                                <button onClick={() => setEditingSlot(null)} className="relative z-10 p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
+                                <Clock className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 rotate-12" />
                             </div>
-                            <button onClick={() => setEditingSlot(null)} className="relative z-10 p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
-                            <Clock className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 rotate-12" />
-                        </div>
 
-                        <div className="p-8 space-y-6 max-h-[50vh] overflow-y-auto custom-scrollbar">
-                            {assignments[editingSlot]?.map((s, i) => (
-                                <div key={i} className="bg-gray-50 p-5 rounded-[2rem] flex flex-col gap-4 relative border border-gray-100 shadow-sm">
-                                    <div className="flex justify-between items-center">
-                                        <div className="flex items-center gap-3">
-                                            <div className="bg-white p-2 rounded-xl shadow-sm text-cyan-600 border border-cyan-50">
-                                                <Users className="w-5 h-5" />
+                            <div className="p-8 space-y-6 max-h-[50vh] overflow-y-auto custom-scrollbar">
+                                {assignments[editingSlot]?.map((s, i) => (
+                                    <div key={i} className="bg-gray-50 p-5 rounded-[2rem] flex flex-col gap-4 relative border border-gray-100 shadow-sm">
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-3">
+                                                <div className="bg-white p-2 rounded-xl shadow-sm text-cyan-600 border border-cyan-50">
+                                                    <Users className="w-5 h-5" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="font-black text-gray-900 leading-tight">{s.group.label}</span>
+                                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{s.group.studentCount} ESTUDIANTES</span>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="font-black text-gray-900 leading-tight">{s.group.label}</span>
-                                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{s.group.studentCount} ESTUDIANTES</span>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => {
-                                                setAssignments(prev => {
-                                                    const next = { ...prev };
-                                                    next[editingSlot].splice(i, 1);
-                                                    if (next[editingSlot].length === 0) delete next[editingSlot];
-                                                    return next;
-                                                });
-                                            }}
-                                            className="p-2.5 hover:bg-red-50 rounded-xl text-red-500 transition-colors border border-transparent hover:border-red-100"
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
-                                    </div>
-
-                                    {prevWeekAssignments[editingSlot]?.includes(s.group.id) && (
-                                        <div className="bg-amber-50 border border-amber-100 p-3 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-1 duration-300">
-                                            <div className="p-1.5 bg-amber-100 rounded-lg">
-                                                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                                            </div>
-                                            <p className="text-[10px] font-black text-amber-700 uppercase tracking-tight">Cruce: mismo bloque la semana pasada</p>
-                                        </div>
-                                    )}
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Cambiar Horario</label>
-                                            <div className="relative">
-                                                <select
-                                                    value={editingSlot}
-                                                    onChange={(e) => {
-                                                        const newTime = e.target.value;
-                                                        if (newTime === editingSlot) return;
-                                                        setAssignments(prev => {
-                                                            const next = { ...prev };
-                                                            const [item] = next[editingSlot].splice(i, 1);
-                                                            if (next[editingSlot].length === 0) {
-                                                                delete next[editingSlot];
-                                                                setEditingSlot(null); // Close modal if current slot empty
-                                                            }
-                                                            if (!next[newTime]) next[newTime] = [];
-                                                            next[newTime].push(item);
-                                                            return next;
-                                                        });
-                                                    }}
-                                                    className="w-full appearance-none bg-white border border-gray-100 rounded-2xl py-3 pl-10 pr-10 text-[10px] lg:text-xs font-black uppercase tracking-widest cursor-pointer focus:ring-2 focus:ring-cyan-500/10 transition-all text-cyan-600 shadow-sm"
-                                                >
-                                                    {timeSlots.map(time => (
-                                                        <option key={time} value={time}>
-                                                            HORA: {time} {time === editingSlot ? '(ACTUAL)' : ''}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <Clock className="w-4 h-4 text-cyan-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                                <ChevronDown className="w-4 h-4 text-cyan-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Observaciones / Ración</label>
-                                            <input
-                                                placeholder="Ej: Solo ración básica, alumnos de viaje..."
-                                                value={s.notes || ''}
-                                                onChange={e => {
+                                            <button
+                                                onClick={() => {
                                                     setAssignments(prev => {
                                                         const next = { ...prev };
-                                                        next[editingSlot][i].notes = e.target.value;
+                                                        next[editingSlot].splice(i, 1);
+                                                        if (next[editingSlot].length === 0) delete next[editingSlot];
                                                         return next;
                                                     });
                                                 }}
-                                                className="w-full p-4 bg-white border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-cyan-500/10 transition-all shadow-sm"
-                                            />
+                                                className="p-2.5 hover:bg-red-50 rounded-xl text-red-500 transition-colors border border-transparent hover:border-red-100"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </div>
+
+                                        {prevWeekAssignments[editingSlot]?.includes(s.group.id) && (
+                                            <div className="bg-amber-50 border border-amber-100 p-3 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-1 duration-300">
+                                                <div className="p-1.5 bg-amber-100 rounded-lg">
+                                                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                                </div>
+                                                <p className="text-[10px] font-black text-amber-700 uppercase tracking-tight">Cruce: mismo bloque la semana pasada</p>
+                                            </div>
+                                        )}
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Cambiar Horario</label>
+                                                <div className="relative">
+                                                    <select
+                                                        value={editingSlot}
+                                                        onChange={(e) => {
+                                                            const newTime = e.target.value;
+                                                            if (newTime === editingSlot) return;
+                                                            setAssignments(prev => {
+                                                                const next = { ...prev };
+                                                                const [item] = next[editingSlot].splice(i, 1);
+                                                                if (next[editingSlot].length === 0) {
+                                                                    delete next[editingSlot];
+                                                                    setEditingSlot(null); // Close modal if current slot empty
+                                                                }
+                                                                if (!next[newTime]) next[newTime] = [];
+                                                                next[newTime].push(item);
+                                                                return next;
+                                                            });
+                                                        }}
+                                                        className="w-full appearance-none bg-white border border-gray-100 rounded-2xl py-3 pl-10 pr-10 text-[10px] lg:text-xs font-black uppercase tracking-widest cursor-pointer focus:ring-2 focus:ring-cyan-500/10 transition-all text-cyan-600 shadow-sm"
+                                                    >
+                                                        {timeSlots.map(time => (
+                                                            <option key={time} value={time}>
+                                                                HORA: {time} {time === editingSlot ? '(ACTUAL)' : ''}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <Clock className="w-4 h-4 text-cyan-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                                    <ChevronDown className="w-4 h-4 text-cyan-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Observaciones / Ración</label>
+                                                <input
+                                                    placeholder="Ej: Solo ración básica, alumnos de viaje..."
+                                                    value={s.notes || ''}
+                                                    onChange={e => {
+                                                        setAssignments(prev => {
+                                                            const next = { ...prev };
+                                                            next[editingSlot][i].notes = e.target.value;
+                                                            return next;
+                                                        });
+                                                    }}
+                                                    className="w-full p-4 bg-white border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-cyan-500/10 transition-all shadow-sm"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="p-8 pt-0">
-                            <button
-                                onClick={() => setEditingSlot(null)}
-                                className="w-full py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-cyan-100 transition-all active:scale-[0.98]"
-                            >
-                                LISTO, VOLVER
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {showCalendar && (
-                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowCalendar(false)}></div>
-                    <div className="relative animate-in zoom-in-95"><MiniCalendar selectedDate={selectedDate} onSelectDate={d => { setSelectedDate(d); setShowCalendar(false); }} className="shadow-2xl border-8 border-white rounded-[3rem]" /></div>
-                </div>
-            )}
-
-            {showEventModal && (
-                <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowEventModal(false)}></div>
-                    <div className="bg-white rounded-3xl md:rounded-[3rem] w-full max-w-lg relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl max-h-[90vh]">
-                        <div className="p-5 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden shrink-0">
-                            <div className="relative z-10">
-                                <h3 className="text-xl md:text-2xl font-black">{editingEvent ? 'Editar Actividad' : 'Nueva Actividad'}</h3>
-                                <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">
-                                    {eventDate ? formatDateLabel(eventDate) : 'Programación Escolar'}
-                                </p>
+                                ))}
                             </div>
-                            <button onClick={() => setShowEventModal(false)} className="relative z-10 p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-5 h-5 md:w-6 md:h-6" /></button>
-                            <CalendarIcon className="absolute -right-4 -bottom-4 w-24 h-24 md:w-32 md:h-32 opacity-10 rotate-12" />
-                        </div>
 
-                        <div className="p-4 md:p-6 space-y-3 overflow-y-auto custom-scrollbar-premium">
-                            {eventForm.prioridad === 'alta' && (
-                                <div className="bg-red-50 border border-red-100 p-2.5 md:p-3 rounded-2xl flex items-center gap-3 animate-pulse">
-                                    <AlertTriangle className="w-4 h-4 text-red-600" />
-                                    <p className="text-[9px] md:text-[10px] font-black text-red-600 uppercase tracking-widest">ACTIVIDAD DE ALTA PRIORIDAD / URGENTE</p>
-                                </div>
-                            )}
-
-                            {/* Date Selector Field */}
-                            <div className="space-y-1.5 md:space-y-2">
-                                <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Fecha Programada</label>
+                            <div className="p-8 pt-0">
                                 <button
-                                    onClick={() => setShowEventDateSelector(true)}
-                                    className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 flex items-center justify-between group hover:bg-white hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-50 transition-all active:scale-[0.98]"
+                                    onClick={() => setEditingSlot(null)}
+                                    className="w-full py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-cyan-100 transition-all active:scale-[0.98]"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-1.5 md:p-2 bg-white rounded-lg md:rounded-xl shadow-sm border border-gray-100 group-hover:border-cyan-100">
-                                            <CalendarIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-400 group-hover:text-cyan-500 transition-colors" />
-                                        </div>
-                                        <div className="text-left">
-                                            <div className="text-xs md:text-[13px] font-black text-gray-700 group-hover:text-cyan-700 transition-colors uppercase tracking-tight">
-                                                {eventDate ? formatDateLabel(eventDate) : 'SELECCIONAR FECHA'}
-                                            </div>
-                                            <div className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                                                Tocar para cambiar
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-cyan-500 transition-colors" />
+                                    LISTO, VOLVER
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                )
+            }
 
-                            <div className="space-y-1.5 md:space-y-2">
-                                <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Título de la Actividad</label>
-                                <input
-                                    value={eventForm.titulo}
-                                    onChange={e => setEventForm({ ...eventForm, titulo: e.target.value })}
-                                    className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all text-sm"
-                                    placeholder="Ej: Izada de Bandera"
-                                />
+            {
+                showCalendar && (
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowCalendar(false)}></div>
+                        <div className="relative animate-in zoom-in-95"><MiniCalendar selectedDate={selectedDate} onSelectDate={d => { setSelectedDate(d); setShowCalendar(false); }} className="shadow-2xl border-8 border-white rounded-[3rem]" /></div>
+                    </div>
+                )
+            }
+
+            {
+                showEventModal && (
+                    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowEventModal(false)}></div>
+                        <div className="bg-white rounded-3xl md:rounded-[3rem] w-full max-w-lg relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl max-h-[90vh]">
+                            <div className="p-5 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden shrink-0">
+                                <div className="relative z-10">
+                                    <h3 className="text-xl md:text-2xl font-black">{editingEvent ? 'Editar Actividad' : 'Nueva Actividad'}</h3>
+                                    <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">
+                                        {eventDate ? formatDateLabel(eventDate) : 'Programación Escolar'}
+                                    </p>
+                                </div>
+                                <button onClick={() => setShowEventModal(false)} className="relative z-10 p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-5 h-5 md:w-6 md:h-6" /></button>
+                                <CalendarIcon className="absolute -right-4 -bottom-4 w-24 h-24 md:w-32 md:h-32 opacity-10 rotate-12" />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 md:gap-4">
+                            <div className="p-4 md:p-6 space-y-3 overflow-y-auto custom-scrollbar-premium">
+                                {eventForm.prioridad === 'alta' && (
+                                    <div className="bg-red-50 border border-red-100 p-2.5 md:p-3 rounded-2xl flex items-center gap-3 animate-pulse">
+                                        <AlertTriangle className="w-4 h-4 text-red-600" />
+                                        <p className="text-[9px] md:text-[10px] font-black text-red-600 uppercase tracking-widest">ACTIVIDAD DE ALTA PRIORIDAD / URGENTE</p>
+                                    </div>
+                                )}
+
+                                {/* Date Selector Field */}
                                 <div className="space-y-1.5 md:space-y-2">
-                                    <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hora (Opcional)</label>
+                                    <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Fecha Programada</label>
+                                    <button
+                                        onClick={() => setShowEventDateSelector(true)}
+                                        className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 flex items-center justify-between group hover:bg-white hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-50 transition-all active:scale-[0.98]"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-1.5 md:p-2 bg-white rounded-lg md:rounded-xl shadow-sm border border-gray-100 group-hover:border-cyan-100">
+                                                <CalendarIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-400 group-hover:text-cyan-500 transition-colors" />
+                                            </div>
+                                            <div className="text-left">
+                                                <div className="text-xs md:text-[13px] font-black text-gray-700 group-hover:text-cyan-700 transition-colors uppercase tracking-tight">
+                                                    {eventDate ? formatDateLabel(eventDate) : 'SELECCIONAR FECHA'}
+                                                </div>
+                                                <div className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                                                    Tocar para cambiar
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-cyan-500 transition-colors" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-1.5 md:space-y-2">
+                                    <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Título de la Actividad</label>
                                     <input
-                                        value={eventForm.hora}
-                                        onChange={e => setEventForm({ ...eventForm, hora: e.target.value })}
-                                        className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all text-xs lg:text-sm"
-                                        placeholder="08:00 AM"
+                                        value={eventForm.titulo}
+                                        onChange={e => setEventForm({ ...eventForm, titulo: e.target.value })}
+                                        className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all text-sm"
+                                        placeholder="Ej: Izada de Bandera"
                                     />
                                 </div>
+
+                                <div className="grid grid-cols-2 gap-3 md:gap-4">
+                                    <div className="space-y-1.5 md:space-y-2">
+                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hora (Opcional)</label>
+                                        <input
+                                            value={eventForm.hora}
+                                            onChange={e => setEventForm({ ...eventForm, hora: e.target.value })}
+                                            className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all text-xs lg:text-sm"
+                                            placeholder="08:00 AM"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5 md:space-y-2">
+                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Prioridad</label>
+                                        <select
+                                            value={eventForm.prioridad}
+                                            onChange={e => setEventForm({ ...eventForm, prioridad: e.target.value })}
+                                            className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none text-xs lg:text-sm"
+                                        >
+                                            <option value="normal">Normal 😊</option>
+                                            <option value="alta">Urgente ⚠️</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div className="space-y-1.5 md:space-y-2">
-                                    <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Prioridad</label>
-                                    <select
-                                        value={eventForm.prioridad}
-                                        onChange={e => setEventForm({ ...eventForm, prioridad: e.target.value })}
-                                        className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none text-xs lg:text-sm"
-                                    >
-                                        <option value="normal">Normal 😊</option>
-                                        <option value="alta">Urgente ⚠️</option>
-                                    </select>
+                                    <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Dirigido a / Participantes</label>
+                                    <div className="relative">
+                                        <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                        <select
+                                            value={eventForm.afectados}
+                                            onChange={e => setEventForm({ ...eventForm, afectados: e.target.value })}
+                                            className="w-full pl-12 pr-10 py-3 md:py-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none text-xs lg:text-sm"
+                                        >
+                                            <option value="">Seleccionar destinatarios...</option>
+                                            <option value="Estudiantes">Estudiantes 🎓</option>
+                                            <option value="Docentes">Docentes 👨‍🏫</option>
+                                            <option value="Padres de Familia">Padres de Familia 👪</option>
+                                            <option value="Toda la Comunidad">Toda la Comunidad 🏫</option>
+                                            <option value="Grupos Primaria">Grupos Primaria 🧒</option>
+                                            <option value="Grupos Bachillerato">Grupos Bachillerato 👱</option>
+                                            <option value="Personal Administrativo">Personal Administrativo 💼</option>
+                                        </select>
+                                        <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5 md:space-y-2">
+                                    <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descripción / Detalles</label>
+                                    <textarea
+                                        value={eventForm.descripcion}
+                                        onChange={e => setEventForm({ ...eventForm, descripcion: e.target.value })}
+                                        className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all min-h-[80px] lg:min-h-[100px] resize-none text-xs lg:text-sm"
+                                        placeholder="Detalles adicionales de la actividad..."
+                                    />
                                 </div>
                             </div>
 
-                            <div className="space-y-1.5 md:space-y-2">
-                                <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Dirigido a / Participantes</label>
-                                <div className="relative">
-                                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                                    <select
-                                        value={eventForm.afectados}
-                                        onChange={e => setEventForm({ ...eventForm, afectados: e.target.value })}
-                                        className="w-full pl-12 pr-10 py-3 md:py-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none text-xs lg:text-sm"
-                                    >
-                                        <option value="">Seleccionar destinatarios...</option>
-                                        <option value="Estudiantes">Estudiantes 🎓</option>
-                                        <option value="Docentes">Docentes 👨‍🏫</option>
-                                        <option value="Padres de Familia">Padres de Familia 👪</option>
-                                        <option value="Toda la Comunidad">Toda la Comunidad 🏫</option>
-                                        <option value="Grupos Primaria">Grupos Primaria 🧒</option>
-                                        <option value="Grupos Bachillerato">Grupos Bachillerato 👱</option>
-                                        <option value="Personal Administrativo">Personal Administrativo 💼</option>
-                                    </select>
-                                    <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5 md:space-y-2">
-                                <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descripción / Detalles</label>
-                                <textarea
-                                    value={eventForm.descripcion}
-                                    onChange={e => setEventForm({ ...eventForm, descripcion: e.target.value })}
-                                    className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all min-h-[80px] lg:min-h-[100px] resize-none text-xs lg:text-sm"
-                                    placeholder="Detalles adicionales de la actividad..."
-                                />
-                            </div>
-                        </div>
-
-                        <div className="p-4 md:p-6 pt-0 flex gap-3 shrink-0">
-                            <button onClick={() => setShowEventModal(false)} className="px-4 md:px-5 py-3 md:py-4 bg-gray-50 text-gray-500 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-100 transition-all">
-                                CANCELAR
-                            </button>
-                            {editingEvent && (
-                                <button
-                                    onClick={() => {
-                                        handleDeleteInstitutionalEvent(editingEvent.id);
-                                        setShowEventModal(false);
-                                    }}
-                                    className="p-3 md:p-4 bg-red-50 text-red-600 rounded-xl md:rounded-2xl hover:bg-red-100 transition-all border border-red-100"
-                                    title="Eliminar Actividad"
-                                >
-                                    <Trash2 className="w-5 h-5" />
+                            <div className="p-4 md:p-6 pt-0 flex gap-3 shrink-0">
+                                <button onClick={() => setShowEventModal(false)} className="px-4 md:px-5 py-3 md:py-4 bg-gray-50 text-gray-500 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-100 transition-all">
+                                    CANCELAR
                                 </button>
-                            )}
-                            <button onClick={handleSaveInstitutionalEvent} className="flex-1 py-3 md:py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-cyan-100 transition-all active:scale-[0.98]">
-                                {editingEvent ? 'GUARDAR' : 'CREAR'}
-                            </button>
+                                {editingEvent && (
+                                    <button
+                                        onClick={() => {
+                                            handleDeleteInstitutionalEvent(editingEvent.id);
+                                            setShowEventModal(false);
+                                        }}
+                                        className="p-3 md:p-4 bg-red-50 text-red-600 rounded-xl md:rounded-2xl hover:bg-red-100 transition-all border border-red-100"
+                                        title="Eliminar Actividad"
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
+                                )}
+                                <button onClick={handleSaveInstitutionalEvent} className="flex-1 py-3 md:py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-cyan-100 transition-all active:scale-[0.98]">
+                                    {editingEvent ? 'GUARDAR' : 'CREAR'}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Event Date Selector Overlay */}
-            {showEventDateSelector && (
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowEventDateSelector(false)}></div>
-                    <div className="relative animate-in zoom-in-95 z-[610]">
-                        <MiniCalendar
-                            selectedDate={eventDate}
-                            onSelectDate={(d) => {
-                                setEventDate(d);
-                                setShowEventDateSelector(false);
-                            }}
-                            className="shadow-2xl border-8 border-white rounded-[3rem]"
-                        />
-                    </div>
-                </div>
-            )}
-
-            {notif && (
-                <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[500] animate-in slide-in-from-top-4">
-                    <div className={`px-6 py-4 rounded-full shadow-2xl flex items-center gap-3 text-white font-black text-xs bg-gray-900 border border-white/20`}>
-                        {notif.type === 'success' ? <Users size={18} className="text-emerald-400" /> : <AlertTriangle size={18} className="text-red-400" />}
-                        {notif.msg.toUpperCase()}
-                    </div>
-                </div>
-            )}
-
-            {showConfirmSave && (
-                <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowConfirmSave(false)}></div>
-                    <div className="bg-white rounded-[3rem] p-10 max-w-sm relative text-center">
-                        <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 text-amber-500"><Info size={32} /></div>
-                        <h3 className="text-xl font-black mb-2">Faltan Grupos</h3>
-                        <p className="text-gray-400 text-sm mb-8">Hay {unassignedCount} grupos sin asignar. ¿Deseas guardar?</p>
-                        <div className="flex flex-col gap-3">
-                            <button onClick={executeSave} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black">SÍ, GUARDAR</button>
-                            <button onClick={() => setShowConfirmSave(false)} className="w-full py-4 bg-gray-50 rounded-2xl font-bold">CANCELAR</button>
+            {
+                showEventDateSelector && (
+                    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowEventDateSelector(false)}></div>
+                        <div className="relative animate-in zoom-in-95 z-[610]">
+                            <MiniCalendar
+                                selectedDate={eventDate}
+                                onSelectDate={(d) => {
+                                    setEventDate(d);
+                                    setShowEventDateSelector(false);
+                                }}
+                                className="shadow-2xl border-8 border-white rounded-[3rem]"
+                            />
                         </div>
                     </div>
-                </div>
-            )}
-            {showInstructions && (
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowInstructions(false)}></div>
-                    <div className="bg-white rounded-[2.5rem] w-full max-w-sm relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl">
-                        <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-white shrink-0">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-50 text-blue-600 rounded-full">
-                                    <Info className="w-5 h-5" />
-                                </div>
-                                <h3 className="text-xl font-black text-gray-900 tracking-tight">Instrucciones</h3>
+                )
+            }
+
+            {
+                notif && (
+                    <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[500] animate-in slide-in-from-top-4">
+                        <div className={`px-6 py-4 rounded-full shadow-2xl flex items-center gap-3 text-white font-black text-xs bg-gray-900 border border-white/20`}>
+                            {notif.type === 'success' ? <Users size={18} className="text-emerald-400" /> : <AlertTriangle size={18} className="text-red-400" />}
+                            {notif.msg.toUpperCase()}
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                showConfirmSave && (
+                    <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowConfirmSave(false)}></div>
+                        <div className="bg-white rounded-[3rem] p-10 max-w-sm relative text-center">
+                            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 text-amber-500"><Info size={32} /></div>
+                            <h3 className="text-xl font-black mb-2">Faltan Grupos</h3>
+                            <p className="text-gray-400 text-sm mb-8">Hay {unassignedCount} grupos sin asignar. ¿Deseas guardar?</p>
+                            <div className="flex flex-col gap-3">
+                                <button onClick={executeSave} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black">SÍ, GUARDAR</button>
+                                <button onClick={() => setShowConfirmSave(false)} className="w-full py-4 bg-gray-50 rounded-2xl font-bold">CANCELAR</button>
                             </div>
-                            <button onClick={() => setShowInstructions(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                                <X className="w-5 h-5 text-gray-400" />
-                            </button>
-                        </div>
-
-                        <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar">
-                            {[
-                                { n: 1, t: "Selecciona un Grupo:", d: "Toca un grupo disponible de la lista derecha. Se pondrá azul." },
-                                { n: 2, t: "Asigna Hora:", d: "Toca una franja horaria en la izquierda para asignar el grupo seleccionado." },
-                                { n: 3, t: "Editar/Desasignar:", d: "Toca una franja ya ocupada para ver detalles, agregar notas o eliminar la asignación." },
-                                { n: 4, t: "Guardar:", d: "¡No olvides tocar el botón \"Guardar\" en la parte superior para aplicar los cambios!" }
-                            ].map((step, idx) => (
-                                <div key={idx} className="flex gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-lg shadow-blue-200">
-                                        {step.n}
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <h4 className="font-black text-gray-900 text-sm">{step.t}</h4>
-                                        <p className="text-[11px] font-bold text-gray-400 leading-relaxed">{step.d}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="p-6 pt-2">
-                            <button
-                                onClick={() => setShowInstructions(false)}
-                                className="w-full py-5 bg-[#0a0a0b] hover:bg-black text-white rounded-2xl font-black text-sm tracking-widest transition-all shadow-xl active:scale-[0.98]"
-                            >
-                                Entendido
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
+            {
+                showInstructions && (
+                    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowInstructions(false)}></div>
+                        <div className="bg-white rounded-[2.5rem] w-full max-w-sm relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl">
+                            <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-white shrink-0">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-50 text-blue-600 rounded-full">
+                                        <Info className="w-5 h-5" />
+                                    </div>
+                                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Instrucciones</h3>
+                                </div>
+                                <button onClick={() => setShowInstructions(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                    <X className="w-5 h-5 text-gray-400" />
+                                </button>
+                            </div>
+
+                            <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar">
+                                {[
+                                    { n: 1, t: "Selecciona un Grupo:", d: "Toca un grupo disponible de la lista derecha. Se pondrá azul." },
+                                    { n: 2, t: "Asigna Hora:", d: "Toca una franja horaria en la izquierda para asignar el grupo seleccionado." },
+                                    { n: 3, t: "Editar/Desasignar:", d: "Toca una franja ya ocupada para ver detalles, agregar notas o eliminar la asignación." },
+                                    { n: 4, t: "Guardar:", d: "¡No olvides tocar el botón \"Guardar\" en la parte superior para aplicar los cambios!" }
+                                ].map((step, idx) => (
+                                    <div key={idx} className="flex gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-lg shadow-blue-200">
+                                            {step.n}
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <h4 className="font-black text-gray-900 text-sm">{step.t}</h4>
+                                            <p className="text-[11px] font-bold text-gray-400 leading-relaxed">{step.d}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="p-6 pt-2">
+                                <button
+                                    onClick={() => setShowInstructions(false)}
+                                    className="w-full py-5 bg-[#0a0a0b] hover:bg-black text-white rounded-2xl font-black text-sm tracking-widest transition-all shadow-xl active:scale-[0.98]"
+                                >
+                                    Entendido
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </>
     );
 }
