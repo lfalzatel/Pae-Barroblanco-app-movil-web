@@ -512,7 +512,7 @@ function RegistroContent() {
 
     setGrupoSeleccionado(grupo);
     setStep('registro');
-    if (updateUrlParam) updateUrl({ grupo: grupo.nombre });
+    // if (updateUrlParam) updateUrl({ grupo: grupo.nombre }); // URL updates disabled to prevent history conflict
 
     setLoadingGrupos(true);
     try {
