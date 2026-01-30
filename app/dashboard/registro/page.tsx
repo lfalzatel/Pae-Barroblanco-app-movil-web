@@ -118,6 +118,10 @@ function RegistroContent() {
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [showCalendar, setShowCalendar] = useState(false);
+
+  // Hook para botón atrás en el calendario
+  useModalBack(showCalendar, () => setShowCalendar(false), 'mini-calendar');
+
   const [attendanceCounts, setAttendanceCounts] = useState<Record<string, number>>({});
   const [calendarView, setCalendarView] = useState({
     month: new Date(selectedDate).getMonth(),
