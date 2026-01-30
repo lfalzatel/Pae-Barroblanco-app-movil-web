@@ -391,13 +391,13 @@ function RegistroContent() {
     }
   }, [gruposReales, searchParams]);
 
-  const updateUrl = (params: Record<string, string | null>) => {
+  const updateUrl = (params: Record<string, string | null>, method: 'push' | 'replace' = 'replace') => {
     const newParams = new URLSearchParams(searchParams.toString());
     Object.entries(params).forEach(([key, value]) => {
       if (value === null) newParams.delete(key);
       else newParams.set(key, value);
     });
-    router.replace(`?${newParams.toString()}`);
+    router[method](`?${newParams.toString()}`);
   };
 
   const showToast = (message: string, type: 'success' | 'error') => {
@@ -506,7 +506,7 @@ function RegistroContent() {
   const handleSedeSelect = (sede: Sede) => {
     setSedeSeleccionada(sede);
     setStep('grupo');
-    updateUrl({ sede: sede.id, grupo: null });
+    updateUrl({ sede: sede.id, grupo: null }, 'push');
   };
 
   const handleGrupoSelect = async (grupo: Grupo, updateUrlParam = true, dateOverride?: string) => {
@@ -516,7 +516,7 @@ function RegistroContent() {
 
     setGrupoSeleccionado(grupo);
     setStep('registro');
-    // if (updateUrlParam) updateUrl({ grupo: grupo.nombre }); // DISABLED by user request
+    if (updateUrlParam) updateUrl({ grupo: grupo.nombre }, 'push');
 
     setLoadingGrupos(true);
     try {
