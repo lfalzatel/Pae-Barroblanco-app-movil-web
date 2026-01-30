@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { generateTimeSlots, processGroups, GlobalGroup, isBreakTime } from '@/lib/schedule-utils';
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
+import { useModalBack } from '@/hooks/useModalBack';
 
 interface AssignedSlot {
     group: GlobalGroup & { sede?: string };
@@ -94,6 +95,18 @@ export default function HorarioPage() {
         descripcion: '',
         prioridad: 'normal'
     });
+
+    // --- Modal Back Hook Integrations ---
+    useModalBack(!!editingSlot, () => setEditingSlot(null), 'editing-slot-modal');
+    useModalBack(showCalendar, () => setShowCalendar(false), 'calendar-modal');
+    useModalBack(showEventModal, () => setShowEventModal(false), 'event-modal');
+    useModalBack(showEventDateSelector, () => setShowEventDateSelector(false), 'event-date-modal');
+    useModalBack(showConfirmSave, () => setShowConfirmSave(false), 'confirm-save-modal');
+    useModalBack(showInstructions, () => setShowInstructions(false), 'instructions-modal');
+    // For selectedGroup, we only want to deselect if we are in mobile view effectively, 
+    // but the hook handles history so it's fine to have it generally.
+    useModalBack(!!selectedGroup, () => setSelectedGroup(null), 'selected-group-state');
+
 
     useEffect(() => {
         if (notif) {
