@@ -69,6 +69,7 @@ export default function StatsDetailModal({
     onBackToSummary
 }: StatsDetailModalProps) {
     useModalBack(isOpen, onClose, 'stats-detail-modal');
+    useModalBack(deepDetailOpen, onBackToSummary, 'deep-detail-modal');
 
     if (!isOpen) return null;
 

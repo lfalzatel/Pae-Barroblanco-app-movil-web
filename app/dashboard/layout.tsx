@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
@@ -392,6 +392,46 @@ export default function DashboardLayout({
         navItems.push({ href: '/dashboard/admin', label: 'Admin', icon: Settings });
     }
 
+    const touchStartRef = useRef<{ x: number, y: number } | null>(null);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    };
+
+    // Calculate current nav index
+    const currentNavIndex = navItems.findIndex(item => item.href === pathname);
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (!touchStartRef.current) return;
+        const touchEnd = { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+
+        const diffX = touchStartRef.current.x - touchEnd.x;
+        const diffY = touchStartRef.current.y - touchEnd.y;
+
+        // Reset
+        touchStartRef.current = null;
+
+        // Don't swipe if Notification Modal is open
+        if (notifModalOpen) return;
+
+        // Thresholds: Min distance 75px, Horizontal dominant
+        if (Math.abs(diffX) > 75 && Math.abs(diffX) > Math.abs(diffY) * 2) {
+            if (currentNavIndex === -1) return;
+
+            if (diffX > 0) {
+                // Swipe Left -> Next Tab
+                if (currentNavIndex < navItems.length - 1) {
+                    router.push(navItems[currentNavIndex + 1].href);
+                }
+            } else {
+                // Swipe Right -> Prev Tab
+                if (currentNavIndex > 0) {
+                    router.push(navItems[currentNavIndex - 1].href);
+                }
+            }
+        }
+    };
+
     if (!usuario) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -401,7 +441,11 @@ export default function DashboardLayout({
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+        <div
+            className="min-h-screen bg-gray-50 flex flex-col md:flex-row"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+        >
             {/* Desktop Sidebar */}
             <aside className="hidden md:flex w-64 flex-col fixed inset-y-0 bg-white border-r border-gray-200">
                 <div className="p-6 border-b border-gray-100 flex items-center justify-start gap-3 bg-blue-50/50">
