@@ -912,7 +912,7 @@ export default function HorarioPage() {
                                                                 return next;
                                                             });
                                                         }}
-                                                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-black text-cyan-600 uppercase text-[10px] tracking-widest cursor-pointer shadow-inner appearance-none dark:bg-gray-700 dark:border-gray-600 dark:text-cyan-400"
+                                                        className="w-full pl-12 pr-10 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-black text-cyan-600 uppercase text-[10px] tracking-widest cursor-pointer shadow-inner appearance-none dark:bg-gray-700 dark:border-gray-600 dark:text-cyan-400"
                                                     >
                                                         {timeSlots.map(time => (
                                                             <option key={time} value={time}>
