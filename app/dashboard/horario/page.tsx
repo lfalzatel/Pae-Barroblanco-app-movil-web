@@ -22,7 +22,7 @@ import {
     AlertTriangle,
     Coffee
 } from 'lucide-react';
-import { generateTimeSlots, processGroups, GlobalGroup, isBreakTime } from '@/lib/schedule-utils';
+import { generateTimeSlots, processGroups, GlobalGroup, isBreakTime, getAcademicBlock } from '@/lib/schedule-utils';
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
 import { useModalBack } from '@/hooks/useModalBack';
 
@@ -71,7 +71,7 @@ export default function HorarioPage() {
     const [availableGroups, setAvailableGroups] = useState<GlobalGroup[]>([]);
     const [timeSlots, setTimeSlots] = useState<string[]>([]);
     const [assignments, setAssignments] = useState<Record<string, AssignedSlot[]>>({});
-    const [prevWeekAssignments, setPrevWeekAssignments] = useState<Record<string, string[]>>({});
+    const [prevWeekAssignments, setPrevWeekAssignments] = useState<Record<string, Set<number>>>({});
     const [selectedGroup, setSelectedGroup] = useState<GlobalGroup | null>(null);
     const [editingSlot, setEditingSlot] = useState<string | null>(null);
     const [showCalendar, setShowCalendar] = useState(false);
@@ -225,16 +225,17 @@ export default function HorarioPage() {
                     .eq('date', prevDateStr)
                     .maybeSingle();
 
-                const prevAssignments: Record<string, string[]> = {};
+                const prevGroupBlocks: Record<string, Set<number>> = {};
                 if (prevSchedData?.items) {
                     prevSchedData.items.forEach((item: any) => {
-                        if (item.time && item.time !== 'NO_ASISTE') {
-                            if (!prevAssignments[item.time]) prevAssignments[item.time] = [];
-                            prevAssignments[item.time].push(item.group);
+                        const block = getAcademicBlock(item.time_start || item.time);
+                        if (block && item.group) {
+                            if (!prevGroupBlocks[item.group]) prevGroupBlocks[item.group] = new Set();
+                            prevGroupBlocks[item.group].add(block);
                         }
                     });
                 }
-                setPrevWeekAssignments(prevAssignments);
+                setPrevWeekAssignments(prevGroupBlocks);
 
             } else {
                 const d = new Date(selectedDate + 'T12:00:00');
@@ -660,12 +661,20 @@ export default function HorarioPage() {
                                                                         </div>
                                                                     )}
 
-                                                                    {(prevWeekAssignments[time]?.includes(s.group.label) || prevWeekAssignments[time]?.includes(s.group.id)) && (
-                                                                        <div className="bg-red-50 border border-red-100 rounded-lg p-1.5 flex items-center gap-1.5 shadow-sm mt-1">
-                                                                            <AlertTriangle className="w-3 h-3 text-red-500" />
-                                                                            <span className="text-[9px] font-black text-red-600 leading-tight uppercase tracking-tight">Cruce: Mismo bloque la semana pasada</span>
-                                                                        </div>
-                                                                    )}
+                                                                    {(() => {
+                                                                        const block = getAcademicBlock(time);
+                                                                        const hasConflict = block && prevWeekAssignments[s.group.id]?.has(block);
+
+                                                                        if (hasConflict) {
+                                                                            return (
+                                                                                <div className="bg-red-50 border border-red-100 rounded-lg p-1.5 flex items-center gap-1.5 shadow-sm mt-1">
+                                                                                    <AlertTriangle className="w-3 h-3 text-red-500" />
+                                                                                    <span className="text-[9px] font-black text-red-600 leading-tight uppercase tracking-tight">Cruce: Mismo bloque ({block}) semana pasada</span>
+                                                                                </div>
+                                                                            );
+                                                                        }
+                                                                        return null;
+                                                                    })()}
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -866,14 +875,22 @@ export default function HorarioPage() {
                                             </button>
                                         </div>
 
-                                        {prevWeekAssignments[editingSlot]?.includes(s.group.id) && (
-                                            <div className="bg-amber-50 border border-amber-100 p-3 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-1 duration-300">
-                                                <div className="p-1.5 bg-amber-100 rounded-lg">
-                                                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                                                </div>
-                                                <p className="text-[10px] font-black text-amber-700 uppercase tracking-tight">Cruce: mismo bloque la semana pasada</p>
-                                            </div>
-                                        )}
+                                        {(() => {
+                                            const block = getAcademicBlock(editingSlot);
+                                            const hasConflict = block && prevWeekAssignments[s.group.id]?.has(block);
+
+                                            if (hasConflict) {
+                                                return (
+                                                    <div className="bg-amber-50 border border-amber-100 p-3 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-1 duration-300">
+                                                        <div className="p-1.5 bg-amber-100 rounded-lg">
+                                                            <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                                        </div>
+                                                        <p className="text-[10px] font-black text-amber-700 uppercase tracking-tight">Cruce: mismo bloque ({block}) semana pasada</p>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
                                         <div className="space-y-4">
                                             <div className="space-y-2">
                                                 <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Cambiar Horario</label>
