@@ -728,6 +728,18 @@ export default function DashboardPage() {
                   <span className="font-bold text-gray-900 dark:text-white">Multi-Sede:</span> Arquitectura para soportar múltiples instituciones educativas.
                 </div>
               </li>
+              <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                <div>
+                  <span className="font-bold text-gray-900 dark:text-white">Mensajería Push:</span> Notificaciones en tiempo real y chat institucional.
+                </div>
+              </li>
+              <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                <div>
+                  <span className="font-bold text-gray-900 dark:text-white">Perfil & Configuración:</span> Gestión avanzada de cuenta, eliminación y personalización de la app.
+                </div>
+              </li>
             </ul>
           </div>
         </div>
