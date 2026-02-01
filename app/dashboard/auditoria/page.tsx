@@ -22,6 +22,7 @@ import {
     UserMinus
 } from 'lucide-react';
 import Link from 'next/link';
+import { DateSelectionModal } from '@/components/ui/DateSelectionModal';
 
 interface AuditLog {
     id: string;
@@ -50,7 +51,7 @@ const formatTableName = (name: string) => {
 
 export default function AuditoriaPage() {
     const router = useRouter();
-    const dateInputRef = useRef<HTMLInputElement>(null);
+    // const dateInputRef = useRef<HTMLInputElement>(null); // Removed in favor of Modal
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(0);
@@ -64,9 +65,12 @@ export default function AuditoriaPage() {
         const offset = now.getTimezoneOffset() * 60000;
         return new Date(now.getTime() - offset).toISOString().split('T')[0];
     });
+    const INITIAL_DATE = new Date().toISOString().split('T')[0];
+    const initialLoadRef = useRef(true);
 
     // Modal for Details
     const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+    const [showCalendar, setShowCalendar] = useState(false);
 
     useEffect(() => {
         checkAdminAndFetch();
@@ -106,7 +110,48 @@ export default function AuditoriaPage() {
                 query = query.eq('table_name', tableFilter);
             }
 
-            // Date Filter: Filter by specific day
+            // Smart Date Logic: If initial load, check if today has data. 
+            // If not, fetch latest date first.
+            if (initialLoadRef.current && selectedDate === INITIAL_DATE && tableFilter === 'all') {
+                // Check count for today first
+                const startToday = `${INITIAL_DATE}T00:00:00`;
+                const endToday = `${INITIAL_DATE}T23:59:59`;
+
+                const { count: countToday } = await supabase
+                    .from('audit_logs')
+                    .select('*', { count: 'exact', head: true })
+                    .gte('changed_at', startToday)
+                    .lte('changed_at', endToday);
+
+                if (countToday === 0) {
+                    console.log('No logs for today, searching for most recent logs...');
+                    // Find latest date with records
+                    const { data: lastLog } = await supabase
+                        .from('audit_logs')
+                        .select('changed_at')
+                        .order('changed_at', { ascending: false })
+                        .limit(1)
+                        .single();
+
+                    if (lastLog && lastLog.changed_at) {
+                        const lastDate = new Date(lastLog.changed_at).toISOString().split('T')[0]; // Simple UTC->Date part as stored in string often, or handle timezone as needed
+                        // Actually changed_at is timestamptz.
+                        // Let's use local conversion to be safe or just string split if stored as ISO
+                        const lastDateLocal = new Date(lastLog.changed_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
+
+                        if (lastDateLocal !== selectedDate) {
+                            console.log('Found recent logs at:', lastDateLocal);
+                            setSelectedDate(lastDateLocal);
+                            initialLoadRef.current = false;
+                            return; // Let the useEffect trigger the new fetch with correct date
+                        }
+                    }
+                }
+            }
+            initialLoadRef.current = false;
+
+
+            // Actual Fetch
             const startDate = `${selectedDate}T00:00:00`;
             const endDate = `${selectedDate}T23:59:59`;
 
@@ -158,6 +203,14 @@ export default function AuditoriaPage() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 transition-colors">
 
+            <DateSelectionModal
+                isOpen={showCalendar}
+                onClose={() => setShowCalendar(false)}
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                title="Seleccionar Fecha Auditoría"
+            />
+
             {/* Header Premium (Synced with Reportes) */}
             <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 shadow-xl shadow-cyan-900/10 sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:pt-6 md:pb-4">
@@ -192,26 +245,12 @@ export default function AuditoriaPage() {
                             </button>
 
                             {/* Date Picker Premium */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => {
-                                        if (dateInputRef.current) {
-                                            try { dateInputRef.current.showPicker(); } catch (e) { dateInputRef.current.click(); }
-                                        }
-                                    }}
-                                    className="p-2 md:p-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-all shadow-lg border border-white/10 active:scale-95"
-                                >
-                                    <Calendar className="w-5 h-5 md:w-6 md:h-6" />
-                                </button>
-                                <input
-                                    ref={dateInputRef}
-                                    type="date"
-                                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer pointer-events-none"
-                                    value={selectedDate}
-                                    onChange={(e) => setSelectedDate(e.target.value)}
-                                    style={{ visibility: 'hidden', position: 'absolute' }}
-                                />
-                            </div>
+                            <button
+                                onClick={() => setShowCalendar(true)}
+                                className="p-2 md:p-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-all shadow-lg border border-white/10 active:scale-95"
+                            >
+                                <Calendar className="w-5 h-5 md:w-6 md:h-6" />
+                            </button>
                         </div>
                     </div>
                 </div>

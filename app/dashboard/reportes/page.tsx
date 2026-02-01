@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
 import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X, ChevronLeft, School, Clock } from 'lucide-react';
 import Link from 'next/link';
+import { DateSelectionModal } from '@/components/ui/DateSelectionModal';
 import {
   PieChart, Pie, Cell,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -24,6 +25,7 @@ export default function ReportesPage() {
   const [grupoFilter, setGrupoFilter] = useState('todos');
   const [grupoDropdownOpen, setGrupoDropdownOpen] = useState(false);
   const [gruposDisponibles, setGruposDisponibles] = useState<string[]>([]);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const now = new Date();
     const offset = now.getTimezoneOffset() * 60000;
@@ -964,6 +966,17 @@ export default function ReportesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 dark:bg-gray-900 transition-colors">
+      <DateSelectionModal
+        isOpen={showCalendar}
+        onClose={() => setShowCalendar(false)}
+        selectedDate={selectedDate}
+        onSelectDate={(date) => {
+          setSelectedDate(date);
+          setPeriodo('fecha');
+        }}
+        title="Seleccionar Fecha Reporte"
+      />
+
       {/* Modal de Detalle por Grupo */}
       <StatsDetailModal
         isOpen={modalOpen}
@@ -1048,26 +1061,11 @@ export default function ReportesPage() {
               {/* Date Picker Premium */}
               <div className="relative">
                 <button
-                  onClick={() => {
-                    if (dateInputRef.current) {
-                      try { dateInputRef.current.showPicker(); } catch (e) { dateInputRef.current.click(); }
-                    }
-                  }}
+                  onClick={() => setShowCalendar(true)}
                   className={`p-2 md:p-3 rounded-2xl transition-all shadow-lg border active:scale-95 ${periodo === 'fecha' ? 'bg-white text-cyan-700 border-white' : 'bg-white/10 hover:bg-white/20 text-white border-white/10'}`}
                 >
                   <Calendar className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
-                <input
-                  ref={dateInputRef}
-                  type="date"
-                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer pointer-events-none"
-                  value={selectedDate}
-                  onChange={(e) => {
-                    setSelectedDate(e.target.value);
-                    setPeriodo('fecha');
-                  }}
-                  style={{ visibility: 'hidden', position: 'absolute' }}
-                />
               </div>
             </div>
           </div>
