@@ -19,7 +19,8 @@ import {
     CheckCircle,
     XCircle,
     UserX,
-    UserMinus
+    UserMinus,
+    ChevronUp
 } from 'lucide-react';
 import Link from 'next/link';
 import { DateSelectionModal } from '@/components/ui/DateSelectionModal';
@@ -71,6 +72,7 @@ export default function AuditoriaPage() {
     // Modal for Details
     const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
     const [showCalendar, setShowCalendar] = useState(false);
+    const [showTableFilter, setShowTableFilter] = useState(false);
 
     useEffect(() => {
         checkAdminAndFetch();
@@ -244,6 +246,47 @@ export default function AuditoriaPage() {
                                 <RefreshCcw className={`w-5 h-5 md:w-6 md:h-6 ${loading ? 'animate-spin' : ''}`} />
                             </button>
 
+                            {/* Filter Dropdown (Custom Style) */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowTableFilter(!showTableFilter)}
+                                    className="p-2 md:p-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-all shadow-lg border border-white/10 active:scale-95 flex items-center gap-2 min-w-[140px] justify-between"
+                                >
+                                    <span className="text-[10px] uppercase font-black tracking-widest truncate">
+                                        {tableFilter === 'all' ? 'Todas las tablas' : formatTableName(tableFilter)}
+                                    </span>
+                                    {showTableFilter ? <ChevronUp className="w-3.5 h-3.5 opacity-80" /> : <ChevronDown className="w-3.5 h-3.5 opacity-80" />}
+                                </button>
+
+                                {showTableFilter && (
+                                    <>
+                                        <div className="fixed inset-0 z-[60]" onClick={() => setShowTableFilter(false)}></div>
+                                        <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden z-[70] animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-700">
+                                            <div className="p-1.5 space-y-1">
+                                                {[
+                                                    { id: 'all', label: 'Todas las tablas' },
+                                                    { id: 'asistencia_pae', label: 'Asistencia PAE' },
+                                                    { id: 'estudiantes', label: 'Estudiantes' },
+                                                    { id: 'usuarios', label: 'Usuarios' }
+                                                ].map((option) => (
+                                                    <button
+                                                        key={option.id}
+                                                        onClick={() => { setTableFilter(option.id); setShowTableFilter(false); }}
+                                                        className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${tableFilter === option.id
+                                                            ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300'
+                                                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'
+                                                            }`}
+                                                    >
+                                                        {option.label}
+                                                        {tableFilter === option.id && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full" />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
                             {/* Date Picker Premium */}
                             <button
                                 onClick={() => setShowCalendar(true)}
@@ -258,27 +301,6 @@ export default function AuditoriaPage() {
 
             <div className="max-w-7xl mx-auto space-y-6 px-4 md:px-8 py-8">
 
-                {/* Filters */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="relative group min-w-[240px]">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <FileJson className="h-4 w-4 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                        </div>
-                        <select
-                            value={tableFilter}
-                            onChange={(e) => setTableFilter(e.target.value)}
-                            className="w-full pl-10 pr-10 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none appearance-none shadow-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750"
-                        >
-                            <option value="all">Todas las tablas</option>
-                            <option value="asistencia_pae">Asistencia PAE</option>
-                            <option value="estudiantes">Estudiantes</option>
-                            <option value="usuarios">Usuarios</option>
-                        </select>
-                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <ChevronDown className="h-4 w-4 text-gray-400 group-hover:text-cyan-500 transition-colors" />
-                        </div>
-                    </div>
-                </div>
 
                 {/* Table */}
                 <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
