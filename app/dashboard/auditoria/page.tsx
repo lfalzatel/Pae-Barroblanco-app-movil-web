@@ -246,47 +246,6 @@ export default function AuditoriaPage() {
                                 <RefreshCcw className={`w-5 h-5 md:w-6 md:h-6 ${loading ? 'animate-spin' : ''}`} />
                             </button>
 
-                            {/* Filter Dropdown (Custom Style) */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => setShowTableFilter(!showTableFilter)}
-                                    className="p-2 md:p-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-all shadow-lg border border-white/10 active:scale-95 flex items-center gap-2 min-w-[140px] justify-between"
-                                >
-                                    <span className="text-[10px] uppercase font-black tracking-widest truncate">
-                                        {tableFilter === 'all' ? 'Todas las tablas' : formatTableName(tableFilter)}
-                                    </span>
-                                    {showTableFilter ? <ChevronUp className="w-3.5 h-3.5 opacity-80" /> : <ChevronDown className="w-3.5 h-3.5 opacity-80" />}
-                                </button>
-
-                                {showTableFilter && (
-                                    <>
-                                        <div className="fixed inset-0 z-[60]" onClick={() => setShowTableFilter(false)}></div>
-                                        <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden z-[70] animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-700">
-                                            <div className="p-1.5 space-y-1">
-                                                {[
-                                                    { id: 'all', label: 'Todas las tablas' },
-                                                    { id: 'asistencia_pae', label: 'Asistencia PAE' },
-                                                    { id: 'estudiantes', label: 'Estudiantes' },
-                                                    { id: 'usuarios', label: 'Usuarios' }
-                                                ].map((option) => (
-                                                    <button
-                                                        key={option.id}
-                                                        onClick={() => { setTableFilter(option.id); setShowTableFilter(false); }}
-                                                        className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${tableFilter === option.id
-                                                            ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300'
-                                                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'
-                                                            }`}
-                                                    >
-                                                        {option.label}
-                                                        {tableFilter === option.id && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full" />}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
                             {/* Date Picker Premium */}
                             <button
                                 onClick={() => setShowCalendar(true)}
@@ -300,6 +259,55 @@ export default function AuditoriaPage() {
             </div>
 
             <div className="max-w-7xl mx-auto space-y-6 px-4 md:px-8 py-8">
+
+                {/* Filters - Restore Location with New Style */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                    {/* Filter Dropdown (Custom Style Adapted for Body) */}
+                    <div className="relative min-w-[240px]">
+                        <button
+                            onClick={() => setShowTableFilter(!showTableFilter)}
+                            className="w-full p-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-2xl transition-all shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-700 active:scale-95 flex items-center gap-2 justify-between group"
+                        >
+                            <div className="flex items-center gap-3 overflow-hidden">
+                                <div className="bg-cyan-50 dark:bg-cyan-900/30 p-1.5 rounded-lg text-cyan-600 dark:text-cyan-400">
+                                    <FileJson className="w-4 h-4" />
+                                </div>
+                                <span className="text-[10px] uppercase font-black tracking-widest truncate">
+                                    {tableFilter === 'all' ? 'Todas las tablas' : formatTableName(tableFilter)}
+                                </span>
+                            </div>
+                            {showTableFilter ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-cyan-500 transition-colors" />}
+                        </button>
+
+                        {showTableFilter && (
+                            <>
+                                <div className="fixed inset-0 z-[60]" onClick={() => setShowTableFilter(false)}></div>
+                                <div className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden z-[70] animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-700">
+                                    <div className="p-1.5 space-y-1">
+                                        {[
+                                            { id: 'all', label: 'Todas las tablas' },
+                                            { id: 'asistencia_pae', label: 'Asistencia PAE' },
+                                            { id: 'estudiantes', label: 'Estudiantes' },
+                                            { id: 'usuarios', label: 'Usuarios' }
+                                        ].map((option) => (
+                                            <button
+                                                key={option.id}
+                                                onClick={() => { setTableFilter(option.id); setShowTableFilter(false); }}
+                                                className={`w-full text-left px-3 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${tableFilter === option.id
+                                                    ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300'
+                                                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'
+                                                    }`}
+                                            >
+                                                {option.label}
+                                                {tableFilter === option.id && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
 
 
                 {/* Table */}
