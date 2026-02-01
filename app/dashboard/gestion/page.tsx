@@ -757,7 +757,7 @@ export default function GestionPage() {
                       <Users size={32} />
                     </div>
                     <h3 className="text-white font-black text-2xl tracking-tight mb-1">Cobertura PAE</h3>
-                    <p className="text-emerald-100 text-[10px] font-bold uppercase tracking-widest opacity-90">Últimos 30 días</p>
+                    <p className="text-white text-[10px] font-bold uppercase tracking-widest">Últimos 30 días</p>
                   </div>
 
                   <div className="space-y-4">

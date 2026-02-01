@@ -21,7 +21,10 @@ import {
   ChevronDown,
   ChevronLeft,
   FileText,
-  Clock
+  Clock,
+  Sparkles,
+  Rocket,
+  Lock
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import * as XLSX from 'xlsx';
@@ -630,6 +633,87 @@ export default function DashboardPage() {
 
 
         </div>
+      </div>
+
+      {/* Roadmap / Updates Section */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Card 1: Improved Features (Public) */}
+        <div className="bg-gradient-to-br from-indigo-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 border border-indigo-100 dark:border-indigo-900/30 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100 dark:bg-indigo-900/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg text-indigo-600 dark:text-indigo-400">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Funciones Mejoradas</h3>
+            </div>
+
+            <ul className="space-y-3">
+              <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                <div>
+                  <span className="font-bold text-gray-900 dark:text-white">Interfaz de Perfil:</span> Nueva gestión mas limpia con opciones biométricas en el menú.
+                </div>
+              </li>
+              <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                <div>
+                  <span className="font-bold text-gray-900 dark:text-white">Modo Oscuro:</span> Corrección de contrastes y consistencia visual en todas las pantallas.
+                </div>
+              </li>
+              <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                <div>
+                  <span className="font-bold text-gray-900 dark:text-white">PWA Móvil:</span> Opción de "Instalar App" integrada para un acceso más rápido.
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Card 2: Upcoming (Admin Only) */}
+        {(usuario.rol === 'rector' || usuario.rol === 'coordinador_pae') && (
+          <div className="bg-gradient-to-br from-fuchsia-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 border border-fuchsia-100 dark:border-fuchsia-900/30 shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-fuchsia-100 dark:bg-fuchsia-900/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-fuchsia-100 dark:bg-fuchsia-900/50 rounded-lg text-fuchsia-600 dark:text-fuchsia-400">
+                    <Rocket className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Próximas Actualizaciones</h3>
+                </div>
+                <div className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-[10px] font-bold text-gray-500 flex items-center gap-1 uppercase">
+                  <Lock className="w-3 h-3" />
+                  Admin
+                </div>
+              </div>
+
+              <ul className="space-y-3">
+                <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                  <div className="mt-1 w-1.5 h-1.5 rounded-full bg-fuchsia-400 animate-pulse"></div>
+                  <div>
+                    <span className="font-bold text-gray-900 dark:text-white">Biometría Real:</span> Login directo con huella dactilar y FaceID nativo.
+                  </div>
+                </li>
+                <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                  <div className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                  <div>
+                    <span className="font-bold text-gray-900 dark:text-white">Pasarela de Pagos:</span> Módulo para gestión de recaudos y pagos en línea.
+                  </div>
+                </li>
+                <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                  <div className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                  <div>
+                    <span className="font-bold text-gray-900 dark:text-white">Multi-Sede:</span> Arquitectura para soportar múltiples instituciones educativas.
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer / Credits */}

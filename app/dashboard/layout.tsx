@@ -29,7 +29,8 @@ import {
     School,
     Sun,
     Moon,
-    Monitor
+    Monitor,
+    Fingerprint
 } from 'lucide-react';
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
 import { useTheme } from '@/components/ThemeProvider';
@@ -44,6 +45,50 @@ export default function DashboardLayout({
     const { theme, setTheme } = useTheme();
     const [usuario, setUsuario] = useState<any | null>(null);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+
+    // PWA Install Logic
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [isStandalone, setIsStandalone] = useState(false);
+    const [isIOS, setIsIOS] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
+                setIsStandalone(true);
+            }
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            setIsIOS(/iphone|ipad|ipod/.test(userAgent));
+
+            const handleBeforeInstallPrompt = (e: any) => {
+                e.preventDefault();
+                setDeferredPrompt(e);
+            };
+
+            window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        }
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            setDeferredPrompt(null);
+        }
+    };
+
+    const handleBiometricSetup = async () => {
+        try {
+            const { data, error } = await supabase.auth.mfa.enroll({
+                factorType: 'webauthn',
+            });
+            if (error) throw error;
+            alert('¡Sigue las instrucciones de tu navegador para registrar tu huella/FaceID!');
+        } catch (e: any) {
+            alert('Atención: Asegúrate de habilitar los "Passkeys" en tu dispositivo o navegador.');
+        }
+    };
 
     // Notification logic
     const [hasNotification, setHasNotification] = useState(false);
@@ -537,6 +582,33 @@ export default function DashboardLayout({
                                     <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                     Mi Perfil
                                 </Link>
+
+                                {/* Biometric Option */}
+                                <button
+                                    onClick={() => {
+                                        setIsProfileMenuOpen(false);
+                                        handleBiometricSetup();
+                                    }}
+                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left dark:text-gray-200 dark:hover:bg-gray-700"
+                                >
+                                    <Fingerprint className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                    Vincular Huella / FaceID
+                                </button>
+
+                                {/* Install App Option */}
+                                {!isStandalone && deferredPrompt && (
+                                    <button
+                                        onClick={() => {
+                                            setIsProfileMenuOpen(false);
+                                            handleInstallClick();
+                                        }}
+                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left dark:text-gray-200 dark:hover:bg-gray-700"
+                                    >
+                                        <Download className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                        Instalar Aplicación
+                                    </button>
+                                )}
+
                                 <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700">
                                     <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Tema</p>
                                     <div className="flex bg-gray-100/50 p-1 rounded-lg dark:bg-gray-700/50">
@@ -665,6 +737,33 @@ export default function DashboardLayout({
                                         <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                         Mi Perfil
                                     </Link>
+
+                                    {/* Biometric Option Mobile */}
+                                    <button
+                                        onClick={() => {
+                                            setIsProfileMenuOpen(false);
+                                            handleBiometricSetup();
+                                        }}
+                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left bg-gray-50/50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
+                                    >
+                                        <Fingerprint className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                        Vincular Biometría
+                                    </button>
+
+                                    {/* Install App Option Mobile */}
+                                    {!isStandalone && deferredPrompt && (
+                                        <button
+                                            onClick={() => {
+                                                setIsProfileMenuOpen(false);
+                                                handleInstallClick();
+                                            }}
+                                            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left bg-gray-50/50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
+                                        >
+                                            <Download className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                            Instalar App
+                                        </button>
+                                    )}
+
                                     <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800">
                                         <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Tema</p>
                                         <div className="flex bg-gray-100/50 p-1 rounded-lg mb-2 dark:bg-gray-700/50">

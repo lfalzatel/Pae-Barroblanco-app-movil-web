@@ -115,15 +115,15 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50/50 p-6 md:p-8">
+        <div className="min-h-screen bg-gray-50/50 dark:bg-transparent p-6 md:p-8">
             <div className="max-w-5xl mx-auto space-y-8">
 
                 {/* Header / Banner */}
-                <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl opacity-50"></div>
+                <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-700 relative overflow-hidden transition-colors">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 dark:bg-blue-900/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl opacity-50"></div>
 
                     <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-                        <div className="w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-blue-100 flex items-center justify-center">
+                        <div className="w-32 h-32 rounded-full border-4 border-white dark:border-gray-700 shadow-xl overflow-hidden bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
                             {usuario.foto ? (
                                 <img
                                     src={usuario.foto}
@@ -132,18 +132,18 @@ export default function ProfilePage() {
                                     referrerPolicy="no-referrer"
                                 />
                             ) : (
-                                <span className="text-4xl font-bold text-blue-600">{usuario.nombre.charAt(0)}</span>
+                                <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">{usuario.nombre.charAt(0)}</span>
                             )}
                         </div>
 
                         <div className="text-center md:text-left flex-1 space-y-2">
-                            <h1 className="text-3xl font-black text-gray-900">{usuario.nombre}</h1>
-                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-gray-500">
-                                <div className="flex items-center gap-1.5 bg-gray-100 px-3 py-1 rounded-full">
+                            <h1 className="text-3xl font-black text-gray-900 dark:text-white">{usuario.nombre}</h1>
+                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-gray-500 dark:text-gray-400">
+                                <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-gray-600 dark:text-gray-300">
                                     <Mail className="w-4 h-4" />
                                     {usuario.email}
                                 </div>
-                                <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                                <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                                     <Shield className="w-4 h-4" />
                                     {usuario.rol}
                                 </div>
@@ -152,42 +152,22 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
-                {/* Security Section (WebAuthn) */}
-                <div className="flex justify-end">
-                    <button
-                        onClick={async () => {
-                            try {
-                                const { data, error } = await supabase.auth.mfa.enroll({
-                                    factorType: 'webauthn',
-                                });
-                                if (error) throw error;
-                                alert('¡Sigue las instrucciones de tu navegador para registrar tu huella/FaceID!');
-                            } catch (e: any) {
-                                alert('Error: ' + e.message + '. Asegúrate de que Passkeys estén habilitados en Supabase.');
-                            }
-                        }}
-                        className="flex items-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-4 py-2 rounded-xl transition-colors text-sm"
-                    >
-                        <span className="text-xl">👆</span>
-                        Vincular Huella / FaceID
-                    </button>
-                </div>
 
                 {/* Calendar Section */}
-                <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center">
                             <CalendarDays className="w-6 h-6" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-gray-900">Tu Actividad Reciente</h2>
-                            <p className="text-sm text-gray-500">Últimos 35 días de gestión</p>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Tu Actividad Reciente</h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Últimos 35 días de gestión</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-7 gap-2 md:gap-4 mb-2">
                         {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
-                            <div key={day} className="text-center text-xs font-bold text-gray-400 uppercase tracking-wider py-2">
+                            <div key={day} className="text-center text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider py-2">
                                 {day}
                             </div>
                         ))}
@@ -261,12 +241,12 @@ export default function ProfilePage() {
                                     className={`
                                         aspect-square rounded-2xl flex flex-col items-center justify-center border transition-all duration-200
                                         ${isFuture
-                                            ? 'opacity-25 bg-gray-50 border-transparent text-gray-300 cursor-default'
+                                            ? 'opacity-25 bg-gray-50 dark:bg-gray-800 border-transparent text-gray-300 dark:text-gray-600 cursor-default'
                                             : hasActivity
-                                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 hover:scale-110 cursor-pointer'
+                                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/30 hover:scale-110 cursor-pointer'
                                                 : isWeekend
-                                                    ? 'bg-gray-50 border-transparent text-gray-300'
-                                                    : 'bg-white border-gray-100 text-gray-300'
+                                                    ? 'bg-gray-50 dark:bg-gray-900/50 border-transparent text-gray-300 dark:text-gray-600'
+                                                    : 'bg-white dark:bg-gray-700/50 border-gray-100 dark:border-gray-600 text-gray-300 dark:text-gray-500'
                                         }
                                     `}
                                 >
@@ -286,41 +266,41 @@ export default function ProfilePage() {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-blue-200 transition-colors">
-                        <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-3">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center text-center hover:border-blue-200 dark:hover:border-blue-700 transition-colors">
+                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-3">
                             <CheckCircle2 className="w-5 h-5" />
                         </div>
-                        <span className="text-3xl font-black text-gray-900">{stats.totalRegistros}</span>
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Registros Totales</span>
+                        <span className="text-3xl font-black text-gray-900 dark:text-white">{stats.totalRegistros}</span>
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">Registros Totales</span>
                     </div>
 
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-blue-200 transition-colors">
-                        <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-3">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center text-center hover:border-blue-200 dark:hover:border-blue-700 transition-colors">
+                        <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center mb-3">
                             <Calendar className="w-5 h-5" />
                         </div>
-                        <span className="text-3xl font-black text-gray-900">{stats.diasActivos}</span>
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Días Activos</span>
+                        <span className="text-3xl font-black text-gray-900 dark:text-white">{stats.diasActivos}</span>
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">Días Activos</span>
                     </div>
 
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-blue-200 transition-colors">
-                        <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mb-3">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center text-center hover:border-blue-200 dark:hover:border-blue-700 transition-colors">
+                        <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mb-3">
                             <TrendingUp className="w-5 h-5" />
                         </div>
-                        <span className="text-3xl font-black text-gray-900">{stats.gruposAtendidos}</span>
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Grupos Gestionados</span>
+                        <span className="text-3xl font-black text-gray-900 dark:text-white">{stats.gruposAtendidos}</span>
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">Grupos Gestionados</span>
                     </div>
 
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-blue-200 transition-colors">
-                        <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center text-center hover:border-blue-200 dark:hover:border-blue-700 transition-colors">
+                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-3">
                             <Clock className="w-5 h-5" />
                         </div>
-                        <span className="text-lg font-bold text-gray-900 mt-1">{stats.ultimoRegistro}</span>
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-2">Última Actividad</span>
+                        <span className="text-lg font-bold text-gray-900 dark:text-white mt-1">{stats.ultimoRegistro}</span>
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-2">Última Actividad</span>
                     </div>
                 </div>
 
                 {/* Motivational / Extra Info Card */}
-                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white relative overflow-hidden">
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white relative overflow-hidden dark:from-blue-800 dark:to-indigo-900">
                     <div className="relative z-10 max-w-2xl">
                         <div className="flex items-center gap-3 mb-4">
                             <Award className="w-8 h-8 text-yellow-300" />
