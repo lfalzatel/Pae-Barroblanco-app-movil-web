@@ -588,18 +588,32 @@ export default function AdminPage() {
     return (
         <div className="min-h-screen bg-gray-50 pb-32 dark:bg-gray-900 transition-colors">
             <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 shadow-xl shadow-cyan-900/10 sticky top-16 md:top-0 z-40">
-                <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/dashboard" className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10 shadow-lg">
-                            <ArrowLeft className="w-6 h-6 text-white" />
-                        </Link>
-                        <div>
-                            <h1 className="text-2xl font-black text-white tracking-tight leading-none text-shadow-sm">Panel de Administración</h1>
-                            <p className="text-[10px] font-bold text-cyan-100/80 uppercase tracking-widest mt-0.5">Control Total</p>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:pt-6 md:pb-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <Link
+                                href="/dashboard"
+                                className="p-2 md:p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg border border-white/10"
+                            >
+                                <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
+                            </Link>
+                            <div className="relative">
+                                <h1 className="text-lg md:text-2xl font-black text-white leading-none tracking-tight">Panel de Administración</h1>
+                                <div className="flex items-center gap-2 mt-1 opacity-90">
+                                    <p className="text-[9px] md:text-[11px] font-bold text-cyan-50 uppercase tracking-[0.2em]">
+                                        CONTROL TOTAL
+                                    </p>
+                                    <span className="w-1 h-1 rounded-full bg-cyan-200/50"></span>
+                                    <p className="text-[9px] md:text-[10px] font-black text-cyan-100/60 uppercase tracking-widest">ADMIN V2.0</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div className="bg-white/10 p-2 rounded-xl border border-white/10 animate-pulse shadow-inner">
-                        <ShieldAlert className="w-6 h-6 text-cyan-50" />
+
+                        <div className="flex items-center gap-2">
+                            <div className="bg-white/10 p-2 md:p-3 rounded-2xl border border-white/10 animate-pulse shadow-inner">
+                                <ShieldAlert className="w-5 h-5 md:w-6 md:h-6 text-cyan-50" />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
