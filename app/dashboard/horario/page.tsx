@@ -849,14 +849,14 @@ export default function HorarioPage() {
 
                             <div className="p-8 space-y-6 max-h-[50vh] overflow-y-auto custom-scrollbar">
                                 {assignments[editingSlot]?.map((s, i) => (
-                                    <div key={i} className="bg-gray-50 p-5 rounded-[2rem] flex flex-col gap-4 relative border border-gray-100 shadow-sm">
+                                    <div key={i} className="bg-gray-50 p-5 rounded-[2rem] flex flex-col gap-4 relative border border-gray-100 shadow-sm dark:bg-gray-900/50 dark:border-gray-700/50">
                                         <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-3">
-                                                <div className="bg-white p-2 rounded-xl shadow-sm text-cyan-600 border border-cyan-50">
+                                                <div className="bg-white p-2 rounded-xl shadow-sm text-cyan-600 border border-cyan-50 dark:bg-gray-800 dark:border-gray-700 dark:text-cyan-400">
                                                     <Users className="w-5 h-5" />
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="font-black text-gray-900 leading-tight">{s.group.label}</span>
+                                                    <span className="font-black text-gray-900 leading-tight dark:text-white">{s.group.label}</span>
                                                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{s.group.studentCount} ESTUDIANTES</span>
                                                 </div>
                                             </div>
@@ -869,7 +869,7 @@ export default function HorarioPage() {
                                                         return next;
                                                     });
                                                 }}
-                                                className="p-2.5 hover:bg-red-50 rounded-xl text-red-500 transition-colors border border-transparent hover:border-red-100"
+                                                className="p-2.5 hover:bg-red-50 rounded-xl text-red-500 transition-colors border border-transparent hover:border-red-100 dark:hover:bg-red-900/20 dark:hover:border-red-900/30"
                                             >
                                                 <Trash2 className="w-5 h-5" />
                                             </button>
@@ -881,11 +881,11 @@ export default function HorarioPage() {
 
                                             if (hasConflict) {
                                                 return (
-                                                    <div className="bg-amber-50 border border-amber-100 p-3 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-1 duration-300">
-                                                        <div className="p-1.5 bg-amber-100 rounded-lg">
-                                                            <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                                    <div className="bg-amber-50 border border-amber-100 p-3 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-1 duration-300 dark:bg-amber-900/10 dark:border-amber-800/20">
+                                                        <div className="p-1.5 bg-amber-100 rounded-lg dark:bg-amber-900/30">
+                                                            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                                                         </div>
-                                                        <p className="text-[10px] font-black text-amber-700 uppercase tracking-tight">Cruce: mismo bloque ({block}) semana pasada</p>
+                                                        <p className="text-[10px] font-black text-amber-700 uppercase tracking-tight dark:text-amber-400">Cruce: mismo bloque ({block}) semana pasada</p>
                                                     </div>
                                                 );
                                             }
@@ -893,7 +893,7 @@ export default function HorarioPage() {
                                         })()}
                                         <div className="space-y-4">
                                             <div className="space-y-2">
-                                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Cambiar Horario</label>
+                                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1 dark:text-gray-500">Cambiar Horario</label>
                                                 <div className="relative">
                                                     <select
                                                         value={editingSlot}
@@ -926,7 +926,7 @@ export default function HorarioPage() {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Observaciones / Ración</label>
+                                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1 dark:text-gray-500">Observaciones / Ración</label>
                                                 <input
                                                     placeholder="Ej: Solo ración básica, alumnos de viaje..."
                                                     value={s.notes || ''}
