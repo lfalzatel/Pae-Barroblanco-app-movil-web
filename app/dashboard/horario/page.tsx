@@ -912,7 +912,7 @@ export default function HorarioPage() {
                                                                 return next;
                                                             });
                                                         }}
-                                                        className="w-full appearance-none bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 rounded-2xl py-3 pl-10 pr-10 text-[10px] lg:text-xs font-black uppercase tracking-widest cursor-pointer focus:ring-2 focus:ring-cyan-500/10 transition-all text-cyan-600 dark:text-cyan-400 shadow-sm"
+                                                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-black text-cyan-600 uppercase text-[10px] tracking-widest cursor-pointer shadow-inner appearance-none dark:bg-gray-700 dark:border-gray-600 dark:text-cyan-400"
                                                     >
                                                         {timeSlots.map(time => (
                                                             <option key={time} value={time}>
@@ -937,7 +937,7 @@ export default function HorarioPage() {
                                                             return next;
                                                         });
                                                     }}
-                                                    className="w-full p-4 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-cyan-500/10 transition-all shadow-sm text-gray-900 dark:text-white"
+                                                    className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                                                 />
                                             </div>
                                         </div>
@@ -983,7 +983,7 @@ export default function HorarioPage() {
                                 <CalendarIcon className="absolute -right-4 -bottom-4 w-24 h-24 md:w-32 md:h-32 opacity-10 rotate-12" />
                             </div>
 
-                            <div className="p-4 md:p-6 space-y-3 overflow-y-auto custom-scrollbar-premium">
+                            <div className="p-4 md:p-6 space-y-4 overflow-y-auto custom-scrollbar-premium bg-white dark:bg-gray-800">
                                 {eventForm.prioridad === 'alta' && (
                                     <div className="bg-red-50 border border-red-100 p-2.5 md:p-3 rounded-2xl flex items-center gap-3 animate-pulse">
                                         <AlertTriangle className="w-4 h-4 text-red-600" />
@@ -996,7 +996,7 @@ export default function HorarioPage() {
                                     <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Fecha Programada</label>
                                     <button
                                         onClick={() => setShowEventDateSelector(true)}
-                                        className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 flex items-center justify-between group hover:bg-white hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-50 transition-all active:scale-[0.98]"
+                                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between group hover:bg-white hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-50 transition-all active:scale-[0.98] dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600"
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className="p-1.5 md:p-2 bg-white rounded-lg md:rounded-xl shadow-sm border border-gray-100 group-hover:border-cyan-100">
@@ -1020,8 +1020,7 @@ export default function HorarioPage() {
                                     <input
                                         value={eventForm.titulo}
                                         onChange={e => setEventForm({ ...eventForm, titulo: e.target.value })}
-                                        className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all text-sm"
-                                        placeholder="Ej: Izada de Bandera"
+                                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                                     />
                                 </div>
 
@@ -1031,8 +1030,7 @@ export default function HorarioPage() {
                                         <input
                                             value={eventForm.hora}
                                             onChange={e => setEventForm({ ...eventForm, hora: e.target.value })}
-                                            className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all text-xs lg:text-sm"
-                                            placeholder="08:00 AM"
+                                            className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner text-xs lg:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                                         />
                                     </div>
                                     <div className="space-y-1.5 md:space-y-2">
@@ -1040,7 +1038,7 @@ export default function HorarioPage() {
                                         <select
                                             value={eventForm.prioridad}
                                             onChange={e => setEventForm({ ...eventForm, prioridad: e.target.value })}
-                                            className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none text-xs lg:text-sm"
+                                            className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 appearance-none text-xs lg:text-sm shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                         >
                                             <option value="normal">Normal 😊</option>
                                             <option value="alta">Urgente ⚠️</option>
@@ -1055,7 +1053,7 @@ export default function HorarioPage() {
                                         <select
                                             value={eventForm.afectados}
                                             onChange={e => setEventForm({ ...eventForm, afectados: e.target.value })}
-                                            className="w-full pl-12 pr-10 py-3 md:py-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all appearance-none text-xs lg:text-sm"
+                                            className="w-full pl-12 pr-10 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 appearance-none text-xs lg:text-sm shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                         >
                                             <option value="">Seleccionar destinatarios...</option>
                                             <option value="Estudiantes">Estudiantes 🎓</option>
@@ -1075,7 +1073,7 @@ export default function HorarioPage() {
                                     <textarea
                                         value={eventForm.descripcion}
                                         onChange={e => setEventForm({ ...eventForm, descripcion: e.target.value })}
-                                        className="w-full p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 outline-none font-bold text-gray-900 focus:ring-2 focus:ring-cyan-500/20 focus:bg-white transition-all min-h-[80px] lg:min-h-[100px] resize-none text-xs lg:text-sm"
+                                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner min-h-[80px] lg:min-h-[100px] resize-none text-xs lg:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                                         placeholder="Detalles adicionales de la actividad..."
                                     />
                                 </div>
