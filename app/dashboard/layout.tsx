@@ -30,10 +30,12 @@ import {
     Sun,
     Moon,
     Monitor,
-    Fingerprint
+    Fingerprint,
+    AlertTriangle
 } from 'lucide-react';
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
 import { useTheme } from '@/components/ThemeProvider';
+import { getAcademicBlock } from '@/lib/schedule-utils';
 
 export default function DashboardLayout({
     children,
@@ -166,6 +168,7 @@ export default function DashboardLayout({
     const [selectedSede, setSelectedSede] = useState('Principal');
     const [showSedeDropdown, setShowSedeDropdown] = useState(false);
     const [groupSedeMap, setGroupSedeMap] = useState<Record<string, string>>({});
+    const [todayConflicts, setTodayConflicts] = useState<any[]>([]);
 
     const fetchScheduleForDate = async (dateStr: string) => {
         const { data } = await supabase
@@ -344,6 +347,42 @@ export default function DashboardLayout({
             }
             const { data: mInst } = await supabase.from('novedades_institucionales').select('*').eq('fecha', tomorrowStr);
             setTomorrowInstEvents((mInst || []).sort((a, b) => timeToMinutes(a.hora) - timeToMinutes(b.hora)));
+
+            // 3. Fetch Last Week for Conflicts (Today Only)
+            const lastWeekDate = new Date(bogota);
+            lastWeekDate.setDate(lastWeekDate.getDate() - 7);
+            const lastWeekStr = formatLocalDate(lastWeekDate);
+
+            const { data: lwData } = await supabase.from('schedules').select('items').eq('date', lastWeekStr).maybeSingle();
+            if (tData?.items && lwData?.items) {
+                const conflicts: any[] = [];
+                const lastWeekItems = lwData.items as any[];
+
+                (tData.items as any[]).forEach(todayItem => {
+                    const todayBlock = getAcademicBlock(todayItem.time_start || todayItem.time);
+                    if (todayBlock) {
+                        // Find if group had an assignment last week with SAME block
+                        const conflictItem = lastWeekItems.find(lwItem =>
+                            lwItem.group === todayItem.group &&
+                            getAcademicBlock(lwItem.time_start || lwItem.time) === todayBlock
+                        );
+
+                        if (conflictItem) {
+                            conflicts.push({
+                                group: todayItem.group,
+                                block: todayBlock,
+                                todayTime: todayItem.time_start || todayItem.time,
+                                lastWeekTime: conflictItem.time_start || conflictItem.time,
+                                notes: todayItem.notes
+                            });
+                        }
+                    }
+                });
+                setTodayConflicts(conflicts);
+                if (conflicts.length > 0) setHasNotification(true);
+            } else {
+                setTodayConflicts([]);
+            }
         };
 
         const fetchInstChanges = () => {
@@ -984,6 +1023,28 @@ export default function DashboardLayout({
 
                                                 return (
                                                     <div className="space-y-5">
+                                                        {/* CRUCES DE HORARIO WARNING */}
+                                                        {dailySubTab === 'today' && todayConflicts.length > 0 && (filteredPAE.some(p => p.group && groupSedeMap[p.group] === selectedSede) || todayConflicts.some(c => groupSedeMap[c.group] === selectedSede)) && (
+                                                            <div className="space-y-2 mb-4">
+                                                                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                                                    <AlertTriangle className="w-3 h-3" /> Alerta de Cruces (Semana Pasada)
+                                                                </p>
+                                                                {todayConflicts.filter(c => groupSedeMap[c.group] === selectedSede || !groupSedeMap[c.group]).map((c, idx) => (
+                                                                    <div key={`conflict-${idx}`} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+                                                                        <div className="bg-amber-100 text-amber-700 p-2 rounded-xl shrink-0">
+                                                                            <AlertTriangle className="w-5 h-5" />
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <p className="font-black text-amber-900 text-sm">{c.group.replace('-2026', '')} <span className="text-amber-600 opacity-60 ml-2 text-[10px] font-bold uppercase">Bloque {c.block}</span></p>
+                                                                            <p className="text-[10px] font-bold text-amber-700 mt-1">
+                                                                                Hoy: {c.todayTime} vs Sem. Pasada: {c.lastWeekTime}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+
                                                         {/* PAE Absences */}
                                                         {filteredPAE.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length > 0 && (
                                                             <div className="space-y-2">
