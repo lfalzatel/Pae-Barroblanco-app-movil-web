@@ -734,7 +734,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Herramientas de Administración */}
-                <div className="bg-blue-600 rounded-2xl p-6 text-white shadow-lg overflow-hidden relative min-h-[160px]">
+                <div className="bg-cyan-600 rounded-2xl p-6 text-white shadow-lg overflow-hidden relative min-h-[160px]">
                     <div className="relative z-10">
                         {activeTab === 'move' && (
                             <>
@@ -742,7 +742,7 @@ export default function AdminPage() {
                                     <ArrowRightLeft className="w-5 h-5" />
                                     Mover Estudiantes en Masa
                                 </h2>
-                                <p className="text-blue-100 text-sm mb-6">Selecciona estudiantes de la lista de abajo y elige el grupo de destino.</p>
+                                <p className="text-cyan-100 text-sm mb-6">Selecciona estudiantes de la lista de abajo y elige el grupo de destino.</p>
 
                                 <div className="flex flex-col md:flex-row gap-4">
                                     <div className="flex-1">
@@ -753,8 +753,8 @@ export default function AdminPage() {
                                                     key={sede}
                                                     onClick={() => setMoveSedeFilter(sede)}
                                                     className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${moveSedeFilter === sede
-                                                        ? 'bg-blue-800 text-white border-blue-400'
-                                                        : 'bg-blue-700/50 text-blue-200 border-transparent hover:bg-blue-700'
+                                                        ? 'bg-cyan-800 text-white border-cyan-400'
+                                                        : 'bg-cyan-700/50 text-cyan-200 border-transparent hover:bg-cyan-700'
                                                         }`}
                                                 >
                                                     {sede}
@@ -763,7 +763,7 @@ export default function AdminPage() {
                                         </div>
 
                                         <label className="block text-xs font-bold uppercase mb-2 opacity-80">2. Seleccione Grupo de Destino</label>
-                                        <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-40 p-1 bg-blue-700/30 rounded-xl">
+                                        <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-40 p-1 bg-cyan-700/30 rounded-xl">
                                             {allGrupos.filter(g => {
                                                 // Filter groups by selected Sede
                                                 return estudiantes.some(e => e.grupo === g && e.sede === moveSedeFilter);
@@ -772,8 +772,8 @@ export default function AdminPage() {
                                                     key={g}
                                                     onClick={() => setTargetGrupo(g)}
                                                     className={`py-2 px-1 rounded-lg text-[10px] font-bold transition-all border ${targetGrupo === g
-                                                        ? 'bg-white text-blue-600 border-white shadow-md'
-                                                        : 'bg-blue-700/50 text-blue-100 border-blue-500/30 hover:bg-blue-600'
+                                                        ? 'bg-white text-cyan-600 border-white shadow-md'
+                                                        : 'bg-cyan-700/50 text-cyan-100 border-cyan-500/30 hover:bg-cyan-600'
                                                         }`}
                                                 >
                                                     {g}
@@ -784,7 +784,7 @@ export default function AdminPage() {
                                     <button
                                         onClick={handleMoveStudents}
                                         disabled={selectedStudents.length === 0 || !targetGrupo}
-                                        className="bg-white text-blue-600 px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-blue-50 transition-colors"
+                                        className="bg-white text-cyan-600 px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-cyan-50 transition-colors"
                                     >
                                         Mover Seleccionados ({selectedStudents.length})
                                     </button>
@@ -798,7 +798,7 @@ export default function AdminPage() {
                                     <Edit3 className="w-5 h-5" />
                                     Renombrar Grupo Globalmente
                                 </h2>
-                                <p className="text-blue-100 text-sm mb-6">Este cambio afectará a TODOS los estudiantes del grupo seleccionado.</p>
+                                <p className="text-cyan-100 text-sm mb-6">Este cambio afectará a TODOS los estudiantes del grupo seleccionado.</p>
 
                                 <div className="flex flex-col md:flex-row gap-4">
                                     <div className="flex-1">
@@ -809,8 +809,8 @@ export default function AdminPage() {
                                                     key={sede}
                                                     onClick={() => setRenameSedeFilter(sede)}
                                                     className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${renameSedeFilter === sede
-                                                        ? 'bg-blue-800 text-white border-blue-400'
-                                                        : 'bg-blue-700/50 text-blue-200 border-transparent hover:bg-blue-700'
+                                                        ? 'bg-cyan-800 text-white border-cyan-400'
+                                                        : 'bg-cyan-700/50 text-cyan-200 border-transparent hover:bg-cyan-700'
                                                         }`}
                                                 >
                                                     {sede}
@@ -819,7 +819,7 @@ export default function AdminPage() {
                                         </div>
 
                                         <label className="block text-xs font-bold uppercase mb-2 opacity-80">2. Seleccione Grupo Original</label>
-                                        <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-40 p-1 bg-blue-700/30 rounded-xl">
+                                        <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-40 p-1 bg-cyan-700/30 rounded-xl">
                                             {allGrupos.filter(g => {
                                                 // Filter groups by selected Sede
                                                 return estudiantes.some(e => e.grupo === g && e.sede === renameSedeFilter);
@@ -828,8 +828,8 @@ export default function AdminPage() {
                                                     key={g}
                                                     onClick={() => setRenamingGrupo({ ...renamingGrupo, oldName: g })}
                                                     className={`py-2 px-1 rounded-lg text-[10px] font-bold transition-all border ${renamingGrupo.oldName === g
-                                                        ? 'bg-white text-blue-600 border-white shadow-md'
-                                                        : 'bg-blue-700/50 text-blue-100 border-blue-500/30 hover:bg-blue-600'
+                                                        ? 'bg-white text-cyan-600 border-white shadow-md'
+                                                        : 'bg-cyan-700/50 text-cyan-100 border-cyan-500/30 hover:bg-cyan-600'
                                                         }`}
                                                 >
                                                     {g}
@@ -844,13 +844,13 @@ export default function AdminPage() {
                                             placeholder="Escriba el nuevo nombre..."
                                             value={renamingGrupo.newName}
                                             onChange={(e) => setRenamingGrupo({ ...renamingGrupo, newName: e.target.value })}
-                                            className="w-full bg-blue-700 border-none rounded-xl px-4 py-3 text-white placeholder-blue-300 focus:ring-2 focus:ring-white"
+                                            className="w-full bg-cyan-700 border-none rounded-xl px-4 py-3 text-white placeholder-cyan-300 focus:ring-2 focus:ring-white"
                                         />
                                     </div>
                                     <button
                                         onClick={handleRenameGroup}
                                         disabled={!renamingGrupo.oldName || !renamingGrupo.newName}
-                                        className="bg-white text-blue-600 px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-blue-50 transition-colors"
+                                        className="bg-white text-cyan-600 px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-cyan-50 transition-colors"
                                     >
                                         Confirmar Cambio
                                     </button>
@@ -865,7 +865,7 @@ export default function AdminPage() {
                                         <ShieldAlert className="w-5 h-5" />
                                         Gestión de Estados
                                     </h2>
-                                    <p className="text-blue-100 text-xs opacity-80">Actualiza el estado de los {selectedStudents.length} estudiantes seleccionados.</p>
+                                    <p className="text-cyan-100 text-xs opacity-80">Actualiza el estado de los {selectedStudents.length} estudiantes seleccionados.</p>
                                 </div>
 
                                 <div className="flex gap-2 w-full md:w-auto">
@@ -895,7 +895,7 @@ export default function AdminPage() {
                                     <MapPin className="w-5 h-5" />
                                     Cambiar Sede Globalmente
                                 </h2>
-                                <p className="text-blue-100 text-sm mb-6">Actualiza la sede de TODOS los estudiantes del grupo seleccionado.</p>
+                                <p className="text-cyan-100 text-sm mb-6">Actualiza la sede de TODOS los estudiantes del grupo seleccionado.</p>
 
                                 <div className="flex flex-col md:flex-row gap-4">
                                     <div className="flex-1">
@@ -906,8 +906,8 @@ export default function AdminPage() {
                                                     key={sede}
                                                     onClick={() => setSourceSedeFilter(sede)}
                                                     className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${sourceSedeFilter === sede
-                                                        ? 'bg-blue-800 text-white border-blue-400'
-                                                        : 'bg-blue-700/50 text-blue-200 border-transparent hover:bg-blue-700'
+                                                        ? 'bg-cyan-800 text-white border-cyan-400'
+                                                        : 'bg-cyan-700/50 text-cyan-200 border-transparent hover:bg-cyan-700'
                                                         }`}
                                                 >
                                                     {sede}
@@ -916,7 +916,7 @@ export default function AdminPage() {
                                         </div>
 
                                         <label className="block text-xs font-bold uppercase mb-2 opacity-80">2. Seleccione Grupo ({sourceSedeFilter === 'Todas' ? 'Todos' : sourceSedeFilter})</label>
-                                        <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-40 p-1 bg-blue-700/30 rounded-xl">
+                                        <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-40 p-1 bg-cyan-700/30 rounded-xl">
                                             {allGrupos.filter(g => {
                                                 if (sourceSedeFilter === 'Todas') return true;
                                                 // Check if group belongs to selected sede (has at least one student in that sede)
@@ -926,8 +926,8 @@ export default function AdminPage() {
                                                     key={g}
                                                     onClick={() => setChangingSede(prev => ({ ...prev, grupo: g }))}
                                                     className={`py-2 px-1 rounded-lg text-[10px] font-bold transition-all border ${changingSede.grupo === g
-                                                        ? 'bg-white text-blue-600 border-white shadow-md'
-                                                        : 'bg-blue-700/50 text-blue-100 border-blue-500/30 hover:bg-blue-600'
+                                                        ? 'bg-white text-cyan-600 border-white shadow-md'
+                                                        : 'bg-cyan-700/50 text-cyan-100 border-cyan-500/30 hover:bg-cyan-600'
                                                         }`}
                                                 >
                                                     {g}
@@ -943,8 +943,8 @@ export default function AdminPage() {
                                                     key={sede}
                                                     onClick={() => setChangingSede(prev => ({ ...prev, newSede: sede }))}
                                                     className={`py-3 px-4 rounded-xl text-sm font-bold transition-all border text-left flex items-center justify-between ${changingSede.newSede === sede
-                                                        ? 'bg-white text-blue-600 border-white shadow-md'
-                                                        : 'bg-blue-700/50 text-blue-100 border-blue-500/30 hover:bg-blue-600'
+                                                        ? 'bg-white text-cyan-600 border-white shadow-md'
+                                                        : 'bg-cyan-700/50 text-cyan-100 border-cyan-500/30 hover:bg-cyan-600'
                                                         }`}
                                                 >
                                                     {sede}
@@ -956,7 +956,7 @@ export default function AdminPage() {
                                     <button
                                         onClick={handleChangeSede}
                                         disabled={!changingSede.grupo || !changingSede.newSede}
-                                        className="bg-white text-blue-600 px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-blue-50 transition-colors"
+                                        className="bg-white text-cyan-600 px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-cyan-50 transition-colors"
                                     >
                                         Confirmar Cambio
                                     </button>
@@ -970,12 +970,12 @@ export default function AdminPage() {
                                     <Database className="w-5 h-5" />
                                     Copia de Seguridad y Exportación
                                 </h2>
-                                <p className="text-blue-100 text-sm mb-6">Descarga todos los datos del sistema en formato Excel para respaldo seguro.</p>
+                                <p className="text-cyan-100 text-sm mb-6">Descarga todos los datos del sistema en formato Excel para respaldo seguro.</p>
 
                                 <div className="flex gap-4">
                                     <button
                                         onClick={handleBackup}
-                                        className="w-full bg-white text-blue-600 hover:bg-blue-50 px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-colors shadow-lg"
+                                        className="w-full bg-white text-cyan-600 hover:bg-cyan-50 px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-colors shadow-lg"
                                     >
                                         <Database className="w-6 h-6" />
                                         <div className="text-left">
