@@ -109,6 +109,26 @@ export const generateSchedulePDF = (scheduleData: any[], date: string, sede: str
     doc.text('Equipo directivo', 20, currentY);
     currentY += 5;
     doc.text('I.E Barro Blanco', 20, currentY);
+    currentY += 10;
+
+    // Address Footer
+    doc.setDrawColor(200);
+    doc.line(20, currentY, 190, currentY); // Horizontal Line
+    currentY += 6;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100); // Gray text for footer
+
+    // Centered Address Info
+    const centerX = 105;
+    doc.text('www.barroblanco.edu.co | Correo Electrónico info@barroblanco.edu.co', centerX, currentY, { align: 'center' });
+    currentY += 4;
+    doc.text('Sede principal. Km. 4 Vía al aeropuerto Barrio Barro Blanco, Rionegro, Ant.', centerX, currentY, { align: 'center' });
+    currentY += 4;
+    doc.text('Tel. (604) 473 4386 Cel. 324 591 6685', centerX, currentY, { align: 'center' });
+    currentY += 4;
+    doc.text('Sede María Inmaculada, Vereda Abreu Cel. 324 591 6687', centerX, currentY, { align: 'center' });
 
     // Page Numbers
     const pageCount = doc.getNumberOfPages();

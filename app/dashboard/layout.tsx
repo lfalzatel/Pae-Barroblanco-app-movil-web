@@ -169,6 +169,19 @@ export default function DashboardLayout({
     const [showSedeDropdown, setShowSedeDropdown] = useState(false);
     const [groupSedeMap, setGroupSedeMap] = useState<Record<string, string>>({});
     const [todayConflicts, setTodayConflicts] = useState<any[]>([]);
+    const [tomorrowConflicts, setTomorrowConflicts] = useState<any[]>([]);
+
+    const getBlockTimeRange = (block: number) => {
+        const ranges: Record<number, string> = {
+            1: "07:00 - 07:55 AM",
+            2: "07:55 - 08:50 AM",
+            3: "09:10 - 10:05 AM",
+            4: "10:05 - 11:00 AM",
+            5: "11:10 - 12:05 PM",
+            6: "12:05 - 01:00 PM"
+        };
+        return ranges[block] || "";
+    };
 
     const fetchScheduleForDate = async (dateStr: string) => {
         const { data } = await supabase
@@ -382,6 +395,41 @@ export default function DashboardLayout({
                 if (conflicts.length > 0) setHasNotification(true);
             } else {
                 setTodayConflicts([]);
+            }
+
+            // 4. Fetch Last Week for Tomorrow Conflicts
+            const lastWeekTomorrowDate = new Date(target);
+            lastWeekTomorrowDate.setDate(lastWeekTomorrowDate.getDate() - 7);
+            const lastWeekTomorrowStr = formatLocalDate(lastWeekTomorrowDate);
+
+            const { data: lwTomorrowData } = await supabase.from('schedules').select('items').eq('date', lastWeekTomorrowStr).maybeSingle();
+            if (mData?.items && lwTomorrowData?.items) {
+                const conflicts: any[] = [];
+                const lastWeekItems = lwTomorrowData.items as any[];
+
+                (mData.items as any[]).forEach(tomorrowItem => {
+                    const tBlock = getAcademicBlock(tomorrowItem.time_start || tomorrowItem.time);
+                    if (tBlock) {
+                        const conflictItem = lastWeekItems.find(lwItem =>
+                            lwItem.group === tomorrowItem.group &&
+                            getAcademicBlock(lwItem.time_start || lwItem.time) === tBlock
+                        );
+
+                        if (conflictItem) {
+                            conflicts.push({
+                                group: tomorrowItem.group,
+                                block: tBlock,
+                                todayTime: tomorrowItem.time_start || tomorrowItem.time, // 'today' in the context of the displayed day
+                                lastWeekTime: conflictItem.time_start || conflictItem.time,
+                                notes: tomorrowItem.notes
+                            });
+                        }
+                    }
+                });
+                setTomorrowConflicts(conflicts);
+                if (conflicts.length > 0) setHasNotification(true);
+            } else {
+                setTomorrowConflicts([]);
             }
         };
 
@@ -849,7 +897,7 @@ export default function DashboardLayout({
             {notifModalOpen && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setNotifModalOpen(false)}></div>
-                    <div className="bg-white rounded-[2.5rem] w-full max-w-md relative z-10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+                    <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] w-full max-w-md relative z-10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
                         {/* Header */}
                         <div className="p-5 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
                             <div className="flex items-start justify-between mb-3">
@@ -894,7 +942,7 @@ export default function DashboardLayout({
                                     {showSedeDropdown && (
                                         <>
                                             <div className="fixed inset-0 z-[60]" onClick={() => setShowSedeDropdown(false)}></div>
-                                            <div className="absolute top-full right-0 mt-2 w-full min-w-[140px] bg-white rounded-2xl shadow-xl overflow-hidden z-[70] animate-in zoom-in-95 duration-200 border border-gray-100">
+                                            <div className="absolute top-full right-0 mt-2 w-full min-w-[140px] bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden z-[70] animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-700">
                                                 <div className="p-1.5 space-y-1">
                                                     {[
                                                         { id: 'Principal', label: 'Principal' },
@@ -905,8 +953,8 @@ export default function DashboardLayout({
                                                             key={sede.id}
                                                             onClick={() => { setSelectedSede(sede.id); setShowSedeDropdown(false); }}
                                                             className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${selectedSede === sede.id
-                                                                ? 'bg-cyan-50 text-cyan-700'
-                                                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                                                ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300'
+                                                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'
                                                                 }`}
                                                         >
                                                             {sede.label}
@@ -922,7 +970,7 @@ export default function DashboardLayout({
 
                             {/* Inner Calendar - Header Integrated */}
                             {isCalendarOpen && (
-                                <div className="mt-4 animate-in slide-in-from-top-2 fade-in duration-200 flex flex-col items-center bg-white p-3 rounded-2xl shadow-xl">
+                                <div className="mt-4 animate-in slide-in-from-top-2 fade-in duration-200 flex flex-col items-center bg-white dark:bg-gray-800 p-3 rounded-2xl shadow-xl">
                                     <MiniCalendar
                                         selectedDate={selectedDate || formatLocalDate(new Date())}
                                         onSelectDate={(date) => {
@@ -949,8 +997,8 @@ export default function DashboardLayout({
                         </div>
 
                         {/* Tabs Selector (Ultra Compact) */}
-                        <div className="px-0 py-2 bg-white border-b border-gray-100 shrink-0">
-                            <div className="flex mx-6 p-1 bg-gray-100/50 rounded-full border border-gray-200/50 shadow-inner relative">
+                        <div className="px-0 py-2 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shrink-0">
+                            <div className="flex mx-6 p-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-full border border-gray-200/50 dark:border-gray-700 shadow-inner relative">
                                 <button
                                     onClick={() => setActiveNotifTab('daily')}
                                     className={`flex-1 py-2 text-[10px] font-black uppercase tracking-[0.15em] rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'daily' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
@@ -968,21 +1016,21 @@ export default function DashboardLayout({
                         </div>
 
                         {/* Content Area */}
-                        <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] bg-gray-50/30 p-4">
+                        <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] bg-gray-50/30 dark:bg-black/10 p-4">
                             {activeNotifTab === 'daily' ? (
                                 <div className="space-y-6">
                                     {/* Daily Sub-Tabs (Hoy / Mañana) */}
                                     {!searchResult && (
-                                        <div className="flex bg-gray-200/30 p-1 rounded-2xl mb-4 shadow-inner border border-gray-100">
+                                        <div className="flex bg-gray-200/30 dark:bg-gray-800/50 p-1 rounded-2xl mb-4 shadow-inner border border-gray-100 dark:border-gray-700">
                                             <button
                                                 onClick={() => setDailySubTab('today')}
-                                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${dailySubTab === 'today' ? 'bg-white text-cyan-600 shadow-sm ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}
+                                                className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${dailySubTab === 'today' ? 'bg-white dark:bg-gray-700 text-cyan-600 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-gray-400 hover:text-gray-600'}`}
                                             >
                                                 Hoy
                                             </button>
                                             <button
                                                 onClick={() => setDailySubTab('tomorrow')}
-                                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${dailySubTab === 'tomorrow' ? 'bg-white text-cyan-600 shadow-sm ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}
+                                                className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${dailySubTab === 'tomorrow' ? 'bg-white dark:bg-gray-700 text-cyan-600 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-gray-400 hover:text-gray-600'}`}
                                             >
                                                 Próx. Día
                                             </button>
@@ -1013,10 +1061,10 @@ export default function DashboardLayout({
 
                                                 if (filteredPAE.length === 0 && instEvents.length === 0) {
                                                     return (
-                                                        <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 text-center mx-2">
-                                                            <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
-                                                            <h4 className="text-gray-900 font-black text-sm mb-1">Sin Novedades</h4>
-                                                            <p className="text-[10px] text-gray-400 italic">Todo transcurre con normalidad para {selectedSede}.</p>
+                                                        <div className="bg-gray-50 dark:bg-gray-800/50 p-8 rounded-3xl border border-gray-100 dark:border-gray-800 text-center mx-2 shadow-sm">
+                                                            <CheckCircle className="w-10 h-10 text-emerald-400 dark:text-emerald-500 mx-auto mb-3" />
+                                                            <h4 className="text-gray-900 dark:text-white font-black text-sm mb-1">Sin Novedades</h4>
+                                                            <p className="text-[10px] text-gray-400 dark:text-gray-500 italic">Todo transcurre con normalidad para {selectedSede}.</p>
                                                         </div>
                                                     );
                                                 }
@@ -1024,26 +1072,39 @@ export default function DashboardLayout({
                                                 return (
                                                     <div className="space-y-5">
                                                         {/* CRUCES DE HORARIO WARNING */}
-                                                        {dailySubTab === 'today' && todayConflicts.length > 0 && (filteredPAE.some(p => p.group && groupSedeMap[p.group] === selectedSede) || todayConflicts.some(c => groupSedeMap[c.group] === selectedSede)) && (
-                                                            <div className="space-y-2 mb-4">
-                                                                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest pl-1 flex items-center gap-1">
-                                                                    <AlertTriangle className="w-3 h-3" /> Alerta de Cruces (Semana Pasada)
-                                                                </p>
-                                                                {todayConflicts.filter(c => groupSedeMap[c.group] === selectedSede || !groupSedeMap[c.group]).map((c, idx) => (
-                                                                    <div key={`conflict-${idx}`} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-                                                                        <div className="bg-amber-100 text-amber-700 p-2 rounded-xl shrink-0">
-                                                                            <AlertTriangle className="w-5 h-5" />
+                                                        {(() => {
+                                                            const currentConflicts = dailySubTab === 'today' ? todayConflicts : tomorrowConflicts;
+                                                            if (currentConflicts.length === 0) return null;
+
+                                                            const filteredConflicts = currentConflicts.filter(c => groupSedeMap[c.group] === selectedSede || !groupSedeMap[c.group]);
+                                                            if (filteredConflicts.length === 0) return null;
+
+                                                            return (
+                                                                <div className="space-y-2 mb-4">
+                                                                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                                                        <AlertTriangle className="w-3 h-3" /> Alerta de Cruces (Semana Pasada)
+                                                                    </p>
+                                                                    {filteredConflicts.map((c, idx) => (
+                                                                        <div key={`conflict-${idx}`} className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30 flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+                                                                            <div className="bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 p-2 rounded-xl shrink-0">
+                                                                                <AlertTriangle className="w-5 h-5" />
+                                                                            </div>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                                    <p className="font-black text-amber-900 dark:text-amber-100 text-sm whitespace-nowrap">{c.group.replace('-2026', '')}</p>
+                                                                                    <span className="text-amber-600 bg-amber-100/50 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-tight">
+                                                                                        Bloque {c.block}: {getBlockTimeRange(c.block)}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <p className="text-[10px] font-bold text-amber-700/80 mt-1.5 leading-tight">
+                                                                                    Asignado hoy en el mismo bloque académico que la semana pasada. ({c.lastWeekTime})
+                                                                                </p>
+                                                                            </div>
                                                                         </div>
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <p className="font-black text-amber-900 text-sm">{c.group.replace('-2026', '')} <span className="text-amber-600 opacity-60 ml-2 text-[10px] font-bold uppercase">Bloque {c.block}</span></p>
-                                                                            <p className="text-[10px] font-bold text-amber-700 mt-1">
-                                                                                Hoy: {c.todayTime} vs Sem. Pasada: {c.lastWeekTime}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
+                                                                    ))}
+                                                                </div>
+                                                            );
+                                                        })()}
 
                                                         {/* PAE Absences */}
                                                         {filteredPAE.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length > 0 && (
@@ -1052,11 +1113,11 @@ export default function DashboardLayout({
                                                                     <X className="w-3 h-3" /> Grupos que NO ASISTEN
                                                                 </p>
                                                                 {filteredPAE.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').map((item, idx) => (
-                                                                    <div key={`abs-${idx}`} className="bg-red-50 p-4 rounded-2xl border border-red-100 flex items-start gap-4 shadow-sm">
+                                                                    <div key={`abs-${idx}`} className="bg-red-50 dark:bg-red-900/10 p-4 rounded-2xl border border-red-100 dark:border-red-900/20 flex items-start gap-4 shadow-sm">
                                                                         <div className="bg-red-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0">No Asiste</div>
                                                                         <div className="flex-1 min-w-0">
-                                                                            <p className="font-black text-red-900 text-sm">{item.group.replace('-2026', '')}</p>
-                                                                            {item.notes && <p className="text-[10px] font-medium text-red-600 italic mt-1">{item.notes}</p>}
+                                                                            <p className="font-black text-red-900 dark:text-red-200 text-sm">{item.group.replace('-2026', '')}</p>
+                                                                            {item.notes && <p className="text-[10px] font-medium text-red-600 dark:text-red-400 italic mt-1">{item.notes}</p>}
                                                                         </div>
                                                                     </div>
                                                                 ))}
@@ -1070,11 +1131,11 @@ export default function DashboardLayout({
                                                                     <Info className="w-4 h-4" /> Otras Novedades
                                                                 </p>
                                                                 {filteredPAE.filter(i => i.notes && i.time !== 'NO_ASISTE' && i.time_start !== 'NO_ASISTE').map((item, idx) => (
-                                                                    <div key={`note-${idx}`} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-4 shadow-sm">
+                                                                    <div key={`note-${idx}`} className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/20 flex items-start gap-4 shadow-sm">
                                                                         <div className="flex-1 min-w-0">
                                                                             <p className="text-sm leading-snug">
-                                                                                <span className="font-black text-gray-900 mr-2 text-base">{item.group.replace('-2026', '')}</span>
-                                                                                <span className="font-bold text-amber-700/90">{item.notes}</span>
+                                                                                <span className="font-black text-gray-900 dark:text-white mr-2 text-base">{item.group.replace('-2026', '')}</span>
+                                                                                <span className="font-bold text-amber-700/90 dark:text-amber-400/80">{item.notes}</span>
                                                                             </p>
                                                                         </div>
                                                                     </div>
@@ -1089,12 +1150,12 @@ export default function DashboardLayout({
                                                                     <School className="w-3 h-3" /> Agenda Institucional
                                                                 </p>
                                                                 {instEvents.map((item, idx) => (
-                                                                    <div key={`inst-${idx}`} className="bg-cyan-50/50 p-4 rounded-2xl border border-cyan-100 flex items-start gap-4 shadow-sm">
+                                                                    <div key={`inst-${idx}`} className="bg-cyan-50/50 dark:bg-cyan-900/10 p-4 rounded-2xl border border-cyan-100 dark:border-cyan-900/20 flex items-start gap-4 shadow-sm">
                                                                         <div className="bg-cyan-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0 min-w-[3.5rem] text-center">{item.hora || 'Todo el día'}</div>
                                                                         <div className="flex-1 min-w-0">
-                                                                            <p className="font-black text-sm text-cyan-900 mb-0.5">{item.titulo}</p>
-                                                                            <p className="text-[10px] font-bold text-cyan-600">{item.afectados}</p>
-                                                                            {item.descripcion && <p className="text-[10px] text-cyan-700/80 mt-1 leading-relaxed">{item.descripcion}</p>}
+                                                                            <p className="font-black text-sm text-cyan-900 dark:text-cyan-100 mb-0.5">{item.titulo}</p>
+                                                                            <p className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400">{item.afectados}</p>
+                                                                            {item.descripcion && <p className="text-[10px] text-cyan-700/80 dark:text-cyan-300/60 mt-1 leading-relaxed">{item.descripcion}</p>}
                                                                         </div>
                                                                     </div>
                                                                 ))}
@@ -1110,7 +1171,7 @@ export default function DashboardLayout({
                                 <div className="space-y-6">
                                     {/* Weekly Selector (Compacted) */}
                                     <div className="-mx-4 mb-4">
-                                        <div className="bg-white border-y border-gray-100 shadow-xl shadow-cyan-100/10 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                        <div className="bg-white dark:bg-gray-900 border-y border-gray-100 dark:border-gray-800 shadow-xl shadow-cyan-100/10 dark:shadow-none overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-500">
                                             <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 p-2 flex items-center justify-between">
                                                 <button onClick={() => changeNotifWeek(-1)} className="p-1 hover:bg-white/10 rounded-lg transition-colors text-white">
                                                     <ChevronLeftIcon className="w-4 h-4" />
@@ -1123,12 +1184,12 @@ export default function DashboardLayout({
                                                 </button>
                                             </div>
                                             <div className="p-3">
-                                                <div className="flex p-1 bg-gray-50/80 rounded-full border border-gray-100 shadow-inner">
+                                                <div className="flex p-1 bg-gray-50/80 dark:bg-gray-800/80 rounded-full border border-gray-100 dark:border-gray-700 shadow-inner">
                                                     {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((day, dIdx) => (
                                                         <button
                                                             key={day}
                                                             onClick={() => setSelectedDayInWeek(dIdx)}
-                                                            className={`flex-1 py-2 text-[10px] font-black rounded-full transition-all duration-500 ${selectedDayInWeek === dIdx ? 'bg-cyan-600 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-600'}`}
+                                                            className={`flex-1 py-1.5 text-[10px] font-black rounded-full transition-all duration-500 ${selectedDayInWeek === dIdx ? 'bg-cyan-600 text-white shadow-lg scale-105' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
                                                         >
                                                             {day}
                                                         </button>
@@ -1153,10 +1214,10 @@ export default function DashboardLayout({
 
                                                 if (inst.length === 0) {
                                                     return (
-                                                        <div className="bg-gray-50 p-10 rounded-3xl border border-gray-100 text-center mx-2">
-                                                            <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
-                                                            <h4 className="font-black text-gray-900 mb-1">Día sin Agenda</h4>
-                                                            <p className="text-[10px] text-gray-400 italic">No hay eventos institucionales programados para este día.</p>
+                                                        <div className="bg-gray-50 dark:bg-gray-800/50 p-10 rounded-3xl border border-gray-100 dark:border-gray-800 text-center mx-2">
+                                                            <CheckCircle className="w-10 h-10 text-emerald-400 dark:text-emerald-500 mx-auto mb-3" />
+                                                            <h4 className="font-black text-gray-900 dark:text-white mb-1">Día sin Agenda</h4>
+                                                            <p className="text-[10px] text-gray-400 dark:text-gray-500 italic">No hay eventos institucionales programados para este día.</p>
                                                         </div>
                                                     );
                                                 }
@@ -1165,12 +1226,12 @@ export default function DashboardLayout({
                                                     <div className="space-y-4">
                                                         {/* Institutional */}
                                                         {inst.map((item: any, i: number) => (
-                                                            <div key={`inst-w-${i}`} className="p-4 rounded-2xl border border-cyan-100 bg-cyan-50/50 flex items-start gap-4 shadow-sm">
+                                                            <div key={`inst-w-${i}`} className="p-4 rounded-2xl border border-cyan-100 dark:border-cyan-900/20 bg-cyan-50/50 dark:bg-cyan-900/10 flex items-start gap-4 shadow-sm">
                                                                 <div className="bg-cyan-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase shrink-0 min-w-[3.5rem] text-center">{item.hora || 'Todo el día'}</div>
                                                                 <div className="flex-1 min-w-0">
-                                                                    <p className="font-black text-sm text-cyan-900 mb-0.5">{item.titulo}</p>
-                                                                    <p className="text-[10px] font-bold text-cyan-600">{item.afectados}</p>
-                                                                    {item.descripcion && <p className="text-[10px] text-cyan-700/80 mt-1 leading-relaxed">{item.descripcion}</p>}
+                                                                    <p className="font-black text-sm text-cyan-900 dark:text-cyan-100 mb-0.5">{item.titulo}</p>
+                                                                    <p className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400">{item.afectados}</p>
+                                                                    {item.descripcion && <p className="text-[10px] text-cyan-700/80 dark:text-cyan-300/60 mt-1 leading-relaxed">{item.descripcion}</p>}
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -1184,14 +1245,14 @@ export default function DashboardLayout({
                         </div>
 
                         {/* Footer */}
-                        <div className="p-4 bg-gray-50 border-t border-gray-100 shrink-0">
+                        <div className="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 shrink-0">
                             <button
                                 onClick={() => {
                                     setNotifModalOpen(false);
                                     setSearchResult(null);
                                     setSelectedDate('');
                                 }}
-                                className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg hover:bg-black transition-all active:scale-[0.98]"
+                                className="w-full py-4 bg-gray-900 dark:bg-cyan-600 text-white rounded-2xl font-black shadow-lg hover:bg-black dark:hover:bg-cyan-500 transition-all active:scale-[0.98]"
                             >
                                 Entendido
                             </button>

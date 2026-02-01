@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { X, Calendar, Download, Clock, Users, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { generateSchedulePDF } from '../lib/pdf-generator';
 import { supabase } from '@/lib/supabase';
+import { getAcademicBlock } from '@/lib/schedule-utils';
 import { MiniCalendar } from './ui/MiniCalendar';
 import { useModalBack } from '@/hooks/useModalBack';
+import { AlertTriangle } from 'lucide-react';
 
 interface ScheduleItem {
     time: string;
@@ -11,6 +13,10 @@ interface ScheduleItem {
     studentCount?: number;
     sede?: string;
     notes?: string;
+    conflict?: {
+        block: number;
+        lastWeekTime: string;
+    } | null;
 }
 
 interface ScheduleModalProps {
@@ -25,7 +31,20 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
     const [showCalendar, setShowCalendar] = useState(false);
     const [showSedeDropdown, setShowSedeDropdown] = useState(false);
     const [selectedSede, setSelectedSede] = useState('Principal');
+    const [groupSedeMap, setGroupSedeMap] = useState<Record<string, string>>({});
     const [previewUrl, setPreviewUrl] = useState<URL | string | null>(null);
+
+    const getBlockTimeRange = (block: number) => {
+        const ranges: Record<number, string> = {
+            1: "07:00 - 07:55 AM",
+            2: "07:55 - 08:50 AM",
+            3: "09:10 - 10:05 AM",
+            4: "10:05 - 11:00 AM",
+            5: "11:10 - 12:05 PM",
+            6: "12:05 - 01:00 PM"
+        };
+        return ranges[block] || "";
+    };
 
     useModalBack(isOpen, onClose, 'schedule-modal');
 
@@ -119,15 +138,41 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                 };
 
                 // 3. Map everything together and sort by time
-                const sortedItems = rawItems.map((i: any) => ({
+                const items = rawItems.map((i: any) => ({
                     time: i.time || i.time_start,
                     group: i.group,
                     notes: i.notes,
                     studentCount: countsMap[i.group] || 0,
-                    sede: sedeMap[i.group] || 'Principal'
-                })).sort((a: any, b: any) => timeToMinutes(a.time) - timeToMinutes(b.time));
+                    sede: sedeMap[i.group] || 'Principal',
+                    conflict: null as any
+                }));
 
-                setSchedule(sortedItems);
+                // 4. Fetch Last Week for Conflicts
+                const lastWeekDate = new Date(dateStr);
+                lastWeekDate.setDate(lastWeekDate.getDate() - 7);
+                const lastWeekStr = lastWeekDate.toISOString().split('T')[0];
+
+                const { data: lwData } = await supabase.from('schedules').select('items').eq('date', lastWeekStr).maybeSingle();
+                if (lwData?.items) {
+                    const lwItems = lwData.items as any[];
+                    items.forEach((item: ScheduleItem) => {
+                        const currentBlock = getAcademicBlock(item.time);
+                        if (currentBlock) {
+                            const conflict = lwItems.find(lw =>
+                                lw.group === item.group &&
+                                getAcademicBlock(lw.time_start || lw.time) === currentBlock
+                            );
+                            if (conflict) {
+                                item.conflict = {
+                                    block: currentBlock,
+                                    lastWeekTime: conflict.time_start || conflict.time
+                                };
+                            }
+                        }
+                    });
+                }
+
+                setSchedule(items.sort((a: any, b: any) => timeToMinutes(a.time) - timeToMinutes(b.time)));
             } else {
                 setSchedule([]);
             }
@@ -254,18 +299,17 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                             )}
                         </div>
                     </div>
-
-                    {/* Calendar Collapse */}
-                    {showCalendar && (
-                        <div className="mt-4 animate-in slide-in-from-top-2 fade-in duration-200 flex justify-center bg-white dark:bg-gray-800 p-3 rounded-2xl shadow-xl">
-                            <MiniCalendar
-                                selectedDate={date}
-                                onSelectDate={(d) => { setDate(d); setShowCalendar(false); }}
-                                className="border-none p-0"
-                            />
-                        </div>
-                    )}
                 </div>
+
+                {/* Calendar Collapse */}
+                {showCalendar && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 z-[100] p-4 animate-in zoom-in-95 duration-200">
+                        <MiniCalendar
+                            selectedDate={date}
+                            onSelectDate={(d: string) => { setDate(d); setShowCalendar(false); }}
+                        />
+                    </div>
+                )}
 
                 {/* Body */}
                 <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/30 dark:bg-black/20">
@@ -313,6 +357,21 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                                                 <span className="text-[11px] font-bold text-amber-600/80 dark:text-amber-400/70 mt-1 italic leading-tight">
                                                                     {item.notes}
                                                                 </span>
+
+                                                                {/* CONFLICT WARNING */}
+                                                                {item.conflict && (
+                                                                    <div className="mt-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 p-2.5 rounded-xl flex items-start gap-2 animate-in fade-in slide-in-from-top-1">
+                                                                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+                                                                        <div className="flex flex-col">
+                                                                            <span className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-tight">
+                                                                                Bloque {item.conflict.block}: {getBlockTimeRange(item.conflict.block)}
+                                                                            </span>
+                                                                            <p className="text-[9px] font-bold text-amber-600/80 dark:text-amber-500/70 mt-0.5 leading-tight">
+                                                                                Asignado hoy en el mismo bloque académico que la semana pasada. ({item.conflict.lastWeekTime})
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     );
@@ -341,6 +400,21 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                                                     </span>
                                                                 )}
                                                             </div>
+
+                                                            {/* CONFLICT WARNING */}
+                                                            {item.conflict && (
+                                                                <div className="mt-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 p-2.5 rounded-xl flex items-start gap-2 animate-in fade-in slide-in-from-top-1">
+                                                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-tight">
+                                                                            Bloque {item.conflict.block}: {getBlockTimeRange(item.conflict.block)}
+                                                                        </span>
+                                                                        <p className="text-[9px] font-bold text-amber-600/80 dark:text-amber-500/70 mt-0.5 leading-tight">
+                                                                            Asignado hoy en el mismo bloque académico que la semana pasada. ({item.conflict.lastWeekTime})
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 );
@@ -375,9 +449,24 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                                                         )}
                                                                     </div>
                                                                     {item.notes && (
-                                                                        <span className="text-[11px] font-bold text-red-600/70 dark:text-red-400/80 mt-1 italic leading-tight">
+                                                                        <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500 mt-1 italic leading-tight">
                                                                             {item.notes}
                                                                         </span>
+                                                                    )}
+
+                                                                    {/* CONFLICT WARNING */}
+                                                                    {item.conflict && (
+                                                                        <div className="mt-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 p-2.5 rounded-xl flex items-start gap-2 animate-in fade-in slide-in-from-top-1">
+                                                                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+                                                                            <div className="flex flex-col">
+                                                                                <span className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-tight">
+                                                                                    Bloque {item.conflict.block}: {getBlockTimeRange(item.conflict.block)}
+                                                                                </span>
+                                                                                <p className="text-[9px] font-bold text-amber-600/80 dark:text-amber-500/70 mt-0.5 leading-tight">
+                                                                                    Asignado hoy en el mismo bloque académico que la semana pasada. ({item.conflict.lastWeekTime})
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -422,6 +511,13 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                 <div className="pt-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter">
                                     <p>Equipo directivo</p>
                                     <p>I.E Barro Blanco</p>
+                                </div>
+
+                                <div className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-700 text-[9px] text-gray-400 dark:text-gray-500 text-center space-y-1">
+                                    <p className="font-bold">www.barroblanco.edu.co | Correo Electrónico info@barroblanco.edu.co</p>
+                                    <p>Sede principal. Km. 4 Vía al aeropuerto Barrio Barro Blanco, Rionegro, Ant.</p>
+                                    <p>Tel. (604) 473 4386 Cel. 324 591 6685</p>
+                                    <p>Sede María Inmaculada, Vereda Abreu Cel. 324 591 6687</p>
                                 </div>
                             </div>
                         </>

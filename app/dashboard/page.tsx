@@ -653,25 +653,37 @@ export default function DashboardPage() {
               <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
                 <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
                 <div>
-                  <span className="font-bold text-gray-900 dark:text-white">Interfaz de Perfil:</span> Nueva gestión mas limpia con opciones biométricas en el menú.
+                  <span className="font-bold text-gray-900 dark:text-white">Detección de Cruces:</span> Alertas inteligentes en Novedades y Horario si el bloque coincide con la semana pasada.
                 </div>
               </li>
               <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
                 <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
                 <div>
-                  <span className="font-bold text-gray-900 dark:text-white">Modo Oscuro:</span> Corrección de contrastes y consistencia visual en todas las pantallas.
+                  <span className="font-bold text-gray-900 dark:text-white">Optimización PWA:</span> Soporte completo para instalación en móviles y persistencia de sesión.
                 </div>
               </li>
               <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
                 <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
                 <div>
-                  <span className="font-bold text-gray-900 dark:text-white">PWA Móvil:</span> Opción de "Instalar App" integrada para un acceso más rápido.
+                  <span className="font-bold text-gray-900 dark:text-white">Footer Institucional:</span> Información de contacto y address integrada en PDF y vistas.
                 </div>
               </li>
               <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
                 <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
                 <div>
-                  <span className="font-bold text-gray-900 dark:text-white">Horario Inteligente:</span> Nueva detección de cruces por bloque académico.
+                  <span className="font-bold text-gray-900 dark:text-white">Modo Oscuro Pro:</span> Consistencia visual y adaptativa en todas las vistas del sistema.
+                </div>
+              </li>
+              <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                <div>
+                  <span className="font-bold text-gray-900 dark:text-white">Reportes Premium:</span> Generación de reportes PDF y Excel con filtros avanzados por sede.
+                </div>
+              </li>
+              <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                <div>
+                  <span className="font-bold text-gray-900 dark:text-white">Centro de Novedades:</span> Gestión centralizada de eventos institucionales y faltas alimentarias.
                 </div>
               </li>
             </ul>
