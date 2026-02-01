@@ -11,6 +11,15 @@
 
 Asimismo, el autor manifiesta que cualquier versión posterior, mejora incremental o software derivado desarrollado de forma independiente y con recursos propios fuera del marco institucional, constituirá una propiedad intelectual distinta y autónoma."
 
+En el marco del presente desarrollo, el autor ha realizado la siguiente contribución:
+
+- Diseño y desarrollo de la interfaz de usuario
+- Implementación de la lógica de negocio
+- Integración de las funcionalidades principales
+- Pruebas y depuración del software
+- Documentación técnica
+- Mantenimiento y actualizaciones
+
 ---
 
 ## Referencia Legal

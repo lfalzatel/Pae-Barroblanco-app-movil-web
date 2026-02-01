@@ -397,6 +397,7 @@ export default function DashboardLayout({
 
     if (usuario?.rol === 'admin') {
         navItems.push({ href: '/dashboard/admin', label: 'Admin', icon: Settings });
+        navItems.push({ href: '/dashboard/auditoria', label: 'Auditoría', icon: FileText });
     }
 
     const touchStartRef = useRef<{ x: number, y: number } | null>(null);
