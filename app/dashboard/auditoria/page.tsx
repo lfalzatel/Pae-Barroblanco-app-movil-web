@@ -167,30 +167,33 @@ export default function AuditoriaPage() {
 
             if (error) throw error;
 
-            // Enhance with user data (Manual Join for performance/simplicity)
-            const enhancedLogs = await Promise.all((data || []).map(async (log) => {
-                // Return immediately with default values if no user ID
-                if (!log.changed_by) {
-                    return {
-                        ...log,
-                        usuario_nombre: 'Sistema',
-                        usuario_email: 'Automático'
-                    };
-                }
+            // Enhance with user data (Batch fetch for performance and preventing 406 errors)
+            const uniqueUserIds = Array.from(new Set((data || []).map(log => log.changed_by).filter(Boolean)));
 
-                // Try fetch generic user info from public profile table (usuarios)
-                const { data: uData } = await supabase
+            let userMap: Record<string, { nombre: string; email: string }> = {};
+
+            if (uniqueUserIds.length > 0) {
+                const { data: usersData } = await supabase
                     .from('usuarios')
-                    .select('nombre, email')
-                    .eq('id', log.changed_by)
-                    .single();
+                    .select('id, nombre, email')
+                    .in('id', uniqueUserIds);
+
+                if (usersData) {
+                    usersData.forEach(u => {
+                        userMap[u.id] = { nombre: u.nombre, email: u.email };
+                    });
+                }
+            }
+
+            const enhancedLogs = (data || []).map((log) => {
+                const user = log.changed_by ? userMap[log.changed_by] : null;
 
                 return {
                     ...log,
-                    usuario_nombre: uData?.nombre || 'Usuario Eliminado',
-                    usuario_email: uData?.email || 'N/A'
+                    usuario_nombre: user?.nombre || (log.changed_by ? 'Usuario Eliminado' : 'Sistema'),
+                    usuario_email: user?.email || (log.changed_by ? 'N/A' : 'Automático')
                 };
-            }));
+            });
 
             setLogs(enhancedLogs);
             setTotalPages(Math.ceil((count || 0) / ITEMS_PER_PAGE));
