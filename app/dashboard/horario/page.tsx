@@ -834,7 +834,7 @@ export default function HorarioPage() {
                 editingSlot && (
                     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setEditingSlot(null)}></div>
-                        <div className="bg-white rounded-[3rem] w-full max-w-xl relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl">
+                        <div className="bg-white dark:bg-gray-800 rounded-[3rem] w-full max-w-xl relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl">
                             {/* Header Premium */}
                             <div className="p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden">
                                 <div className="relative z-10">
@@ -912,7 +912,7 @@ export default function HorarioPage() {
                                                                 return next;
                                                             });
                                                         }}
-                                                        className="w-full appearance-none bg-white border border-gray-100 rounded-2xl py-3 pl-10 pr-10 text-[10px] lg:text-xs font-black uppercase tracking-widest cursor-pointer focus:ring-2 focus:ring-cyan-500/10 transition-all text-cyan-600 shadow-sm"
+                                                        className="w-full appearance-none bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 rounded-2xl py-3 pl-10 pr-10 text-[10px] lg:text-xs font-black uppercase tracking-widest cursor-pointer focus:ring-2 focus:ring-cyan-500/10 transition-all text-cyan-600 dark:text-cyan-400 shadow-sm"
                                                     >
                                                         {timeSlots.map(time => (
                                                             <option key={time} value={time}>
@@ -937,7 +937,7 @@ export default function HorarioPage() {
                                                             return next;
                                                         });
                                                     }}
-                                                    className="w-full p-4 bg-white border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-cyan-500/10 transition-all shadow-sm"
+                                                    className="w-full p-4 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-cyan-500/10 transition-all shadow-sm text-gray-900 dark:text-white"
                                                 />
                                             </div>
                                         </div>
@@ -971,7 +971,7 @@ export default function HorarioPage() {
                 showEventModal && (
                     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowEventModal(false)}></div>
-                        <div className="bg-white rounded-3xl md:rounded-[3rem] w-full max-w-lg relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl max-h-[90vh]">
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl md:rounded-[3rem] w-full max-w-lg relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl max-h-[90vh]">
                             <div className="p-5 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden shrink-0">
                                 <div className="relative z-10">
                                     <h3 className="text-xl md:text-2xl font-black">{editingEvent ? 'Editar Actividad' : 'Nueva Actividad'}</h3>
