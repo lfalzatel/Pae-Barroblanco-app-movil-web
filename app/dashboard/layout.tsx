@@ -789,7 +789,7 @@ export default function DashboardLayout({
                         {/* User Capsule Trigger */}
                         <button
                             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                            className="flex items-center bg-white/20 backdrop-blur-md rounded-full pl-1 pr-3 py-1 gap-2 border border-white/20 active:scale-95 transition-transform"
+                            className="flex items-center bg-white/20 backdrop-blur-md rounded-full pl-1.5 pr-3.5 py-1.5 gap-2 border border-white/20 active:scale-95 transition-transform"
                         >
                             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center overflow-hidden border border-white/40 shadow-sm">
                                 {usuario.foto ? (
@@ -912,7 +912,7 @@ export default function DashboardLayout({
                                         </p>
                                     </div>
                                 </div>
-                                <button onClick={() => setNotifModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                <button onClick={() => setNotifModalOpen(false)} className="p-3.5 -m-2 hover:bg-white/10 rounded-full transition-colors">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
@@ -1071,40 +1071,6 @@ export default function DashboardLayout({
 
                                                 return (
                                                     <div className="space-y-5">
-                                                        {/* CRUCES DE HORARIO WARNING */}
-                                                        {(() => {
-                                                            const currentConflicts = dailySubTab === 'today' ? todayConflicts : tomorrowConflicts;
-                                                            if (currentConflicts.length === 0) return null;
-
-                                                            const filteredConflicts = currentConflicts.filter(c => groupSedeMap[c.group] === selectedSede || !groupSedeMap[c.group]);
-                                                            if (filteredConflicts.length === 0) return null;
-
-                                                            return (
-                                                                <div className="space-y-2 mb-4">
-                                                                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest pl-1 flex items-center gap-1">
-                                                                        <AlertTriangle className="w-3 h-3" /> Alerta de Cruces (Semana Pasada)
-                                                                    </p>
-                                                                    {filteredConflicts.map((c, idx) => (
-                                                                        <div key={`conflict-${idx}`} className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30 flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-                                                                            <div className="bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 p-2 rounded-xl shrink-0">
-                                                                                <AlertTriangle className="w-5 h-5" />
-                                                                            </div>
-                                                                            <div className="flex-1 min-w-0">
-                                                                                <div className="flex items-center gap-2 flex-wrap">
-                                                                                    <p className="font-black text-amber-900 dark:text-amber-100 text-sm whitespace-nowrap">{c.group.replace('-2026', '')}</p>
-                                                                                    <span className="text-amber-600 bg-amber-100/50 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-tight">
-                                                                                        Bloque {c.block}: {getBlockTimeRange(c.block)}
-                                                                                    </span>
-                                                                                </div>
-                                                                                <p className="text-[10px] font-bold text-amber-700/80 mt-1.5 leading-tight">
-                                                                                    Asignado hoy en el mismo bloque académico que la semana pasada. ({c.lastWeekTime})
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            );
-                                                        })()}
 
                                                         {/* PAE Absences */}
                                                         {filteredPAE.filter(i => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length > 0 && (
@@ -1161,6 +1127,41 @@ export default function DashboardLayout({
                                                                 ))}
                                                             </div>
                                                         )}
+
+                                                        {/* CRUCES DE HORARIO WARNING (Relocated) */}
+                                                        {(() => {
+                                                            const currentConflicts = dailySubTab === 'today' ? todayConflicts : tomorrowConflicts;
+                                                            if (currentConflicts.length === 0) return null;
+
+                                                            const filteredConflicts = currentConflicts.filter(c => groupSedeMap[c.group] === selectedSede || !groupSedeMap[c.group]);
+                                                            if (filteredConflicts.length === 0) return null;
+
+                                                            return (
+                                                                <div className="space-y-2 mt-2">
+                                                                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                                                        <AlertTriangle className="w-3 h-3" /> Alerta de Cruces (Semana Pasada)
+                                                                    </p>
+                                                                    {filteredConflicts.map((c, idx) => (
+                                                                        <div key={`conflict-${idx}`} className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30 flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+                                                                            <div className="bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 p-2 rounded-xl shrink-0">
+                                                                                <AlertTriangle className="w-5 h-5" />
+                                                                            </div>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                                    <p className="font-black text-amber-900 dark:text-amber-100 text-sm whitespace-nowrap">{c.group.replace('-2026', '')}</p>
+                                                                                    <span className="text-amber-600 bg-amber-100/50 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-tight">
+                                                                                        Bloque {c.block}: {getBlockTimeRange(c.block)}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <p className="text-[10px] font-bold text-amber-700/80 mt-1.5 leading-tight">
+                                                                                    Asignado hoy en el mismo bloque académico que la semana pasada. ({c.lastWeekTime})
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 );
                                             })()}
@@ -1252,7 +1253,7 @@ export default function DashboardLayout({
                                     setSearchResult(null);
                                     setSelectedDate('');
                                 }}
-                                className="w-full py-4 bg-gray-900 dark:bg-cyan-600 text-white rounded-2xl font-black shadow-lg hover:bg-black dark:hover:bg-cyan-500 transition-all active:scale-[0.98]"
+                                className="w-full py-4.5 bg-gray-900 dark:bg-cyan-600 text-white rounded-2xl font-black shadow-lg hover:bg-black dark:hover:bg-cyan-500 transition-all active:scale-[0.98] min-h-[56px]"
                             >
                                 Entendido
                             </button>

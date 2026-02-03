@@ -243,7 +243,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2.5 hover:bg-white/10 rounded-full transition-all duration-200 text-white/70 hover:text-white"
+                            className="p-3.5 -m-2 hover:bg-white/10 rounded-full transition-all duration-200 text-white/70 hover:text-white"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -543,7 +543,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
                         <button
                             onClick={onClose}
-                            className="flex-1 px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-2xl font-black text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all shadow-sm active:scale-95"
+                            className="flex-1 px-4 py-3.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-2xl font-black text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all shadow-sm active:scale-95 min-h-[48px]"
                         >
                             Cerrar
                         </button>
