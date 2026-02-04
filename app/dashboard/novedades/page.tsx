@@ -426,73 +426,76 @@ export default function NovedadesPage() {
                             </div>
 
                             {/* Form with overflow-y-auto */}
-                            <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Para Cuándo Aplica</label>
-                                        <div className="relative">
-                                            <Calendar className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 pointer-events-none" />
-                                            <input
-                                                type="date"
-                                                required
-                                                value={formData.fecha_novedad}
-                                                onChange={(e) => setFormData({ ...formData, fecha_novedad: e.target.value })}
-                                                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                            />
-                                        </div>
+                            <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-5 overflow-y-auto custom-scrollbar">
+
+                                {/* Row 1: Date (Full Width) */}
+                                <div className="space-y-2">
+                                    <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Para Cuándo Aplica</label>
+                                    <div className="relative">
+                                        <Calendar className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 pointer-events-none" />
+                                        <input
+                                            type="date"
+                                            required
+                                            value={formData.fecha_novedad}
+                                            onChange={(e) => setFormData({ ...formData, fecha_novedad: e.target.value })}
+                                            className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        />
                                     </div>
+                                </div>
+
+                                {/* Row 2: Type & Sede (2 Cols Mobile) */}
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tipo de Novedad</label>
+                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tipo</label>
                                         <div className="relative">
                                             <select
                                                 value={formData.tipo}
                                                 onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 appearance-none shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                                className="w-full px-3 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 appearance-none shadow-inner text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                             >
-                                                <option value="reduccion_cupos">🔴 Reducción de Cupos</option>
-                                                <option value="aumento_cupos">🟢 Aumento de Cupos</option>
-                                                <option value="no_asiste_grupo">🚫 No Asiste el Grupo</option>
-                                                <option value="cambio_horario">⏳ Cambio de Horario</option>
+                                                <option value="reduccion_cupos">🔴 Reducción</option>
+                                                <option value="aumento_cupos">🟢 Aumento</option>
+                                                <option value="no_asiste_grupo">🚫 No Asiste</option>
+                                                <option value="cambio_horario">⏳ Horario</option>
                                                 <option value="otro">❓ Otro</option>
                                             </select>
-                                            <div className="absolute right-4 top-3.5 pointer-events-none">
-                                                <ArrowRight className="w-5 h-5 text-gray-400 rotate-90" />
-                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Sede</label>
                                         <select
                                             value={formData.sede}
                                             onChange={(e) => setFormData({ ...formData, sede: e.target.value })}
-                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 shadow-inner text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                         >
                                             <option value="Principal">Principal</option>
-                                            <option value="Maria Inmaculada">María Inmaculada</option>
+                                            <option value="Maria Inmaculada">Inmaculada</option>
                                             <option value="Primaria">Primaria</option>
                                         </select>
                                     </div>
+                                </div>
+
+                                {/* Row 3: Group & Quantity (2 Cols Mobile) */}
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Grupo Afectado</label>
+                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Grupo</label>
                                         <input
                                             placeholder="Opcional"
                                             value={formData.grupo}
                                             onChange={(e) => setFormData({ ...formData, grupo: e.target.value })}
-                                            className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner text-center dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Cantidad (+/-)</label>
+                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Cupos (+/-)</label>
                                         <input
                                             type="number"
                                             placeholder="0"
                                             min="0"
                                             value={formData.cupos_afectados}
                                             onChange={(e) => setFormData({ ...formData, cupos_afectados: parseInt(e.target.value) || 0 })}
-                                            className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner text-center dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                         />
                                     </div>
                                 </div>
@@ -503,7 +506,7 @@ export default function NovedadesPage() {
                                         required
                                         value={formData.razon}
                                         onChange={(e) => setFormData({ ...formData, razon: e.target.value })}
-                                        placeholder="Describe el motivo del cambio para que la Secretaría lo valide..."
+                                        placeholder="Describe el motivo del cambio..."
                                         rows={3}
                                         className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                                     />
