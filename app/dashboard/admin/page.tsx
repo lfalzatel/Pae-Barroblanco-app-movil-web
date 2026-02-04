@@ -122,12 +122,30 @@ export default function AdminPage() {
     const [renameSedeFilter, setRenameSedeFilter] = useState('Principal');
     const [moveSedeFilter, setMoveSedeFilter] = useState('Principal');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'move' | 'rename' | 'status' | 'backup' | 'sede'>('move');
+    const [activeTab, setActiveTab] = useState<'move' | 'rename' | 'status' | 'backup' | 'sede' | 'cleanup'>('move');
     const [uploading, setUploading] = useState(false);
     const [inactivateAll, setInactivateAll] = useState(false);
     const [importProgress, setImportProgress] = useState(0);
     const [importLog, setImportLog] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const OFFICIAL_GROUPS = [
+        '010100', '010201', '010400', '020100', '020201', '020400', '024000',
+        '030100', '030201', '030400', '040100', '040201', '040300', '044000',
+        '050100', '050201', '050300', '050400', '060100', '060200', '060300',
+        '060400', '064000', '070100', '070200', '070300', '070400', '080100',
+        '080200', '080400', '090100', '090200', '090400', '100100', '100200',
+        '110100', '110200', '110400', 'TS0100', 'TS0201', 'TS0400'
+    ];
+
+    // Incluir versiones cortas (ej: 601) para proteger grupos existentes
+    const VALID_GROUPS = [
+        ...OFFICIAL_GROUPS,
+        ...OFFICIAL_GROUPS.map(g => {
+            const num = parseInt(g);
+            return isNaN(num) ? g : num.toString();
+        })
+    ];
 
     const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -571,6 +589,41 @@ export default function AdminPage() {
         );
     };
 
+    const handleCleanupOrphans = () => {
+        const obsoleteGroups = Array.from(new Set(estudiantes.map(e => e.grupo)))
+            .filter(g => !VALID_GROUPS.includes(g));
+
+        if (obsoleteGroups.length === 0) {
+            showToast('No se encontraron grupos obsoletos', 'info');
+            return;
+        }
+
+        requestConfirm(
+            'Purga de Grupos Obsoletos',
+            `Se han detectado estudiantes en ${obsoleteGroups.length} grupos que no están en la lista oficial (ej: ${obsoleteGroups.slice(0, 3).join(', ')}...). ¿Deseas ELIMINAR permanentemente a estos estudiantes?`,
+            async () => {
+                try {
+                    setLoading(true);
+                    const { error } = await supabase
+                        .from('estudiantes')
+                        .delete()
+                        .in('grupo', obsoleteGroups);
+
+                    if (error) throw error;
+
+                    showToast('¡Limpieza exitosa!', 'success');
+                    fetchData();
+                } catch (error) {
+                    console.error('Error in cleanup:', error);
+                    showToast('Error al procesar la limpieza', 'error');
+                } finally {
+                    setLoading(false);
+                }
+            },
+            'danger'
+        );
+    };
+
     const filteredEstudiantes = estudiantes.filter(e =>
         e.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
         e.matricula.includes(searchQuery) ||
@@ -641,6 +694,7 @@ export default function AdminPage() {
                                 {activeTab === 'sede' && <MapPin className="w-6 h-6" />}
                                 {activeTab === 'status' && <ShieldAlert className="w-6 h-6" />}
                                 {activeTab === 'backup' && <Database className="w-6 h-6" />}
+                                {activeTab === 'cleanup' && <Settings className="w-6 h-6" />}
                             </div>
                             <div className="text-left">
                                 <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider mb-0.5">Herramienta Activa</p>
@@ -650,6 +704,7 @@ export default function AdminPage() {
                                     {activeTab === 'sede' && 'Cambiar Sede'}
                                     {activeTab === 'status' && 'Gestión de Estados'}
                                     {activeTab === 'backup' && 'Respaldos'}
+                                    {activeTab === 'cleanup' && 'Limpieza'}
                                 </p>
                             </div>
                         </div>
@@ -669,6 +724,7 @@ export default function AdminPage() {
                                     { id: 'sede', label: 'Cambiar Sede', icon: MapPin, color: 'text-orange-600', bg: 'bg-orange-50' },
                                     { id: 'status', label: 'Gestión de Estados', icon: ShieldAlert, color: 'text-red-600', bg: 'bg-red-50' },
                                     { id: 'backup', label: 'Respaldos', icon: Database, color: 'text-green-600', bg: 'bg-green-50' },
+                                    { id: 'cleanup', label: 'Limpieza', icon: Settings, color: 'text-amber-600', bg: 'bg-amber-50' },
                                 ].map((tool) => (
                                     <button
                                         key={tool.id}
@@ -730,6 +786,13 @@ export default function AdminPage() {
                     >
                         <Database className="w-4 h-4" />
                         Respaldo
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('cleanup')}
+                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'cleanup' ? 'bg-cyan-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                    >
+                        <Settings className="w-4 h-4" />
+                        Limpieza
                     </button>
                 </div>
 
@@ -1005,6 +1068,51 @@ export default function AdminPage() {
                                         <div className="text-left">
                                             <div className="text-sm">{uploading ? 'PROCESANDO...' : 'CARGAR BASE DE DATOS'}</div>
                                             <div className="text-[10px] opacity-70 font-normal">Importar desde Excel (.xlsx)</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </>
+                        )}
+
+                        {activeTab === 'cleanup' && (
+                            <>
+                                <h2 className="text-lg font-bold mb-2 flex items-center gap-2">
+                                    <Settings className="w-5 h-5" />
+                                    Limpieza de Datos Obsoletos
+                                </h2>
+                                <p className="text-cyan-100 text-sm mb-6">Esta herramienta elimina estudiantes que pertenecen a grupos que NO están en la lista oficial del 30 de enero de 2026.</p>
+
+                                <div className="bg-red-500/20 border border-red-500/30 p-4 rounded-xl mb-6">
+                                    <div className="flex items-start gap-3">
+                                        <AlertTriangle className="w-6 h-6 text-red-100 mt-1 shrink-0" />
+                                        <div>
+                                            <p className="font-bold text-red-50">¡Advertencia!</p>
+                                            <p className="text-xs text-red-100/80">
+                                                Se eliminarán permanentemente los estudiantes de grupos no válidos (Ej. grupos del 2025 o duplicados con nombres incorrectos).
+                                                Asegúrate de haber generado un respaldo primero.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-4">
+                                    <div className="bg-cyan-700/30 p-4 rounded-xl">
+                                        <p className="text-xs font-bold uppercase mb-2 opacity-80 underline decoration-cyan-400">Grupos que se conservarán (41):</p>
+                                        <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto no-scrollbar">
+                                            {VALID_GROUPS.map(g => (
+                                                <span key={g} className="text-[9px] bg-cyan-700/50 px-2 py-0.5 rounded-full font-mono">{g}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={handleCleanupOrphans}
+                                        className="w-full bg-red-600 hover:bg-red-500 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-red-900/40 active:scale-95"
+                                    >
+                                        <AlertTriangle className="w-6 h-6" />
+                                        <div className="text-left">
+                                            <div className="text-sm uppercase tracking-tight">Iniciar Purga de Grupos Obsoletos</div>
+                                            <div className="text-[10px] opacity-70 font-normal">Identifica y elimina estudiantes fuera de lista</div>
                                         </div>
                                     </button>
                                 </div>

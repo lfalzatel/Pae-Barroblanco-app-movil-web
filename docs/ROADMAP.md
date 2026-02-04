@@ -11,7 +11,7 @@
 
 ## 2. PWA & Experiencia Móvil
 - [ ] **Optimización Service Worker**: Implementar caché robusto para funcionamiento offline básico. <!-- id: 10 -->
-- [ ] **Mobile Touch**: Mejorar áreas táctiles en botones pequeños. <!-- id: 12 -->
+- [x] **Mobile Touch**: Mejorar áreas táctiles en botones pequeños. <!-- id: 12 -->
 
 ## 3. Funcionalidad y Datos
 - [ ] **Validación de Formularios**: Mejorar validación en "Crear Estudiante". <!-- id: 30 -->

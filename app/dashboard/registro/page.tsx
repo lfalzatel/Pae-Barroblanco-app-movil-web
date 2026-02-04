@@ -276,7 +276,8 @@ function RegistroContent() {
       try {
         const { year, month } = calendarView;
         const startOfMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
-        const endOfMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-31`;
+        const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+        const endOfMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-${lastDayOfMonth.toString().padStart(2, '0')}`;
 
         const sedeDbName = sedeSeleccionada.id === 'principal' ? 'Principal' :
           sedeSeleccionada.id === 'primaria' ? 'Primaria' :

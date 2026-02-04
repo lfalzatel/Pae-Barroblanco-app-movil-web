@@ -129,21 +129,22 @@ export default function ReportesPage() {
         let isSpecificDate = false;
 
         // Calcular rango de fechas
-        if (periodo === 'semana') {
-          const d = new Date(now.getTime() - offset);
-          const day = d.getDay();
-          const first = d.getDate() - (day === 0 ? 6 : day - 1);
-          const firstDay = new Date(d.setDate(first));
-          startDate = new Date(firstDay.getTime()).toISOString().split('T')[0];
+        const refDate = new Date(selectedDate + 'T12:00:00'); // Usar selectedDate como referencia
 
-          const lastDay = new Date(firstDay.getTime());
+        if (periodo === 'semana') {
+          const day = refDate.getDay();
+          const first = refDate.getDate() - (day === 0 ? 6 : day - 1);
+          const firstDay = new Date(new Date(refDate).setDate(first));
+          startDate = firstDay.toISOString().split('T')[0];
+
+          const lastDay = new Date(firstDay);
           lastDay.setDate(firstDay.getDate() + 6);
-          endDate = new Date(lastDay.getTime()).toISOString().split('T')[0];
+          endDate = lastDay.toISOString().split('T')[0];
         } else if (periodo === 'mes') {
-          const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+          const firstDay = new Date(refDate.getFullYear(), refDate.getMonth(), 1);
           startDate = new Date(firstDay.getTime() - firstDay.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
-          const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          const lastDay = new Date(refDate.getFullYear(), refDate.getMonth() + 1, 0);
           endDate = new Date(lastDay.getTime() - lastDay.getTimezoneOffset() * 60000).toISOString().split('T')[0];
         } else if (periodo === 'fecha') {
           startDate = selectedDate;
@@ -151,7 +152,9 @@ export default function ReportesPage() {
           isSpecificDate = true;
         } else {
           // Hoy
-          startDate = new Date(now.getTime() - offset).toISOString().split('T')[0];
+          const today = new Date();
+          const tOffset = today.getTimezoneOffset() * 60000;
+          startDate = new Date(today.getTime() - tOffset).toISOString().split('T')[0];
           endDate = startDate;
           isSpecificDate = true;
         }
@@ -371,6 +374,46 @@ export default function ReportesPage() {
     }
   }, [usuario, periodo, sedeFilter, grupoFilter, selectedDate]);
 
+  const updateUrl = (params: Record<string, string | null>, method: 'push' | 'replace' = 'replace') => {
+    const searchParams = new URLSearchParams(window.location.search);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === null) searchParams.delete(key);
+      else searchParams.set(key, value);
+    });
+    router[method](`?${searchParams.toString()}`);
+  };
+
+  const handleMoveWeek = (offset: number) => {
+    const d = new Date(selectedDate + 'T12:00:00');
+    d.setDate(d.getDate() + (offset * 7));
+    const newDate = d.toISOString().split('T')[0];
+    setSelectedDate(newDate);
+  };
+
+  const handleMoveMonth = (offset: number) => {
+    const d = new Date(selectedDate + 'T12:00:00');
+    d.setMonth(d.getMonth() + offset);
+    const newDate = d.toISOString().split('T')[0];
+    setSelectedDate(newDate);
+  };
+
+  const getWeekRangeLabel = (dateStr: string) => {
+    const d = new Date(dateStr + 'T12:00:00');
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+
+    const mon = new Date(new Date(d).setDate(diff));
+    const sun = new Date(new Date(mon).setDate(mon.getDate() + 6));
+
+    const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+    return `${mon.toLocaleDateString('es-CO', opts)} - ${sun.toLocaleDateString('es-CO', opts)}`.toUpperCase().replace(/\./g, '');
+  };
+
+  const getMonthLabel = (dateStr: string) => {
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase();
+  };
+
   const handleExportExcel = async () => {
     try {
       // Dynamic import for XLSX
@@ -387,13 +430,11 @@ export default function ReportesPage() {
         const offset = today.getTimezoneOffset() * 60000;
         reportDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
       } else if (periodo === 'semana') {
-        periodoLabel = 'Esta Semana';
-        const offset = today.getTimezoneOffset() * 60000;
-        reportDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
+        periodoLabel = `Semana del ${getWeekRangeLabel(selectedDate)}`;
+        reportDate = selectedDate;
       } else if (periodo === 'mes') {
-        periodoLabel = 'Este Mes';
-        const offset = today.getTimezoneOffset() * 60000;
-        reportDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
+        periodoLabel = getMonthLabel(selectedDate);
+        reportDate = selectedDate;
       } else if (periodo === 'fecha') {
         periodoLabel = `Fecha específica: ${selectedDate}`;
         reportDate = selectedDate;
@@ -815,7 +856,13 @@ export default function ReportesPage() {
       // Info de Filtros
       doc.setFontSize(11);
       doc.setTextColor(0);
-      doc.text(`Periodo: ${periodo === 'fecha' ? selectedDate : periodo.toUpperCase()}`, 14, 45);
+      let periodText = "";
+      if (periodo === 'fecha') periodText = selectedDate;
+      else if (periodo === 'semana') periodText = getWeekRangeLabel(selectedDate);
+      else if (periodo === 'mes') periodText = getMonthLabel(selectedDate);
+      else periodText = "Hoy";
+
+      doc.text(`Periodo: ${periodText}`, 14, 45);
       doc.text(`Sede: ${sedeFilter === 'todas' ? 'Todas las Sedes' : sedeFilter.toUpperCase()}`, 14, 51);
       doc.text(`Grupo: ${grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter}`, 14, 57);
 
@@ -1092,6 +1139,36 @@ export default function ReportesPage() {
               }`}
           />
         </div>
+
+        {/* Navegación de Período Dinámica (Solo Semana y Mes) */}
+        {(periodo === 'semana' || periodo === 'mes') && (
+          <div className="flex justify-center mb-4 transition-all animate-in slide-in-from-top-2">
+            <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 p-0.5 rounded-[2rem] flex items-center shadow-lg shadow-cyan-100 border border-cyan-500/30">
+              <button
+                onClick={() => periodo === 'semana' ? handleMoveWeek(-1) : handleMoveMonth(-1)}
+                className="p-2 hover:bg-white/10 rounded-full text-white transition-colors active:scale-90"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              <div className="px-6 text-center min-w-[180px]">
+                <p className="text-[10px] font-black text-white tracking-widest uppercase mb-0.5 opacity-80">
+                  {periodo === 'semana' ? 'Viendo Semana' : 'Viendo Mes'}
+                </p>
+                <div className="text-[13px] font-black text-white tracking-tight flex flex-col items-center">
+                  <span>{periodo === 'semana' ? getWeekRangeLabel(selectedDate) : getMonthLabel(selectedDate)}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => periodo === 'semana' ? handleMoveWeek(1) : handleMoveMonth(1)}
+                className="p-2 hover:bg-white/10 rounded-full text-white transition-colors active:scale-90"
+              >
+                <ChevronLeft className="w-5 h-5 rotate-180" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Filters Container (Estilo Card Gestión) */}
         <div className="bg-white p-3 rounded-[2rem] shadow-xl shadow-cyan-900/5 border border-gray-100 mb-8 space-y-3 dark:bg-gray-800 dark:border-gray-700">
