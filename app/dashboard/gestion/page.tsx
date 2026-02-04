@@ -482,9 +482,10 @@ export default function GestionPage() {
     setDocentes(prev => prev.map(d => d.id === docenteId ? { ...d, rol: newRol } : d));
 
     const { error } = await supabase
-      .from('perfiles_publicos')
-      .update({ rol: newRol })
-      .eq('id', docenteId);
+      .rpc('update_user_role', {
+        target_user_id: docenteId,
+        new_role: newRol
+      });
 
     if (error) {
       console.error('Error updating role:', error);
@@ -1536,14 +1537,14 @@ export default function GestionPage() {
                         key={role.id}
                         onClick={() => handleConfirmUpdateRol(role.id)}
                         disabled={modificandoRol}
-                        className={`flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 group ${docenteParaRol.rol === role.id ? 'bg-gray-900 border-gray-900 text-white dark:bg-black dark:border-black' : 'bg-gray-50 border-gray-100 hover:border-cyan-200 hover:bg-white dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600'}`}
+                        className={`flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 group ${docenteParaRol.rol === role.id ? 'bg-gray-900 border-gray-900 text-white dark:bg-black dark:border-black' : 'bg-gray-50 border-gray-100 hover:border-cyan-200 hover:bg-white text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-200'}`}
                       >
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${docenteParaRol.rol === role.id ? 'bg-white/20' : role.bg + ' ' + role.color}`}>
                           {role.id === 'admin' ? <Shield className="w-5 h-5" /> : role.id === 'coordinador_pae' ? <Clock className="w-5 h-5" /> : <User className="w-5 h-5" />}
                         </div>
                         <div className="text-left">
                           <p className="text-xs font-black uppercase tracking-tight leading-none mb-1">{role.label}</p>
-                          <p className={`text-[9px] font-bold uppercase tracking-widest opacity-60 ${docenteParaRol.rol === role.id ? 'text-white' : ''}`}>{role.desc}</p>
+                          <p className={`text-[9px] font-bold uppercase tracking-widest opacity-60 ${docenteParaRol.rol === role.id ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>{role.desc}</p>
                         </div>
                       </button>
                     ))}
