@@ -401,9 +401,9 @@ export default function NovedadesPage() {
 
                 {/* MODAL FORM */}
                 {showModal && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                         {/* Added max-h and flex-col for mobile scrolling */}
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20 flex flex-col max-h-[90vh]">
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
 
                             {/* Header Colored */}
                             <div className="p-6 border-b border-cyan-500/30 flex items-center justify-between shrink-0 bg-gradient-to-r from-cyan-600 to-cyan-700">
