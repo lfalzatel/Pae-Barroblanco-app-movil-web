@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useModalBack } from '@/hooks/useModalBack';
-import { ArrowLeft, Search, Eye, FileDown, Users, User, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2, School, ChevronDown, Info, Shield } from 'lucide-react';
+import { ArrowLeft, Search, Eye, FileDown, Users, User, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2, School, ChevronDown, Info, Shield, FileText, Truck } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -1530,7 +1530,9 @@ export default function GestionPage() {
                   <div className="grid grid-cols-1 gap-3">
                     {[
                       { id: 'admin', label: 'Administrador Total', desc: 'Control total de usuarios y reportes', icon: 'Shield', color: 'text-rose-600', bg: 'bg-rose-50' },
+                      { id: 'secretaria_educacion', label: 'Secretaría Educación', desc: 'Auditoría y Gestión Global', icon: 'FileText', color: 'text-purple-600', bg: 'bg-purple-50' },
                       { id: 'coordinador_pae', label: 'Coordinador PAE', desc: 'Gestión de horarios y registros', icon: 'Clock', color: 'text-cyan-600', bg: 'bg-cyan-50' },
+                      { id: 'operador', label: 'Operador PAE', desc: 'Logística y Visualización', icon: 'Truck', color: 'text-amber-600', bg: 'bg-amber-50' },
                       { id: 'docente', label: 'Docente / Monitor', desc: 'Solo lectura y registros básicos', icon: 'User', color: 'text-emerald-600', bg: 'bg-emerald-50' }
                     ].map((role) => (
                       <button
@@ -1540,7 +1542,10 @@ export default function GestionPage() {
                         className={`flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 group ${docenteParaRol.rol === role.id ? 'bg-gray-900 border-gray-900 text-white dark:bg-black dark:border-black' : 'bg-gray-50 border-gray-100 hover:border-cyan-200 hover:bg-white text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-200'}`}
                       >
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${docenteParaRol.rol === role.id ? 'bg-white/20' : role.bg + ' ' + role.color}`}>
-                          {role.id === 'admin' ? <Shield className="w-5 h-5" /> : role.id === 'coordinador_pae' ? <Clock className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                          {role.id === 'admin' ? <Shield className="w-5 h-5" /> :
+                            role.id === 'secretaria_educacion' ? <FileText className="w-5 h-5" /> :
+                              role.id === 'operador' ? <Truck className="w-5 h-5" /> :
+                                role.id === 'coordinador_pae' ? <Clock className="w-5 h-5" /> : <User className="w-5 h-5" />}
                         </div>
                         <div className="text-left">
                           <p className="text-xs font-black uppercase tracking-tight leading-none mb-1">{role.label}</p>
