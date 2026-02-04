@@ -322,16 +322,19 @@ export default function NovedadesPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Edit Button (Only if pending and owner) */}
-                                            {n.estado === 'pendiente' && usuario && usuario.id === n.reportado_por && (
-                                                <button
-                                                    onClick={() => handleEdit(n)}
-                                                    className="p-2 text-gray-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors dark:hover:bg-cyan-900/20 dark:hover:text-cyan-400"
-                                                    title="Editar Novedad"
-                                                >
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                            )}
+                                            {/* Edit Button (Admins OR Owner if pending) */}
+                                            {n.estado === 'pendiente' && usuario && (
+                                                usuario.id === n.reportado_por ||
+                                                usuario.rol === 'admin'
+                                            ) && (
+                                                    <button
+                                                        onClick={() => handleEdit(n)}
+                                                        className="p-2 text-gray-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors dark:hover:bg-cyan-900/20 dark:hover:text-cyan-400"
+                                                        title="Editar Novedad"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                         </div>
 
                                         <div className="space-y-4">
