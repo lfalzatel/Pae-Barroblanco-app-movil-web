@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import {
@@ -66,6 +67,11 @@ export default function NovedadesPage() {
     const [saving, setSaving] = useState(false);
     const [novedades, setNovedades] = useState<any[]>([]);
     const [showModal, setShowModal] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
     const [usuario, setUsuario] = useState<any>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -399,8 +405,8 @@ export default function NovedadesPage() {
                     </div>
                 </section>
 
-                {/* MODAL FORM */}
-                {showModal && (
+                {/* MODAL FORM WITH PORTAL */}
+                {mounted && showModal && createPortal(
                     <div
                         className="fixed inset-0 flex items-center justify-center p-4"
                         style={{ zIndex: 9999999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
@@ -549,7 +555,8 @@ export default function NovedadesPage() {
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )}
             </main>
         </div>
