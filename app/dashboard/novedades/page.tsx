@@ -402,18 +402,22 @@ export default function NovedadesPage() {
                 {/* MODAL FORM */}
                 {showModal && (
                     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
-                            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-800/50">
-                                <h3 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-                                    {editingId ? <Edit2 className="w-6 h-6 text-cyan-600" /> : <Plus className="w-6 h-6 text-cyan-600" />}
+                        {/* Added max-h and flex-col for mobile scrolling */}
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20 flex flex-col max-h-[90vh]">
+
+                            {/* Header Colored */}
+                            <div className="p-6 border-b border-cyan-500/30 flex items-center justify-between shrink-0 bg-gradient-to-r from-cyan-600 to-cyan-700">
+                                <h3 className="text-xl font-black text-white flex items-center gap-2">
+                                    {editingId ? <Edit2 className="w-6 h-6 text-cyan-100" /> : <Plus className="w-6 h-6 text-cyan-100" />}
                                     {editingId ? 'Editar Novedad' : 'Reportar Nueva Novedad'}
                                 </h3>
-                                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors">
-                                    <X className="w-5 h-5 text-gray-500" />
+                                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
+                                    <X className="w-5 h-5" />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
+                            {/* Form with overflow-y-auto */}
+                            <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Para Cuándo Aplica</label>
@@ -496,7 +500,7 @@ export default function NovedadesPage() {
                                     />
                                 </div>
 
-                                <div className="p-4 md:p-6 pt-0 flex gap-3 shrink-0 border-t border-gray-100 dark:border-gray-700 mt-6">
+                                <div className="p-4 md:p-6 pt-0 flex gap-3 shrink-0 border-t border-gray-100 dark:border-gray-700 mt-6 !px-0 !pb-0">
                                     <button
                                         type="button"
                                         onClick={() => setShowModal(false)}
