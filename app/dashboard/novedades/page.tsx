@@ -401,7 +401,10 @@ export default function NovedadesPage() {
 
                 {/* MODAL FORM */}
                 {showModal && (
-                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                    <div
+                        className="fixed inset-0 flex items-center justify-center p-4"
+                        style={{ zIndex: 9999999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+                    >
                         {/* Backdrop separate from content */}
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowModal(false)}></div>
 
