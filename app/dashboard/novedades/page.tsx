@@ -402,16 +402,25 @@ export default function NovedadesPage() {
                 {/* MODAL FORM */}
                 {showModal && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                        {/* Added max-h and flex-col for mobile scrolling */}
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                        {/* Adjusted max-h to 85vh and adding My Auto for centering */}
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh] my-auto relative">
 
-                            {/* Header Colored */}
-                            <div className="p-6 border-b border-cyan-500/30 flex items-center justify-between shrink-0 bg-gradient-to-r from-cyan-600 to-cyan-700">
-                                <h3 className="text-xl font-black text-white flex items-center gap-2">
-                                    {editingId ? <Edit2 className="w-6 h-6 text-cyan-100" /> : <Plus className="w-6 h-6 text-cyan-100" />}
-                                    {editingId ? 'Editar Novedad' : 'Reportar Nueva Novedad'}
-                                </h3>
-                                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
+                            {/* Header Colored with Watermark */}
+                            <div className="p-6 border-b border-cyan-500/30 flex items-center justify-between shrink-0 bg-gradient-to-r from-cyan-600 to-cyan-700 relative overflow-hidden">
+                                {/* Watermark Icon */}
+                                <Megaphone className="absolute -right-6 -bottom-6 w-32 h-32 text-white/10 rotate-12 pointer-events-none" />
+
+                                <div className="relative z-10">
+                                    <h3 className="text-xl font-black text-white flex items-center gap-2">
+                                        {editingId ? <Edit2 className="w-6 h-6 text-cyan-100" /> : <Plus className="w-6 h-6 text-cyan-100" />}
+                                        {editingId ? 'Editar Novedad' : 'Reportar Nueva Novedad'}
+                                    </h3>
+                                    <p className="text-[10px] font-bold text-cyan-100/80 uppercase tracking-widest mt-1 ml-8">
+                                        {editingId ? 'Modificar Registro' : 'Nueva Notificación'}
+                                    </p>
+                                </div>
+
+                                <button onClick={() => setShowModal(false)} className="relative z-10 p-2 hover:bg-white/10 rounded-full transition-colors text-white">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
