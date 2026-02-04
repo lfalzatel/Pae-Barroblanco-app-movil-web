@@ -523,8 +523,9 @@ export default function DashboardLayout({
         { href: '/dashboard/reportes', label: 'Reportes', icon: BarChart3 },
     ];
 
-    if (usuario?.rol === 'admin' || usuario?.rol === 'coordinador_pae') {
+    if (usuario?.rol === 'admin' || usuario?.rol === 'coordinador_pae' || usuario?.rol === 'secretaria_educacion') {
         navItems.push({ href: '/dashboard/horario', label: 'Horario', icon: Calendar });
+        navItems.push({ href: '/dashboard/novedades', label: 'Novedades', icon: AlertTriangle });
     }
 
     if (usuario?.rol === 'admin') {
