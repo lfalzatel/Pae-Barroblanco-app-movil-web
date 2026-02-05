@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import ScheduleModal from '../../components/ScheduleModal';
 import WeeklyScheduleModal from '../../components/WeeklyScheduleModal';
 import StatsDetailModal from '../../components/StatsDetailModal';
+import SecretariaDashboard from '../../components/dashboard/SecretariaDashboard';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { Usuario, calcularEstadisticasHoy } from '../data/demoData';
@@ -385,6 +386,11 @@ export default function DashboardPage() {
   };
 
   if (!usuario) return null;
+
+  // Render Secretaria/Operador Dashboard
+  if (usuario.rol === 'secretaria_educacion' || usuario.rol === 'operador') {
+    return <SecretariaDashboard usuario={usuario} />;
+  }
 
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto pb-24 md:pb-8">
