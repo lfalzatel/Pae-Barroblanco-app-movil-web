@@ -295,9 +295,9 @@ export default function DashboardLayout({
         const initSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-                // 1. Fetch real profile from DB to sync with 'public.usuarios'
+                // 1. Fetch real profile from DB to sync with 'perfiles_publicos'
                 const { data: dbUser } = await supabase
-                    .from('usuarios')
+                    .from('perfiles_publicos')
                     .select('*')
                     .eq('id', session.user.id)
                     .single();
@@ -531,12 +531,14 @@ export default function DashboardLayout({
     navItems.push({ href: '/dashboard/reportes', label: 'Reportes', icon: BarChart3 });
 
     // Horario: Operativo (No para Secretaria/Operador)
-    if (['admin', 'coordinador_pae', 'docente'].includes(usuario?.rol)) {
+    if (['admin', 'coordinador_pae'].includes(usuario?.rol)) {
         navItems.push({ href: '/dashboard/horario', label: 'Horario', icon: Calendar });
     }
 
-    // Novedades: Todos deben poder ver la bitácora
-    navItems.push({ href: '/dashboard/novedades', label: 'Novedades', icon: AlertTriangle });
+    // Novedades: Visible para todos excepto docentes (que solo reportan asistencias)
+    if (['admin', 'coordinador_pae', 'secretaria'].includes(usuario?.rol)) {
+        navItems.push({ href: '/dashboard/novedades', label: 'Novedades', icon: AlertTriangle });
+    }
 
     // Panel Admin (Rendered manually for collapsible menu)
 
