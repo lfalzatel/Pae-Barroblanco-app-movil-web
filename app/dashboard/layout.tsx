@@ -518,16 +518,26 @@ export default function DashboardLayout({
 
     const navItems = [
         { href: '/dashboard', label: 'Inicio', icon: Home },
-        { href: '/dashboard/registro', label: 'Registrar', icon: ClipboardList },
-        { href: '/dashboard/gestion', label: 'Gestión', icon: Users },
-        { href: '/dashboard/reportes', label: 'Reportes', icon: BarChart3 },
     ];
 
-    if (usuario?.rol === 'admin' || usuario?.rol === 'coordinador_pae' || usuario?.rol === 'secretaria_educacion') {
-        navItems.push({ href: '/dashboard/horario', label: 'Horario', icon: Calendar });
-        navItems.push({ href: '/dashboard/novedades', label: 'Novedades', icon: AlertTriangle });
+    // Registro & Gestión: Operativo en campo (No para Secretaria/Operador)
+    if (['admin', 'coordinador_pae', 'docente'].includes(usuario?.rol)) {
+        navItems.push({ href: '/dashboard/registro', label: 'Registrar', icon: ClipboardList });
+        navItems.push({ href: '/dashboard/gestion', label: 'Gestión', icon: Users });
     }
 
+    // Reportes: Visibilidad Global (Todos)
+    navItems.push({ href: '/dashboard/reportes', label: 'Reportes', icon: BarChart3 });
+
+    // Horario: Operativo (No para Secretaria/Operador)
+    if (['admin', 'coordinador_pae', 'docente'].includes(usuario?.rol)) {
+        navItems.push({ href: '/dashboard/horario', label: 'Horario', icon: Calendar });
+    }
+
+    // Novedades: Todos deben poder ver la bitácora
+    navItems.push({ href: '/dashboard/novedades', label: 'Novedades', icon: AlertTriangle });
+
+    // Panel Admin
     if (usuario?.rol === 'admin') {
         navItems.push({ href: '/dashboard/admin', label: 'Admin', icon: Settings });
         navItems.push({ href: '/dashboard/auditoria', label: 'Auditoría', icon: FileText });

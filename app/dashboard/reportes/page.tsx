@@ -20,7 +20,7 @@ export default function ReportesPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [usuario, setUsuario] = useState<any | null>(null);
   const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes' | 'fecha'>('hoy');
-  const [sedeFilter, setSedeFilter] = useState('principal');
+  const [sedeFilter, setSedeFilter] = useState('todas');
   const [showSedeDropdown, setShowSedeDropdown] = useState(false);
   const [grupoFilter, setGrupoFilter] = useState('todos');
   const [grupoDropdownOpen, setGrupoDropdownOpen] = useState(false);
@@ -32,7 +32,19 @@ export default function ReportesPage() {
     return new Date(now.getTime() - offset).toISOString().split('T')[0];
   });
 
-  // Estado para menú de exportar
+  // Proyecciones
+  const [viewMode, setViewMode] = useState<'historico' | 'proyeccion'>('historico');
+  const [projectionData, setProjectionData] = useState<any[]>([]);
+  const [manualAdjustments, setManualAdjustments] = useState<any[]>([]);
+  const [projectionLoading, setProjectionLoading] = useState(false);
+  const [selectedDayOffset, setSelectedDayOffset] = useState<number>(() => {
+    const d = new Date();
+    const day = d.getDay();
+    // Default to today if Mon-Fri, else Monday (1)
+    return (day >= 1 && day <= 5) ? day : 1;
+  });
+
+  // Estado para menú de exportar (Restored)
   const [showExportMenu, setShowExportMenu] = useState(false);
 
   const [registros, setRegistros] = useState<any[]>([]);
@@ -91,8 +103,8 @@ export default function ReportesPage() {
       try {
         const sedeMap: Record<string, string> = {
           'principal': 'Principal',
-          'primaria': 'Primaria',
-          'maria-inmaculada': 'Maria Inmaculada'
+          'primaria': 'Sede Primaria',
+          'maria-inmaculada': 'Sede Maria Inmaculada'
         };
 
         let query = supabase
@@ -117,6 +129,81 @@ export default function ReportesPage() {
 
     fetchGrupos();
   }, [sedeFilter]);
+
+  useEffect(() => {
+    if (viewMode === 'proyeccion') {
+      fetchProjections();
+    }
+  }, [viewMode, selectedDate, selectedDayOffset]);
+
+  const fetchProjections = async () => {
+    setProjectionLoading(true);
+    try {
+      // Logic to determine specific date from Week Selector + Day Offset
+      const d = new Date(selectedDate + 'T12:00:00');
+      const currentDay = d.getDay(); // 0=Sun, 1=Mon...
+      const diffToMon = d.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
+
+      const monDate = new Date(d);
+      monDate.setDate(diffToMon);
+
+      const targetDateObj = new Date(monDate);
+      targetDateObj.setDate(monDate.getDate() + (selectedDayOffset - 1));
+
+      const targetDateStr = targetDateObj.toISOString().split('T')[0];
+
+      // Parallel Fetch: Projection Stats + Manual Adjustments
+      const [statsRes, adjustmentsRes] = await Promise.all([
+        supabase.rpc('get_daily_projection_stats', { p_date: targetDateStr }),
+        supabase.from('novedades_cupos').select('*').eq('fecha_novedad', targetDateStr)
+      ]);
+
+      if (statsRes.error) throw statsRes.error;
+      if (adjustmentsRes.error) throw adjustmentsRes.error;
+
+      setProjectionData(statsRes.data || []);
+      setManualAdjustments(adjustmentsRes.data || []);
+
+    } catch (error) {
+      console.error("Error fetching projections:", error);
+    } finally {
+      setProjectionLoading(false);
+    }
+  };
+
+  const getRationDistribution = (item: any) => {
+    // Reglas de Negocio:
+    // 1. Refrigerio: TODOS (AM o PM según grupo/jornada - Asumimos AM por defecto si no se detecta PM)
+    // 2. Almuerzo: SOLO Primaria (1-5) y Sordos. NO Bachillerato (6-11) ni Preescolar.
+    // 3. SEDE: Si la sede es "Sede Primaria", asumimos que es primaria (excepto preescolar).
+
+    const gradoNorm = item.grado?.toLowerCase().trim() || '';
+    const grupoNorm = item.grupo?.toLowerCase().trim() || '';
+    const sedeNorm = item.sede?.toLowerCase().trim() || '';
+
+    // Detect if grade implies Primary (1-5)
+    const isGradoPrimaria = ['1', '2', '3', '4', '5', 'primero', 'segundo', 'tercero', 'cuarto', 'quinto', 'aceleracion', 'brujula'].some(g => gradoNorm.includes(g) && !gradoNorm.includes('11') && !gradoNorm.includes('10'));
+
+    // Detect if Sede implies Primary or Maria Inmaculada (Both get Lunch)
+    const isSedePrimaria = sedeNorm.includes('primaria');
+    const isSedeMariaInmaculada = sedeNorm.includes('maria') || sedeNorm.includes('inmaculada');
+
+    const isPrimaria = isGradoPrimaria || isSedePrimaria || isSedeMariaInmaculada;
+    const isSordos = gradoNorm.includes('sordos') || grupoNorm.includes('sordos') || grupoNorm.includes('1104');
+    const isPreescolar = gradoNorm.includes('preescolar') || gradoNorm.includes('transicion') || gradoNorm === '0' || grupoNorm.includes('preescolar') || grupoNorm.includes('transicion');
+
+    // Almuerzo: Primaria/Sordos (No Preescolar), EXCEPTO Maria Inmaculada donde TODOS almuerzan (incluido Preescolar)
+    const recibeAlmuerzo = (isPrimaria || isSordos) && (!isPreescolar || isSedeMariaInmaculada);
+
+    // Lógica simple para AM/PM basada en convención de nombres
+    const isTarde = grupoNorm.includes('pm') || grupoNorm.includes('tarde');
+
+    return {
+      ri_am: !isTarde ? item.total_activos : 0,
+      ri_pm: isTarde ? item.total_activos : 0,
+      almuerzo: recibeAlmuerzo ? item.total_activos : 0
+    };
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -1120,431 +1207,834 @@ export default function ReportesPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-8">
-        {/* Filtros de período (Estilo Tabs Gestión) */}
-        <div className="bg-gray-100/80 dark:bg-gray-800 p-0.5 rounded-2xl flex items-center shrink-0 relative w-full mb-4">
-          {(['hoy', 'semana', 'mes'] as const).map((p) => (
+
+        {/* View Toggles (Main Content) */}
+        <div className="flex justify-center mb-6">
+          <div className="flex p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-2xl backdrop-blur-sm border border-gray-100 dark:border-gray-700 shadow-inner">
             <button
-              key={p}
-              onClick={() => setPeriodo(p)}
-              className={`flex-1 md:px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${periodo === p ? 'text-white' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
+              onClick={() => setViewMode('historico')}
+              className={`px-6 py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all ${viewMode === 'historico' ? 'bg-white text-cyan-700 shadow-lg ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600 dark:text-gray-500'}`}
             >
-              {p}
+              Histórico
             </button>
-          ))}
-          {/* Sliding Indicator */}
-          <div
-            className={`absolute inset-y-0.5 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-gradient-to-br from-cyan-600 to-cyan-700 rounded-xl shadow-md shadow-cyan-200/50 ${periodo === 'hoy' ? 'left-0.5 w-[calc(33.33%-2px)]' :
-              periodo === 'semana' ? 'left-[calc(33.33%)] w-[calc(33.33%-2px)]' :
-                'left-[calc(66.66%)] w-[calc(33.33%-2px)]'
-              }`}
-          />
+            <button
+              onClick={() => setViewMode('proyeccion')}
+              className={`px-6 py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${viewMode === 'proyeccion' ? 'bg-white text-cyan-700 shadow-lg ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600 dark:text-gray-500'}`}
+            >
+              <School className="w-4 h-4" />
+              Proyección
+            </button>
+          </div>
         </div>
 
-        {/* Navegación de Período Dinámica (Solo Semana y Mes) */}
-        {(periodo === 'semana' || periodo === 'mes') && (
-          <div className="flex justify-center mb-4 transition-all animate-in slide-in-from-top-2">
-            <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 p-0.5 rounded-[2rem] flex items-center shadow-lg shadow-cyan-100 border border-cyan-500/30">
-              <button
-                onClick={() => periodo === 'semana' ? handleMoveWeek(-1) : handleMoveMonth(-1)}
-                className="p-2 hover:bg-white/10 rounded-full text-white transition-colors active:scale-90"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
+        {viewMode === 'proyeccion' ? (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Projection Controls (Week & Filters) */}
+            <div className="flex flex-col items-center gap-4">
 
-              <div className="px-6 text-center min-w-[180px]">
-                <p className="text-[10px] font-black text-white tracking-widest uppercase mb-0.5 opacity-80">
-                  {periodo === 'semana' ? 'Viendo Semana' : 'Viendo Mes'}
-                </p>
-                <div className="text-[13px] font-black text-white tracking-tight flex flex-col items-center">
-                  <span>{periodo === 'semana' ? getWeekRangeLabel(selectedDate) : getMonthLabel(selectedDate)}</span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => periodo === 'semana' ? handleMoveWeek(1) : handleMoveMonth(1)}
-                className="p-2 hover:bg-white/10 rounded-full text-white transition-colors active:scale-90"
-              >
-                <ChevronLeft className="w-5 h-5 rotate-180" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Filters Container (Estilo Card Gestión) */}
-        <div className="bg-white p-3 rounded-[2rem] shadow-xl shadow-cyan-900/5 border border-gray-100 mb-8 space-y-3 dark:bg-gray-800 dark:border-gray-700">
-          <div className="grid grid-cols-2 gap-3 md:gap-4">
-            {/* Sede Filter */}
-            <div className="relative z-20" ref={dropdownRef}>
-              <button
-                onClick={() => setShowSedeDropdown(!showSedeDropdown)}
-                className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-800/30 dark:hover:bg-cyan-900/40"
-              >
-                <span className="truncate mr-2">
-                  {sedeFilter === 'todas' ? 'SEDES' : sedes.find(s => s.id === sedeFilter)?.nombre.toUpperCase()}
-                </span>
-                <ChevronDown className={`w-3 h-3 text-cyan-400 transition-transform duration-300 ${showSedeDropdown ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showSedeDropdown && (
-                <>
-                  <div className="fixed inset-0 z-[60]" onClick={() => setShowSedeDropdown(false)}></div>
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 dark:bg-gray-800 backdrop-blur-xl border border-cyan-100/50 dark:border-gray-700 rounded-2xl shadow-xl shadow-cyan-100/50 dark:shadow-black/20 overflow-hidden transition-all duration-300 origin-top z-[70] animate-in fade-in zoom-in-95 duration-200">
-                    <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 space-y-1">
-                      <button
-                        onClick={() => { setSedeFilter('todas'); setShowSedeDropdown(false); }}
-                        className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === 'todas' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-cyan-900/30 dark:hover:text-cyan-400'}`}
-                      >
-                        TODAS LAS SEDES
-                        {sedeFilter === 'todas' && <CheckCircle className="w-3.5 h-3.5" />}
-                      </button>
-                      {sedes.map((sede) => (
-                        <button
-                          key={sede.id}
-                          onClick={() => { setSedeFilter(sede.id); setShowSedeDropdown(false); }}
-                          className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === sede.id ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-cyan-900/30 dark:hover:text-cyan-400'}`}
-                        >
-                          {sede.nombre.toUpperCase()}
-                          {sedeFilter === sede.id && <CheckCircle className="w-3.5 h-3.5" />}
-                        </button>
-                      ))}
-                    </div>
+              <div className="flex flex-col md:flex-row items-center justify-between gap-3 w-full px-1 lg:px-0">
+                {/* Week Navigator (Mobile Optimized) */}
+                <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 p-0.5 lg:p-1 rounded-[2rem] flex items-center shadow-lg shadow-cyan-100 border border-cyan-500/30 shrink-0 w-full md:w-auto justify-between md:justify-start">
+                  <button
+                    onClick={() => handleMoveWeek(-1)}
+                    className="p-2 md:p-3 hover:bg-white/10 rounded-full text-white transition-colors active:scale-90"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <div className="px-4 text-center">
+                    <span className="block text-[8px] md:text-[9px] text-cyan-200 font-bold uppercase tracking-widest">
+                      Semana
+                    </span>
+                    <span className="text-xs md:text-sm font-black text-white tracking-wide uppercase whitespace-nowrap">
+                      {getWeekRangeLabel(selectedDate)}
+                    </span>
                   </div>
-                </>
-              )}
-            </div>
-
-            {/* Group Filter (Identical to Gestion) */}
-            <div className="relative z-10">
-              <button
-                onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
-                className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-800/30 dark:hover:bg-cyan-900/40"
-              >
-                <span className="truncate">{grupoFilter === 'todos' ? 'GRUPOS' : `${grupoFilter}`}</span>
-                <ChevronDown className={`w-3 h-3 text-cyan-400 transition-transform duration-300 ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {grupoDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-[60]" onClick={() => setGrupoDropdownOpen(false)}></div>
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 dark:bg-gray-800 backdrop-blur-xl border border-cyan-100/50 dark:border-gray-700 rounded-3xl shadow-xl shadow-cyan-100/50 dark:shadow-black/20 max-h-72 overflow-y-auto p-4 animate-in fade-in zoom-in-95 duration-200 z-[70]">
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        onClick={() => { setGrupoFilter('todos'); setGrupoDropdownOpen(false); }}
-                        className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === 'todos' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-cyan-900/30'}`}
-                      >
-                        TODOS
-                      </button>
-                      {gruposDisponibles.map(grupo => (
-                        <button
-                          key={grupo}
-                          onClick={() => { setGrupoFilter(grupo); setGrupoDropdownOpen(false); }}
-                          className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === grupo ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-cyan-900/30'}`}
-                        >
-                          {grupo.replace(/-20\d{2}/, '')}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Estadísticas principales */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
-          {/* Pending Groups - New Card */}
-
-          {/* Total Estudiantes */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group dark:bg-gray-800 dark:border-gray-700">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <div className="text-2xl md:text-3xl font-black text-blue-600 tracking-tighter">
-                  {loading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
-                  ) : (
-                    stats.totalEstudiantes.toLocaleString()
-                  )}
+                  <button
+                    onClick={() => handleMoveWeek(1)}
+                    className="p-2 md:p-3 hover:bg-white/10 rounded-full text-white transition-colors active:scale-90"
+                  >
+                    <ChevronLeft className="w-5 h-5 rotate-180" />
+                  </button>
                 </div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">TOTAL</div>
-              </div>
-              <div className="bg-blue-50 p-2 rounded-xl dark:bg-blue-900/20">
-                <Users className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-            <div className="text-[10px] text-blue-400 font-bold">
-              En sedes filtradas
-            </div>
-          </div>
 
-          {/* Recibieron */}
-          <button
-            onClick={() => openGroupModal('recibieron')}
-            disabled={stats.recibieron === 0}
-            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <div className="text-3xl font-black text-emerald-500 tracking-tighter">
-                  {loading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
-                  ) : (
-                    stats.recibieron.toLocaleString()
-                  )}
-                </div>
-                <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">RECIBIERON</div>
-              </div>
-              <div className="bg-emerald-50 p-2.5 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-emerald-900/20">
-                <CheckCircle className="w-5 h-5 text-emerald-500 group-hover:text-white transition-colors" />
-              </div>
-            </div>
-            <div className="text-[9px] text-emerald-500 font-black uppercase tracking-widest flex items-center gap-1 mt-2">
-              {stats.porcentajeAsistencia}% • DETALLE <Info className="w-3 h-3 ml-0.5" />
-            </div>
-          </button>
-
-          {/* No Recibieron */}
-          <button
-            onClick={() => openGroupModal('noRecibieron')}
-            disabled={stats.noRecibieron === 0}
-            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <div className="text-3xl font-black text-amber-500 tracking-tighter">
-                  {loading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
-                  ) : (
-                    stats.noRecibieron.toLocaleString()
-                  )}
-                </div>
-                <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">NO RECIBIERON</div>
-              </div>
-              <div className="bg-amber-50 p-2.5 rounded-2xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-amber-900/20">
-                <XCircle className="w-5 h-5 text-amber-600 group-hover:text-white transition-colors" />
-              </div>
-            </div>
-            <div className="text-[9px] text-amber-500 font-black uppercase tracking-widest flex items-center gap-1 mt-2">
-              VER GRUPOS <Info className="w-3 h-3 ml-0.5" />
-            </div>
-          </button>
-
-          {/* No Asistieron (Ausentes) */}
-          <button
-            onClick={() => openGroupModal('ausentes')}
-            disabled={stats.ausentes === 0}
-            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <div className="text-3xl font-black text-rose-500 tracking-tighter">
-                  {loading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
-                  ) : (
-                    stats.ausentes.toLocaleString()
-                  )}
-                </div>
-                <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">NO ASISTIERON</div>
-              </div>
-              <div className="bg-rose-50 p-2.5 rounded-2xl group-hover:bg-rose-500 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-rose-900/20">
-                <UserX className="w-5 h-5 text-rose-500 group-hover:text-white transition-colors" />
-              </div>
-            </div>
-            <div className="text-[9px] text-rose-500 font-black uppercase tracking-widest flex items-center gap-1 mt-2">
-              VER GRUPOS <Info className="w-3 h-3 ml-0.5" />
-            </div>
-          </button>
-
-          {/* Tarjeta Grupos Pendientes */}
-          <button
-            onClick={() => openGroupModal('pendientes')}
-            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <div className="text-3xl font-black text-orange-500 tracking-tighter">
-                  {loading ? <Skeleton className="h-8 w-16" /> : stats.pendingGroupsCount}
-                </div>
-                <div className="text-orange-300 text-[9px] font-black uppercase tracking-widest">GRUPOS PENDIENTES</div>
-              </div>
-              <div className="bg-orange-50 p-2.5 rounded-2xl group-hover:bg-orange-500 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-orange-900/20">
-                <Clock className="w-5 h-5 text-orange-400 group-hover:text-white transition-colors" />
-              </div>
-            </div>
-            <div className="text-[10px] text-orange-400/80 font-bold">
-              {stats.totalActiveGroups > 0 ? ((stats.pendingGroupsCount / stats.totalActiveGroups) * 100).toFixed(0) : 0}% sin reportar
-            </div>
-          </button>
-
-          {/* Inactivos (Renunciaron) */}
-          <button
-            onClick={() => openGroupModal('inactivos')}
-            disabled={stats.inactivos === 0}
-            className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <div className="text-3xl font-black text-gray-700 tracking-tighter dark:text-gray-300">
-                  {loading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
-                  ) : (
-                    stats.inactivos.toLocaleString()
-                  )}
-                </div>
-                <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">INACTIVOS</div>
-              </div>
-              <div className="bg-gray-100 p-2.5 rounded-2xl group-hover:bg-cyan-600 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-gray-700">
-                <UserMinus className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
-              </div>
-            </div>
-            <div className="text-[9px] text-gray-400 font-black uppercase tracking-widest flex items-center gap-1 mt-2">
-              VER DETALLES <Info className="w-3 h-3 ml-0.5" />
-            </div>
-          </button>
-        </div>
-
-        {/* Análisis Visual */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Distribución de Asistencia */}
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-cyan-900/5 border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
-            <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-8 px-1">Distribución Operativa</h3>
-            <div className="h-[250px] w-full">
-              {loading || !isMounted ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="w-32 h-32 rounded-full border-8 border-gray-50 border-t-cyan-500 animate-spin" />
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={distributionData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={70}
-                      outerRadius={95}
-                      paddingAngle={8}
-                      dataKey="value"
-                    >
-                      {distributionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '16px' }}
-                    />
-                    <Legend iconType="circle" verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', paddingTop: '20px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
-          {/* Tendencia Temporal */}
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-cyan-900/5 border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
-            <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-8 px-1">
-              {periodo === 'hoy' || periodo === 'fecha' ? 'Dinamismo por Sedes' : 'Evolución de Asistencia'}
-            </h3>
-            <div className="h-[250px] w-full">
-              {loading || !isMounted ? (
-                <div className="space-y-4 pt-10 px-4">
-                  <Skeleton className="h-4 w-full rounded-full" />
-                  <Skeleton className="h-28 w-full rounded-3xl" />
-                </div>
-              ) : chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis
-                      dataKey="fecha"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 'bold' }}
-                      tickFormatter={(val) => {
-                        const d = new Date(val + 'T12:00:00');
-                        return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }).toUpperCase();
-                      }}
-                    />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 'bold' }} />
-                    <Tooltip
-                      cursor={{ fill: '#f8fafc' }}
-                      contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '16px' }}
-                      labelFormatter={(val) => {
-                        const d = new Date(val + 'T12:00:00');
-                        return d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
-                      }}
-                    />
-                    <Bar dataKey="recibio" name="RECIBIÓ" fill="#10B981" radius={[6, 6, 0, 0]} barSize={16} />
-                    <Bar dataKey="no_recibio" name="NO RECIBIÓ" fill="#EF4444" radius={[6, 6, 0, 0]} barSize={16} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-gray-50/50 dark:bg-gray-700/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-600">
-                  <Calendar className="w-12 h-12 mb-4 text-cyan-200 dark:text-cyan-800" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Amplía el periodo para ver tendencias</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Registros recientes */}
-        <div className="bg-white rounded-[2.5rem] shadow-xl shadow-cyan-900/5 border border-gray-100 overflow-hidden mb-8 dark:bg-gray-800 dark:border-gray-700">
-          <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 flex items-center justify-between">
-            <h2 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.2em] dark:text-gray-400">Registros Recientes</h2>
-            <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse shadow-sm shadow-cyan-200" />
-          </div>
-
-          <div className="overflow-x-auto">
-            {registros.length === 0 ? (
-              <div className="p-16 text-center text-gray-400 py-8">
-                <Users className="w-12 h-12 mx-auto mb-4 opacity-10" />
-                <p className="text-[10px] font-black uppercase tracking-widest">Sin actividad en este rango</p>
-              </div>
-            ) : (
-              <table className="w-full">
-                <thead className="bg-gray-50/80 dark:bg-gray-700/50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Estudiante</th>
-                    <th className="px-6 py-4 text-center text-[9px] font-black text-gray-400 uppercase tracking-widest">Estado</th>
-                    <th className="px-6 py-4 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Instante</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100 dark:bg-gray-800 dark:divide-gray-700">
-                  {registros.map((registro: any) => {
-                    const fecha = new Date(registro.created_at);
-                    const hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const fechaStr = fecha.toLocaleDateString();
+                {/* Day Selector (Mobile Optimized from Horario) */}
+                <div className="bg-white dark:bg-gray-800 p-0.5 lg:p-1 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-1 w-full md:w-auto justify-between md:justify-start overflow-x-auto no-scrollbar">
+                  {['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE'].map((dayLabel, index) => {
+                    const dayOffset = index + 1; // 1=Mon, 5=Fri
+                    const isSelected = selectedDayOffset === dayOffset;
 
                     return (
-                      <tr key={registro.id} className="hover:bg-cyan-50/30 dark:hover:bg-gray-700/30 transition-colors group">
-                        <td className="px-6 py-5">
-                          <div className="text-xs font-black text-gray-800 uppercase leading-tight group-hover:text-cyan-600 transition-colors dark:text-gray-200">{registro.estudiantes?.nombre}</div>
-                          <div className="text-[9px] font-bold text-gray-400 mt-1 uppercase tracking-tight">{registro.estudiantes?.grupo}</div>
+                      <button
+                        key={dayLabel}
+                        onClick={() => setSelectedDayOffset(dayOffset)}
+                        className={`
+                                    flex-1 md:flex-none px-2 lg:px-4 py-2 rounded-2xl text-[10px] lg:text-[11px] font-black transition-all uppercase tracking-tight
+                                    ${isSelected
+                            ? 'bg-gradient-to-br from-cyan-600 to-cyan-700 text-white shadow-lg shadow-cyan-200/50 scale-105 z-10'
+                            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50 dark:text-gray-500 dark:hover:bg-gray-700'}
+                                 `}
+                      >
+                        {dayLabel}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+
+
+              {/* Filters (Sede & Grupo) */}
+              <div className="flex flex-wrap items-center justify-center gap-3 w-full">
+                {/* Sede Selector */}
+                <div className="relative group min-w-[140px]">
+                  <button
+                    onClick={() => setShowSedeDropdown(!showSedeDropdown)}
+                    className="w-full bg-white dark:bg-gray-800 px-4 py-3 rounded-2xl text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2"
+                  >
+                    <span>{sedeFilter === 'todas' ? 'Todas las Sedes' : sedeFilter}</span>
+                    <ChevronDown className="w-4 h-4 opacity-50" />
+                  </button>
+
+                  {showSedeDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-30" onClick={() => setShowSedeDropdown(false)} />
+                      <div className="absolute top-full mt-2 w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-40 overflow-hidden text-[10px] font-black uppercase tracking-widest">
+                        {['todas', 'principal', 'primaria', 'maria-inmaculada'].map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => { setSedeFilter(s); setShowSedeDropdown(false); }}
+                            className="w-full text-left px-4 py-3 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 text-gray-500 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+                          >
+                            {s === 'todas' ? 'Todas' : s}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Grupo Selector */}
+                <div className="relative group min-w-[140px]">
+                  <button
+                    onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
+                    className="w-full bg-white dark:bg-gray-800 px-4 py-3 rounded-2xl text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2"
+                  >
+                    <span>{grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter}</span>
+                    <ChevronDown className="w-4 h-4 opacity-50" />
+                  </button>
+                  {grupoDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-30" onClick={() => setGrupoDropdownOpen(false)} />
+                      <div className="absolute top-full mt-2 w-full max-h-60 overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-40 text-[10px] font-black uppercase tracking-widest custom-scrollbar">
+                        <button
+                          onClick={() => { setGrupoFilter('todos'); setGrupoDropdownOpen(false); }}
+                          className="w-full text-left px-4 py-3 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 text-gray-500 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors sticky top-0 bg-white dark:bg-gray-800"
+                        >
+                          Todos
+                        </button>
+                        {gruposDisponibles.map((g) => (
+                          <button
+                            key={g}
+                            onClick={() => { setGrupoFilter(g); setGrupoDropdownOpen(false); }}
+                            className="w-full text-left px-4 py-3 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 text-gray-500 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+                          >
+                            {g}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Projection Summary Card (New Feature) */}
+            <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-xl shadow-cyan-900/5 border border-gray-100 dark:border-gray-700 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-50 dark:bg-cyan-900/20 rounded-bl-[100%] -mr-10 -mt-10 z-0"></div>
+
+              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 relative z-10">Resumen de Proyección Diaria</h3>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
+                <div className="space-y-1">
+                  <div className="text-[10px] font-black text-blue-400 uppercase tracking-wider">Matrícula Base</div>
+                  <div className="text-2xl font-black text-blue-600 flex items-center gap-2">
+                    {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> :
+                      projectionData.reduce((acc, curr) => acc + (curr.total_estudiantes - curr.total_inactivos), 0)}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-[10px] font-black text-rose-400 uppercase tracking-wider">Ausentes (Horario)</div>
+                  <div className="text-2xl font-black text-rose-500 flex items-center gap-2">
+                    {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> :
+                      projectionData.filter(r => r.novedad_horario).reduce((acc, curr) => acc + curr.total_activos, 0)}
+                    <span className="text-[10px] text-rose-300 font-bold bg-rose-50 px-1.5 py-0.5 rounded-md">
+                      {projectionData.filter(r => r.novedad_horario).length} GRUPOS
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-[10px] font-black text-amber-400 uppercase tracking-wider">Ajustes Manuales</div>
+                  <div className="text-2xl font-black text-amber-500 flex items-center gap-2">
+                    {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> :
+                      (() => {
+                        // Calculate Manual Adjustments Filtered by Sede
+                        let filteredAdj = manualAdjustments;
+                        if (sedeFilter !== 'todas') {
+                          filteredAdj = filteredAdj.filter(a => {
+                            const s = (a.sede || '').toLowerCase();
+                            if (sedeFilter === 'principal') return s.includes('principal');
+                            if (sedeFilter === 'primaria') return s.includes('primaria');
+                            if (sedeFilter === 'maria-inmaculada') return s.includes('maria') || s.includes('inmaculada');
+                            return false;
+                          });
+                        }
+
+                        const totalAdj = filteredAdj.reduce((acc, curr) => {
+                          if (['reduccion_cupos', 'no_asiste_grupo'].includes(curr.tipo)) return acc - Math.abs(curr.cupos_afectados);
+                          if (['aumento_cupos'].includes(curr.tipo)) return acc + Math.abs(curr.cupos_afectados);
+                          return acc;
+                        }, 0);
+
+                        return totalAdj > 0 ? `+${totalAdj}` : totalAdj;
+                      })()}
+                  </div>
+                </div>
+
+                <div className="space-y-1 pl-4 border-l border-gray-100 dark:border-gray-700">
+                  <div className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">Total a Preparar</div>
+                  <div className="flex flex-col">
+                    <div className="text-3xl font-black text-emerald-600">
+                      {loading || projectionLoading ? <Skeleton className="w-16 h-8" /> :
+                        (() => {
+                          // 1. Calculate Adjustment Total (Filtered)
+                          let filteredAdj = manualAdjustments;
+                          if (sedeFilter !== 'todas') {
+                            filteredAdj = filteredAdj.filter(a => {
+                              const s = (a.sede || '').toLowerCase();
+                              if (sedeFilter === 'principal') return s.includes('principal');
+                              if (sedeFilter === 'primaria') return s.includes('primaria');
+                              if (sedeFilter === 'maria-inmaculada') return s.includes('maria') || s.includes('inmaculada');
+                              return false;
+                            });
+                          }
+                          const totalAdj = filteredAdj.reduce((acc, curr) => {
+                            if (['reduccion_cupos', 'no_asiste_grupo'].includes(curr.tipo)) return acc - Math.abs(curr.cupos_afectados);
+                            if (['aumento_cupos'].includes(curr.tipo)) return acc + Math.abs(curr.cupos_afectados);
+                            return acc;
+                          }, 0);
+
+                          // 2. Base Totals
+                          const activeRows = projectionData.filter(row => {
+                            if (sedeFilter === 'todas') return true;
+                            const s = (row.sede || '').toLowerCase();
+                            if (sedeFilter === 'principal') return s.includes('principal');
+                            if (sedeFilter === 'primaria') return s.includes('primaria');
+                            if (sedeFilter === 'maria-inmaculada') return s.includes('maria') || s.includes('inmaculada');
+                            return false;
+                          });
+
+                          const rowsWithoutAbsence = activeRows.filter(r => !r.novedad_horario);
+
+                          const baseCAJM = rowsWithoutAbsence.reduce((acc, curr) => acc + getRationDistribution(curr).ri_am + getRationDistribution(curr).ri_pm, 0);
+                          const baseLunch = rowsWithoutAbsence.reduce((acc, curr) => acc + getRationDistribution(curr).almuerzo, 0);
+
+                          const finalCAJM = Math.max(0, baseCAJM + totalAdj);
+                          const finalLunch = baseLunch;
+
+                          return (
+                            <div className="flex flex-col">
+                              <span>{finalCAJM + finalLunch}</span>
+                              {!loading && !projectionLoading && (
+                                <div className="text-[9px] font-bold text-gray-400 tracking-tight flex gap-2 mt-1">
+                                  <span>CAJM/T: {finalCAJM}</span>
+                                  <span>•</span>
+                                  <span>ALM: {finalLunch}</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+              <div className="p-8 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                <div>
+                  <h2 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                    <School className="w-6 h-6 text-cyan-600" />
+                    Detalle por Grupos
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+                    Pestaña: <span className="font-bold text-cyan-600 uppercase">
+                      {['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES'][selectedDayOffset - 1]}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {projectionLoading ? (
+                <div className="p-12 text-center">
+                  <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className="text-sm text-gray-400 font-bold">Calculando proyecciones diarias...</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
+                        <th className="px-6 py-4 text-left font-black text-gray-500 uppercase tracking-widest text-xs dark:text-gray-400">Grupo</th>
+                        <th className="px-6 py-4 text-center font-black text-blue-600 uppercase tracking-widest text-xs border-l border-r border-gray-100 dark:border-gray-700 dark:text-blue-400">CAJM</th>
+                        <th className="px-6 py-4 text-center font-black text-purple-600 uppercase tracking-widest text-xs border-r border-gray-100 dark:border-gray-700 dark:text-purple-400">CAJT</th>
+                        <th className="px-6 py-4 text-center font-black text-orange-600 uppercase tracking-widest text-xs border-r border-gray-100 dark:border-gray-700 dark:text-orange-400">Almuerzo</th>
+                        <th className="px-6 py-4 text-center font-black text-gray-400 uppercase tracking-widest text-xs">Total Activos</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {projectionData
+                        .filter(row => {
+                          if (sedeFilter === 'todas') return true;
+                          const s = (row.sede || '').toLowerCase();
+                          let matchSede = false;
+                          if (sedeFilter === 'principal') matchSede = s.includes('principal');
+                          else if (sedeFilter === 'primaria') matchSede = s.includes('primaria');
+                          else if (sedeFilter === 'maria-inmaculada') matchSede = s.includes('maria') || s.includes('inmaculada');
+
+                          const matchGrupo = grupoFilter === 'todos' || row.grupo === grupoFilter;
+                          return matchSede && matchGrupo;
+                        })
+                        .sort((a, b) => {
+                          // 1. Sede Priority
+                          const sedeOrder = ['Principal', 'Sede Primaria', 'Sede Maria Inmaculada', 'María Inmaculada'];
+                          const sedeA = sedeOrder.indexOf(a.sede) === -1 ? 99 : sedeOrder.indexOf(a.sede);
+                          const sedeB = sedeOrder.indexOf(b.sede) === -1 ? 99 : sedeOrder.indexOf(b.sede);
+                          if (sedeA !== sedeB) return sedeA - sedeB;
+
+                          // 2. Natural Sort (Numeric aware) for Group
+                          return a.grupo.localeCompare(b.grupo, undefined, { numeric: true, sensitivity: 'base' });
+                        })
+                        .map((row, idx) => {
+                          const dist = getRationDistribution(row);
+                          const isCancelled = row.novedad_horario;
+
+                          // Smart Label Logic
+                          const gradoStr = (row.grado || '').toString().toLowerCase().trim();
+                          const grupoStr = (row.grupo || '').toString().toLowerCase().trim();
+                          const isRedundant = grupoStr.includes(gradoStr) || grupoStr.startsWith(gradoStr);
+                          const displayLabel = isRedundant ? row.grupo : `${row.grado} - ${row.grupo}`;
+
+                          return (
+                            <tr key={idx} className={`transition-colors ${isCancelled ? 'bg-rose-50/50 dark:bg-rose-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}>
+                              <td className="px-6 py-4 font-bold text-gray-900 dark:text-white capitalize">
+                                <div className="flex items-center gap-2">
+                                  <span className="uppercase">{displayLabel}</span>
+                                  {isCancelled && (
+                                    <span className="bg-rose-100 text-rose-600 text-[9px] px-2 py-0.5 rounded-full uppercase tracking-widest font-black border border-rose-200">
+                                      NO ASISTE
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-gray-400 font-normal uppercase">({row.sede})</span>
+                              </td>
+
+                              <td className={`px-6 py-4 text-center font-mono font-bold border-l border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-600 dark:text-gray-300'}`}>
+                                {isCancelled ? '0' : (dist.ri_am > 0 ? dist.ri_am : '-')}
+                              </td>
+                              <td className={`px-6 py-4 text-center font-mono font-bold border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-600 dark:text-gray-300'}`}>
+                                {isCancelled ? '0' : (dist.ri_pm > 0 ? dist.ri_pm : '-')}
+                              </td>
+                              <td className={`px-6 py-4 text-center font-mono font-bold border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-rose-300 line-through decoration-2' : 'text-gray-600 dark:text-gray-300'}`}>
+                                {isCancelled ? '0' : (dist.almuerzo > 0 ? dist.almuerzo : '-')}
+                              </td>
+                              <td className={`px-6 py-4 text-center font-black ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-900 dark:text-white'}`}>
+                                {isCancelled ? '0' : row.total_activos}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      {/* Totals Row (Calculated on visible data) */}
+                      <tr className="bg-cyan-50 dark:bg-cyan-900/20 font-black text-cyan-900 dark:text-cyan-100">
+                        <td className="px-6 py-4 text-right uppercase tracking-widest text-xs">Total Global (Proyección)</td>
+                        <td className="px-6 py-4 text-center text-lg text-blue-600">{
+                          (() => {
+                            const activeRows = projectionData.filter(row => !row.novedad_horario && (sedeFilter === 'todas' || row.sede.toLowerCase().includes(sedeFilter)) && (grupoFilter === 'todos' || row.grupo === grupoFilter));
+                            const baseCAJM = activeRows.reduce((acc, curr) => acc + getRationDistribution(curr).ri_am, 0);
+
+                            // Calculate Manual Adjustments to apply to CAJM
+                            let filteredAdj = manualAdjustments;
+                            if (sedeFilter !== 'todas') {
+                              filteredAdj = filteredAdj.filter(a => {
+                                const s = (a.sede || '').toLowerCase();
+                                if (sedeFilter === 'principal') return s.includes('principal');
+                                if (sedeFilter === 'primaria') return s.includes('primaria');
+                                if (sedeFilter === 'maria-inmaculada') return s.includes('maria') || s.includes('inmaculada');
+                                return false;
+                              });
+                            }
+                            const totalAdj = filteredAdj.reduce((acc, curr) => {
+                              if (['reduccion_cupos', 'no_asiste_grupo'].includes(curr.tipo)) return acc - Math.abs(curr.cupos_afectados);
+                              if (['aumento_cupos'].includes(curr.tipo)) return acc + Math.abs(curr.cupos_afectados);
+                              return acc;
+                            }, 0);
+
+                            return Math.max(0, baseCAJM + totalAdj);
+                          })()
+                        }
                         </td>
-                        <td className="px-6 py-5 text-center">
-                          <span className={`px-4 py-1.5 inline-flex text-[9px] font-black uppercase tracking-widest rounded-full shadow-sm border ${registro.estado === 'recibio' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' :
-                            registro.estado === 'no_recibio' ? 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800' :
-                              'bg-gray-50 text-gray-500 border-gray-100 dark:bg-gray-700/50 dark:text-gray-400 dark:border-gray-600'
-                            }`}>
-                            {registro.estado === 'recibio' ? 'Recibió' :
-                              registro.estado === 'no_recibio' ? 'No recibió' : 'Ausente'}
-                          </span>
+                        <td className="px-6 py-4 text-center">{projectionData
+                          .filter(row => !row.novedad_horario && (sedeFilter === 'todas' || row.sede.toLowerCase().includes(sedeFilter)) && (grupoFilter === 'todos' || row.grupo === grupoFilter))
+                          .reduce((acc, curr) => acc + getRationDistribution(curr).ri_pm, 0)}
                         </td>
-                        <td className="px-6 py-5 text-right">
-                          <div className="text-[10px] font-black text-gray-700 dark:text-gray-300">{hora}</div>
-                          <div className="text-[9px] font-bold text-gray-400 uppercase">{fechaStr}</div>
+                        <td className="px-6 py-4 text-center text-lg">{
+                          projectionData
+                            .filter(row => !row.novedad_horario && (sedeFilter === 'todas' || row.sede.toLowerCase().includes(sedeFilter)) && (grupoFilter === 'todos' || row.grupo === grupoFilter))
+                            .reduce((acc, curr) => acc + getRationDistribution(curr).almuerzo, 0)
+                        }
+                        </td>
+                        <td className="px-6 py-4 text-center text-lg">{projectionData
+                          .filter(row => !row.novedad_horario && (sedeFilter === 'todas' || row.sede.toLowerCase().includes(sedeFilter)) && (grupoFilter === 'todos' || row.grupo === grupoFilter))
+                          .reduce((acc, curr) => acc + curr.total_activos, 0)}
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-8">
+            {/* Filtros de período (Estilo Tabs Gestión) */}
+            <div className="bg-gray-100/80 dark:bg-gray-800 p-0.5 rounded-2xl flex items-center shrink-0 relative w-full mb-4">
+              {(['hoy', 'semana', 'mes'] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriodo(p)}
+                  className={`flex-1 md:px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${periodo === p ? 'text-white' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                >
+                  {p}
+                </button>
+              ))}
+              {/* Sliding Indicator */}
+              <div
+                className={`absolute inset-y-0.5 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-gradient-to-br from-cyan-600 to-cyan-700 rounded-xl shadow-md shadow-cyan-200/50 ${periodo === 'hoy' ? 'left-0.5 w-[calc(33.33%-2px)]' :
+                  periodo === 'semana' ? 'left-[calc(33.33%)] w-[calc(33.33%-2px)]' :
+                    'left-[calc(66.66%)] w-[calc(33.33%-2px)]'
+                  }`}
+              />
+            </div>
+
+            {/* Navegación de Período Dinámica (Solo Semana y Mes) */}
+            {(periodo === 'semana' || periodo === 'mes') && (
+              <div className="flex justify-center mb-4 transition-all animate-in slide-in-from-top-2">
+                <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 p-0.5 rounded-[2rem] flex items-center shadow-lg shadow-cyan-100 border border-cyan-500/30">
+                  <button
+                    onClick={() => periodo === 'semana' ? handleMoveWeek(-1) : handleMoveMonth(-1)}
+                    className="p-2 hover:bg-white/10 rounded-full text-white transition-colors active:scale-90"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+
+                  <div className="px-6 text-center min-w-[180px]">
+                    <p className="text-[10px] font-black text-white tracking-widest uppercase mb-0.5 opacity-80">
+                      {periodo === 'semana' ? 'Viendo Semana' : 'Viendo Mes'}
+                    </p>
+                    <div className="text-[13px] font-black text-white tracking-tight flex flex-col items-center">
+                      <span>{periodo === 'semana' ? getWeekRangeLabel(selectedDate) : getMonthLabel(selectedDate)}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => periodo === 'semana' ? handleMoveWeek(1) : handleMoveMonth(1)}
+                    className="p-2 hover:bg-white/10 rounded-full text-white transition-colors active:scale-90"
+                  >
+                    <ChevronLeft className="w-5 h-5 rotate-180" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Filters Container (Estilo Card Gestión) */}
+            <div className="bg-white p-3 rounded-[2rem] shadow-xl shadow-cyan-900/5 border border-gray-100 mb-8 space-y-3 dark:bg-gray-800 dark:border-gray-700">
+              <div className="grid grid-cols-2 gap-3 md:gap-4">
+                {/* Sede Filter */}
+                <div className="relative z-20" ref={dropdownRef}>
+                  <button
+                    onClick={() => setShowSedeDropdown(!showSedeDropdown)}
+                    className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-800/30 dark:hover:bg-cyan-900/40"
+                  >
+                    <span className="truncate mr-2">
+                      {sedeFilter === 'todas' ? 'SEDES' : sedes.find(s => s.id === sedeFilter)?.nombre.toUpperCase()}
+                    </span>
+                    <ChevronDown className={`w-3 h-3 text-cyan-400 transition-transform duration-300 ${showSedeDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showSedeDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-[60]" onClick={() => setShowSedeDropdown(false)}></div>
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 dark:bg-gray-800 backdrop-blur-xl border border-cyan-100/50 dark:border-gray-700 rounded-2xl shadow-xl shadow-cyan-100/50 dark:shadow-black/20 overflow-hidden transition-all duration-300 origin-top z-[70] animate-in fade-in zoom-in-95 duration-200">
+                        <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 space-y-1">
+                          <button
+                            onClick={() => { setSedeFilter('todas'); setShowSedeDropdown(false); }}
+                            className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === 'todas' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-cyan-900/30 dark:hover:text-cyan-400'}`}
+                          >
+                            TODAS LAS SEDES
+                            {sedeFilter === 'todas' && <CheckCircle className="w-3.5 h-3.5" />}
+                          </button>
+                          {sedes.map((sede) => (
+                            <button
+                              key={sede.id}
+                              onClick={() => { setSedeFilter(sede.id); setShowSedeDropdown(false); }}
+                              className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === sede.id ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-cyan-900/30 dark:hover:text-cyan-400'}`}
+                            >
+                              {sede.nombre.toUpperCase()}
+                              {sedeFilter === sede.id && <CheckCircle className="w-3.5 h-3.5" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Group Filter (Identical to Gestion) */}
+                <div className="relative z-10">
+                  <button
+                    onClick={() => setGrupoDropdownOpen(!grupoDropdownOpen)}
+                    className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-800/30 dark:hover:bg-cyan-900/40"
+                  >
+                    <span className="truncate">{grupoFilter === 'todos' ? 'GRUPOS' : `${grupoFilter}`}</span>
+                    <ChevronDown className={`w-3 h-3 text-cyan-400 transition-transform duration-300 ${grupoDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {grupoDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-[60]" onClick={() => setGrupoDropdownOpen(false)}></div>
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 dark:bg-gray-800 backdrop-blur-xl border border-cyan-100/50 dark:border-gray-700 rounded-3xl shadow-xl shadow-cyan-100/50 dark:shadow-black/20 max-h-72 overflow-y-auto p-4 animate-in fade-in zoom-in-95 duration-200 z-[70]">
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            onClick={() => { setGrupoFilter('todos'); setGrupoDropdownOpen(false); }}
+                            className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === 'todos' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-cyan-900/30'}`}
+                          >
+                            TODOS
+                          </button>
+                          {gruposDisponibles.map(grupo => (
+                            <button
+                              key={grupo}
+                              onClick={() => { setGrupoFilter(grupo); setGrupoDropdownOpen(false); }}
+                              className={`px-2 py-2.5 rounded-xl text-[10px] font-black transition-all ${grupoFilter === grupo ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-cyan-900/30'}`}
+                            >
+                              {grupo.replace(/-20\d{2}/, '')}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Estadísticas principales */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+              {/* Pending Groups - New Card */}
+
+              {/* Total Estudiantes */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group dark:bg-gray-800 dark:border-gray-700">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="text-2xl md:text-3xl font-black text-blue-600 tracking-tighter">
+                      {loading ? (
+                        <Skeleton className="h-8 w-16 mb-1" />
+                      ) : (
+                        stats.totalEstudiantes.toLocaleString()
+                      )}
+                    </div>
+                    <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">TOTAL</div>
+                  </div>
+                  <div className="bg-blue-50 p-2 rounded-xl dark:bg-blue-900/20">
+                    <Users className="w-5 h-5 text-blue-600" />
+                  </div>
+                </div>
+                <div className="text-[10px] text-blue-400 font-bold">
+                  En sedes filtradas
+                </div>
+              </div>
+
+              {/* Recibieron */}
+              <button
+                onClick={() => openGroupModal('recibieron')}
+                disabled={stats.recibieron === 0}
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="text-3xl font-black text-emerald-500 tracking-tighter">
+                      {loading ? (
+                        <Skeleton className="h-8 w-16 mb-1" />
+                      ) : (
+                        stats.recibieron.toLocaleString()
+                      )}
+                    </div>
+                    <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">RECIBIERON</div>
+                  </div>
+                  <div className="bg-emerald-50 p-2.5 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-emerald-900/20">
+                    <CheckCircle className="w-5 h-5 text-emerald-500 group-hover:text-white transition-colors" />
+                  </div>
+                </div>
+                <div className="text-[9px] text-emerald-500 font-black uppercase tracking-widest flex items-center gap-1 mt-2">
+                  {stats.porcentajeAsistencia}% • DETALLE <Info className="w-3 h-3 ml-0.5" />
+                </div>
+              </button>
+
+              {/* No Recibieron */}
+              <button
+                onClick={() => openGroupModal('noRecibieron')}
+                disabled={stats.noRecibieron === 0}
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="text-3xl font-black text-amber-500 tracking-tighter">
+                      {loading ? (
+                        <Skeleton className="h-8 w-16 mb-1" />
+                      ) : (
+                        stats.noRecibieron.toLocaleString()
+                      )}
+                    </div>
+                    <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">NO RECIBIERON</div>
+                  </div>
+                  <div className="bg-amber-50 p-2.5 rounded-2xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-amber-900/20">
+                    <XCircle className="w-5 h-5 text-amber-600 group-hover:text-white transition-colors" />
+                  </div>
+                </div>
+                <div className="text-[9px] text-amber-500 font-black uppercase tracking-widest flex items-center gap-1 mt-2">
+                  VER GRUPOS <Info className="w-3 h-3 ml-0.5" />
+                </div>
+              </button>
+
+              {/* No Asistieron (Ausentes) */}
+              <button
+                onClick={() => openGroupModal('ausentes')}
+                disabled={stats.ausentes === 0}
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="text-3xl font-black text-rose-500 tracking-tighter">
+                      {loading ? (
+                        <Skeleton className="h-8 w-16 mb-1" />
+                      ) : (
+                        stats.ausentes.toLocaleString()
+                      )}
+                    </div>
+                    <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">NO ASISTIERON</div>
+                  </div>
+                  <div className="bg-rose-50 p-2.5 rounded-2xl group-hover:bg-rose-500 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-rose-900/20">
+                    <UserX className="w-5 h-5 text-rose-500 group-hover:text-white transition-colors" />
+                  </div>
+                </div>
+                <div className="text-[9px] text-rose-500 font-black uppercase tracking-widest flex items-center gap-1 mt-2">
+                  VER GRUPOS <Info className="w-3 h-3 ml-0.5" />
+                </div>
+              </button>
+
+              {/* Tarjeta Grupos Pendientes */}
+              <button
+                onClick={() => openGroupModal('pendientes')}
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="text-3xl font-black text-orange-500 tracking-tighter">
+                      {loading ? <Skeleton className="h-8 w-16" /> : stats.pendingGroupsCount}
+                    </div>
+                    <div className="text-orange-300 text-[9px] font-black uppercase tracking-widest">GRUPOS PENDIENTES</div>
+                  </div>
+                  <div className="bg-orange-50 p-2.5 rounded-2xl group-hover:bg-orange-500 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-orange-900/20">
+                    <Clock className="w-5 h-5 text-orange-400 group-hover:text-white transition-colors" />
+                  </div>
+                </div>
+                <div className="text-[10px] text-orange-400/80 font-bold">
+                  {stats.totalActiveGroups > 0 ? ((stats.pendingGroupsCount / stats.totalActiveGroups) * 100).toFixed(0) : 0}% sin reportar
+                </div>
+              </button>
+
+              {/* Inactivos (Renunciaron) */}
+              <button
+                onClick={() => openGroupModal('inactivos')}
+                disabled={stats.inactivos === 0}
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="text-3xl font-black text-gray-700 tracking-tighter dark:text-gray-300">
+                      {loading ? (
+                        <Skeleton className="h-8 w-16 mb-1" />
+                      ) : (
+                        stats.inactivos.toLocaleString()
+                      )}
+                    </div>
+                    <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">INACTIVOS</div>
+                  </div>
+                  <div className="bg-gray-100 p-2.5 rounded-2xl group-hover:bg-cyan-600 group-hover:text-white transition-all duration-300 shadow-inner dark:bg-gray-700">
+                    <UserMinus className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+                  </div>
+                </div>
+                <div className="text-[9px] text-gray-400 font-black uppercase tracking-widest flex items-center gap-1 mt-2">
+                  VER DETALLES <Info className="w-3 h-3 ml-0.5" />
+                </div>
+              </button>
+            </div>
+
+            {/* Análisis Visual */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* Distribución de Asistencia */}
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-cyan-900/5 border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+                <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-8 px-1">Distribución Operativa</h3>
+                <div className="h-[250px] w-full">
+                  {loading || !isMounted ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="w-32 h-32 rounded-full border-8 border-gray-50 border-t-cyan-500 animate-spin" />
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={distributionData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={70}
+                          outerRadius={95}
+                          paddingAngle={8}
+                          dataKey="value"
+                        >
+                          {distributionData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '16px' }}
+                        />
+                        <Legend iconType="circle" verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', paddingTop: '20px' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+
+              {/* Tendencia Temporal */}
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-cyan-900/5 border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+                <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-8 px-1">
+                  {periodo === 'hoy' || periodo === 'fecha' ? 'Dinamismo por Sedes' : 'Evolución de Asistencia'}
+                </h3>
+                <div className="h-[250px] w-full">
+                  {loading || !isMounted ? (
+                    <div className="space-y-4 pt-10 px-4">
+                      <Skeleton className="h-4 w-full rounded-full" />
+                      <Skeleton className="h-28 w-full rounded-3xl" />
+                    </div>
+                  ) : chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis
+                          dataKey="fecha"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 'bold' }}
+                          tickFormatter={(val) => {
+                            const d = new Date(val + 'T12:00:00');
+                            return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }).toUpperCase();
+                          }}
+                        />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 'bold' }} />
+                        <Tooltip
+                          cursor={{ fill: '#f8fafc' }}
+                          contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '16px' }}
+                          labelFormatter={(val) => {
+                            const d = new Date(val + 'T12:00:00');
+                            return d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
+                          }}
+                        />
+                        <Bar dataKey="recibio" name="RECIBIÓ" fill="#10B981" radius={[6, 6, 0, 0]} barSize={16} />
+                        <Bar dataKey="no_recibio" name="NO RECIBIÓ" fill="#EF4444" radius={[6, 6, 0, 0]} barSize={16} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-gray-50/50 dark:bg-gray-700/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-600">
+                      <Calendar className="w-12 h-12 mb-4 text-cyan-200 dark:text-cyan-800" />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Amplía el periodo para ver tendencias</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Registros recientes */}
+            <div className="bg-white rounded-[2.5rem] shadow-xl shadow-cyan-900/5 border border-gray-100 overflow-hidden mb-8 dark:bg-gray-800 dark:border-gray-700">
+              <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 flex items-center justify-between">
+                <h2 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.2em] dark:text-gray-400">Registros Recientes</h2>
+                <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse shadow-sm shadow-cyan-200" />
+              </div>
+
+              <div className="overflow-x-auto">
+                {registros.length === 0 ? (
+                  <div className="p-16 text-center text-gray-400 py-8">
+                    <Users className="w-12 h-12 mx-auto mb-4 opacity-10" />
+                    <p className="text-[10px] font-black uppercase tracking-widest">Sin actividad en este rango</p>
+                  </div>
+                ) : (
+                  <table className="w-full">
+                    <thead className="bg-gray-50/80 dark:bg-gray-700/50">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Estudiante</th>
+                        <th className="px-6 py-4 text-center text-[9px] font-black text-gray-400 uppercase tracking-widest">Estado</th>
+                        <th className="px-6 py-4 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Instante</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-100 dark:bg-gray-800 dark:divide-gray-700">
+                      {registros.map((registro: any) => {
+                        const fecha = new Date(registro.created_at);
+                        const hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const fechaStr = fecha.toLocaleDateString();
+
+                        return (
+                          <tr key={registro.id} className="hover:bg-cyan-50/30 dark:hover:bg-gray-700/30 transition-colors group">
+                            <td className="px-6 py-5">
+                              <div className="text-xs font-black text-gray-800 uppercase leading-tight group-hover:text-cyan-600 transition-colors dark:text-gray-200">{registro.estudiantes?.nombre}</div>
+                              <div className="text-[9px] font-bold text-gray-400 mt-1 uppercase tracking-tight">{registro.estudiantes?.grupo}</div>
+                            </td>
+                            <td className="px-6 py-5 text-center">
+                              <span className={`px-4 py-1.5 inline-flex text-[9px] font-black uppercase tracking-widest rounded-full shadow-sm border ${registro.estado === 'recibio' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' :
+                                registro.estado === 'no_recibio' ? 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800' :
+                                  'bg-gray-50 text-gray-500 border-gray-100 dark:bg-gray-700/50 dark:text-gray-400 dark:border-gray-600'
+                                }`}>
+                                {registro.estado === 'recibio' ? 'Recibió' :
+                                  registro.estado === 'no_recibio' ? 'No recibió' : 'Ausente'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5 text-right">
+                              <div className="text-[10px] font-black text-gray-700 dark:text-gray-300">{hora}</div>
+                              <div className="text-[9px] font-bold text-gray-400 uppercase">{fechaStr}</div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
 
 
+          </div>
+        )}
       </div>
-    </div>
+    </div >
   );
 }
