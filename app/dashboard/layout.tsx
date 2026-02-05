@@ -879,6 +879,28 @@ export default function DashboardLayout({
                                         Mi Perfil
                                     </Link>
 
+                                    {/* Mobile Admin Links */}
+                                    {usuario?.rol === 'admin' && (
+                                        <>
+                                            <Link
+                                                href="/dashboard/admin"
+                                                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-purple-600 hover:bg-purple-50 transition-colors bg-purple-50/10 dark:bg-gray-800 dark:text-purple-400 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
+                                                onClick={() => setIsProfileMenuOpen(false)}
+                                            >
+                                                <RefreshCcw className="w-4 h-4" />
+                                                Configuración
+                                            </Link>
+                                            <Link
+                                                href="/dashboard/auditoria"
+                                                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-purple-600 hover:bg-purple-50 transition-colors bg-purple-50/10 dark:bg-gray-800 dark:text-purple-400 dark:hover:bg-gray-700"
+                                                onClick={() => setIsProfileMenuOpen(false)}
+                                            >
+                                                <FileText className="w-4 h-4" />
+                                                Auditoría
+                                            </Link>
+                                        </>
+                                    )}
+
                                     {/* Biometric Option Mobile */}
                                     <button
                                         onClick={() => {
