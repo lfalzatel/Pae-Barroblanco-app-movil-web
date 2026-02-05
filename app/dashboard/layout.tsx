@@ -536,7 +536,7 @@ export default function DashboardLayout({
     }
 
     // Novedades: Visible para todos excepto docentes (que solo reportan asistencias)
-    if (['admin', 'coordinador_pae', 'secretaria'].includes(usuario?.rol)) {
+    if (['admin', 'coordinador_pae', 'secretaria_educacion'].includes(usuario?.rol)) {
         navItems.push({ href: '/dashboard/novedades', label: 'Novedades', icon: AlertTriangle });
     }
 

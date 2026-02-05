@@ -284,15 +284,17 @@ export default function NovedadesPage() {
                             </div>
                         </div>
 
-                        {/* Add Button */}
-                        <button
-                            onClick={handleNew}
-                            className="bg-white text-cyan-700 px-4 py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg active:scale-95 transition-all text-xs md:text-sm hover:bg-cyan-50"
-                        >
-                            <Plus className="w-4 h-4 md:w-5 md:h-5" />
-                            <span className="hidden md:inline">Reportar Novedad</span>
-                            <span className="md:hidden">Reportar</span>
-                        </button>
+                        {/* Add Button (Authorized ONLY) */}
+                        {['admin', 'coordinador_pae', 'secretaria_educacion'].includes(usuario?.rol) && (
+                            <button
+                                onClick={handleNew}
+                                className="bg-white text-cyan-700 px-4 py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg active:scale-95 transition-all text-xs md:text-sm hover:bg-cyan-50"
+                            >
+                                <Plus className="w-4 h-4 md:w-5 md:h-5" />
+                                <span className="hidden md:inline">Reportar Novedad</span>
+                                <span className="md:hidden">Reportar</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
