@@ -47,6 +47,7 @@ export default function DashboardLayout({
     const { theme, setTheme } = useTheme();
     const [usuario, setUsuario] = useState<any | null>(null);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
 
     // PWA Install Logic
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -537,11 +538,7 @@ export default function DashboardLayout({
     // Novedades: Todos deben poder ver la bitácora
     navItems.push({ href: '/dashboard/novedades', label: 'Novedades', icon: AlertTriangle });
 
-    // Panel Admin
-    if (usuario?.rol === 'admin') {
-        navItems.push({ href: '/dashboard/admin', label: 'Admin', icon: Settings });
-        navItems.push({ href: '/dashboard/auditoria', label: 'Auditoría', icon: FileText });
-    }
+    // Panel Admin (Rendered manually for collapsible menu)
 
     const touchStartRef = useRef<{ x: number, y: number } | null>(null);
 
@@ -647,6 +644,50 @@ export default function DashboardLayout({
                             </Link>
                         );
                     })}
+
+                    {/* Collapsible Admin Menu */}
+                    {usuario?.rol === 'admin' && (
+                        <div className="space-y-1 pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
+                            <button
+                                onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
+                                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg font-medium transition-colors ${isAdminMenuOpen
+                                    ? 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400'
+                                    : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Settings className="w-5 h-5" />
+                                    <span>Administración</span>
+                                </div>
+                                <ChevronDown className={`w-4 h-4 transition-transform ${isAdminMenuOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {isAdminMenuOpen && (
+                                <div className="pl-4 space-y-1 animate-in slide-in-from-top-2 fade-in duration-200">
+                                    <Link
+                                        href="/dashboard/admin"
+                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border-l-2 ${pathname === '/dashboard/admin'
+                                            ? 'border-purple-500 bg-purple-50/50 text-purple-700 dark:bg-purple-900/10 dark:text-purple-300'
+                                            : 'border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700/30'
+                                            }`}
+                                    >
+                                        <RefreshCcw className="w-4 h-4" />
+                                        Configuración
+                                    </Link>
+                                    <Link
+                                        href="/dashboard/auditoria"
+                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border-l-2 ${pathname === '/dashboard/auditoria'
+                                            ? 'border-purple-500 bg-purple-50/50 text-purple-700 dark:bg-purple-900/10 dark:text-purple-300'
+                                            : 'border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700/30'
+                                            }`}
+                                    >
+                                        <FileText className="w-4 h-4" />
+                                        Auditoría
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </nav>
 
                 <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">

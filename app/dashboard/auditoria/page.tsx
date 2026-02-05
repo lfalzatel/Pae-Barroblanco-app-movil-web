@@ -88,7 +88,7 @@ export default function AuditoriaPage() {
 
         // Verify Admin Role securely
         const { data: profile } = await supabase
-            .from('usuarios')
+            .from('perfiles_publicos')
             .select('rol')
             .eq('id', session.user.id)
             .single();
