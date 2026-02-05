@@ -24,7 +24,10 @@ import {
     ArrowLeft,
     Save,
     Trash2,
-    FileText
+    FileText,
+    ChevronLeft,
+    ChevronRight,
+    CalendarDays
 } from 'lucide-react';
 
 const EXTERNAL_LINKS = [
@@ -69,11 +72,42 @@ export default function NovedadesPage() {
     const [showModal, setShowModal] = useState(false);
     const [mounted, setMounted] = useState(false);
 
+    // Filter States
+    const [selectedDate, setSelectedDate] = useState(() => {
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        return new Date(now.getTime() - offset).toISOString().split('T')[0];
+    });
+    const [selectedDayOffset, setSelectedDayOffset] = useState(() => {
+        const d = new Date();
+        const day = d.getDay(); // 0=Sun, 1=Mon
+        return day === 0 ? 1 : (day === 6 ? 5 : day); // Default to Mon if Sun, Fri if Sat
+    });
+
     useEffect(() => {
         setMounted(true);
     }, []);
     const [usuario, setUsuario] = useState<any>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
+
+    // Helper: Week Label
+    const getWeekRangeLabel = (dateStr: string) => {
+        const d = new Date(dateStr + 'T12:00:00');
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+        const mon = new Date(new Date(d).setDate(diff));
+        const sun = new Date(new Date(mon).setDate(mon.getDate() + 6));
+        const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+        return `${mon.toLocaleDateString('es-CO', opts)} - ${sun.toLocaleDateString('es-CO', opts)}`.toUpperCase().replace(/\./g, '');
+    };
+
+    // Helper: Move Week
+    const handleMoveWeek = (offset: number) => {
+        const d = new Date(selectedDate + 'T12:00:00');
+        d.setDate(d.getDate() + (offset * 7));
+        const newDate = d.toISOString().split('T')[0];
+        setSelectedDate(newDate);
+    };
 
     // Form states
     const [formData, setFormData] = useState({
@@ -112,7 +146,7 @@ export default function NovedadesPage() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, []);
+    }, [selectedDate]);
 
     const fetchNovedades = async () => {
         setLoading(true);
@@ -123,8 +157,8 @@ export default function NovedadesPage() {
                     *,
                     reportero:perfiles_publicos(nombre)
                 `)
-                .order('created_at', { ascending: false })
-                .limit(20);
+                .eq('fecha_novedad', selectedDate)
+                .order('created_at', { ascending: false });
 
             if (error) throw error;
             setNovedades(data || []);
@@ -264,6 +298,68 @@ export default function NovedadesPage() {
             </div>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+                {/* Date Selectors (Week + Day) */}
+                <div className="space-y-6">
+                    {/* 1. Week Selector */}
+                    <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 rounded-2xl p-1 shadow-lg shadow-cyan-900/10 flex items-center justify-between mx-auto max-w-md">
+                        <button
+                            onClick={() => handleMoveWeek(-1)}
+                            className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-xl transition-all active:scale-95"
+                        >
+                            <ChevronLeft className="w-6 h-6" />
+                        </button>
+
+                        <div className="text-center px-4">
+                            <h2 className="text-[10px] uppercase font-bold text-cyan-100/80 tracking-widest mb-0.5">Semana Actual</h2>
+                            <p className="text-white font-black text-lg tracking-tight leading-none uppercase">
+                                {getWeekRangeLabel(selectedDate)}
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => handleMoveWeek(1)}
+                            className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-xl transition-all active:scale-95"
+                        >
+                            <ChevronRight className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    {/* 2. Day Tabs */}
+                    <div className="flex justify-center bg-white dark:bg-gray-800 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 max-w-md mx-auto overflow-x-auto">
+                        {['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE'].map((day, index) => {
+                            const offset = index + 1; // 1=Mon, 5=Fri
+                            const isSelected = selectedDayOffset === offset;
+
+                            return (
+                                <button
+                                    key={day}
+                                    onClick={() => {
+                                        // Calculate date for this day of current week
+                                        const d = new Date(selectedDate + 'T12:00:00');
+                                        const currentDay = d.getDay();
+                                        const diffToMon = d.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
+                                        const monDate = new Date(d);
+                                        monDate.setDate(diffToMon);
+
+                                        const targetDate = new Date(monDate);
+                                        targetDate.setDate(monDate.getDate() + (offset - 1));
+
+                                        const newDateStr = targetDate.toISOString().split('T')[0];
+                                        setSelectedDate(newDateStr);
+                                        setSelectedDayOffset(offset);
+                                    }}
+                                    className={`flex-1 min-w-[60px] py-2.5 rounded-xl text-xs font-black transition-all relative overflow-hidden ${isSelected
+                                        ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-200 dark:shadow-none'
+                                        : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-cyan-600'
+                                        }`}
+                                >
+                                    {day}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
 
                 {/* Recent Activity List (MOVED UP) */}
                 <section className="animate-in fade-in slide-in-from-bottom-8 duration-700">

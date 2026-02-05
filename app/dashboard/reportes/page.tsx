@@ -1487,11 +1487,11 @@ export default function ReportesPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
-                        <th className="px-6 py-4 text-left font-black text-gray-500 uppercase tracking-widest text-xs dark:text-gray-400">Grupo</th>
-                        <th className="px-6 py-4 text-center font-black text-blue-600 uppercase tracking-widest text-xs border-l border-r border-gray-100 dark:border-gray-700 dark:text-blue-400">CAJM</th>
-                        <th className="px-6 py-4 text-center font-black text-purple-600 uppercase tracking-widest text-xs border-r border-gray-100 dark:border-gray-700 dark:text-purple-400">CAJT</th>
-                        <th className="px-6 py-4 text-center font-black text-orange-600 uppercase tracking-widest text-xs border-r border-gray-100 dark:border-gray-700 dark:text-orange-400">Almuerzo</th>
-                        <th className="px-6 py-4 text-center font-black text-gray-400 uppercase tracking-widest text-xs">Total Activos</th>
+                        <th className="px-2 py-2 md:px-6 md:py-4 text-left font-black text-gray-500 uppercase tracking-widest text-[10px] md:text-xs dark:text-gray-400">Grupo</th>
+                        <th className="px-2 py-2 md:px-6 md:py-4 text-center font-black text-blue-600 uppercase tracking-widest text-[10px] md:text-xs border-l border-r border-gray-100 dark:border-gray-700 dark:text-blue-400">CAJM</th>
+                        <th className="px-2 py-2 md:px-6 md:py-4 text-center font-black text-purple-600 uppercase tracking-widest text-[10px] md:text-xs border-r border-gray-100 dark:border-gray-700 dark:text-purple-400">CAJT</th>
+                        <th className="px-2 py-2 md:px-6 md:py-4 text-center font-black text-orange-600 uppercase tracking-widest text-[10px] md:text-xs border-r border-gray-100 dark:border-gray-700 dark:text-orange-400">ALM</th>
+                        <th className="px-2 py-2 md:px-6 md:py-4 text-center font-black text-gray-400 uppercase tracking-widest text-[10px] md:text-xs">Total</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -1529,28 +1529,28 @@ export default function ReportesPage() {
 
                           return (
                             <tr key={idx} className={`transition-colors ${isCancelled ? 'bg-rose-50/50 dark:bg-rose-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}>
-                              <td className="px-6 py-4 font-bold text-gray-900 dark:text-white capitalize">
+                              <td className="px-2 py-2 md:px-6 md:py-4 font-bold text-gray-900 dark:text-white capitalize">
                                 <div className="flex items-center gap-2">
-                                  <span className="uppercase">{displayLabel}</span>
+                                  <span className="uppercase text-[10px] md:text-sm">{displayLabel}</span>
                                   {isCancelled && (
-                                    <span className="bg-rose-100 text-rose-600 text-[9px] px-2 py-0.5 rounded-full uppercase tracking-widest font-black border border-rose-200">
-                                      NO ASISTE
+                                    <span className="bg-rose-100 text-rose-600 text-[8px] md:text-[9px] px-1 md:px-2 py-0.5 rounded-full uppercase tracking-widest font-black border border-rose-200">
+                                      NO
                                     </span>
                                   )}
                                 </div>
-                                <span className="text-[10px] text-gray-400 font-normal uppercase">({row.sede})</span>
+                                <span className="text-[9px] md:text-[10px] text-gray-400 font-normal uppercase hidden md:inline">({row.sede})</span>
                               </td>
 
-                              <td className={`px-6 py-4 text-center font-mono font-bold border-l border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-600 dark:text-gray-300'}`}>
+                              <td className={`px-2 py-2 md:px-6 md:py-4 text-center font-mono font-bold text-xs md:text-sm border-l border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-600 dark:text-gray-300'}`}>
                                 {isCancelled ? '0' : (dist.ri_am > 0 ? dist.ri_am : '-')}
                               </td>
-                              <td className={`px-6 py-4 text-center font-mono font-bold border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-600 dark:text-gray-300'}`}>
+                              <td className={`px-2 py-2 md:px-6 md:py-4 text-center font-mono font-bold text-xs md:text-sm border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-600 dark:text-gray-300'}`}>
                                 {isCancelled ? '0' : (dist.ri_pm > 0 ? dist.ri_pm : '-')}
                               </td>
-                              <td className={`px-6 py-4 text-center font-mono font-bold border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-rose-300 line-through decoration-2' : 'text-gray-600 dark:text-gray-300'}`}>
+                              <td className={`px-2 py-2 md:px-6 md:py-4 text-center font-mono font-bold text-xs md:text-sm border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-rose-300 line-through decoration-2' : 'text-gray-600 dark:text-gray-300'}`}>
                                 {isCancelled ? '0' : (dist.almuerzo > 0 ? dist.almuerzo : '-')}
                               </td>
-                              <td className={`px-6 py-4 text-center font-black ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-900 dark:text-white'}`}>
+                              <td className={`px-2 py-2 md:px-6 md:py-4 text-center font-black text-xs md:text-sm ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-900 dark:text-white'}`}>
                                 {isCancelled ? '0' : row.total_activos}
                               </td>
                             </tr>
@@ -1558,8 +1558,8 @@ export default function ReportesPage() {
                         })}
                       {/* Totals Row (Calculated on visible data) */}
                       <tr className="bg-cyan-50 dark:bg-cyan-900/20 font-black text-cyan-900 dark:text-cyan-100">
-                        <td className="px-6 py-4 text-right uppercase tracking-widest text-xs">Total Global (Proyección)</td>
-                        <td className="px-6 py-4 text-center text-lg text-blue-600">{
+                        <td className="px-2 py-2 md:px-6 md:py-4 text-right uppercase tracking-widest text-[9px] md:text-xs">Total Global</td>
+                        <td className="px-2 py-2 md:px-6 md:py-4 text-center text-sm md:text-lg text-blue-600">{
                           (() => {
                             const activeRows = projectionData.filter(row => !row.novedad_horario && (sedeFilter === 'todas' || row.sede.toLowerCase().includes(sedeFilter)) && (grupoFilter === 'todos' || row.grupo === grupoFilter));
                             const baseCAJM = activeRows.reduce((acc, curr) => acc + getRationDistribution(curr).ri_am, 0);
@@ -1585,17 +1585,17 @@ export default function ReportesPage() {
                           })()
                         }
                         </td>
-                        <td className="px-6 py-4 text-center">{projectionData
+                        <td className="px-2 py-2 md:px-6 md:py-4 text-center text-xs md:text-base">{projectionData
                           .filter(row => !row.novedad_horario && (sedeFilter === 'todas' || row.sede.toLowerCase().includes(sedeFilter)) && (grupoFilter === 'todos' || row.grupo === grupoFilter))
                           .reduce((acc, curr) => acc + getRationDistribution(curr).ri_pm, 0)}
                         </td>
-                        <td className="px-6 py-4 text-center text-lg">{
+                        <td className="px-2 py-2 md:px-6 md:py-4 text-center text-sm md:text-lg">{
                           projectionData
                             .filter(row => !row.novedad_horario && (sedeFilter === 'todas' || row.sede.toLowerCase().includes(sedeFilter)) && (grupoFilter === 'todos' || row.grupo === grupoFilter))
                             .reduce((acc, curr) => acc + getRationDistribution(curr).almuerzo, 0)
                         }
                         </td>
-                        <td className="px-6 py-4 text-center text-lg">{projectionData
+                        <td className="px-2 py-2 md:px-6 md:py-4 text-center text-sm md:text-lg">{projectionData
                           .filter(row => !row.novedad_horario && (sedeFilter === 'todas' || row.sede.toLowerCase().includes(sedeFilter)) && (grupoFilter === 'todos' || row.grupo === grupoFilter))
                           .reduce((acc, curr) => acc + curr.total_activos, 0)}
                         </td>
