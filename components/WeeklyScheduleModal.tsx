@@ -24,41 +24,63 @@ interface WeeklyScheduleModalProps {
 export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProps) {
     const [loading, setLoading] = useState(false);
     const [weeklyData, setWeeklyData] = useState<any[]>([]);
-    const [selectedDay, setSelectedDay] = useState(() => {
-        const now = new Date();
-        const bogota = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
-        const day = bogota.getDay();
-        const hour = bogota.getHours();
-
-        // If weekend or Friday night (next week view), default to Monday (0)
-        if ((day === 5 && hour >= 18) || day === 6 || day === 0) return 0;
-
-        // Otherwise Mon(1)-Fri(5) -> 0-4
-        return Math.max(0, Math.min(4, day - 1));
-    });
-    const [weekStart, setWeekStart] = useState<Date>(() => {
-        const now = new Date();
-        const bogotaNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
-
-        const day = bogotaNow.getDay();
-        const hour = bogotaNow.getHours();
-
-        const d = new Date(bogotaNow);
-        // Smart jump: Friday > 8pm or Sat/Sun -> Jump to next Monday
-        if ((day === 5 && hour >= 20) || day === 6 || day === 0) {
-            const daysToAdd = day === 5 ? 3 : (day === 6 ? 2 : 1);
-            d.setDate(d.getDate() + daysToAdd);
-        } else {
-            // Normal: Go to current Monday
-            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-            d.setDate(diff);
-        }
-        d.setHours(12, 0, 0, 0); // Normalize to NOON
-        return d;
-    });
+    const [selectedDay, setSelectedDay] = useState(0);
+    const [weekStart, setWeekStart] = useState<Date>(new Date());
     const [previewUrl, setPreviewUrl] = useState<URL | string | null>(null);
 
     useModalBack(isOpen, onClose, 'weekly-schedule-modal');
+
+    // Smart Date Logic: Runs every time modal opens
+    useEffect(() => {
+        if (isOpen) {
+            const now = new Date();
+            const bogota = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+            const day = bogota.getDay(); // 0=Sun, 1=Mon... 6=Sat
+            const hour = bogota.getHours();
+
+            // Logic for Selected Day (Tab 0-4)
+            let newSelectedDay = 0;
+
+            if (day >= 1 && day <= 4) {
+                // Mon-Thu: If > 6pm, show Next Day
+                if (hour >= 18) {
+                    newSelectedDay = day; // (day-1) + 1 = day. e.g. Mon(1) -> Tue(1 index)
+                } else {
+                    newSelectedDay = day - 1; // Current day index
+                }
+            } else if (day === 5) {
+                // Fri: If > 6pm, show Mon (0) next week
+                if (hour >= 18) {
+                    newSelectedDay = 0;
+                } else {
+                    newSelectedDay = 4; // Fri index
+                }
+            } else {
+                // Weekend -> Show Mon (0)
+                newSelectedDay = 0;
+            }
+            setSelectedDay(newSelectedDay);
+
+            // Logic for Week Start Date
+            const d = new Date(bogota);
+            // If Fri > 18h or Weekend -> Jump to next Monday
+            if ((day === 5 && hour >= 18) || day === 6 || day === 0) {
+                const daysToAdd = day === 5 ? 3 : (day === 6 ? 2 : 1);
+                d.setDate(d.getDate() + daysToAdd);
+            } else {
+                // Current Week Monday
+                // If Mon-Thu > 18h, we stay in current week but show next day tab.
+                // Correct logic to find Monday of CURRENT view:
+                // Mon(1) -> -0 days
+                // Tue(2) -> -1 days
+                // ...
+                const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+                d.setDate(diff);
+            }
+            d.setHours(12, 0, 0, 0); // Normalize
+            setWeekStart(d);
+        }
+    }, [isOpen]);
 
     // Helper: Format date as YYYY-MM-DD using LOCAL components (no UTC shift)
     const formatLocalDate = (date: Date) => {

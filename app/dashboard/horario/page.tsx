@@ -1144,7 +1144,7 @@ export default function HorarioPage() {
                             <p className="text-gray-400 text-sm mb-8">Hay {unassignedCount} grupos sin asignar. ¿Deseas guardar?</p>
                             <div className="flex flex-col gap-3">
                                 <button onClick={executeSave} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black">SÍ, GUARDAR</button>
-                                <button onClick={() => setShowConfirmSave(false)} className="w-full py-4 bg-gray-50 rounded-2xl font-bold">CANCELAR</button>
+                                <button onClick={() => setShowConfirmSave(false)} className="w-full py-4 bg-gray-50 text-gray-900 hover:bg-gray-100 rounded-2xl font-bold transition-colors">CANCELAR</button>
                             </div>
                         </div>
                     </div>
