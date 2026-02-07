@@ -109,7 +109,7 @@ export default function DashboardLayout({
 
             if (activeNotifTab === 'daily') {
                 const targetD = dailySubTab === 'tomorrow' ? getNextBusinessDay(now) : now;
-                fetchDailyExceptions(targetD);
+                fetchDailyExceptions(formatLocalDate(targetD));
             }
         }
     }, [notifModalOpen]);
@@ -119,12 +119,14 @@ export default function DashboardLayout({
         if (activeNotifTab === 'daily') {
             const now = new Date();
             const targetD = dailySubTab === 'tomorrow' ? getNextBusinessDay(now) : now;
-            fetchDailyExceptions(targetD);
+            // Format to YYYY-MM-DD manually to avoid timezone shifts
+            const dateStr = formatLocalDate(targetD);
+            fetchDailyExceptions(dateStr);
         }
     }, [dailySubTab, activeNotifTab, selectedSede]);
 
-    const fetchDailyExceptions = async (date: Date) => {
-        const dateStr = date.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
+    const fetchDailyExceptions = async (dateStr: string) => {
+        // dateStr is already YYYY-MM-DD from caller
         try {
             const { data } = await supabase
                 .from('schedules')
@@ -256,9 +258,16 @@ export default function DashboardLayout({
     };
 
     const getFilteredEvents = () => {
-        if (searchResult) return [searchResult];
-        let targetDateStr = '';
+        if (activeNotifTab === 'weekly') {
+            const d = new Date(weekStart);
+            d.setDate(d.getDate() + selectedDayInWeek);
+            const targetDateStr = d.toISOString().split('T')[0];
+            return notifEvents.filter(e => e.fecha === targetDateStr);
+        }
 
+        if (searchResult) return [searchResult];
+
+        let targetDateStr = '';
         if (activeNotifTab === 'daily') {
             const d = new Date();
             if (dailySubTab === 'tomorrow') {
@@ -267,11 +276,6 @@ export default function DashboardLayout({
             } else {
                 targetDateStr = d.toISOString().split('T')[0];
             }
-        }
-        else if (activeNotifTab === 'weekly') {
-            const d = new Date(weekStart);
-            d.setDate(d.getDate() + selectedDayInWeek);
-            targetDateStr = d.toISOString().split('T')[0];
         }
 
         if (selectedDate) return notifEvents.filter(e => e.fecha === selectedDate);
@@ -320,7 +324,22 @@ export default function DashboardLayout({
 
     const handleSearchByDate = (date: string) => {
         setSelectedDate(date);
-        setSearchResult({ date, items: [] });
+
+        // Update weekStart to the week of the selected date so fetchNotifEvents gets the data
+        const d = new Date(date + 'T12:00:00');
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+        const newWeekStart = new Date(d.setDate(diff));
+        setWeekStart(newWeekStart);
+
+        // Fetch events for the selected week to ensure data is available
+        fetchNotifEvents(newWeekStart);
+
+        // Fetch daily exceptions (notes/attendance) for that specific date
+        // Pass the date string directly (YYYY-MM-DD)
+        fetchDailyExceptions(date);
+
+        setSearchResult(null);
     };
 
     useEffect(() => {
@@ -886,16 +905,17 @@ export default function DashboardLayout({
                             <div className="flex-1 overflow-y-auto bg-gray-50/30 dark:bg-black/10 p-4 custom-scrollbar">
                                 {activeNotifTab === 'daily' ? (
                                     <div className="space-y-6">
-                                        {!searchResult && (
+                                        {!selectedDate && (
                                             <div className="flex bg-gray-200/30 dark:bg-gray-800/50 p-1 rounded-2xl mb-4 shadow-inner border border-gray-100 dark:border-gray-700">
-                                                <button onClick={() => setDailySubTab('today')} className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${dailySubTab === 'today' ? 'bg-white dark:bg-gray-700 text-cyan-600 shadow-sm' : 'text-gray-400'}`}>Hoy</button>
-                                                <button onClick={() => setDailySubTab('tomorrow')} className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${dailySubTab === 'tomorrow' ? 'bg-white dark:bg-gray-700 text-cyan-600 shadow-sm' : 'text-gray-400'}`}>Próx. Día</button>
+                                                <button onClick={() => { setDailySubTab('today'); setSelectedDate(''); setSearchResult(null); }} className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${dailySubTab === 'today' ? 'bg-white dark:bg-gray-700 text-cyan-600 shadow-sm' : 'text-gray-400'}`}>Hoy</button>
+                                                <button onClick={() => { setDailySubTab('tomorrow'); setSelectedDate(''); setSearchResult(null); }} className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${dailySubTab === 'tomorrow' ? 'bg-white dark:bg-gray-700 text-cyan-600 shadow-sm' : 'text-gray-400'}`}>Próx. Día</button>
                                             </div>
                                         )}
                                         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                             <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                {searchResult ? `Resultados: ${formatLocalDate(new Date(searchResult.date))}` : (dailySubTab === 'today' ? todayDateLabel : tomorrowDateLabel)}
+                                                {selectedDate ? `Resultados: ${formatLocalDate(new Date(selectedDate + 'T12:00:00'))}` : (dailySubTab === 'today' ? todayDateLabel : tomorrowDateLabel)}
                                             </div>
+
 
                                             {(groupExceptions.notAttending.length > 0 || groupExceptions.otherNotes.length > 0) && (
                                                 <div className="space-y-3">
@@ -920,63 +940,88 @@ export default function DashboardLayout({
                                                 </div>
                                             )}
 
-                                            <div className="space-y-3">
-                                                {currentEvents.length > 0 ? (
-                                                    currentEvents.map((event, idx) => (
-                                                        <div key={idx} className="p-4 rounded-2xl border border-cyan-100 dark:border-cyan-900/20 bg-cyan-50/50 dark:bg-cyan-900/10 flex items-start gap-3 shadow-sm">
-                                                            <div className="bg-cyan-600 text-white px-2 py-1.5 rounded-xl text-[10px] font-black uppercase shrink-0 min-w-[3.5rem] text-center shadow-lg shadow-cyan-200/50">{event.hora || 'Día'}</div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="font-black text-xs text-cyan-950 dark:text-cyan-50 mb-1 uppercase leading-tight">{event.titulo}</p>
-                                                                <div className="flex items-center gap-2 text-[9px] font-extrabold text-cyan-700 dark:text-cyan-400 uppercase tracking-wider">
-                                                                    <Users className="w-3 h-3" />
-                                                                    {event.grupo_afectado || 'General'}
+                                            {!['estudiante', 'acudiente'].includes(usuario?.rol) && (
+                                                <div className="space-y-3">
+                                                    {currentEvents.length > 0 ? (
+                                                        currentEvents.map((event, idx) => (
+                                                            <div key={idx} className="p-4 rounded-2xl border border-cyan-100 dark:border-cyan-900/20 bg-cyan-50/50 dark:bg-cyan-900/10 flex items-start gap-3 shadow-sm">
+                                                                <div className="bg-cyan-600 text-white px-2 py-1.5 rounded-xl text-[10px] font-black uppercase shrink-0 min-w-[3.5rem] text-center shadow-lg shadow-cyan-200/50">{event.hora || 'Día'}</div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="font-black text-xs text-cyan-950 dark:text-cyan-50 mb-1 uppercase leading-tight">{event.titulo}</p>
+                                                                    <div className="flex items-center gap-2 text-[9px] font-extrabold text-cyan-700 dark:text-cyan-400 uppercase tracking-wider">
+                                                                        <Users className="w-3 h-3" />
+                                                                        {event.grupo_afectado || 'General'}
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    (groupExceptions.notAttending.length === 0 && groupExceptions.otherNotes.length === 0) && (
-                                                        <div className="py-20 flex flex-col items-center justify-center text-center opacity-40">
-                                                            <Calendar className="w-8 h-8 text-gray-400 mb-4" />
-                                                            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">No hay actividades</p>
-                                                        </div>
-                                                    )
-                                                )}
-                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        (groupExceptions.notAttending.length === 0 && groupExceptions.otherNotes.length === 0) && (
+                                                            <div className="py-20 flex flex-col items-center justify-center text-center opacity-40">
+                                                                <Calendar className="w-8 h-8 text-gray-400 mb-4" />
+                                                                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">No hay actividades</p>
+                                                            </div>
+                                                        )
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
+
                                 ) : (
                                     <div className="flex-1 flex flex-col overflow-hidden">
-                                        <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3">
-                                            <button onClick={() => changeNotifWeek(-1)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors">
-                                                <ChevronLeftIcon className="w-4 h-4 text-gray-400" />
+                                        <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-cyan-600 text-white shadow-lg z-10">
+                                            <button onClick={() => changeNotifWeek(-1)} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+                                                <ChevronLeftIcon className="w-4 h-4 text-white" />
                                             </button>
-                                            <div className="flex-1 flex items-center justify-center gap-1">
-                                                {['L', 'M', 'M', 'J', 'V'].map((day, dIdx) => (
-                                                    <button key={dIdx} onClick={() => setSelectedDayInWeek(dIdx)} className={`flex-1 py-1.5 text-[10px] font-black rounded-full transition-all ${selectedDayInWeek === dIdx ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400'}`}>{day}</button>
-                                                ))}
-                                            </div>
-                                            <button onClick={() => changeNotifWeek(1)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors">
-                                                <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                                                {(() => {
+                                                    const end = new Date(weekStart);
+                                                    end.setDate(weekStart.getDate() + 4);
+                                                    const startStr = weekStart.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }).replace('.', '').toUpperCase();
+                                                    const endStr = end.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }).replace('.', '').toUpperCase();
+                                                    return `${startStr} - ${endStr}`;
+                                                })()}
+                                            </span>
+                                            <button onClick={() => changeNotifWeek(1)} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+                                                <ChevronRightIcon className="w-4 h-4 text-white" />
                                             </button>
                                         </div>
+
+                                        <div className="bg-gray-50 dark:bg-gray-800/50 p-2 flex items-center gap-1 border-b border-gray-100 dark:border-gray-800">
+                                            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((day, dIdx) => (
+                                                <button
+                                                    key={dIdx}
+                                                    onClick={() => setSelectedDayInWeek(dIdx)}
+                                                    className={`flex-1 py-1.5 rounded-full text-[10px] font-black uppercase transition-all ${selectedDayInWeek === dIdx
+                                                        ? 'bg-cyan-600 text-white shadow-md'
+                                                        : 'text-gray-400 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                                                >
+                                                    {day}
+                                                </button>
+                                            ))}
+                                        </div>
+
                                         {isWeeklySearching ? (
                                             <div className="text-center py-20 flex-1 flex flex-col items-center justify-center">
                                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
                                                 <p className="text-[10px] font-black text-cyan-600/60 mt-4 uppercase tracking-[0.2em]">Consultando...</p>
                                             </div>
                                         ) : (
-                                            <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar">
+                                            <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar bg-white dark:bg-gray-900">
                                                 {currentEvents.length > 0 ? (
                                                     currentEvents.map((event, idx) => (
-                                                        <div key={idx} className="p-4 rounded-2xl border border-cyan-100 dark:border-cyan-900/20 bg-white dark:bg-cyan-900/5 flex items-start gap-4 shadow-sm border-l-4 border-l-cyan-600">
-                                                            <div className="bg-gray-50 dark:bg-gray-800 px-2 py-1.5 rounded-xl text-[9px] font-black text-gray-500 uppercase shrink-0 min-w-[3.5rem] text-center border border-gray-100">{event.hora || 'Día'}</div>
-                                                            <div className="flex-1">
-                                                                <p className="font-black text-xs text-gray-900 dark:text-white mb-1 uppercase">{event.titulo}</p>
-                                                                <div className="flex items-center gap-2 opacity-60 text-[9px] font-bold uppercase">
-                                                                    <Users className="w-3 h-3 text-cyan-600" />
-                                                                    {event.grupo_afectado || 'General'}
+                                                        <div key={idx} className="p-3 rounded-2xl border border-cyan-100 dark:border-cyan-900/20 bg-cyan-50/50 dark:bg-cyan-900/10 flex items-start gap-3 shadow-sm animate-in slide-in-from-bottom-2 border-l-4 border-l-cyan-600">
+                                                            <div className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-1.5 rounded-xl text-[9px] font-black uppercase shrink-0 min-w-[3.5rem] text-center border border-gray-200 dark:border-gray-700">{event.hora || 'Día'}</div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-black text-xs text-gray-900 dark:text-white mb-0 uppercase leading-tight">{event.titulo}</p>
+                                                                <div className="flex items-center gap-2 mt-0.5">
+                                                                    <p className="text-[9px] font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-wide flex items-center gap-1">
+                                                                        <Users className="w-3 h-3" />
+                                                                        {event.grupo_afectado || 'General'}
+                                                                    </p>
                                                                 </div>
+                                                                {event.descripcion && <p className="text-[9px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed font-medium">{event.descripcion}</p>}
                                                             </div>
                                                         </div>
                                                     ))
@@ -998,8 +1043,7 @@ export default function DashboardLayout({
                             </div>
                         </div>
                     </div>
-                )
-            )}
+                ))}
 
             {/* Spacer for Mobile */}
             <div className="md:hidden h-16"></div>
