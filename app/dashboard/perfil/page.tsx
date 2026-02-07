@@ -53,21 +53,30 @@ export default function ProfilePage() {
                 return;
             }
 
-            const user = {
-                ...session.user,
-                nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
-                rol: session.user.user_metadata?.rol || 'acudiente',
-                foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
-            };
+            // Fetch profile from perfiles_publicos
+            const { data: profile } = await supabase
+                .from('perfiles_publicos')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
 
-            setUsuario(user);
+            if (profile) {
+                setUsuario(profile);
+            } else {
+                setUsuario({
+                    ...session.user,
+                    nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
+                    rol: session.user.user_metadata?.rol || 'acudiente',
+                    foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
+                });
+            }
 
             // Fetch Stats & History
             try {
                 const { data, error } = await supabase
                     .from('asistencia_pae')
                     .select('fecha, created_at, estudiantes(grupo, grado)')
-                    .eq('registrado_por', user.id);
+                    .eq('registrado_por', session.user.id);
 
                 if (!error && data) {
                     setHistory(data);

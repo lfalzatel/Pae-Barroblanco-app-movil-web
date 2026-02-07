@@ -301,9 +301,9 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                     </div>
                 </div>
 
-                {/* Calendar Collapse */}
+                {/* Calendar Collapse - Now inside the layout flow to avoid clipping */}
                 {showCalendar && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 z-[100] p-4 animate-in zoom-in-95 duration-200">
+                    <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 p-4 animate-in slide-in-from-top-2 duration-300 relative z-[100]">
                         <MiniCalendar
                             selectedDate={date}
                             onSelectDate={(d: string) => { setDate(d); setShowCalendar(false); }}

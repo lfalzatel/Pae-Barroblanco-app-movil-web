@@ -57,17 +57,27 @@ export default function DashboardPage() {
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-
       if (!session) {
         router.push('/');
         return;
       }
 
-      setUsuario({
-        email: session.user.email,
-        nombre: session.user.user_metadata?.nombre || 'Usuario',
-        rol: session.user.user_metadata?.rol || 'acudiente',
-      });
+      // Fetch official profile from perfiles_publicos
+      const { data: profile } = await supabase
+        .from('perfiles_publicos')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile) {
+        setUsuario(profile);
+      } else {
+        setUsuario({
+          email: session.user.email,
+          nombre: session.user.user_metadata?.nombre || 'Usuario',
+          rol: session.user.user_metadata?.rol || 'acudiente',
+        });
+      }
 
       fetchStats();
     };

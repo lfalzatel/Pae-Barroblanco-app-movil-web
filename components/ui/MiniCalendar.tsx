@@ -168,8 +168,8 @@ export function MiniCalendar({
             </div>
 
             <div className="grid grid-cols-7 gap-1 mb-2">
-                {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map(d => (
-                    <div key={d} className="text-center text-[10px] font-bold text-gray-400 uppercase">
+                {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d, idx) => (
+                    <div key={idx} className="text-center text-[10px] font-bold text-gray-400 uppercase">
                         {d}
                     </div>
                 ))}
