@@ -90,7 +90,7 @@ export default function ReportesPage() {
       setUsuario({
         email: session.user.email,
         nombre: session.user.user_metadata?.nombre || 'Usuario',
-        rol: session.user.user_metadata?.rol || 'docente',
+        rol: session.user.user_metadata?.rol || 'acudiente',
       });
     };
 
@@ -1155,94 +1155,42 @@ export default function ReportesPage() {
 
             <div className="flex items-center gap-2">
               {/* Export Button Premium */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                {/* Sync Button */}
+              {/* Export Button Premium (Simplified) */}
+              <div className="relative">
                 <button
-                  onClick={async () => {
-                    const confirmSync = window.confirm('¿Deseas sincronizar los datos de esta semana con la Hoja Maestra de Google?');
-                    if (!confirmSync) return;
-
-                    // Show loading toast or state (Simple alert for now)
-                    const btn = document.getElementById('sync-btn');
-                    if (btn) (btn as HTMLButtonElement).disabled = true;
-                    if (btn) (btn as HTMLButtonElement).innerText = 'Sincronizando...';
-
-                    try {
-                      const res = await fetch('/api/sync-sheets', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          sheetId: '1NIp7IaTps7E-QqkBc5Yt0rx36HGc-k5d4EiKmtOLFeE',
-                          weekStart: new Date().toISOString()
-                        })
-                      });
-
-                      const data = await res.json();
-
-                      if (res.ok) {
-                        if (data.updated > 0) {
-                          alert(`✅ Sincronización Exitosa!\nFilas actualizadas en Google Sheets: ${data.updated}\nHoja utilizada: ${data.sheetUsed}`);
-                        } else {
-                          // Debug Alert
-                          const debugInfo = data.debug ?
-                            `\n\n🔍 Debug Info:\n- Grupos DB: ${data.debug.studentGroupsFoundInDB.join(', ')}\n- Filas Excel Leídas (Muestra): ${data.debug.sampleRowsFromSheet.slice(0, 10).join(', ')}`
-                            : '';
-                          alert(`⚠️ Sincronización completada pero NO se actualizaron filas.\nHoja utilizada: ${data.sheetUsed}${debugInfo}\n\nPosible causa: Los nombres de grupos en Base de Datos no coinciden con la Columna A del Excel.`);
-                        }
-                      } else {
-                        throw new Error(data.error || 'Error desconocido');
-                      }
-                    } catch (err: any) {
-                      alert('❌ Error al sincronizar: ' + err.message);
-                    } finally {
-                      if (btn) (btn as HTMLButtonElement).disabled = false;
-                      if (btn) (btn as HTMLButtonElement).innerText = 'Sincronizar Reporte';
-                    }
-                  }}
-                  id="sync-btn"
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-green-200 dark:shadow-none active:scale-95"
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="p-2 md:p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg border border-white/10"
+                  title="Exportar Reporte"
                 >
-                  <School className="w-5 h-5" />
-                  <span>Sincronizar Reporte</span>
+                  <FileDown className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
 
-                <div className="relative">
-                  <button
-                    onClick={() => setShowExportMenu(!showExportMenu)}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                  >
-                    <FileDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                    <span>Exportar</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {showExportMenu && (
-                    <>
-                      <div className="fixed inset-0 z-[60]" onClick={() => setShowExportMenu(false)} />
-                      <div className="absolute right-0 mt-3 w-56 bg-white/95 dark:bg-gray-800 backdrop-blur-md rounded-3xl shadow-2xl border border-cyan-100 dark:border-gray-700 z-[70] py-3 p-2 animate-in fade-in zoom-in-95 duration-200">
-                        <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest px-4 mb-2">Formato de salida</p>
-                        <button
-                          onClick={handleExportExcel}
-                          className="w-full text-left px-4 py-3 hover:bg-cyan-50 rounded-2xl flex items-center gap-3 transition-colors group/item"
-                        >
-                          <div className="bg-emerald-100 p-2 rounded-xl group-hover/item:bg-emerald-500 group-hover/item:text-white transition-colors">
-                            <span className="font-black text-[10px]">XLS</span>
-                          </div>
-                          <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Descargar Excel</span>
-                        </button>
-                        <button
-                          onClick={handleExportPDF}
-                          className="w-full text-left px-4 py-3 hover:bg-cyan-50 rounded-2xl flex items-center gap-3 transition-colors border-t border-gray-50 mt-2 group/item"
-                        >
-                          <div className="bg-rose-100 p-2 rounded-xl group-hover/item:bg-rose-500 group-hover/item:text-white transition-colors">
-                            <span className="font-black text-[10px]">PDF</span>
-                          </div>
-                          <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Descargar PDF</span>
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
+                {showExportMenu && (
+                  <>
+                    <div className="fixed inset-0 z-[60]" onClick={() => setShowExportMenu(false)} />
+                    <div className="absolute right-0 mt-3 w-56 bg-white/95 dark:bg-gray-800 backdrop-blur-md rounded-3xl shadow-2xl border border-cyan-100 dark:border-gray-700 z-[70] py-3 p-2 animate-in fade-in zoom-in-95 duration-200">
+                      <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest px-4 mb-2">Formato de salida</p>
+                      <button
+                        onClick={handleExportExcel}
+                        className="w-full text-left px-4 py-3 hover:bg-cyan-50 rounded-2xl flex items-center gap-3 transition-colors group/item"
+                      >
+                        <div className="bg-emerald-100 p-2 rounded-xl group-hover/item:bg-emerald-500 group-hover/item:text-white transition-colors">
+                          <span className="font-black text-[10px]">XLS</span>
+                        </div>
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Descargar Excel</span>
+                      </button>
+                      <button
+                        onClick={handleExportPDF}
+                        className="w-full text-left px-4 py-3 hover:bg-cyan-50 rounded-2xl flex items-center gap-3 transition-colors border-t border-gray-50 mt-2 group/item"
+                      >
+                        <div className="bg-rose-100 p-2 rounded-xl group-hover/item:bg-rose-500 group-hover/item:text-white transition-colors">
+                          <span className="font-black text-[10px]">PDF</span>
+                        </div>
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Descargar PDF</span>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Date Picker Premium */}
@@ -1262,7 +1210,8 @@ export default function ReportesPage() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-8">
 
         {/* View Toggles (Main Content) */}
-        <div className="flex justify-center mb-6">
+        {/* View Toggles & Sync */}
+        <div className="flex flex-wrap items-center justify-center gap-4 mb-6">
           <div className="flex p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-2xl backdrop-blur-sm border border-gray-100 dark:border-gray-700 shadow-inner">
             <button
               onClick={() => setViewMode('historico')}
@@ -1278,6 +1227,56 @@ export default function ReportesPage() {
               Proyección
             </button>
           </div>
+
+          {usuario?.rol === 'admin' && (
+            <button
+              onClick={async () => {
+                const confirmSync = window.confirm('¿Deseas sincronizar los datos de esta semana con la Hoja Maestra de Google?');
+                if (!confirmSync) return;
+
+                // Show loading toast or state
+                const btn = document.getElementById('sync-btn');
+                if (btn) (btn as HTMLButtonElement).disabled = true;
+                if (btn) (btn as HTMLButtonElement).innerText = 'Sincronizando...';
+
+                try {
+                  const res = await fetch('/api/sync-sheets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      sheetId: '1NIp7IaTps7E-QqkBc5Yt0rx36HGc-k5d4EiKmtOLFeE',
+                      weekStart: new Date().toISOString()
+                    })
+                  });
+
+                  const data = await res.json();
+
+                  if (res.ok) {
+                    if (data.updated > 0) {
+                      alert(`✅ Sincronización Exitosa!\nFilas actualizadas en Google Sheets: ${data.updated}\nHoja utilizada: ${data.sheetUsed}`);
+                    } else {
+                      const debugInfo = data.debug ?
+                        `\n\n🔍 Debug Info:\n- Grupos DB: ${data.debug.studentGroupsFoundInDB.join(', ')}\n- Filas Excel Leídas (Muestra): ${data.debug.sampleRowsFromSheet.slice(0, 10).join(', ')}`
+                        : '';
+                      alert(`⚠️ Sincronización completada pero NO se actualizaron filas.\nHoja utilizada: ${data.sheetUsed}${debugInfo}\n\nPosible causa: Los nombres de grupos en Base de Datos no coinciden con la Columna A del Excel.`);
+                    }
+                  } else {
+                    throw new Error(data.error || 'Error desconocido');
+                  }
+                } catch (err: any) {
+                  alert('❌ Error al sincronizar: ' + err.message);
+                } finally {
+                  if (btn) (btn as HTMLButtonElement).disabled = false;
+                  if (btn) (btn as HTMLButtonElement).innerText = 'Sincronizar Reporte';
+                }
+              }}
+              id="sync-btn"
+              className="flex items-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-green-200 dark:shadow-none active:scale-95 text-[10px] md:text-xs uppercase tracking-wide"
+            >
+              <School className="w-4 h-4" />
+              <span>Sincronizar <span className="hidden md:inline">Reporte</span></span>
+            </button>
+          )}
         </div>
 
         {viewMode === 'proyeccion' ? (

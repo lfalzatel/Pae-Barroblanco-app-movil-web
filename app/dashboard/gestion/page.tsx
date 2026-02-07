@@ -146,7 +146,7 @@ export default function GestionPage() {
       setUsuario({
         email: session.user.email,
         nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
-        rol: session.user.user_metadata?.rol || 'docente',
+        rol: session.user.user_metadata?.rol || 'acudiente',
         foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
       });
     };
@@ -1533,7 +1533,9 @@ export default function GestionPage() {
                       { id: 'secretaria_educacion', label: 'Secretaría Educación', desc: 'Auditoría y Gestión Global', icon: 'FileText', color: 'text-purple-600', bg: 'bg-purple-50' },
                       { id: 'coordinador_pae', label: 'Coordinador PAE', desc: 'Gestión de horarios y registros', icon: 'Clock', color: 'text-cyan-600', bg: 'bg-cyan-50' },
                       { id: 'operador', label: 'Operador PAE', desc: 'Logística y Visualización', icon: 'Truck', color: 'text-amber-600', bg: 'bg-amber-50' },
-                      { id: 'docente', label: 'Docente / Monitor', desc: 'Solo lectura y registros básicos', icon: 'User', color: 'text-emerald-600', bg: 'bg-emerald-50' }
+                      { id: 'docente', label: 'Docente / Monitor', desc: 'Solo lectura y registros básicos', icon: 'User', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                      { id: 'estudiante', label: 'Estudiante', desc: 'Acceso a horarios y novedades diarias', icon: 'User', color: 'text-blue-600', bg: 'bg-blue-50' },
+                      { id: 'acudiente', label: 'Acudiente / Padre', desc: 'Acceso a horarios y novedades diarias', icon: 'Users', color: 'text-indigo-600', bg: 'bg-indigo-50' }
                     ].map((role) => (
                       <button
                         key={role.id}

@@ -389,7 +389,7 @@ export default function DashboardLayout({
                 setUsuario({
                     nombre: session.user.user_metadata?.nombre || 'Usuario',
                     email: session.user.email,
-                    rol: session.user.user_metadata?.rol || 'docente',
+                    rol: session.user.user_metadata?.rol || 'acudiente',
                     foto: session.user.user_metadata?.foto || null
                 });
             }
@@ -438,8 +438,10 @@ export default function DashboardLayout({
         navItems.push({ href: '/dashboard/gestion', label: 'Gestión', icon: Users });
     }
 
-    // Reportes: Visibilidad Global (Todos)
-    navItems.push({ href: '/dashboard/reportes', label: 'Reportes', icon: BarChart3 });
+    // Reportes: Visibilidad Global (Excluyendo Estudiantes/Acudientes/Secretaria/Operador internos si aplica)
+    if (!['estudiante', 'acudiente'].includes(usuario?.rol)) {
+        navItems.push({ href: '/dashboard/reportes', label: 'Reportes', icon: BarChart3 });
+    }
 
     // Horario: Operativo (No para Secretaria/Operador)
     if (['admin', 'coordinador_pae'].includes(usuario?.rol)) {
@@ -775,7 +777,13 @@ export default function DashboardLayout({
                             </div>
                             <div className="flex flex-col items-start">
                                 <span className="text-[8px] font-extrabold text-blue-100 uppercase tracking-widest leading-none mb-0.5">
-                                    {usuario.rol === 'admin' ? 'Admin' : usuario.rol === 'coordinador_pae' ? 'Coordinador PAE' : 'Docente'}
+                                    {usuario.rol === 'admin' ? 'Admin' :
+                                        usuario.rol === 'coordinador_pae' ? 'Coordinador PAE' :
+                                            usuario.rol === 'estudiante' ? 'Estudiante' :
+                                                usuario.rol === 'acudiente' ? 'Acudiente' :
+                                                    usuario.rol === 'secretaria_educacion' ? 'Secretaría' :
+                                                        usuario.rol === 'operador' ? 'Operador' :
+                                                            'Docente'}
                                 </span>
                                 <span className="text-white font-bold text-xs leading-none max-w-[80px] truncate">
                                     {usuario.nombre.split(' ')[0]}
@@ -1006,24 +1014,26 @@ export default function DashboardLayout({
                                 )}
                             </div>
 
-                            {/* Tabs Selector (Ultra Compact) */}
-                            <div className="px-0 py-2 bg-transparent dark:bg-transparent shrink-0">
-                                <div className="flex mx-6 p-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-full border border-gray-200/50 dark:border-gray-700 shadow-inner relative">
-                                    <button
-                                        onClick={() => setActiveNotifTab('daily')}
-                                        className={`flex-1 py-2 text-[10px] font-black uppercase tracking-[0.15em] rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'daily' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
-                                    >
-                                        Diario
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveNotifTab('weekly')}
-                                        className={`flex-1 py-2 text-[10px] font-black uppercase tracking-[0.15em] rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'weekly' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
-                                    >
-                                        Semana
-                                    </button>
-                                    <div className={`absolute inset-y-1 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-cyan-600 rounded-full shadow-md shadow-cyan-200/50 ${activeNotifTab === 'daily' ? 'left-1 w-[48%]' : 'left-[51%] w-[48%]'}`} />
+                            {/* Tabs Selector (Ultra Compact) - Hidden for Students/Parents */}
+                            {!['estudiante', 'acudiente'].includes(usuario?.rol) && (
+                                <div className="px-0 py-2 bg-transparent dark:bg-transparent shrink-0">
+                                    <div className="flex mx-6 p-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-full border border-gray-200/50 dark:border-gray-700 shadow-inner relative">
+                                        <button
+                                            onClick={() => setActiveNotifTab('daily')}
+                                            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-[0.15em] rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'daily' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+                                        >
+                                            Diario
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveNotifTab('weekly')}
+                                            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-[0.15em] rounded-full transition-all duration-300 relative z-10 ${activeNotifTab === 'weekly' ? 'text-white' : 'text-gray-400 hover:text-gray-600'}`}
+                                        >
+                                            Semana
+                                        </button>
+                                        <div className={`absolute inset-y-1 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-cyan-600 rounded-full shadow-md shadow-cyan-200/50 ${activeNotifTab === 'daily' ? 'left-1 w-[48%]' : 'left-[51%] w-[48%]'}`} />
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
 
 

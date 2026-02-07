@@ -66,7 +66,7 @@ export default function DashboardPage() {
       setUsuario({
         email: session.user.email,
         nombre: session.user.user_metadata?.nombre || 'Usuario',
-        rol: session.user.user_metadata?.rol || 'docente',
+        rol: session.user.user_metadata?.rol || 'acudiente',
       });
 
       fetchStats();
@@ -466,15 +466,17 @@ export default function DashboardPage() {
           <span className="text-sm md:text-base leading-none">Horario Restaurante</span>
         </button>
 
-        <button
-          onClick={() => { triggerMedium(); setWeeklyModalOpen(true); }}
-          className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl py-3 px-4 flex flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-cyan-200 transition-all active:scale-95 group"
-        >
-          <div className="bg-white/20 p-1.5 rounded-lg group-hover:rotate-12 transition-transform">
-            <FileText className="w-5 h-5" />
-          </div>
-          <span className="text-sm md:text-base leading-none">Horario Semanal</span>
-        </button>
+        {!['estudiante', 'acudiente'].includes(usuario.rol) && (
+          <button
+            onClick={() => { triggerMedium(); setWeeklyModalOpen(true); }}
+            className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl py-3 px-4 flex flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-cyan-200 transition-all active:scale-95 group"
+          >
+            <div className="bg-white/20 p-1.5 rounded-lg group-hover:rotate-12 transition-transform">
+              <FileText className="w-5 h-5" />
+            </div>
+            <span className="text-sm md:text-base leading-none">Horario Semanal</span>
+          </button>
+        )}
 
 
       </div>

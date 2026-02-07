@@ -2,7 +2,7 @@
 export interface Usuario {
   email: string;
   password: string;
-  rol: 'admin' | 'coordinador' | 'docente' | 'estudiante';
+  rol: 'admin' | 'coordinador' | 'docente' | 'estudiante' | 'acudiente' | 'secretaria_educacion' | 'operador';
   nombre: string;
 }
 

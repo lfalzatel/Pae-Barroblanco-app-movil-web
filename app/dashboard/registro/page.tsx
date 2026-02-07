@@ -159,7 +159,7 @@ function RegistroContent() {
       setUsuario({
         email: session.user.email,
         nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
-        rol: session.user.user_metadata?.rol || 'docente',
+        rol: session.user.user_metadata?.rol || 'acudiente',
         id: session.user.id,
         foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
       });
