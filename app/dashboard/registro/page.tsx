@@ -302,22 +302,41 @@ function RegistroContent() {
           }
         });
 
-        // 2. Obtener asistencia del mes
-        let query = supabase
-          .from('asistencia_pae')
-          .select('fecha, estudiantes!inner(grupo)') // Remove implicit Sede filter on logs
-          .gte('fecha', startOfMonth)
-          .lte('fecha', endOfMonth);
+        // 2. Obtener asistencia del mes con paginación para superar el límite de 1000 filas de Supabase
+        let allData: any[] = [];
+        let hasMore = true;
+        let startIndex = 0;
+        const pageSize = 1000;
 
-        if (grupoSeleccionado) {
-          query = query.eq('estudiantes.grupo', grupoSeleccionado.nombre);
+        while (hasMore) {
+          let query = supabase
+            .from('asistencia_pae')
+            .select('fecha, estudiantes!inner(grupo)') // Remove implicit Sede filter on logs
+            .gte('fecha', startOfMonth)
+            .lte('fecha', endOfMonth);
+
+          if (grupoSeleccionado) {
+            query = query.eq('estudiantes.grupo', grupoSeleccionado.nombre);
+          }
+
+          const { data, error: fetchError } = await query.range(startIndex, startIndex + pageSize - 1);
+
+          if (fetchError) throw fetchError;
+
+          if (data && data.length > 0) {
+            allData = [...allData, ...data];
+            startIndex += pageSize;
+            // Si trajimos exactamente el tamaño de la página, es probable que haya más
+            if (data.length < pageSize) {
+              hasMore = false;
+            }
+          } else {
+            hasMore = false;
+          }
         }
 
-        const { data, error: fetchError } = await query.limit(40000);
-
-        if (fetchError) throw fetchError;
-
-        if (data) {
+        if (allData.length > 0) {
+          const data = allData;
           // Mapa: Fecha -> { Grupo -> Conteo }
           const dailyGroupCounts = new Map<string, Map<string, number>>();
 
