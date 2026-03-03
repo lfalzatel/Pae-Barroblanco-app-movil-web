@@ -311,6 +311,16 @@ export default function GestionPage() {
     return matchSearch && matchGrupo;
   });
 
+  const [docenteSearchQuery, setDocenteSearchQuery] = useState('');
+  const [docenteRolFilter, setDocenteRolFilter] = useState('todos');
+
+  const docentesFiltrados = docentes.filter(doc => {
+    const matchSearch = doc.nombre.toLowerCase().includes(docenteSearchQuery.toLowerCase()) ||
+      doc.email.toLowerCase().includes(docenteSearchQuery.toLowerCase());
+    const matchRol = docenteRolFilter === 'todos' || doc.rol === docenteRolFilter;
+    return matchSearch && matchRol;
+  });
+
   /* New State for Stats Modal */
   const [showStatsModal, setShowStatsModal] = useState(false);
 
@@ -853,11 +863,57 @@ export default function GestionPage() {
               <AlertCircle className="w-4 h-4" />
               Sección administrativa de docentes.
             </div>
+
+            {/* Filtros de Docentes */}
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre o email..."
+                  className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500"
+                  value={docenteSearchQuery}
+                  onChange={(e) => setDocenteSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="w-full md:w-64 relative">
+                <select
+                  className="w-full px-5 py-3 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-black text-cyan-700 uppercase text-[10px] tracking-widest appearance-none cursor-pointer shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-cyan-400"
+                  value={docenteRolFilter}
+                  onChange={(e) => setDocenteRolFilter(e.target.value)}
+                >
+                  <option value="todos">TODOS LOS ROLES</option>
+                  <option value="admin">Administrador Total</option>
+                  <option value="secretaria_educacion">Secretaría Educación</option>
+                  <option value="coordinador_pae">Coordinador PAE</option>
+                  <option value="operador">Operador PAE</option>
+                  <option value="docente">Docente / Monitor</option>
+                  <option value="estudiante_pae">Estudiante PAE</option>
+                  <option value="estudiante">Estudiante</option>
+                  <option value="acudiente">Acudiente / Padre</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <ChevronDown className="h-4 w-4 text-cyan-500" />
+                </div>
+              </div>
+            </div>
+
+            {/* Resultados Vaciados */}
+            {docentesFiltrados.length === 0 && !loading && (
+              <div className="col-span-1 md:col-span-2 text-center py-12">
+                <div className="bg-gray-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-gray-800">
+                  <User className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+                </div>
+                <h3 className="text-gray-900 font-black text-lg mb-1 dark:text-white">No hay resultados</h3>
+                <p className="text-gray-400 text-sm font-bold dark:text-gray-500">No se encontraron docentes con esos filtros.</p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {loading ? (
                 <Skeleton className="h-28 rounded-[2rem]" />
               ) : (
-                docentes.map(docente => (
+                docentesFiltrados.map(docente => (
                   <div key={docente.id} className="bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all dark:bg-gray-800 dark:border-gray-700">
                     <div className="flex items-center gap-4">
                       {docente.avatar_url ? (
