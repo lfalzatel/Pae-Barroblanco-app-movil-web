@@ -1534,6 +1534,7 @@ export default function GestionPage() {
                       { id: 'coordinador_pae', label: 'Coordinador PAE', desc: 'Gestión de horarios y registros', icon: 'Clock', color: 'text-cyan-600', bg: 'bg-cyan-50' },
                       { id: 'operador', label: 'Operador PAE', desc: 'Logística y Visualización', icon: 'Truck', color: 'text-amber-600', bg: 'bg-amber-50' },
                       { id: 'docente', label: 'Docente / Monitor', desc: 'Solo lectura y registros básicos', icon: 'User', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                      { id: 'estudiante_pae', label: 'Estudiante PAE', desc: 'Registro de asistencia al restaurante', icon: 'User', color: 'text-teal-600', bg: 'bg-teal-50' },
                       { id: 'estudiante', label: 'Estudiante', desc: 'Acceso a horarios y novedades diarias', icon: 'User', color: 'text-blue-600', bg: 'bg-blue-50' },
                       { id: 'acudiente', label: 'Acudiente / Padre', desc: 'Acceso a horarios y novedades diarias', icon: 'Users', color: 'text-indigo-600', bg: 'bg-indigo-50' }
                     ].map((role) => (

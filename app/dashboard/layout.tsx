@@ -397,7 +397,7 @@ export default function DashboardLayout({
         { href: '/dashboard', label: 'Inicio', icon: Home },
     ];
 
-    if (['admin', 'coordinador_pae', 'docente'].includes(usuario?.rol)) {
+    if (['admin', 'coordinador_pae', 'docente', 'estudiante_pae'].includes(usuario?.rol)) {
         navItems.push({ href: '/dashboard/registro', label: 'Registrar', icon: ClipboardList });
         navItems.push({ href: '/dashboard/gestion', label: 'Gestión', icon: Users });
     }
@@ -710,7 +710,7 @@ export default function DashboardLayout({
                             </div>
                             <div className="flex flex-col items-start">
                                 <span className="text-[8px] font-extrabold text-blue-100 uppercase tracking-widest leading-none mb-0.5">
-                                    {['admin', 'coordinador_pae', 'estudiante', 'acudiente', 'secretaria_educacion', 'operador'].includes(usuario.rol) ? (usuario.rol === 'coordinador_pae' ? 'Coordinador PAE' : usuario.rol.replace('_', ' ')) : 'Docente'}
+                                    {['admin', 'coordinador_pae', 'estudiante', 'estudiante_pae', 'acudiente', 'secretaria_educacion', 'operador'].includes(usuario.rol) ? (usuario.rol === 'coordinador_pae' ? 'Coordinador PAE' : usuario.rol.replace('_', ' ')) : 'Docente'}
                                 </span>
                                 <span className="text-white font-bold text-xs leading-none max-w-[80px] truncate">{usuario.nombre.split(' ')[0]}</span>
                             </div>
