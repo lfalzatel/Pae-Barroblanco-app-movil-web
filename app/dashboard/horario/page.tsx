@@ -141,7 +141,7 @@ export default function HorarioPage() {
     const initData = async () => {
         setLoading(true);
         try {
-            const slots = generateTimeSlots(10);
+            const slots = generateTimeSlots(5);
             setTimeSlots(slots);
 
             const { data: estData } = await supabase
