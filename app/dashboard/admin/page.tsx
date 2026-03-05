@@ -22,7 +22,8 @@ import {
     AlertTriangle,
     Info,
     ChevronDown,
-    Check
+    Check,
+    Trash2
 } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
@@ -43,6 +44,13 @@ interface ToastMessage {
     message: string;
 }
 
+interface AppUser {
+    id: string;
+    email: string;
+    created_at: string;
+    user_metadata: { nombre?: string; rol?: string; };
+}
+
 interface ConfirmationModalProps {
     isOpen: boolean;
     title: string;
@@ -61,6 +69,8 @@ export default function AdminPage() {
     const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+    const [appUsers, setAppUsers] = useState<AppUser[]>([]);
+    const [usersSearch, setUsersSearch] = useState('');
 
     useEffect(() => {
         const checkAccess = async () => {
@@ -122,7 +132,7 @@ export default function AdminPage() {
     const [renameSedeFilter, setRenameSedeFilter] = useState('Principal');
     const [moveSedeFilter, setMoveSedeFilter] = useState('Principal');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'move' | 'rename' | 'status' | 'backup' | 'sede' | 'cleanup'>('move');
+    const [activeTab, setActiveTab] = useState<'move' | 'rename' | 'status' | 'backup' | 'sede' | 'cleanup' | 'usuarios'>('move');
     const [uploading, setUploading] = useState(false);
     const [inactivateAll, setInactivateAll] = useState(false);
     const [importProgress, setImportProgress] = useState(0);
@@ -338,6 +348,50 @@ export default function AdminPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchUsers = async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+            const res = await fetch('/api/admin/list-users', {
+                headers: { Authorization: `Bearer ${session.access_token}` }
+            });
+            if (res.ok) {
+                const json = await res.json();
+                setAppUsers(json.users || []);
+            }
+        } catch (err) {
+            console.error('Error fetching users:', err);
+        }
+    };
+
+    const handleDeleteUser = (userId: string, userEmail: string) => {
+        requestConfirm(
+            'Eliminar Usuario',
+            `¿Eliminar permanentemente la cuenta de "${userEmail}"? Esta acción no se puede deshacer.`,
+            async () => {
+                try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) throw new Error('No session');
+                    const res = await fetch('/api/admin/delete-user', {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify({ userId })
+                    });
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.error || 'Error al eliminar');
+                    showToast(`Usuario "${userEmail}" eliminado`, 'success');
+                    fetchUsers();
+                } catch (err: any) {
+                    showToast(err.message || 'Error al eliminar usuario', 'error');
+                }
+            },
+            'danger'
+        );
     };
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -705,6 +759,7 @@ export default function AdminPage() {
                                     {activeTab === 'status' && 'Gestión de Estados'}
                                     {activeTab === 'backup' && 'Respaldos'}
                                     {activeTab === 'cleanup' && 'Limpieza'}
+                                    {activeTab === 'usuarios' && 'Usuarios'}
                                 </p>
                             </div>
                         </div>
@@ -725,11 +780,13 @@ export default function AdminPage() {
                                     { id: 'status', label: 'Gestión de Estados', icon: ShieldAlert, color: 'text-red-600', bg: 'bg-red-50' },
                                     { id: 'backup', label: 'Respaldos', icon: Database, color: 'text-green-600', bg: 'bg-green-50' },
                                     { id: 'cleanup', label: 'Limpieza', icon: Settings, color: 'text-amber-600', bg: 'bg-amber-50' },
+                                    { id: 'usuarios', label: 'Usuarios', icon: Users, color: 'text-rose-600', bg: 'bg-rose-50' },
                                 ].map((tool) => (
                                     <button
                                         key={tool.id}
                                         onClick={() => {
                                             setActiveTab(tool.id as any);
+                                            if (tool.id === 'usuarios') fetchUsers();
                                             setIsMobileMenuOpen(false);
                                         }}
                                         className={`w-full p-4 flex items-center justify-between transition-colors ${activeTab === tool.id ? 'bg-gray-50 dark:bg-gray-700' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}
@@ -793,6 +850,13 @@ export default function AdminPage() {
                     >
                         <Settings className="w-4 h-4" />
                         Limpieza
+                    </button>
+                    <button
+                        onClick={() => { setActiveTab('usuarios'); fetchUsers(); }}
+                        className={`flex-shrink-0 flex items-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'usuarios' ? 'bg-cyan-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                    >
+                        <Users className="w-4 h-4" />
+                        Usuarios
                     </button>
                 </div>
 
@@ -1118,90 +1182,174 @@ export default function AdminPage() {
                                 </div>
                             </>
                         )}
+
+                        {activeTab === 'usuarios' && (
+                            <>
+                                <h2 className="text-lg font-bold mb-2 flex items-center gap-2">
+                                    <Users className="w-5 h-5" />
+                                    Gestión de Usuarios Registrados
+                                </h2>
+                                <p className="text-cyan-100 text-sm">Elimina cuentas de usuarios que no pertenecen a la institución o que se registraron con un correo incorrecto.</p>
+                            </>
+                        )}
                     </div>
                     <Settings className="absolute -bottom-4 -right-4 w-32 h-32 text-white/10" />
                 </div>
 
-                {/* Buscador Premium */}
-                <div className="relative mb-8">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                        <Search className="h-5 w-5 text-gray-400" />
+                {/* Usuarios list (solo tab usuarios) */}
+                {activeTab === 'usuarios' && (
+                    <div className="space-y-4">
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                                <Search className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre, correo o rol..."
+                                value={usersSearch}
+                                onChange={(e) => setUsersSearch(e.target.value)}
+                                className="block w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-none rounded-full text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:font-bold focus:outline-none focus:ring-2 focus:ring-[#0891B2]/20 shadow-xl transition-all duration-300"
+                            />
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-rose-50/80 dark:bg-rose-900/30 border-b border-rose-100 dark:border-rose-800/30">
+                                            <th className="px-4 py-4 text-xs font-black text-rose-800 dark:text-rose-300 uppercase tracking-wider">Usuario</th>
+                                            <th className="px-4 py-4 text-xs font-black text-rose-800 dark:text-rose-300 uppercase tracking-wider text-center">Rol</th>
+                                            <th className="px-4 py-4 text-xs font-black text-rose-800 dark:text-rose-300 uppercase tracking-wider text-right">Registrado</th>
+                                            <th className="px-4 py-4 text-xs font-black text-rose-800 dark:text-rose-300 uppercase tracking-wider text-center">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
+                                        {appUsers
+                                            .filter(u =>
+                                                (u.email || '').toLowerCase().includes(usersSearch.toLowerCase()) ||
+                                                (u.user_metadata?.nombre || '').toLowerCase().includes(usersSearch.toLowerCase()) ||
+                                                (u.user_metadata?.rol || '').toLowerCase().includes(usersSearch.toLowerCase())
+                                            )
+                                            .map(u => (
+                                                <tr key={u.id} className="group hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors">
+                                                    <td className="px-4 py-4">
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span className="font-bold text-sm text-gray-900 dark:text-gray-100">{u.user_metadata?.nombre || '—'}</span>
+                                                            <span className="text-xs text-gray-400 font-mono">{u.email}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${u.user_metadata?.rol === 'admin' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300' :
+                                                                u.user_metadata?.rol === 'docente' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
+                                                                    u.user_metadata?.rol === 'estudiante_pae' || u.user_metadata?.rol === 'estudiante' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                                                                        'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                                                            }`}>{u.user_metadata?.rol || 'sin rol'}</span>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-right">
+                                                        <span className="text-xs text-gray-400">{new Date(u.created_at).toLocaleDateString('es-CO')}</span>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <button
+                                                            onClick={() => handleDeleteUser(u.id, u.email || '')}
+                                                            className="p-2 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all active:scale-95"
+                                                            title="Eliminar usuario"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        {appUsers.length === 0 && (
+                                            <tr><td colSpan={4} className="px-6 py-10 text-center text-gray-400 text-sm">No hay usuarios cargados. Haz clic en &quot;Usuarios&quot; en la pestaña para cargar.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                    <input
-                        type="text"
-                        placeholder="Buscar por nombre, matrícula o grupo..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="block w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-none rounded-full text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:font-bold focus:outline-none focus:ring-2 focus:ring-[#0891B2]/20 shadow-xl transition-all duration-300"
-                    />
-                </div>
+                )}
 
-                {/* Lista de estudiantes */}
-                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-cyan-50/80 dark:bg-cyan-900/40 border-b border-cyan-100 dark:border-cyan-800/30">
-                                    <th className="px-6 py-4 w-16 text-center">
-                                        <input
-                                            type="checkbox"
-                                            onChange={(e) => {
-                                                if (e.target.checked) setSelectedStudents(filteredEstudiantes.map(e => e.id));
-                                                else setSelectedStudents([]);
-                                            }}
-                                            className="rounded-md border-gray-300 text-[#0891B2] focus:ring-[#0891B2] h-5 w-5 cursor-pointer transition-all"
-                                        />
-                                    </th>
-                                    <th className="px-4 py-4 text-xs font-black text-cyan-800 dark:text-cyan-300 uppercase tracking-wider">Estudiante</th>
-                                    <th className="px-4 py-4 text-xs font-black text-cyan-800 dark:text-cyan-300 uppercase tracking-wider text-right">Información Académica</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
-                                {filteredEstudiantes.map(est => (
-                                    <tr
-                                        key={est.id}
-                                        className={`group transition-all duration-200 cursor-pointer ${selectedStudents.includes(est.id) ? 'bg-cyan-50/60 dark:bg-cyan-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
-                                        onClick={() => toggleSelect(est.id)}
-                                    >
-                                        <td className="px-6 py-4 text-center">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedStudents.includes(est.id)}
-                                                onChange={() => { }}
-                                                className="rounded-md border-gray-300 text-[#0891B2] focus:ring-[#0891B2] h-5 w-5 cursor-pointer"
-                                            />
-                                        </td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex flex-col gap-1">
-                                                <div className={`font-bold text-sm ${est.estado === 'inactivo' ? 'text-gray-400 dark:text-gray-500 line-through decoration-2' : 'text-gray-900 dark:text-gray-100'}`}>
-                                                    {est.nombre}
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                                                        {est.matricula}
-                                                    </span>
-                                                    {est.estado === 'inactivo' && (
-                                                        <span className="bg-red-100 text-red-600 text-[9px] font-black px-2 py-0.5 rounded-full">INACTIVO</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-4 text-right">
-                                            <div className="flex flex-col items-end gap-1">
-                                                <div className="bg-[#0891B2]/10 dark:bg-[#0891B2]/20 text-[#0891B2] dark:text-cyan-300 px-3 py-1 rounded-lg text-xs font-black inline-block">
-                                                    {est.grupo}
-                                                </div>
-                                                <div className="text-[10px] font-bold text-cyan-600/80 dark:text-cyan-400/80 uppercase tracking-wide">
-                                                    {est.sede}
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                {/* Buscador y lista de Estudiantes (oculto en tab usuarios) */}
+                {activeTab !== 'usuarios' && (
+                    <>
+                        <div className="relative mb-8">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                                <Search className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre, matrícula o grupo..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="block w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-none rounded-full text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:font-bold focus:outline-none focus:ring-2 focus:ring-[#0891B2]/20 shadow-xl transition-all duration-300"
+                            />
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-cyan-50/80 dark:bg-cyan-900/40 border-b border-cyan-100 dark:border-cyan-800/30">
+                                            <th className="px-6 py-4 w-16 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) setSelectedStudents(filteredEstudiantes.map(e => e.id));
+                                                        else setSelectedStudents([]);
+                                                    }}
+                                                    className="rounded-md border-gray-300 text-[#0891B2] focus:ring-[#0891B2] h-5 w-5 cursor-pointer transition-all"
+                                                />
+                                            </th>
+                                            <th className="px-4 py-4 text-xs font-black text-cyan-800 dark:text-cyan-300 uppercase tracking-wider">Estudiante</th>
+                                            <th className="px-4 py-4 text-xs font-black text-cyan-800 dark:text-cyan-300 uppercase tracking-wider text-right">Información Académica</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
+                                        {filteredEstudiantes.map(est => (
+                                            <tr
+                                                key={est.id}
+                                                className={`group transition-all duration-200 cursor-pointer ${selectedStudents.includes(est.id) ? 'bg-cyan-50/60 dark:bg-cyan-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                                                onClick={() => toggleSelect(est.id)}
+                                            >
+                                                <td className="px-6 py-4 text-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedStudents.includes(est.id)}
+                                                        onChange={() => { }}
+                                                        className="rounded-md border-gray-300 text-[#0891B2] focus:ring-[#0891B2] h-5 w-5 cursor-pointer"
+                                                    />
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className={`font-bold text-sm ${est.estado === 'inactivo' ? 'text-gray-400 dark:text-gray-500 line-through decoration-2' : 'text-gray-900 dark:text-gray-100'}`}>
+                                                            {est.nombre}
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                                                                {est.matricula}
+                                                            </span>
+                                                            {est.estado === 'inactivo' && (
+                                                                <span className="bg-red-100 text-red-600 text-[9px] font-black px-2 py-0.5 rounded-full">INACTIVO</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-4 text-right">
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <div className="bg-[#0891B2]/10 dark:bg-[#0891B2]/20 text-[#0891B2] dark:text-cyan-300 px-3 py-1 rounded-lg text-xs font-black inline-block">
+                                                            {est.grupo}
+                                                        </div>
+                                                        <div className="text-[10px] font-bold text-cyan-600/80 dark:text-cyan-400/80 uppercase tracking-wide">
+                                                            {est.sede}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Modal de Carga Masiva (Año Nuevo) */}
