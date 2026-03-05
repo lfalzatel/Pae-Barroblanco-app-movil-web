@@ -619,21 +619,21 @@ export default function DashboardLayout({
                                     <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Tema</p>
                                     <div className="flex bg-gray-100/50 p-1 rounded-lg dark:bg-gray-700/50">
                                         <button
-                                            onClick={() => setTheme('light')}
+                                            onClick={() => { setTheme('light'); setIsProfileMenuOpen(false); }}
                                             className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'light' ? 'bg-white text-yellow-500 shadow-sm dark:bg-gray-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                                             title="Modo Claro"
                                         >
                                             <Sun className="w-4 h-4" />
                                         </button>
                                         <button
-                                            onClick={() => setTheme('dark')}
+                                            onClick={() => { setTheme('dark'); setIsProfileMenuOpen(false); }}
                                             className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm dark:bg-gray-900' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                                             title="Modo Oscuro"
                                         >
                                             <Moon className="w-4 h-4" />
                                         </button>
                                         <button
-                                            onClick={() => setTheme('system')}
+                                            onClick={() => { setTheme('system'); setIsProfileMenuOpen(false); }}
                                             className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'system' ? 'bg-white text-gray-800 shadow-sm dark:bg-gray-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                                             title="Sistema"
                                         >
@@ -779,21 +779,21 @@ export default function DashboardLayout({
                                         <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Tema</p>
                                         <div className="flex bg-gray-100/50 p-1 rounded-lg dark:bg-gray-700/50">
                                             <button
-                                                onClick={() => setTheme('light')}
+                                                onClick={() => { setTheme('light'); setIsProfileMenuOpen(false); }}
                                                 className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'light' ? 'bg-white text-yellow-500 shadow-sm dark:bg-gray-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                                                 title="Modo Claro"
                                             >
                                                 <Sun className="w-4 h-4" />
                                             </button>
                                             <button
-                                                onClick={() => setTheme('dark')}
+                                                onClick={() => { setTheme('dark'); setIsProfileMenuOpen(false); }}
                                                 className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm dark:bg-gray-900' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                                                 title="Modo Oscuro"
                                             >
                                                 <Moon className="w-4 h-4" />
                                             </button>
                                             <button
-                                                onClick={() => setTheme('system')}
+                                                onClick={() => { setTheme('system'); setIsProfileMenuOpen(false); }}
                                                 className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'system' ? 'bg-white text-gray-800 shadow-sm dark:bg-gray-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                                                 title="Sistema"
                                             >
