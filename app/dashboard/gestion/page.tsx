@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useModalBack } from '@/hooks/useModalBack';
-import { ArrowLeft, Search, Eye, FileDown, Users, User, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2, School, ChevronDown, Info, Shield, FileText, Truck } from 'lucide-react';
+import { ArrowLeft, Search, Eye, FileDown, Users, User, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2, School, ChevronDown, Info, Shield, FileText, Truck, Edit2 } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -81,6 +81,23 @@ export default function GestionPage() {
     sede: 'Principal'
   });
 
+  // Edit Student State
+  const [editingStudent, setEditingStudent] = useState<Estudiante | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    nombre: '',
+    matricula: '',
+    grado: '',
+    grupo: '',
+    sede: 'Principal'
+  });
+  useModalBack(!!editingStudent, () => setEditingStudent(null), 'edit-student-modal');
+
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  // Selector dynamic group state
+  const [isNewGroup, setIsNewGroup] = useState(false);
+
   const sedes = [
     { id: 'todas', nombre: 'Todas' },
     { id: 'Principal', nombre: 'Sede Principal' },
@@ -134,6 +151,47 @@ export default function GestionPage() {
     }
   };
 
+  const handleUpdateStudent = async () => {
+    setUpdateError(null);
+    if (!editingStudent) return;
+    if (!editFormData.nombre || !editFormData.matricula || !editFormData.grado || !editFormData.grupo) {
+      setUpdateError('Todos los campos son obligatorios');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('estudiantes')
+        .update({
+          nombre: editFormData.nombre,
+          matricula: editFormData.matricula,
+          grado: editFormData.grado,
+          grupo: editFormData.grupo,
+          sede: editFormData.sede
+        })
+        .eq('id', editingStudent.id);
+
+      if (error) {
+        if (error.code === '23505') throw new Error('La matrícula ya está registrada');
+        throw error;
+      }
+
+      // Success
+      setEditingStudent(null);
+
+      // Force refresh data
+      const currentFilter = sedeFilter;
+      setSedeFilter(currentFilter === 'todas' ? 'todas' : currentFilter);
+      window.location.reload();
+
+    } catch (err: any) {
+      setUpdateError(err.message || 'Error al actualizar el estudiante');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -143,12 +201,22 @@ export default function GestionPage() {
         return;
       }
 
-      setUsuario({
-        email: session.user.email,
-        nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
-        rol: session.user.user_metadata?.rol || 'acudiente',
-        foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
-      });
+      const { data: profile } = await supabase
+        .from('perfiles_publicos')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile) {
+        setUsuario(profile);
+      } else {
+        setUsuario({
+          email: session.user.email,
+          nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
+          rol: session.user.user_metadata?.rol || 'acudiente',
+          foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
+        });
+      }
     };
 
     checkUser();
@@ -603,7 +671,10 @@ export default function GestionPage() {
 
             {usuario?.rol === 'admin' && activeTab === 'estudiantes' && (
               <button
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={() => {
+                  setIsCreateModalOpen(true);
+                  setIsNewGroup(false);
+                }}
                 className="p-2 md:px-4 md:py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl md:rounded-2xl transition-all shadow-xl shadow-cyan-900/20 font-black uppercase text-[9px] md:text-[10px] tracking-widest flex items-center gap-2 border border-emerald-400/30 active:scale-95"
               >
                 <UserPlus className="w-4 h-4 md:w-5 md:h-5" />
@@ -835,6 +906,25 @@ export default function GestionPage() {
                             >
                               Historial
                             </button>
+                            {usuario?.rol === 'admin' && (
+                              <button
+                                onClick={() => {
+                                  setEditingStudent(estudiante);
+                                  setEditFormData({
+                                    nombre: estudiante.nombre,
+                                    matricula: estudiante.matricula,
+                                    grado: estudiante.grado,
+                                    grupo: estudiante.grupo,
+                                    sede: estudiante.sede
+                                  });
+                                  setIsNewGroup(false);
+                                }}
+                                className="px-4 py-2 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-500 hover:text-white transition-all shadow-sm flex items-center justify-center"
+                                title="Editar Estudiante"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                            )}
                             <button
                               onClick={() => handleGenerateReport(estudiante)}
                               className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl transition-all hover:bg-emerald-500 hover:text-white"
@@ -1023,13 +1113,50 @@ export default function GestionPage() {
                       </div>
                       <div>
                         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Grupo</label>
-                        <input
-                          type="text"
-                          placeholder="Ej: 10-1"
-                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
-                          value={newStudent.grupo}
-                          onChange={e => setNewStudent({ ...newStudent, grupo: e.target.value })}
-                        />
+                        {!isNewGroup ? (
+                          <div className="relative">
+                            <select
+                              className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-black text-cyan-700 uppercase text-[10px] tracking-widest appearance-none cursor-pointer shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-cyan-400"
+                              value={newStudent.grupo}
+                              onChange={(e) => {
+                                if (e.target.value === 'nuevo') {
+                                  setIsNewGroup(true);
+                                  setNewStudent({ ...newStudent, grupo: '' });
+                                } else {
+                                  setNewStudent({ ...newStudent, grupo: e.target.value });
+                                }
+                              }}
+                            >
+                              <option value="" disabled>Seleccione un grupo</option>
+                              {gruposDisponibles.map((grupo) => (
+                                <option key={grupo} value={grupo}>
+                                  {grupo}
+                                </option>
+                              ))}
+                              <option value="nuevo">-- Nuevo Grupo... --</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                              <ChevronDown className="h-4 w-4 text-cyan-500" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="Ej: 10-1"
+                              className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
+                              value={newStudent.grupo}
+                              onChange={e => setNewStudent({ ...newStudent, grupo: e.target.value })}
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => setIsNewGroup(false)}
+                              className="px-4 bg-gray-100 text-gray-500 rounded-2xl transition-all hover:bg-gray-200"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1073,6 +1200,162 @@ export default function GestionPage() {
                     >
                       {creating ? <Clock className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                       {creating ? 'GUARDANDO...' : 'GUARDAR'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        }
+
+        {/* Modal Edición Estudiante */}
+        {
+          editingStudent && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300">
+              <div className="bg-white rounded-[2.5rem] max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium dark:bg-gray-800">
+                <div className="p-6 md:p-8 bg-gradient-to-br from-amber-500 to-amber-600 text-white relative">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white/20 p-2.5 rounded-2xl shadow-inner border border-white/10">
+                        <Edit2 className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-xl tracking-tight leading-none">Editar Estudiante</h3>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-80 mt-1.5 text-amber-50">Registro Administrativo</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setEditingStudent(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-6 md:p-8 space-y-5 bg-white dark:bg-gray-800">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Nombre Completo</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Juan Pérez"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
+                        value={editFormData.nombre}
+                        onChange={e => setEditFormData({ ...editFormData, nombre: e.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Matrícula</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: 2024001"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
+                        value={editFormData.matricula}
+                        onChange={e => setEditFormData({ ...editFormData, matricula: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Grado</label>
+                        <input
+                          type="text"
+                          placeholder="Ej: 10"
+                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
+                          value={editFormData.grado}
+                          onChange={e => setEditFormData({ ...editFormData, grado: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Grupo</label>
+                        {!isNewGroup ? (
+                          <div className="relative">
+                            <select
+                              className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/30 transition-all font-black text-amber-700 uppercase text-[10px] tracking-widest appearance-none cursor-pointer shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-amber-400"
+                              value={gruposDisponibles.includes(editFormData.grupo) ? editFormData.grupo : (editFormData.grupo ? 'nuevo' : '')}
+                              onChange={(e) => {
+                                if (e.target.value === 'nuevo') {
+                                  setIsNewGroup(true);
+                                  // Mantener el texto anterior por si quiere usarlo o clear: setEditFormData({ ...editFormData, grupo: '' });
+                                } else {
+                                  setEditFormData({ ...editFormData, grupo: e.target.value });
+                                }
+                              }}
+                            >
+                              <option value="" disabled>Seleccione un grupo</option>
+                              {gruposDisponibles.map((grupo) => (
+                                <option key={grupo} value={grupo}>
+                                  {grupo}
+                                </option>
+                              ))}
+                              {/* Add current group if it's not in the list for some reason */}
+                              {editFormData.grupo && !gruposDisponibles.includes(editFormData.grupo) && <option value={editFormData.grupo}>{editFormData.grupo}</option>}
+                              <option value="nuevo">-- Nuevo Grupo... --</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                              <ChevronDown className="h-4 w-4 text-amber-500" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="Ej: 10-1"
+                              className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
+                              value={editFormData.grupo}
+                              onChange={e => setEditFormData({ ...editFormData, grupo: e.target.value })}
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => setIsNewGroup(false)}
+                              className="px-4 bg-gray-100 text-gray-500 rounded-2xl transition-all hover:bg-gray-200"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Sede</label>
+                      <div className="relative">
+                        <select
+                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/30 transition-all font-black text-amber-700 uppercase text-[10px] tracking-widest appearance-none cursor-pointer shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-amber-400"
+                          value={editFormData.sede}
+                          onChange={e => setEditFormData({ ...editFormData, sede: e.target.value })}
+                        >
+                          {sedes.filter(s => s.id !== 'todas').map(s => (
+                            <option key={s.id} value={s.nombre}>{s.nombre.toUpperCase()}</option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                          <ChevronDown className="h-4 w-4 text-amber-500" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {updateError && (
+                    <div className="p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-pulse">
+                      <AlertCircle className="w-5 h-5 shrink-0" />
+                      {updateError}
+                    </div>
+                  )}
+
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      onClick={() => setEditingStudent(null)}
+                      className="flex-1 px-6 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all hover:bg-gray-200 active:scale-95 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleUpdateStudent}
+                      disabled={isUpdating}
+                      className="flex-1 px-6 py-4 bg-amber-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-amber-200 transition-all hover:bg-amber-600 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {isUpdating ? <Clock className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      {isUpdating ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
                     </button>
                   </div>
                 </div>
