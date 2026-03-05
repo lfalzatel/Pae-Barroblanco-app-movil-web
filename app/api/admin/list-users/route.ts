@@ -6,6 +6,9 @@ const supabaseAdmin = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
     try {
         // Verify caller is an admin
@@ -15,8 +18,19 @@ export async function GET(req: NextRequest) {
         }
         const token = authHeader.replace('Bearer ', '');
         const { data: { user: caller }, error: callerErr } = await supabaseAdmin.auth.getUser(token);
-        if (callerErr || !caller || caller.user_metadata?.rol !== 'admin') {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        if (callerErr || !caller) {
+            return NextResponse.json({ error: 'Forbidden - invalid token' }, { status: 403 });
+        }
+
+        // Verify admin via DB (more reliable than user_metadata which may be stale in JWT)
+        const { data: callerProfile } = await supabaseAdmin
+            .from('perfiles_publicos')
+            .select('rol')
+            .eq('id', caller.id)
+            .single();
+
+        if (callerProfile?.rol !== 'admin') {
+            return NextResponse.json({ error: 'Forbidden - not admin' }, { status: 403 });
         }
 
         // List all auth users (up to 1000)
@@ -25,11 +39,12 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        // Also fetch roles from the DB table (usuarios or perfiles_publicos)
-        // Try perfiles_publicos first (more up-to-date when changed from app)
-        const { data: perfiles } = await supabaseAdmin
+        // Fetch roles from perfiles_publicos (source of truth for roles changed via app)
+        const { data: perfiles, error: perfilesError } = await supabaseAdmin
             .from('perfiles_publicos')
             .select('id, rol, nombre');
+
+        console.log('[list-users] perfiles count:', perfiles?.length, 'error:', perfilesError?.message);
 
         // Build a map of id -> { rol, nombre } from DB
         const dbRolMap: Record<string, { rol?: string; nombre?: string }> = {};
@@ -39,31 +54,24 @@ export async function GET(req: NextRequest) {
             });
         }
 
-        // If perfiles_publicos had no results, try 'usuarios' table
-        if (!perfiles || perfiles.length === 0) {
-            const { data: usuariosData } = await supabaseAdmin
-                .from('usuarios')
-                .select('id, rol, nombre');
-            if (usuariosData) {
-                usuariosData.forEach((u: any) => {
-                    dbRolMap[u.id] = { rol: u.rol, nombre: u.nombre };
-                });
-            }
-        }
-
         // Merge: prefer DB rol over user_metadata.rol (DB is more current)
-        const simplified = users.map(u => ({
-            id: u.id,
-            email: u.email,
-            created_at: u.created_at,
-            user_metadata: {
-                nombre: dbRolMap[u.id]?.nombre || u.user_metadata?.nombre || u.user_metadata?.full_name || '',
-                rol: dbRolMap[u.id]?.rol || u.user_metadata?.rol || ''
-            }
-        }));
+        const simplified = users.map(u => {
+            const dbEntry = dbRolMap[u.id];
+            const rol = dbEntry?.rol || u.user_metadata?.rol || '';
+            return {
+                id: u.id,
+                email: u.email,
+                created_at: u.created_at,
+                user_metadata: {
+                    nombre: dbEntry?.nombre || u.user_metadata?.nombre || u.user_metadata?.full_name || '',
+                    rol
+                }
+            };
+        });
 
         return NextResponse.json({ users: simplified });
     } catch (err: any) {
+        console.error('[list-users] error:', err.message);
         return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
     }
 }
