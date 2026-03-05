@@ -73,29 +73,71 @@ export default function ProfilePage() {
 
             // Fetch Stats & History
             try {
-                const { data, error } = await supabase
-                    .from('asistencia_pae')
-                    .select('fecha, created_at, estudiantes(grupo, grado)')
-                    .eq('registrado_por', session.user.id);
+                const userRole = profile?.rol || session.user.user_metadata?.rol || 'acudiente';
+                const isStudent = userRole === 'estudiante' || userRole === 'estudiante_pae';
+                let historyData: any[] = [];
 
-                if (!error && data) {
-                    setHistory(data);
+                if (isStudent) {
+                    // 1. Get student record by email
+                    const { data: studentData, error: studentError } = await supabase
+                        .from('estudiantes')
+                        .select('id, grupo, grado')
+                        .eq('email', session.user.email)
+                        .single();
 
-                    const uniqueDays = new Set(data.map(d => d.fecha));
+                    if (!studentError && studentData) {
+                        // 2. Get history where this student received PAE
+                        const { data, error } = await supabase
+                            .from('asistencia_pae')
+                            .select('fecha, created_at, estado')
+                            .eq('estudiante_id', studentData.id);
+
+                        if (!error && data) {
+                            // Inject student data so the rest of the UI doesn't break
+                            historyData = data.map(d => ({
+                                ...d,
+                                estudiantes: { grupo: studentData.grupo, grado: studentData.grado }
+                            }));
+                        }
+                    } else {
+                        console.error('Student record not found for this email', session.user.email);
+                    }
+                } else {
+                    // Admin or Docente - see their registered history
+                    const { data, error } = await supabase
+                        .from('asistencia_pae')
+                        .select('fecha, created_at, estado, estudiantes(grupo, grado)')
+                        .eq('registrado_por', session.user.id);
+
+                    if (!error && data) {
+                        historyData = data;
+                    }
+                }
+
+                if (historyData.length > 0) {
+                    setHistory(historyData);
+
+                    const uniqueDays = new Set(historyData.map(d => d.fecha));
                     const uniqueGroups = new Set();
-                    data.forEach(d => {
+                    let receivedCount = 0;
+
+                    historyData.forEach(d => {
                         const est = d.estudiantes as any;
                         // Handle if it comes as an array (one-to-many inference) or object
                         const grupo = Array.isArray(est) ? est[0]?.grupo : est?.grupo;
                         if (grupo) uniqueGroups.add(grupo);
+
+                        if (isStudent && d.estado === 'recibio') {
+                            receivedCount++;
+                        }
                     });
 
                     // Sort by date to find latest
-                    const dates = data.map(d => d.fecha).sort();
+                    const dates = historyData.map(d => d.fecha).sort();
                     const lastDate = dates.length > 0 ? dates[dates.length - 1] : 'N/A';
 
                     setStats({
-                        totalRegistros: data.length,
+                        totalRegistros: isStudent ? receivedCount : historyData.length,
                         diasActivos: uniqueDays.size,
                         gruposAtendidos: uniqueGroups.size,
                         ultimoRegistro: lastDate
@@ -169,8 +211,12 @@ export default function ProfilePage() {
                             <CalendarDays className="w-6 h-6" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Tu Actividad Reciente</h2>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Últimos 35 días de gestión</p>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                {usuario?.rol === 'estudiante' || usuario?.rol === 'estudiante_pae' ? 'Tu Historial PAE' : 'Tu Actividad Reciente'}
+                            </h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {usuario?.rol === 'estudiante' || usuario?.rol === 'estudiante_pae' ? 'Últimos 35 días de entrega' : 'Últimos 35 días de gestión'}
+                            </p>
                         </div>
                     </div>
 
@@ -280,7 +326,9 @@ export default function ProfilePage() {
                             <CheckCircle2 className="w-5 h-5" />
                         </div>
                         <span className="text-3xl font-black text-gray-900 dark:text-white">{stats.totalRegistros}</span>
-                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">Registros Totales</span>
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
+                            {usuario?.rol === 'estudiante' || usuario?.rol === 'estudiante_pae' ? 'Días Recibidos' : 'Registros Totales'}
+                        </span>
                     </div>
 
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center text-center hover:border-blue-200 dark:hover:border-blue-700 transition-colors">
@@ -296,7 +344,9 @@ export default function ProfilePage() {
                             <TrendingUp className="w-5 h-5" />
                         </div>
                         <span className="text-3xl font-black text-gray-900 dark:text-white">{stats.gruposAtendidos}</span>
-                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">Grupos Gestionados</span>
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
+                            {usuario?.rol === 'estudiante' || usuario?.rol === 'estudiante_pae' ? 'Grupos' : 'Grupos Gestionados'}
+                        </span>
                     </div>
 
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center text-center hover:border-blue-200 dark:hover:border-blue-700 transition-colors">

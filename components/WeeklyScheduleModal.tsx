@@ -108,46 +108,56 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
     };
 
     useEffect(() => {
+        let ignore = false;
+
+        const fetchWeeklySchedule = async () => {
+            setLoading(true);
+            try {
+                const dates = [];
+                for (let i = 0; i < 5; i++) {
+                    const d = new Date(weekStart);
+                    d.setDate(d.getDate() + i);
+                    dates.push(formatLocalDate(d));
+                }
+
+                // Fetch Institutional Events
+                const { data: eventData } = await supabase
+                    .from('novedades_institucionales')
+                    .select('*')
+                    .in('fecha', dates)
+                    .order('hora', { ascending: true });
+
+                if (ignore) return;
+
+                // Map data and sort by time
+                const mapped = dates.map(dateStr => {
+                    const dayEvents = (eventData?.filter(e => e.fecha === dateStr) || [])
+                        .sort((a, b) => timeToMinutes(a.hora) - timeToMinutes(b.hora));
+                    return {
+                        date: dateStr,
+                        label: new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+                        instEvents: dayEvents
+                    };
+                });
+
+                setWeeklyData(mapped);
+            } catch (error) {
+                console.error('Error fetching weekly schedule:', error);
+            } finally {
+                if (!ignore) {
+                    setLoading(false);
+                }
+            }
+        };
+
         if (isOpen) {
             fetchWeeklySchedule();
         }
+
+        return () => {
+            ignore = true;
+        };
     }, [isOpen, weekStart]);
-
-    const fetchWeeklySchedule = async () => {
-        setLoading(true);
-        try {
-            const dates = [];
-            for (let i = 0; i < 5; i++) {
-                const d = new Date(weekStart);
-                d.setDate(d.getDate() + i);
-                dates.push(formatLocalDate(d));
-            }
-
-            // Fetch Institutional Events
-            const { data: eventData } = await supabase
-                .from('novedades_institucionales')
-                .select('*')
-                .in('fecha', dates)
-                .order('hora', { ascending: true });
-
-            // Map data and sort by time
-            const mapped = dates.map(dateStr => {
-                const dayEvents = (eventData?.filter(e => e.fecha === dateStr) || [])
-                    .sort((a, b) => timeToMinutes(a.hora) - timeToMinutes(b.hora));
-                return {
-                    date: dateStr,
-                    label: new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                    instEvents: dayEvents
-                };
-            });
-
-            setWeeklyData(mapped);
-        } catch (error) {
-            console.error('Error fetching weekly schedule:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const changeWeek = (offset: number) => {
         const newDate = new Date(weekStart);

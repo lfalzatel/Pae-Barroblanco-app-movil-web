@@ -17,6 +17,7 @@ interface Estudiante {
   grupo: string;
   sede: string;
   estado?: string;
+  email?: string | null;
 }
 
 interface Docente {
@@ -78,7 +79,8 @@ export default function GestionPage() {
     matricula: '',
     grado: '',
     grupo: '',
-    sede: 'Principal'
+    sede: 'Principal',
+    email: ''
   });
 
   // Edit Student State
@@ -88,7 +90,8 @@ export default function GestionPage() {
     matricula: '',
     grado: '',
     grupo: '',
-    sede: 'Principal'
+    sede: 'Principal',
+    email: ''
   });
   useModalBack(!!editingStudent, () => setEditingStudent(null), 'edit-student-modal');
 
@@ -128,7 +131,7 @@ export default function GestionPage() {
 
       // Success
       setIsCreateModalOpen(false);
-      setNewStudent({ nombre: '', matricula: '', grado: '', grupo: '', sede: 'Principal' });
+      setNewStudent({ nombre: '', matricula: '', grado: '', grupo: '', sede: 'Principal', email: '' });
 
       // Refresh list (hacky re-trigger of useEffect by toggling filter momentarily or just simpler: call fetch logic?) 
       // Better: force re-fetch by updating a dummy dependency or refactoring fetch into a useCallback.
@@ -168,7 +171,8 @@ export default function GestionPage() {
           matricula: editFormData.matricula,
           grado: editFormData.grado,
           grupo: editFormData.grupo,
-          sede: editFormData.sede
+          sede: editFormData.sede,
+          email: editFormData.email || null
         })
         .eq('id', editingStudent.id);
 
@@ -915,7 +919,8 @@ export default function GestionPage() {
                                     matricula: estudiante.matricula,
                                     grado: estudiante.grado,
                                     grupo: estudiante.grupo,
-                                    sede: estudiante.sede
+                                    sede: estudiante.sede,
+                                    email: estudiante.email || ''
                                   });
                                   setIsNewGroup(false);
                                 }}
@@ -1100,6 +1105,19 @@ export default function GestionPage() {
                       />
                     </div>
 
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">
+                        Correo Electrónico <span className="text-gray-300 dark:text-gray-600 font-normal ml-1 text-[9px]">(Opcional)</span>
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="Ej: estudiante@correo.com"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
+                        value={newStudent.email}
+                        onChange={e => setNewStudent({ ...newStudent, email: e.target.value })}
+                      />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Grado</label>
@@ -1251,6 +1269,19 @@ export default function GestionPage() {
                         className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                         value={editFormData.matricula}
                         onChange={e => setEditFormData({ ...editFormData, matricula: e.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">
+                        Correo Electrónico <span className="text-gray-300 dark:text-gray-600 font-normal ml-1 text-[9px]">(Opcional)</span>
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="Ej: estudiante@correo.com"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
+                        value={editFormData.email}
+                        onChange={e => setEditFormData({ ...editFormData, email: e.target.value })}
                       />
                     </div>
 
