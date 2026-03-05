@@ -23,7 +23,8 @@ import {
     Info,
     ChevronDown,
     Check,
-    Trash2
+    Trash2,
+    RefreshCcw
 } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
@@ -350,12 +351,16 @@ export default function AdminPage() {
         }
     };
 
+    const [fetchingUsers, setFetchingUsers] = useState(false);
+
     const fetchUsers = async () => {
+        setFetchingUsers(true);
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
             const res = await fetch('/api/admin/list-users', {
-                headers: { Authorization: `Bearer ${session.access_token}` }
+                headers: { Authorization: `Bearer ${session.access_token}` },
+                cache: 'no-store'
             });
             if (res.ok) {
                 const json = await res.json();
@@ -363,8 +368,17 @@ export default function AdminPage() {
             }
         } catch (err) {
             console.error('Error fetching users:', err);
+        } finally {
+            setFetchingUsers(false);
         }
     };
+
+    // Refetch users every time the tab becomes active
+    useEffect(() => {
+        if (activeTab === 'usuarios') {
+            fetchUsers();
+        }
+    }, [activeTab]);
 
     const handleDeleteUser = (userId: string, userEmail: string) => {
         requestConfirm(
@@ -1199,17 +1213,28 @@ export default function AdminPage() {
                 {/* Usuarios list (solo tab usuarios) */}
                 {activeTab === 'usuarios' && (
                     <div className="space-y-4">
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                                <Search className="h-5 w-5 text-gray-400" />
+                        <div className="flex gap-2">
+                            <div className="relative flex-1">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                                    <Search className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por nombre, correo o rol..."
+                                    value={usersSearch}
+                                    onChange={(e) => setUsersSearch(e.target.value)}
+                                    className="block w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-none rounded-full text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:font-bold focus:outline-none focus:ring-2 focus:ring-[#0891B2]/20 shadow-xl transition-all duration-300"
+                                />
                             </div>
-                            <input
-                                type="text"
-                                placeholder="Buscar por nombre, correo o rol..."
-                                value={usersSearch}
-                                onChange={(e) => setUsersSearch(e.target.value)}
-                                className="block w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-none rounded-full text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:font-bold focus:outline-none focus:ring-2 focus:ring-[#0891B2]/20 shadow-xl transition-all duration-300"
-                            />
+                            <button
+                                onClick={fetchUsers}
+                                disabled={fetchingUsers}
+                                className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-gray-800 rounded-full shadow-xl font-bold text-sm text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-gray-700 transition-all disabled:opacity-50 border border-gray-100 dark:border-gray-700"
+                                title="Actualizar lista"
+                            >
+                                <RefreshCcw className={`w-4 h-4 ${fetchingUsers ? 'animate-spin' : ''}`} />
+                                <span className="hidden sm:inline">Actualizar</span>
+                            </button>
                         </div>
                         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
                             <div className="overflow-x-auto">
@@ -1239,9 +1264,9 @@ export default function AdminPage() {
                                                     </td>
                                                     <td className="px-4 py-4 text-center">
                                                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${u.user_metadata?.rol === 'admin' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300' :
-                                                                u.user_metadata?.rol === 'docente' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
-                                                                    u.user_metadata?.rol === 'estudiante_pae' || u.user_metadata?.rol === 'estudiante' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
-                                                                        'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                                                            u.user_metadata?.rol === 'docente' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
+                                                                u.user_metadata?.rol === 'estudiante_pae' || u.user_metadata?.rol === 'estudiante' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                                                                    'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                                                             }`}>{u.user_metadata?.rol || 'sin rol'}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-right">
