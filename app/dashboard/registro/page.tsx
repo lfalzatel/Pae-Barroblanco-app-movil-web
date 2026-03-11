@@ -587,7 +587,7 @@ function RegistroContent() {
         } else {
           const isActivo = est.estado === 'activo' || !est.estado;
           if (isActivo) {
-            newAsistencias[est.id] = 'recibio';
+            newAsistencias[est.id] = 'no_recibio';
           }
         }
       });
