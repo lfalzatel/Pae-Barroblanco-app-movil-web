@@ -321,7 +321,18 @@ export default function AdminPage() {
     useEffect(() => {
         const checkAdmin = async () => {
             const { data: { session } } = await supabase.auth.getSession();
-            if (!session || session.user.user_metadata?.rol !== 'admin') {
+            
+            let userRole = session?.user.user_metadata?.rol;
+            const userEmail = session?.user.email || '';
+
+            if (session && !userRole && !userEmail.endsWith('@barroblanco.edu.co')) {
+                await supabase.auth.updateUser({
+                    data: { rol: 'acudiente' }
+                });
+                userRole = 'acudiente';
+            }
+
+            if (!session || userRole !== 'admin') {
                 router.push('/dashboard');
                 return;
             }

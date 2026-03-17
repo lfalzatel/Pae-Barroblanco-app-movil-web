@@ -72,10 +72,24 @@ export default function DashboardPage() {
       if (profile) {
         setUsuario(profile);
       } else {
+        // Determine if we need to auto-assign the "acudiente" role for new external users
+        let userRole = session.user.user_metadata?.rol;
+        const userEmail = session.user.email || '';
+        
+        // If the user has no defined role and does not belong to the institution
+        if (!userRole && !userEmail.endsWith('@barroblanco.edu.co')) {
+            userRole = 'acudiente';
+            
+            // Persist this default role back to Auth metadata so it survives re-logins
+            await supabase.auth.updateUser({
+                data: { rol: 'acudiente' }
+            });
+        }
+
         setUsuario({
-          email: session.user.email,
+          email: userEmail,
           nombre: session.user.user_metadata?.nombre || 'Usuario',
-          rol: session.user.user_metadata?.rol || 'acudiente',
+          rol: userRole || 'acudiente',
         });
       }
 
@@ -476,19 +490,15 @@ export default function DashboardPage() {
           <span className="text-sm md:text-base leading-none">Horario Restaurante</span>
         </button>
 
-        {!['estudiante', 'acudiente'].includes(usuario.rol) && (
-          <button
-            onClick={() => { triggerMedium(); setWeeklyModalOpen(true); }}
-            className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl py-3 px-4 flex flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-cyan-200 transition-all active:scale-95 group"
-          >
-            <div className="bg-white/20 p-1.5 rounded-lg group-hover:rotate-12 transition-transform">
-              <FileText className="w-5 h-5" />
-            </div>
-            <span className="text-sm md:text-base leading-none">Horario Semanal</span>
-          </button>
-        )}
-
-
+        <button
+          onClick={() => { triggerMedium(); setWeeklyModalOpen(true); }}
+          className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl py-3 px-4 flex flex-row items-center justify-center gap-3 font-bold shadow-lg shadow-cyan-200 transition-all active:scale-95 group"
+        >
+          <div className="bg-white/20 p-1.5 rounded-lg group-hover:rotate-12 transition-transform">
+            <FileText className="w-5 h-5" />
+          </div>
+          <span className="text-sm md:text-base leading-none">Horario Semanal</span>
+        </button>
       </div>
 
 
@@ -801,6 +811,14 @@ export default function DashboardPage() {
                 <p className="text-[10px] mt-1 text-justify">
                   Cualquier versión posterior, mejora incremental o software derivado desarrollado fuera del marco institucional, constituirá una propiedad intelectual distinta y autónoma.
                 </p>
+                <p className="text-[10px] uppercase font-bold text-gray-400">Exclusividad de la Evolución Tecnológica:</p>
+                <p className="text-[10px] mt-1 text-justify">
+                  
+Se hace constar que el código fuente base, la lógica de negocio y la arquitectura del sistema son propiedad del autor. Cualquier evolución, producto derivado o versión comercial que sea desarrollada por Luis Fernando Alzate Lopez fuera de este contrato, es 100% de su propiedad intelectual independiente y autónoma.
+
+No se autoriza el uso de este código base por terceros fuera de la institución asignada.
+                </p>
+                
               </div>
             </div>
 

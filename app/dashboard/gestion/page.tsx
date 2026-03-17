@@ -214,10 +214,19 @@ export default function GestionPage() {
       if (profile) {
         setUsuario(profile);
       } else {
+        const userRole = session.user.user_metadata?.rol;
+        const userEmail = session.user.email || '';
+
+        if (!userRole && !userEmail.endsWith('@barroblanco.edu.co')) {
+            await supabase.auth.updateUser({
+                data: { rol: 'acudiente' }
+            });
+        }
+
         setUsuario({
-          email: session.user.email,
+          email: userEmail,
           nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
-          rol: session.user.user_metadata?.rol || 'acudiente',
+          rol: userRole || 'acudiente',
           foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
         });
       }

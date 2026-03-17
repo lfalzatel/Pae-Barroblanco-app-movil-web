@@ -78,8 +78,12 @@ export function MiniCalendar({
                     const counts: Record<string, number> = {};
                     data.forEach(d => {
                         const items = d.items as any[];
-                        const newsCount = items ? items.filter((i: any) => i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length : 0;
-                        counts[d.date] = newsCount;
+                        let counted = 0;
+                        if (items) {
+                            const newsCount = items ? items.filter((i: any) => i.notes || i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE').length : 0;
+                            counted = newsCount;
+                        }
+                        counts[d.date] = counted;
                     });
                     // We need a way to pass this back or use it internally
                     // Since dateData is a prop, we'll merge it with internal logic or just use internalDates

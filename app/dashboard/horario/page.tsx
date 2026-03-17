@@ -17,6 +17,7 @@ import {
     ChevronDown,
     ChevronRight,
     X,
+    XCircle,
     Plus,
     FileText,
     AlertTriangle,
@@ -82,6 +83,8 @@ export default function HorarioPage() {
     const [weekData, setWeekData] = useState<any[]>([]);
     const [instEvents, setInstEvents] = useState<any[]>([]);
     const [dailyInstEvents, setDailyInstEvents] = useState<any[]>([]);
+    const [calendarView, setCalendarView] = useState({ year: new Date().getFullYear(), month: new Date().getMonth() });
+    const [attendanceCounts, setAttendanceCounts] = useState<Record<string, number>>({});
     const [showInstructions, setShowInstructions] = useState(false);
 
     const [showEventModal, setShowEventModal] = useState(false);
@@ -122,6 +125,108 @@ export default function HorarioPage() {
     useEffect(() => {
         if (role) initData();
     }, [role, selectedDate, viewMode, selectedSede]);
+
+    useEffect(() => {
+        if (role) fetchAttendanceDates();
+    }, [calendarView.month, calendarView.year, selectedSede, role]);
+
+    const fetchAttendanceDates = async () => {
+        setAttendanceCounts({});
+        try {
+            const { year, month } = calendarView;
+            const startOfMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
+            const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+            const endOfMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-${lastDayOfMonth.toString().padStart(2, '0')}`;
+
+            let studentsQuery = supabase
+                .from('estudiantes')
+                .select('grupo, estado');
+
+            if (selectedSede !== 'Todas') {
+                const sedeDbName = selectedSede === 'Principal' ? 'Principal' :
+                    selectedSede === 'Primaria' ? 'Primaria' : 'Maria Inmaculada';
+                studentsQuery = studentsQuery.eq('sede', sedeDbName);
+            }
+
+            const { data: studentsData, error: studentsError } = await studentsQuery;
+            if (studentsError) throw studentsError;
+
+            const groupThresholds = new Map<string, number>();
+            studentsData?.forEach((s: any) => {
+                if (s.grupo && !s.grupo.includes('2025')) {
+                    const g = s.grupo;
+                    if (!groupThresholds.has(g)) groupThresholds.set(g, 0);
+                    if (s.estado === 'activo' || !s.estado) {
+                        groupThresholds.set(g, groupThresholds.get(g)! + 1);
+                    }
+                }
+            });
+
+            let allData: any[] = [];
+            let hasMore = true;
+            let startIndex = 0;
+            const pageSize = 1000;
+
+            while (hasMore) {
+                let query = supabase
+                    .from('asistencia_pae')
+                    .select(selectedSede !== 'Todas' ? 'fecha, estudiantes!inner(grupo, sede)' : 'fecha, estudiantes!inner(grupo)')
+                    .gte('fecha', startOfMonth)
+                    .lte('fecha', endOfMonth);
+
+                if (selectedSede !== 'Todas') {
+                    const sedeDbName = selectedSede === 'Principal' ? 'Principal' :
+                        selectedSede === 'Primaria' ? 'Primaria' : 'Maria Inmaculada';
+                    query = query.eq('estudiantes.sede', sedeDbName);
+                }
+
+                const { data, error: fetchError } = await query.range(startIndex, startIndex + pageSize - 1);
+                if (fetchError) throw fetchError;
+
+                if (data && data.length > 0) {
+                    allData = [...allData, ...data];
+                    startIndex += pageSize;
+                    if (data.length < pageSize) hasMore = false;
+                } else {
+                    hasMore = false;
+                }
+            }
+
+            if (allData.length > 0) {
+                const dailyGroupCounts = new Map<string, Map<string, number>>();
+
+                allData.forEach((row: any) => {
+                    const date = row.fecha;
+                    const grupo = row.estudiantes?.grupo;
+
+                    if (grupo && groupThresholds.has(grupo)) {
+                        if (!dailyGroupCounts.has(date)) {
+                            dailyGroupCounts.set(date, new Map());
+                        }
+                        const dateMap = dailyGroupCounts.get(date)!;
+                        dateMap.set(grupo, (dateMap.get(grupo) || 0) + 1);
+                    }
+                });
+
+                const counts: Record<string, number> = {};
+
+                dailyGroupCounts.forEach((groupsMap, date) => {
+                    let completedGroups = 0;
+                    groupsMap.forEach((count, grupo) => {
+                        const threshold = groupThresholds.get(grupo) || 0;
+                        if (threshold > 0 && count >= threshold) {
+                            completedGroups++;
+                        }
+                    });
+                    counts[date] = completedGroups;
+                });
+
+                setAttendanceCounts(counts);
+            }
+        } catch (error) {
+            console.error('Error fetching attendance dates:', error);
+        }
+    };
 
     const checkAccess = async () => {
         const { data: { user }, error } = await supabase.auth.getUser();
@@ -960,9 +1065,43 @@ export default function HorarioPage() {
 
             {
                 showCalendar && (
-                    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowCalendar(false)}></div>
-                        <div className="relative animate-in zoom-in-95"><MiniCalendar selectedDate={selectedDate} onSelectDate={d => { setSelectedDate(d); setShowCalendar(false); }} className="shadow-2xl border-8 border-white rounded-[3rem]" /></div>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowCalendar(false)}></div>
+                        <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-[2.5rem] w-full max-w-[90vw] md:max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20 mx-auto">
+                            <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-br from-cyan-600 to-cyan-700 flex items-center justify-between text-white">
+                                <h3 className="font-black flex items-center gap-3 uppercase text-[11px] tracking-[0.2em]">
+                                    <CalendarIcon className="w-5 h-5" />
+                                    Seleccionar Fecha
+                                </h3>
+                                <button
+                                    onClick={() => setShowCalendar(false)}
+                                    className="p-2 hover:bg-white/10 rounded-full transition-all hover:rotate-90"
+                                >
+                                    <XCircle className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <div className="p-6 bg-white dark:bg-gray-900">
+                                <MiniCalendar
+                                    selectedDate={selectedDate}
+                                    onSelectDate={d => {
+                                        setSelectedDate(d);
+                                        setShowCalendar(false);
+                                    }}
+                                    mode="attendance"
+                                    showCounters={true}
+                                    dateData={attendanceCounts}
+                                    onMonthChange={(year, month) => setCalendarView({ year, month })}
+                                />
+                            </div>
+                            <div className="p-6 pt-0 bg-white dark:bg-gray-900">
+                                <button
+                                    onClick={() => setShowCalendar(false)}
+                                    className="w-full py-4 bg-cyan-600 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-cyan-100 hover:bg-cyan-700 active:scale-[0.98] transition-all"
+                                >
+                                    LISTO, VOLVER
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )
             }
@@ -1108,16 +1247,41 @@ export default function HorarioPage() {
             {
                 showEventDateSelector && (
                     <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowEventDateSelector(false)}></div>
-                        <div className="relative animate-in zoom-in-95 z-[610]">
-                            <MiniCalendar
-                                selectedDate={eventDate}
-                                onSelectDate={(d) => {
-                                    setEventDate(d);
-                                    setShowEventDateSelector(false);
-                                }}
-                                className="shadow-2xl border-8 border-white rounded-[3rem]"
-                            />
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowEventDateSelector(false)}></div>
+                        <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-[2.5rem] w-full max-w-[90vw] md:max-w-sm relative z-[610] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20 mx-auto">
+                            <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-br from-cyan-600 to-cyan-700 flex items-center justify-between text-white">
+                                <h3 className="font-black flex items-center gap-3 uppercase text-[11px] tracking-[0.2em]">
+                                    <CalendarIcon className="w-5 h-5" />
+                                    Seleccionar Fecha
+                                </h3>
+                                <button
+                                    onClick={() => setShowEventDateSelector(false)}
+                                    className="p-2 hover:bg-white/10 rounded-full transition-all hover:rotate-90"
+                                >
+                                    <XCircle className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <div className="p-6 bg-white dark:bg-gray-900">
+                                <MiniCalendar
+                                    selectedDate={eventDate}
+                                    onSelectDate={(d) => {
+                                        setEventDate(d);
+                                        setShowEventDateSelector(false);
+                                    }}
+                                    mode="attendance"
+                                    showCounters={true}
+                                    dateData={attendanceCounts}
+                                    onMonthChange={(year, month) => setCalendarView({ year, month })}
+                                />
+                            </div>
+                            <div className="p-6 pt-0 bg-white dark:bg-gray-900">
+                                <button
+                                    onClick={() => setShowEventDateSelector(false)}
+                                    className="w-full py-4 bg-cyan-600 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-cyan-100 hover:bg-cyan-700 active:scale-[0.98] transition-all"
+                                >
+                                    LISTO, VOLVER
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )

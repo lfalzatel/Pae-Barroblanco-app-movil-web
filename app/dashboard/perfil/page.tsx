@@ -14,7 +14,9 @@ import {
     Clock,
     X,
     CalendarDays,
-    Users
+    Users,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 
@@ -37,12 +39,7 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
     const [history, setHistory] = useState<any[]>([]);
     const [selectedDate, setSelectedDate] = useState<DayDetail | null>(null);
-    const [stats, setStats] = useState({
-        totalRegistros: 0,
-        diasActivos: 0,
-        gruposAtendidos: 0,
-        ultimoRegistro: 'N/A'
-    });
+    const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
     useEffect(() => {
         const fetchProfileData = async () => {
@@ -63,10 +60,20 @@ export default function ProfilePage() {
             if (profile) {
                 setUsuario(profile);
             } else {
+                const userRole = session.user.user_metadata?.rol;
+                const userEmail = session.user.email || '';
+
+                if (!userRole && !userEmail.endsWith('@barroblanco.edu.co')) {
+                    await supabase.auth.updateUser({
+                        data: { rol: 'acudiente' }
+                    });
+                }
+
                 setUsuario({
                     ...session.user,
+                    email: userEmail,
                     nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
-                    rol: session.user.user_metadata?.rol || 'acudiente',
+                    rol: userRole || 'acudiente',
                     foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
                 });
             }
@@ -135,13 +142,6 @@ export default function ProfilePage() {
                     // Sort by date to find latest
                     const dates = historyData.map(d => d.fecha).sort();
                     const lastDate = dates.length > 0 ? dates[dates.length - 1] : 'N/A';
-
-                    setStats({
-                        totalRegistros: isStudent ? receivedCount : historyData.length,
-                        diasActivos: uniqueDays.size,
-                        gruposAtendidos: uniqueGroups.size,
-                        ultimoRegistro: lastDate
-                    });
                 }
             } catch (err) {
                 console.error('Error fetching stats:', err);
@@ -164,6 +164,57 @@ export default function ProfilePage() {
             </div>
         );
     }
+
+    const userRole = usuario?.rol || 'acudiente';
+    const isStudent = userRole === 'estudiante' || userRole === 'estudiante_pae';
+
+    const currentMonthHistory = history.filter(h => {
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        return h.fecha.startsWith(`${year}-${month}`);
+    });
+
+    const uniqueDays = new Set(currentMonthHistory.map(d => d.fecha));
+    const uniqueGroups = new Set();
+    let receivedCount = 0;
+
+    currentMonthHistory.forEach(d => {
+        const est = d.estudiantes as any;
+        const grupo = Array.isArray(est) ? est[0]?.grupo : est?.grupo;
+        if (grupo) uniqueGroups.add(grupo);
+        if (isStudent && d.estado === 'recibio') {
+            receivedCount++;
+        }
+    });
+
+    const dates = currentMonthHistory.map(d => d.fecha).sort();
+    const lastDate = dates.length > 0 ? dates[dates.length - 1] : 'N/A';
+
+    const displayStats = {
+        totalRegistros: isStudent ? receivedCount : currentMonthHistory.length,
+        diasActivos: uniqueDays.size,
+        gruposAtendidos: uniqueGroups.size,
+        ultimoRegistro: lastDate
+    };
+
+    const getDaysInMonth = () => {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        
+        let startDayIndex = firstDay.getDay(); // 0 is Sunday
+        startDayIndex = startDayIndex === 0 ? 6 : startDayIndex - 1; // Make Monday 0
+
+        const days = [];
+        for (let i = 0; i < startDayIndex; i++) {
+            days.push(null);
+        }
+        for (let i = 1; i <= lastDay.getDate(); i++) {
+            days.push(new Date(year, month, i));
+        }
+        return days;
+    };
 
     return (
         <div className="min-h-screen bg-gray-50/50 dark:bg-transparent p-6 md:p-8">
@@ -206,17 +257,36 @@ export default function ProfilePage() {
 
                 {/* Calendar Section */}
                 <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center">
-                            <CalendarDays className="w-6 h-6" />
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center">
+                                <CalendarDays className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                    {usuario?.rol === 'estudiante' || usuario?.rol === 'estudiante_pae' ? 'Tu Historial PAE' : 'Tu Actividad Reciente'}
+                                </h2>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Resumen del mes
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                                {usuario?.rol === 'estudiante' || usuario?.rol === 'estudiante_pae' ? 'Tu Historial PAE' : 'Tu Actividad Reciente'}
-                            </h2>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {usuario?.rol === 'estudiante' || usuario?.rol === 'estudiante_pae' ? 'Últimos 35 días de entrega' : 'Últimos 35 días de gestión'}
-                            </p>
+                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700/50 p-1.5 rounded-xl border border-gray-100 dark:border-gray-600">
+                            <button 
+                                onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }}
+                                className="p-1.5 hover:bg-white dark:hover:bg-gray-600 rounded-lg transition-colors"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <span className="text-sm font-bold w-24 text-center capitalize">
+                                {currentDate.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' }).replace('.', '')}
+                            </span>
+                            <button 
+                                onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }}
+                                className="p-1.5 hover:bg-white dark:hover:bg-gray-600 rounded-lg transition-colors"
+                            >
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
 
@@ -229,19 +299,8 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="grid grid-cols-7 gap-2 md:gap-4">
-                        {Array.from({ length: 35 }).map((_, i) => {
-                            const d = (() => {
-                                const today = new Date();
-                                const currentDay = today.getDay(); // 0-6
-                                const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
-                                const startOfWeek = new Date(today);
-                                startOfWeek.setDate(today.getDate() - daysSinceMonday);
-                                const startDate = new Date(startOfWeek);
-                                startDate.setDate(startOfWeek.getDate() - 28); // Go back 4 weeks
-                                const date = new Date(startDate);
-                                date.setDate(startDate.getDate() + i);
-                                return date;
-                            })();
+                        {getDaysInMonth().map((d, i) => {
+                            if (!d) return <div key={`empty-${i}`} className="aspect-square"></div>;
 
                             const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                             const todayStr = new Date().toISOString().split('T')[0];
@@ -325,7 +384,7 @@ export default function ProfilePage() {
                         <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-3">
                             <CheckCircle2 className="w-5 h-5" />
                         </div>
-                        <span className="text-3xl font-black text-gray-900 dark:text-white">{stats.totalRegistros}</span>
+                        <span className="text-3xl font-black text-gray-900 dark:text-white">{displayStats.totalRegistros}</span>
                         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
                             {usuario?.rol === 'estudiante' || usuario?.rol === 'estudiante_pae' ? 'Días Recibidos' : 'Registros Totales'}
                         </span>
@@ -335,7 +394,7 @@ export default function ProfilePage() {
                         <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center mb-3">
                             <Calendar className="w-5 h-5" />
                         </div>
-                        <span className="text-3xl font-black text-gray-900 dark:text-white">{stats.diasActivos}</span>
+                        <span className="text-3xl font-black text-gray-900 dark:text-white">{displayStats.diasActivos}</span>
                         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">Días Activos</span>
                     </div>
 
@@ -343,7 +402,7 @@ export default function ProfilePage() {
                         <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mb-3">
                             <TrendingUp className="w-5 h-5" />
                         </div>
-                        <span className="text-3xl font-black text-gray-900 dark:text-white">{stats.gruposAtendidos}</span>
+                        <span className="text-3xl font-black text-gray-900 dark:text-white">{displayStats.gruposAtendidos}</span>
                         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
                             {usuario?.rol === 'estudiante' || usuario?.rol === 'estudiante_pae' ? 'Grupos' : 'Grupos Gestionados'}
                         </span>
@@ -353,7 +412,7 @@ export default function ProfilePage() {
                         <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-3">
                             <Clock className="w-5 h-5" />
                         </div>
-                        <span className="text-lg font-bold text-gray-900 dark:text-white mt-1">{stats.ultimoRegistro}</span>
+                        <span className="text-lg font-bold text-gray-900 dark:text-white mt-1">{displayStats.ultimoRegistro}</span>
                         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-2">Última Actividad</span>
                     </div>
                 </div>
