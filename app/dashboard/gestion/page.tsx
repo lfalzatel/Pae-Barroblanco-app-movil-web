@@ -1886,24 +1886,38 @@ export default function GestionPage() {
 
         {/* Modal Cambio de Rol (Security First) */}
         {docenteParaRol && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 z-[300] animate-in fade-in duration-500">
-            <div className="bg-white rounded-[3rem] max-w-md w-full overflow-hidden shadow-[0_32px_64px_-15px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 flex flex-col dark:bg-gray-800">
+          <div 
+            className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 z-[300] animate-in fade-in duration-500"
+            onClick={() => setDocenteParaRol(null)}
+          >
+            <div 
+              className="bg-white rounded-[3rem] max-w-md w-full max-h-[95vh] overflow-hidden shadow-[0_32px_64px_-15px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 flex flex-col dark:bg-gray-800"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="p-8 bg-gradient-to-br from-rose-600 to-rose-700 text-white relative">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="bg-white/20 p-4 rounded-3xl backdrop-blur-md border border-white/10">
-                    <AlertCircle className="w-8 h-8" />
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white/20 p-4 rounded-3xl backdrop-blur-md border border-white/10">
+                      <AlertCircle className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-2xl tracking-tight leading-none">Aviso de Seguridad</h3>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80 mt-2 text-rose-100">Acción Administrativa Crítica</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-black text-2xl tracking-tight leading-none">Aviso de Seguridad</h3>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80 mt-2 text-rose-100">Acción Administrativa Crítica</p>
-                  </div>
+                  <button 
+                    onClick={() => setDocenteParaRol(null)}
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                  >
+                    <X className="w-6 h-6 text-white" />
+                  </button>
                 </div>
                 <p className="text-sm font-bold opacity-90 leading-relaxed italic">
                   Estás a punto de modificar los privilegios de acceso para <span className="underline decoration-2 underline-offset-4">{docenteParaRol.nombre}</span>. Esta acción puede comprometer la integridad de la gestión del sistema.
                 </p>
               </div>
 
-              <div className="p-8 space-y-6">
+              <div className="p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar-premium">
                 <div>
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-4 text-center">Selecciona el Nuevo Nivel de Acceso</label>
                   <div className="grid grid-cols-1 gap-3">
