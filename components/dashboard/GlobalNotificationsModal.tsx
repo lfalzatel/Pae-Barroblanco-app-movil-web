@@ -9,6 +9,13 @@ interface GlobalNotificationsModalProps {
     usuario: any;
 }
 
+const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 export default function GlobalNotificationsModal({ isOpen, onClose, usuario }: GlobalNotificationsModalProps) {
     // useModalBack(isOpen, onClose, 'global-notif-modal');
 
@@ -24,8 +31,7 @@ export default function GlobalNotificationsModal({ isOpen, onClose, usuario }: G
             now.setDate(now.getDate() + daysToAdd);
         }
 
-        const offset = now.getTimezoneOffset() * 60000;
-        return new Date(now.getTime() - offset).toISOString().split('T')[0];
+        return formatLocalDate(now);
     });
 
     const [selectedDayOffset, setSelectedDayOffset] = useState(() => {
@@ -44,9 +50,30 @@ export default function GlobalNotificationsModal({ isOpen, onClose, usuario }: G
     const [projectionData, setProjectionData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Initial sync
+    // Initial reset when opening
     useEffect(() => {
         if (isOpen) {
+            const now = new Date();
+            const day = now.getDay();
+            const hour = now.getHours();
+
+            let targetDate = new Date(now);
+            let targetOffset = day;
+
+            if ((day === 5 && hour >= 18) || day === 6 || day === 0) {
+                const daysToAdd = day === 5 ? 3 : (day === 6 ? 2 : 1);
+                targetDate.setDate(targetDate.getDate() + daysToAdd);
+                targetOffset = 1;
+            }
+
+            setSelectedDate(formatLocalDate(targetDate));
+            setSelectedDayOffset(targetOffset);
+        }
+    }, [isOpen]);
+
+    // Data fetching when date changes
+    useEffect(() => {
+        if (isOpen && selectedDate) {
             fetchData();
         }
     }, [isOpen, selectedDate]);
@@ -66,7 +93,7 @@ export default function GlobalNotificationsModal({ isOpen, onClose, usuario }: G
     const handleMoveWeek = (offset: number) => {
         const d = new Date(selectedDate + 'T12:00:00');
         d.setDate(d.getDate() + (offset * 7));
-        const newDate = d.toISOString().split('T')[0];
+        const newDate = formatLocalDate(d);
         setSelectedDate(newDate);
     };
 
@@ -239,7 +266,7 @@ export default function GlobalNotificationsModal({ isOpen, onClose, usuario }: G
                                         const targetDate = new Date(monDate);
                                         targetDate.setDate(monDate.getDate() + (offset - 1));
 
-                                        setSelectedDate(targetDate.toISOString().split('T')[0]);
+                                        setSelectedDate(formatLocalDate(targetDate));
                                         setSelectedDayOffset(offset);
                                     }}
                                     className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all ${isSelected

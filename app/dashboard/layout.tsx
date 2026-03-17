@@ -40,6 +40,24 @@ import { useTheme } from '@/components/ThemeProvider';
 import { getAcademicBlock } from '@/lib/schedule-utils';
 import GlobalNotificationsModal from '@/components/dashboard/GlobalNotificationsModal';
 
+// Helper functions defined outside to avoid initialization errors
+const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const getNextBusinessDay = (date: Date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    if (day === 5) { d.setDate(d.getDate() + 3); }
+    else if (day === 6) { d.setDate(d.getDate() + 2); }
+    else if (day === 0) { d.setDate(d.getDate() + 1); }
+    else { d.setDate(d.getDate() + 1); }
+    return d;
+};
+
 export default function DashboardLayout({
     children,
 }: {
@@ -98,6 +116,10 @@ export default function DashboardLayout({
     // Initial Date Logic for Notification Modal
     useEffect(() => {
         if (notifModalOpen) {
+            // Reset search state when opening
+            setSelectedDate('');
+            setSearchResult(null);
+
             const now = new Date();
             const day = now.getDay();
             const hour = now.getHours();
@@ -134,16 +156,22 @@ export default function DashboardLayout({
         }
     }, [notifModalOpen]);
 
-    // Fetch Daily Exceptions when tab changes
+    // Fetch Daily Exceptions when selection changes
     useEffect(() => {
         if (activeNotifTab === 'daily') {
             const now = new Date();
-            const targetD = dailySubTab === 'tomorrow' ? getNextBusinessDay(now) : now;
-            // Format to YYYY-MM-DD manually to avoid timezone shifts
-            const dateStr = formatLocalDate(targetD);
-            fetchDailyExceptions(dateStr);
+            let targetDateStr = '';
+            
+            if (selectedDate) {
+                targetDateStr = selectedDate;
+            } else {
+                const targetD = dailySubTab === 'tomorrow' ? getNextBusinessDay(now) : now;
+                targetDateStr = formatLocalDate(targetD);
+            }
+            
+            fetchDailyExceptions(targetDateStr);
         }
-    }, [dailySubTab, activeNotifTab, selectedSede]);
+    }, [dailySubTab, activeNotifTab, selectedSede, selectedDate]);
 
     const fetchDailyExceptions = async (dateStr: string) => {
         // dateStr is already YYYY-MM-DD from caller
@@ -239,7 +267,7 @@ export default function DashboardLayout({
             for (let i = 0; i < 5; i++) {
                 const d = new Date(startDate);
                 d.setDate(d.getDate() + i);
-                dates.push(d.toISOString().split('T')[0]);
+                dates.push(formatLocalDate(d));
             }
 
             let query = supabase
@@ -267,36 +295,28 @@ export default function DashboardLayout({
         fetchNotifEvents(newStart);
     };
 
-    const getNextBusinessDay = (date: Date) => {
-        const d = new Date(date);
-        const day = d.getDay();
-        if (day === 5) { d.setDate(d.getDate() + 3); }
-        else if (day === 6) { d.setDate(d.getDate() + 2); }
-        else if (day === 0) { d.setDate(d.getDate() + 1); }
-        else { d.setDate(d.getDate() + 1); }
-        return d;
-    };
+
 
     const getFilteredEvents = () => {
         if (activeNotifTab === 'weekly') {
             const d = new Date(weekStart);
             d.setDate(d.getDate() + selectedDayInWeek);
-            const targetDateStr = d.toISOString().split('T')[0];
+            const targetDateStr = formatLocalDate(d);
             return notifEvents.filter(e => e.fecha === targetDateStr);
         }
 
         if (searchResult) return [searchResult];
 
         let targetDateStr = '';
-        if (activeNotifTab === 'daily') {
-            const d = new Date();
-            if (dailySubTab === 'tomorrow') {
-                const nextDay = getNextBusinessDay(d);
-                targetDateStr = nextDay.toISOString().split('T')[0];
-            } else {
-                targetDateStr = d.toISOString().split('T')[0];
-            }
+    if (activeNotifTab === 'daily') {
+        const d = new Date();
+        if (dailySubTab === 'tomorrow') {
+            const nextDay = getNextBusinessDay(d);
+            targetDateStr = formatLocalDate(nextDay);
+        } else {
+            targetDateStr = formatLocalDate(d);
         }
+    }
 
         if (selectedDate) return notifEvents.filter(e => e.fecha === selectedDate);
         return notifEvents.filter(e => e.fecha === targetDateStr);
@@ -338,9 +358,7 @@ export default function DashboardLayout({
         alert('Configuración de biometría en desarrollo.');
     };
 
-    const formatLocalDate = (date: Date) => {
-        return date.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
-    };
+
 
     const handleSearchByDate = (date: string) => {
         setSelectedDate(date);
@@ -898,7 +916,12 @@ export default function DashboardLayout({
                                         <div className="flex flex-col">
                                             <h3 className="text-base font-black leading-tight">Novedades</h3>
                                             <p className="text-[9px] font-bold uppercase tracking-widest opacity-80">
-                                                {activeNotifTab === 'weekly' ? 'CONSOLIDADO SEMANAL' : (dailySubTab === 'tomorrow' ? getNextBusinessDay(new Date()) : new Date()).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' })}
+                                                {activeNotifTab === 'weekly' 
+                                                    ? 'CONSOLIDADO SEMANAL' 
+                                                    : (selectedDate 
+                                                        ? new Date(selectedDate + 'T12:00:00') 
+                                                        : (dailySubTab === 'tomorrow' ? getNextBusinessDay(new Date()) : new Date())
+                                                      ).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' })}
                                             </p>
                                         </div>
                                     </div>
@@ -967,7 +990,9 @@ export default function DashboardLayout({
                                         )}
                                         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                             <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                {selectedDate ? `Resultados: ${formatLocalDate(new Date(selectedDate + 'T12:00:00'))}` : (dailySubTab === 'today' ? todayDateLabel : tomorrowDateLabel)}
+                                                {selectedDate 
+                                                    ? `Resultados: ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}` 
+                                                    : (dailySubTab === 'today' ? todayDateLabel : tomorrowDateLabel)}
                                             </div>
 
 

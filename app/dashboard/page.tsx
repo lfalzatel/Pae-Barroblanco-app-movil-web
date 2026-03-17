@@ -314,11 +314,6 @@ export default function DashboardPage() {
       data = stats.groupDetails.inactivos;
       color = "text-blue-700 bg-blue-50";
       Icon = UserMinus;
-    } else if (category === 'inactivos') {
-      title = "Estudiantes Inactivos";
-      data = stats.groupDetails.inactivos;
-      color = "text-blue-700 bg-blue-50";
-      Icon = UserMinus;
     } else if (category === 'recibieron') {
       title = "Recibieron Ración";
       data = stats.groupDetails.recibieron;
@@ -778,7 +773,7 @@ export default function DashboardPage() {
       <div className="mt-8 text-center">
         <button
           onClick={() => setCreditsOpen(true)}
-          className="text-[10px] text-gray-400 font-bold uppercase tracking-widest hover:text-cyan-600 transition-colors"
+          className="text-[10px] text-blue-400 font-bold uppercase tracking-widest hover:text-cyan-600 transition-colors"
         >
           © 2026 PAE Barroblanco - Versión Académica SENA
         </button>
@@ -813,10 +808,8 @@ export default function DashboardPage() {
                 </p>
                 <p className="text-[10px] uppercase font-bold text-gray-400">Exclusividad de la Evolución Tecnológica:</p>
                 <p className="text-[10px] mt-1 text-justify">
-                  
-Se hace constar que el código fuente base, la lógica de negocio y la arquitectura del sistema son propiedad del autor. Cualquier evolución, producto derivado o versión comercial que sea desarrollada por Luis Fernando Alzate Lopez fuera de este contrato, es 100% de su propiedad intelectual independiente y autónoma.
-
-No se autoriza el uso de este código base por terceros fuera de la institución asignada.
+                  Se hace constar que el código fuente base, la lógica de negocio y la arquitectura del sistema son propiedad del autor. Cualquier evolución, producto derivado o versión comercial que sea desarrollada por Luis Fernando Alzate Lopez fuera de este contrato, es 100% de su propiedad intelectual independiente y autónoma.
+<br />No se autoriza el uso de este código base por terceros fuera de la institución asignada.
                 </p>
                 
               </div>
