@@ -1595,12 +1595,17 @@ export default function ReportesPage() {
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                       {projectionData
                         .filter(row => {
-                          if (sedeFilter === 'todas') return true;
-                          const s = (row.sede || '').toLowerCase();
-                          let matchSede = false;
-                          if (sedeFilter === 'principal') matchSede = s.includes('principal');
-                          else if (sedeFilter === 'primaria') matchSede = s.includes('primaria');
-                          else if (sedeFilter === 'maria-inmaculada') matchSede = s.includes('maria') || s.includes('inmaculada');
+                          let matchSede = true;
+                          if (sedeFilter === 'primaria-principal') {
+                            const s = (row.sede || '').toLowerCase();
+                            matchSede = s.includes('principal') || s.includes('primaria');
+                          } else if (sedeFilter !== 'todas') {
+                            const s = (row.sede || '').toLowerCase();
+                            if (sedeFilter === 'principal') matchSede = s.includes('principal');
+                            else if (sedeFilter === 'primaria') matchSede = s.includes('primaria');
+                            else if (sedeFilter === 'maria-inmaculada') matchSede = s.includes('maria') || s.includes('inmaculada');
+                            else matchSede = false;
+                          }
 
                           const matchGrupo = grupoFilter === 'todos' || row.grupo === grupoFilter;
                           return matchSede && matchGrupo;
