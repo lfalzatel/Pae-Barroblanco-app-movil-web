@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const SORDOS_CODES = [
     '010400', '024000', '020400', '030400', '044000', '050400', 
     '060400', '070400', '080400', '090400', '110400',
-    'LILIANA', 'SORDOS', 'AULA SORDOS' // Nombres comunes en la App
+    'LILIANA', 'SORDOS', 'AULA SORDOS', 'AULA MULTINIVEL SORDOS' // Nombres comunes en la App
 ];
 
 // Excel Header Mapping (0-based index)
@@ -107,23 +107,23 @@ export async function POST(req: Request) {
 
         if (stError) throw stError;
 
-        // Group by Code
+        // Group by Sede and Code
         const groupCounts: Record<string, number> = {};
         const sordosCount = { total: 0 };
 
         students.forEach((s: any) => {
-            // Asumimos que la columna 'grupo' tiene el código (ej: 0060100)
             const code = s.grupo || 'UNKNOWN';
+            const sede = s.sede || 'Principal';
 
-            if (SORDOS_CODES.includes(code)) {
+            if (SORDOS_CODES.includes(code) || code.toUpperCase().includes('SORDOS')) {
                 sordosCount.total++;
             } else {
-                groupCounts[code] = (groupCounts[code] || 0) + 1;
+                const key = `${sede}|${code}`;
+                groupCounts[key] = (groupCounts[key] || 0) + 1;
             }
         });
 
         // --- 1.5 APPLY NOVEDADES (Ajustes Manuales) ---
-        // Obtener novedades de la semana
         const weekEnd = new Date(new Date(weekStart).setDate(new Date(weekStart).getDate() + 6)).toISOString().split('T')[0];
         
         const { data: novedades, error: novError } = await supabase
@@ -135,22 +135,22 @@ export async function POST(req: Request) {
         if (!novError && novedades) {
             novedades.forEach((nov: any) => {
                 const groupKey = (nov.grupo || '').trim().toUpperCase();
+                const sedeKey = nov.sede || 'Principal';
                 const type = nov.tipo;
                 const count = Math.abs(nov.cupos_afectados || 0);
 
-                // Si es Sordos, aplicar al contador global
-                if (SORDOS_CODES.includes(groupKey)) {
+                if (SORDOS_CODES.includes(groupKey) || groupKey.includes('SORDOS')) {
                     if (['reduccion_cupos', 'no_asiste_grupo'].includes(type)) {
                         sordosCount.total = Math.max(0, sordosCount.total - count);
                     } else if (type === 'aumento_cupos') {
                         sordosCount.total += count;
                     }
                 } else {
-                    // Aplicar al grupo específico
+                    const dictKey = `${sedeKey}|${groupKey}`;
                     if (['reduccion_cupos', 'no_asiste_grupo'].includes(type)) {
-                        groupCounts[groupKey] = Math.max(0, (groupCounts[groupKey] || 0) - count);
+                        groupCounts[dictKey] = Math.max(0, (groupCounts[dictKey] || 0) - count);
                     } else if (type === 'aumento_cupos') {
-                        groupCounts[groupKey] = (groupCounts[groupKey] || 0) + count;
+                        groupCounts[dictKey] = (groupCounts[dictKey] || 0) + count;
                     }
                 }
             });
@@ -207,11 +207,13 @@ export async function POST(req: Request) {
             return idx !== -1 ? idx + 1 : null; // returns 1-based row number
         };
 
-        // Find Anchor for BARRO BLANCO (Row 104 in user image)
-        // We search for "BARRO BLANCO" in Column A (r[0])
-        const anchorIdx = rows.findIndex(r => 
-            r[0] && r[0].toString().toUpperCase().includes('BARRO BLANCO')
-        );
+        // Find Anchors for Sedes 
+        const anchorPrincipal = rows.findIndex((r, i) => r[0] && r[0].toString().toUpperCase().includes('BARRO BLANCO') && !r[0].toString().toUpperCase().includes('PRIMARIA') && !r[0].toString().toUpperCase().includes('MARIA'));
+        const anchorPrimaria = rows.findIndex((r, i) => r[0] && r[0].toString().toUpperCase().includes('PRIMARIA') && (r[0].toString().toUpperCase().includes('BARRO BLANCO') || r[0].toString().toUpperCase().includes('SEDE')));
+        const anchorMaria = rows.findIndex((r, i) => r[0] && r[0].toString().toUpperCase().includes('MARIA INMACULADA'));
+        
+        // Sordos usually is under the Principal anchor, or we just search globally
+        const anchorIdx = anchorPrincipal !== -1 ? anchorPrincipal : 0;
 
         if (anchorIdx === -1) {
             console.warn('Could not find I.E. BARRO BLANCO anchor, searching from top.');
@@ -237,7 +239,8 @@ export async function POST(req: Request) {
         }
 
         // B. REGULAR GROUPS
-        Object.entries(groupCounts).forEach(([code, count]) => {
+        Object.entries(groupCounts).forEach(([dictKey, count]) => {
+            const [sede, code] = dictKey.split('|');
             let finalCount = count;
             const groupKey = code.trim().toUpperCase();
 
@@ -249,10 +252,18 @@ export async function POST(req: Request) {
             const excelName = getFriendlyGroupName(code, '');
             if (!excelName) return;
 
-            const rowNum = findRow(excelName, anchorIdx === -1 ? 0 : anchorIdx);
+            // Determinar Anchor dependiendo de la sede
+            let currentAnchor = anchorPrincipal;
+            if (sede.toUpperCase().includes('PRIMARIA')) {
+                currentAnchor = anchorPrimaria !== -1 ? anchorPrimaria : anchorPrincipal;
+            } else if (sede.toUpperCase().includes('MARIA')) {
+                currentAnchor = anchorMaria !== -1 ? anchorMaria : anchorPrincipal;
+            }
+
+            const rowNum = findRow(excelName, currentAnchor === -1 ? 0 : currentAnchor);
 
             if (rowNum) {
-                matchLog.push(`✓ ${groupKey} -> ${excelName} (Fila ${rowNum})`);
+                matchLog.push(`✓ [${sede}] ${groupKey} -> ${excelName} (Fila ${rowNum})`);
                 
                 // Determinación de jornada y beneficios
                 const codeStr = code.toUpperCase();
