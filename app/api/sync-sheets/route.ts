@@ -6,16 +6,12 @@ export const dynamic = 'force-dynamic';
 
 // --- CONFIGURATION ---
 const SORDOS_CODES = [
+    '010400', '024000', '020400', '030400', '044000', '050400', 
+    '060400', '070400', '080400', '090400', '110400',
     'LILIANA', 'SORDOS', 'AULA SORDOS', 'AULA MULTINIVEL SORDOS' // Nombres comunes en la App
 ];
 
 // Excel Header Mapping (0-based index)
-// Assuming headers: [Names, Start, Start, CAJM, CAJT, ALMUERZO, ...]
-// Based on image:
-// Col A (0): Names
-// Col D (3): CAJM
-// Col E (4): CAJT
-// Col F (5): ALMUERZO
 const COLS = {
     NAME: 0,
     CAJM: 3, // D
@@ -24,7 +20,6 @@ const COLS = {
 };
 
 // Helper to translate DB group code to Excel Name
-// DB Format Assumption: '0060100' -> Grade 06, Group 01
 const getFriendlyGroupName = (dbCode: string, sede: string) => {
     const original = (dbCode || '').trim().toUpperCase();
 
@@ -54,7 +49,7 @@ const getFriendlyGroupName = (dbCode: string, sede: string) => {
         '4A': 'CUARTO 1', '4B': 'CUARTO 2', 
         '040100': 'CUARTO 1', '040201': 'CUARTO 2', '040300': 'CUARTO 3',
         '5A': 'QUINTO 1', '5B': 'QUINTO 2', 
-        '050100': 'QUINTO 1', '050201': 'QUINTO 2', '050300': 'QUINTO 3', '050400': 'QUINTO 4',
+        '050100': 'QUINTO 1', '050201': 'QUINTO 2', '050300': 'QUINTO 3',
 
         // Fallbacks
         '0010100': 'PRIMERO 1', '0010200': 'PRIMERO 2',
