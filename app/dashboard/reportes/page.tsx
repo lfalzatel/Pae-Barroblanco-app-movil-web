@@ -1380,7 +1380,11 @@ export default function ReportesPage() {
                     onClick={() => setShowSedeDropdown(!showSedeDropdown)}
                     className="w-full bg-white dark:bg-gray-800 px-4 py-3 rounded-2xl text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2"
                   >
-                    <span>{sedeFilter === 'todas' ? 'Todas las Sedes' : sedeFilter}</span>
+                    <span>
+                      {sedeFilter === 'todas' ? 'Todas las Sedes' :
+                       sedeFilter === 'primaria-principal' ? 'PRINC. + PRIM.' :
+                       sedeFilter}
+                    </span>
                     <ChevronDown className="w-4 h-4 opacity-50" />
                   </button>
 
@@ -1388,13 +1392,13 @@ export default function ReportesPage() {
                     <>
                       <div className="fixed inset-0 z-30" onClick={() => setShowSedeDropdown(false)} />
                       <div className="absolute top-full mt-2 w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-40 overflow-hidden text-[10px] font-black uppercase tracking-widest">
-                        {['todas', 'principal', 'primaria', 'maria-inmaculada'].map((s) => (
+                        {['todas', 'primaria-principal', 'principal', 'primaria', 'maria-inmaculada'].map((s) => (
                           <button
                             key={s}
                             onClick={() => { setSedeFilter(s); setShowSedeDropdown(false); }}
                             className="w-full text-left px-4 py-3 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 text-gray-500 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
                           >
-                            {s === 'todas' ? 'Todas' : s}
+                            {s === 'todas' ? 'Todas' : s === 'primaria-principal' ? 'PRINC. + PRIM.' : s}
                           </button>
                         ))}
                       </div>
