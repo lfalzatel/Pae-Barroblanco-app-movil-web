@@ -1,13 +1,14 @@
 import { google } from 'googleapis';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
 // --- CONFIGURATION ---
 const SORDOS_CODES = [
-    '010400', '024000', '020400', '030400', '044000', '050400', // Primaria ?
-    '060400', '070400', '080400', '090400', '110400'  // Secundaria
+    '010400', '024000', '020400', '030400', '044000', '050400', 
+    '060400', '070400', '080400', '090400', '110400',
+    'LILIANA', 'SORDOS', 'AULA SORDOS' // Nombres comunes en la App
 ];
 
 // Excel Header Mapping (0-based index)
@@ -27,42 +28,43 @@ const COLS = {
 // Helper to translate DB group code to Excel Name
 // DB Format Assumption: '0060100' -> Grade 06, Group 01
 const getFriendlyGroupName = (dbCode: string, sede: string) => {
-    // Sordos special case handled separately before calling this
+    // Estandarizar nombre (Mayúsculas y sin espacios extras)
+    const original = (dbCode || '').trim().toUpperCase();
 
-    // Parse code
-    // Try to extract Grade and Group. 
-    // Example: 0060100 -> 6, 1
-    // Example: 0110200 -> 11, 2
-
-    // Simple heuristic parser (customize based on real patterns)
-    // 6th char might be group? 
-    // Let's assume standard pattern or map manually if patterns vary too much.
-
-    // Manual Map for common patterns if parser is risky:
+    // Manual Map for common patterns
     const map: Record<string, string> = {
+        // Sexto
+        '6A': 'SEXTO 1', '6B': 'SEXTO 2', '6C': 'SEXTO 3', '6D': 'SEXTO 4',
         '0060100': 'SEXTO 1', '0060200': 'SEXTO 2', '0060300': 'SEXTO 3', '0060400': 'SEXTO 4',
+        '601': 'SEXTO 1', '602': 'SEXTO 2', '603': 'SEXTO 3', '604': 'SEXTO 4',
+
+        // Otros Secundarios
+        '7A': 'SEPTIMO 1', '7B': 'SEPTIMO 2', '7C': 'SEPTIMO 3',
         '0070100': 'SEPTIMO 1', '0070200': 'SEPTIMO 2', '0070300': 'SEPTIMO 3',
+        '8A': 'OCTAVO 1', '8B': 'OCTAVO 2',
         '0080100': 'OCTAVO 1', '0080200': 'OCTAVO 2',
+        '9A': 'NOVENO 1', '9B': 'NOVENO 2',
         '0090100': 'NOVENO 1', '0090200': 'NOVENO 2',
-        '0100100': 'DÉCIMO 1', '0100200': 'DÉCIMO 2', // Check accent in Excel
+        '10A': 'DÉCIMO 1', '10B': 'DÉCIMO 2',
+        '0100100': 'DÉCIMO 1', '0100200': 'DÉCIMO 2',
+        '11A': 'ONCE 1', '11B': 'ONCE 2',
         '0110100': 'ONCE 1', '0110200': 'ONCE 2',
 
         // Primaria
-        '0010100': 'PRIMERO', '0010200': 'PRIMERO', // If multiple groups map to one row
-        '0020100': 'SEGUNDO',
-        '0030100': 'TERCERO',
-        '0040100': 'CUARTO 1', '0040200': 'CUARTO 2',
-        '0050100': 'QUINTO 1', '0050200': 'QUINTO 2',
+        '1A': 'PRIMERO', '1B': 'PRIMERO', '0010100': 'PRIMERO',
+        '2A': 'SEGUNDO', '2B': 'SEGUNDO', '0020100': 'SEGUNDO',
+        '3A': 'TERCERO', '3B': 'TERCERO', '0030100': 'TERCERO',
+        '4A': 'CUARTO 1', '4B': 'CUARTO 2', '0040100': 'CUARTO 1', '0040200': 'CUARTO 2',
+        '5A': 'QUINTO 1', '5B': 'QUINTO 2', '0050100': 'QUINTO 1', '0050200': 'QUINTO 2',
 
-        // Preescolar
-        '0000100': 'PREESCOLAR'
+        // Especiales
+        'TRANSICIÓN': 'PREESCOLAR',
+        'LILIANA': 'AULA MULTINIVEL SORDOS',
+        'SORDOS': 'AULA MULTINIVEL SORDOS',
+        '010400': 'AULA MULTINIVEL SORDOS'
     };
 
-    // Try map
-    if (map[dbCode]) return map[dbCode];
-
-    // Fallback parser if not in map (implement if needed)
-    return '';
+    return map[original] || original;
 };
 
 export async function POST(req: Request) {
@@ -119,12 +121,55 @@ export async function POST(req: Request) {
             }
         });
 
-        // Apply Novedades (Reductions)
-        // Fetch Novedades for this week
-        // ... (Logic to Subtract Novedades from groupCounts) ...
-        // For MVP, lets just send HEADCOUNT (Total Matriculados) or clarify if Novedades should subtract.
-        // Assuming simple Headcount for now.
+        // --- 1.5 APPLY NOVEDADES (Ajustes Manuales) ---
+        // Obtener novedades de la semana
+        const weekEnd = new Date(new Date(weekStart).setDate(new Date(weekStart).getDate() + 6)).toISOString().split('T')[0];
+        
+        const { data: novedades, error: novError } = await supabase
+            .from('novedades_cupos')
+            .select('*')
+            .gte('fecha_fin', weekStart)
+            .lte('fecha_inicio', weekEnd);
 
+        if (!novError && novedades) {
+            novedades.forEach((nov: any) => {
+                const groupKey = (nov.grupo || '').trim().toUpperCase();
+                const type = nov.tipo;
+                const count = Math.abs(nov.cupos_afectados || 0);
+
+                // Si es Sordos, aplicar al contador global
+                if (SORDOS_CODES.includes(groupKey)) {
+                    if (['reduccion_cupos', 'no_asiste_grupo'].includes(type)) {
+                        sordosCount.total = Math.max(0, sordosCount.total - count);
+                    } else if (type === 'aumento_cupos') {
+                        sordosCount.total += count;
+                    }
+                } else {
+                    // Aplicar al grupo específico
+                    if (['reduccion_cupos', 'no_asiste_grupo'].includes(type)) {
+                        groupCounts[groupKey] = Math.max(0, (groupCounts[groupKey] || 0) - count);
+                    } else if (type === 'aumento_cupos') {
+                        groupCounts[groupKey] = (groupCounts[groupKey] || 0) + count;
+                    }
+                }
+            });
+        }
+
+
+        const { data: scheduleData } = await supabase
+            .from('schedules')
+            .select('items')
+            .eq('date', weekStart.split('T')[0])
+            .maybeSingle();
+
+        const cancelledBySchedule = new Set<string>();
+        if (scheduleData?.items) {
+            scheduleData.items.forEach((item: any) => {
+                if (item.time === 'NO_ASISTE' || item.time_start === 'NO_ASISTE') {
+                    cancelledBySchedule.add((item.group || '').trim().toUpperCase());
+                }
+            });
+        }
 
         // --- 2. UPDATE GOOGLE SHEET ---
         // Fetch Metadata to find the REAL Sheet Name
@@ -161,37 +206,56 @@ export async function POST(req: Request) {
             return idx !== -1 ? idx + 1 : null; // returns 1-based row number
         };
 
-        // Find Anchor for BARRO BLANCO
-        // Look for "I.E. BARRO BLANCO" or similar
-        let anchorIdx = rows.findIndex(r => r.some(c => c && c.toString().toUpperCase().includes('BARRO BLANCO')));
+        // Find Anchor for BARRO BLANCO (Row 104 in user image)
+        // We search for "BARRO BLANCO" in Column A (r[0])
+        const anchorIdx = rows.findIndex(r => 
+            r[0] && r[0].toString().toUpperCase().includes('BARRO BLANCO')
+        );
 
         if (anchorIdx === -1) {
             console.warn('Could not find I.E. BARRO BLANCO anchor, searching from top.');
-            anchorIdx = 0;
         }
 
+        const matchLog: string[] = [];
+
         // A. SORDOS (Special Case)
+        let finalSordosCount = sordosCount.total;
+        
+        // Verificar si algún sub-grupo de Sordos está cancelado o si el grupo general lo está
+        const isSordosCancelled = SORDOS_CODES.some(code => cancelledBySchedule.has(code.toUpperCase()));
+        if (isSordosCancelled) {
+            finalSordosCount = 0;
+        }
+
         const sordosRow = findRow('AULA SORDOS', anchorIdx);
-        if (sordosRow && sordosCount.total > 0) {
+        if (sordosRow) {
             dataToUpdate.push({
                 range: `'${sheetName}'!D${sordosRow}:F${sordosRow}`,
-                values: [[sordosCount.total, '', sordosCount.total]]
+                values: [[finalSordosCount, '', finalSordosCount > 0 ? finalSordosCount : '']]
             });
         }
 
         // B. REGULAR GROUPS
         Object.entries(groupCounts).forEach(([code, count]) => {
+            let finalCount = count;
+            const groupKey = code.trim().toUpperCase();
+
+            // Aplicar excepción de horario (Forzar 0 si no asiste)
+            if (cancelledBySchedule.has(groupKey)) {
+                finalCount = 0;
+            }
+
             const excelName = getFriendlyGroupName(code, '');
             if (!excelName) return;
 
-            const rowNum = findRow(excelName, anchorIdx);
+            const rowNum = findRow(excelName, anchorIdx === -1 ? 0 : anchorIdx);
 
             if (rowNum) {
+                matchLog.push(`✓ ${groupKey} -> ${excelName} (Fila ${rowNum})`);
                 const isPrimaria = code.startsWith('001') || code.startsWith('002') || code.startsWith('003') || code.startsWith('004') || code.startsWith('005') || code.startsWith('000');
-                const isBachillerato = !isPrimaria;
-
-                const valCAJM = count;
-                const valAlmuerzo = isPrimaria ? count : '';
+                
+                const valCAJM = finalCount > 0 ? finalCount : 0;
+                const valAlmuerzo = (isPrimaria && finalCount > 0) ? finalCount : (finalCount === 0 ? 0 : '');
 
                 dataToUpdate.push({
                     range: `'${sheetName}'!D${rowNum}:F${rowNum}`,
@@ -269,18 +333,16 @@ export async function POST(req: Request) {
                 }
             });
         } else {
-            // Debug Failure
-            const sampleRows = rows.slice(0, 150).map(r => r[0]).filter(r => r);
-            const keys = Object.keys(groupCounts).slice(0, 10);
             return NextResponse.json({
                 success: true,
                 updated: 0,
-                message: 'No matching rows found.',
+                message: 'No se encontraron coincidencias para los grupos en el Excel.',
                 sheetUsed: sheetName,
                 debug: {
-                    sampleRowsFromSheet: sampleRows,
-                    studentGroupsFoundInDB: keys,
-                    firstFriendlyNameAttempt: keys.length > 0 ? getFriendlyGroupName(keys[0], '') : 'None',
+                    anchorFoundAtRow: anchorIdx !== -1 ? anchorIdx + 1 : 'NO ENCONTRADO',
+                    sampleRowsFromSheet: rows.slice(anchorIdx !== -1 ? anchorIdx : 0, (anchorIdx !== -1 ? anchorIdx : 0) + 20).map(r => r[0]),
+                    studentGroupsFoundInDB: Object.keys(groupCounts).slice(0, 10),
+                    matchLog: matchLog,
                     totalStudents: students.length
                 }
             });

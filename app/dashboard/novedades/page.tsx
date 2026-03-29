@@ -33,11 +33,19 @@ import {
 const EXTERNAL_LINKS = [
     {
         id: 'cupos',
-        title: 'Reporte de Cupos Semanales',
+        title: 'Reporte de Cupos Semanales (SharePoint)',
         description: 'Planilla de SharePoint para proyección de la próxima semana.',
         url: 'https://educacionrionegro-my.sharepoint.com/:x:/g/personal/novedades_pae_ser_edu_co/IQAB7gXGuyndRY7qncxvuUV6AYTnvh2j5N9lfdwOuBcMjFI?e=uun6Te',
         icon: FileText,
         color: 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800'
+    },
+    {
+        id: 'cupos_google',
+        title: 'Reporte de Cupos (Google Sheets)',
+        description: 'Copia en Google Sheets para mejor visualización y edición en móviles.',
+        url: 'https://docs.google.com/spreadsheets/d/1NIp7IaTps7E-QqkBc5Yt0rx36HGc-k5d4EiKmtOLFeE/edit?usp=sharing',
+        icon: FileText,
+        color: 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
     },
     {
         id: 'novedades_forms',

@@ -138,7 +138,9 @@ export default function ReportesPage() {
           .from('estudiantes')
           .select('grupo');
 
-        if (sedeFilter !== 'todas') {
+        if (sedeFilter === 'primaria-principal') {
+          query = query.in('sede', ['Principal', 'Sede Primaria']);
+        } else if (sedeFilter !== 'todas') {
           query = query.eq('sede', sedeMap[sedeFilter] || 'Principal');
         }
 
@@ -285,7 +287,9 @@ export default function ReportesPage() {
           .select('*', { count: 'exact', head: true })
           .not('grupo', 'ilike', '%2025%');
 
-        if (sedeFilter !== 'todas') {
+        if (sedeFilter === 'primaria-principal') {
+          queryEstudiantes = queryEstudiantes.in('sede', ['Principal', 'Sede Primaria']);
+        } else if (sedeFilter !== 'todas') {
           queryEstudiantes = queryEstudiantes.eq('sede', sedeMap[sedeFilter] || 'Principal');
         }
 
@@ -314,7 +318,9 @@ export default function ReportesPage() {
           queryAsistencia = queryAsistencia.lte('fecha', startDate);
         }
 
-        if (sedeFilter !== 'todas') {
+        if (sedeFilter === 'primaria-principal') {
+          queryAsistencia = queryAsistencia.in('estudiantes.sede', ['Principal', 'Sede Primaria']);
+        } else if (sedeFilter !== 'todas') {
           queryAsistencia = queryAsistencia.eq('estudiantes.sede', sedeMap[sedeFilter] || 'Principal');
         }
 
@@ -327,7 +333,9 @@ export default function ReportesPage() {
 
         // 3. Consultar Inactivos y Datos de Grupos
         let queryEst = supabase.from('estudiantes').select('id, nombre, grupo, estado').not('grupo', 'ilike', '%2025%');
-        if (sedeFilter !== 'todas') {
+        if (sedeFilter === 'primaria-principal') {
+          queryEst = queryEst.in('sede', ['Principal', 'Sede Primaria']);
+        } else if (sedeFilter !== 'todas') {
           queryEst = queryEst.eq('sede', sedeMap[sedeFilter] || 'Principal');
         }
         const { data: todosEst } = await queryEst;
@@ -591,7 +599,9 @@ export default function ReportesPage() {
 
       let queryAllStudents = supabase.from('estudiantes').select('id, nombre, grupo, sede');
 
-      if (sedeFilter !== 'todas') {
+      if (sedeFilter === 'primaria-principal') {
+        queryAllStudents = queryAllStudents.in('sede', ['Principal', 'Primaria', 'Sede Primaria']);
+      } else if (sedeFilter !== 'todas') {
         queryAllStudents = queryAllStudents.eq('sede', sedeMap[sedeFilter] || 'Principal');
       }
 
@@ -1434,110 +1444,119 @@ export default function ReportesPage() {
               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 relative z-10">Resumen de Proyección Diaria</h3>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
-                <div className="space-y-1">
-                  <div className="text-[10px] font-black text-blue-400 uppercase tracking-wider">Matrícula Base</div>
-                  <div className="text-2xl font-black text-blue-600 flex items-center gap-2">
-                    {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> :
-                      projectionData.reduce((acc, curr) => acc + (curr.total_estudiantes - curr.total_inactivos), 0)}
-                  </div>
-                </div>
+                {(() => {
+                  // Helper function to filter projection data
+                  const getFilteredProjectionData = () => {
+                    return projectionData.filter(row => {
+                      let matchSede = true;
+                      if (sedeFilter === 'primaria-principal') {
+                        const s = (row.sede || '').toLowerCase();
+                        matchSede = s.includes('principal') || s.includes('primaria');
+                      } else if (sedeFilter !== 'todas') {
+                        const s = (row.sede || '').toLowerCase();
+                        if (sedeFilter === 'principal') matchSede = s.includes('principal');
+                        else if (sedeFilter === 'primaria') matchSede = s.includes('primaria');
+                        else if (sedeFilter === 'maria-inmaculada') matchSede = s.includes('maria') || s.includes('inmaculada');
+                        else matchSede = false;
+                      }
+                      const matchGrupo = grupoFilter === 'todos' || row.grupo === grupoFilter;
+                      return matchSede && matchGrupo;
+                    });
+                  };
 
-                <div className="space-y-1">
-                  <div className="text-[10px] font-black text-rose-400 uppercase tracking-wider">Ausentes (Horario)</div>
-                  <div className="text-2xl font-black text-rose-500 flex items-center gap-2">
-                    {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> :
-                      projectionData.filter(r => r.novedad_horario).reduce((acc, curr) => acc + curr.total_activos, 0)}
-                    <span className="text-[10px] text-rose-300 font-bold bg-rose-50 px-1.5 py-0.5 rounded-md">
-                      {projectionData.filter(r => r.novedad_horario).length} GRUPOS
-                    </span>
-                  </div>
-                </div>
+                  const filteredProj = getFilteredProjectionData();
+                  const ausentesProj = filteredProj.filter(r => r.novedad_horario);
 
-                <div className="space-y-1">
-                  <div className="text-[10px] font-black text-amber-400 uppercase tracking-wider">Ajustes Manuales</div>
-                  <div className="text-2xl font-black text-amber-500 flex items-center gap-2">
-                    {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> :
-                      (() => {
-                        // Calculate Manual Adjustments Filtered by Sede
-                        let filteredAdj = manualAdjustments;
-                        if (sedeFilter !== 'todas') {
-                          filteredAdj = filteredAdj.filter(a => {
-                            const s = (a.sede || '').toLowerCase();
-                            if (sedeFilter === 'principal') return s.includes('principal');
-                            if (sedeFilter === 'primaria') return s.includes('primaria');
-                            if (sedeFilter === 'maria-inmaculada') return s.includes('maria') || s.includes('inmaculada');
-                            return false;
-                          });
-                        }
+                  // Helper for manual adjustments
+                  const getFilteredAdjustments = () => {
+                    return manualAdjustments.filter(a => {
+                      let matchSede = true;
+                      if (sedeFilter === 'primaria-principal') {
+                        const s = (a.sede || '').toLowerCase();
+                        matchSede = s.includes('principal') || s.includes('primaria');
+                      } else if (sedeFilter !== 'todas') {
+                        const s = (a.sede || '').toLowerCase();
+                        if (sedeFilter === 'principal') matchSede = s.includes('principal');
+                        else if (sedeFilter === 'primaria') matchSede = s.includes('primaria');
+                        else if (sedeFilter === 'maria-inmaculada') matchSede = s.includes('maria') || s.includes('inmaculada');
+                        else matchSede = false;
+                      }
+                      // We don't filter adjustments tightly by group unless we know the adjustment is group-specific.
+                      // Adjustments might apply to the whole sede. We will match if the adjustment's group matches OR is null/all.
+                      const matchGrupo = grupoFilter === 'todos' || !a.grupo || a.grupo === 'todos' || a.grupo === grupoFilter;
+                      return matchSede && matchGrupo;
+                    });
+                  };
 
-                        const totalAdj = filteredAdj.reduce((acc, curr) => {
-                          if (['reduccion_cupos', 'no_asiste_grupo'].includes(curr.tipo)) return acc - Math.abs(curr.cupos_afectados);
-                          if (['aumento_cupos'].includes(curr.tipo)) return acc + Math.abs(curr.cupos_afectados);
-                          return acc;
-                        }, 0);
+                  const filteredAdj = getFilteredAdjustments();
+                  const totalAdj = filteredAdj.reduce((acc, curr) => {
+                    if (['reduccion_cupos', 'no_asiste_grupo'].includes(curr.tipo)) return acc - Math.abs(curr.cupos_afectados);
+                    if (['aumento_cupos'].includes(curr.tipo)) return acc + Math.abs(curr.cupos_afectados);
+                    return acc;
+                  }, 0);
 
-                        return totalAdj > 0 ? `+${totalAdj}` : totalAdj;
-                      })()}
-                  </div>
-                </div>
+                  return (
+                    <>
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-black text-blue-400 uppercase tracking-wider">Matrícula Base</div>
+                        <div className="text-2xl font-black text-blue-600 flex items-center gap-2">
+                          {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> :
+                            filteredProj.reduce((acc, curr) => acc + (curr.total_estudiantes - curr.total_inactivos), 0)}
+                        </div>
+                      </div>
 
-                <div className="space-y-1 pl-4 border-l border-gray-100 dark:border-gray-700">
-                  <div className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">Total a Preparar</div>
-                  <div className="flex flex-col">
-                    <div className="text-3xl font-black text-emerald-600">
-                      {loading || projectionLoading ? <Skeleton className="w-16 h-8" /> :
-                        (() => {
-                          // 1. Calculate Adjustment Total (Filtered)
-                          let filteredAdj = manualAdjustments;
-                          if (sedeFilter !== 'todas') {
-                            filteredAdj = filteredAdj.filter(a => {
-                              const s = (a.sede || '').toLowerCase();
-                              if (sedeFilter === 'principal') return s.includes('principal');
-                              if (sedeFilter === 'primaria') return s.includes('primaria');
-                              if (sedeFilter === 'maria-inmaculada') return s.includes('maria') || s.includes('inmaculada');
-                              return false;
-                            });
-                          }
-                          const totalAdj = filteredAdj.reduce((acc, curr) => {
-                            if (['reduccion_cupos', 'no_asiste_grupo'].includes(curr.tipo)) return acc - Math.abs(curr.cupos_afectados);
-                            if (['aumento_cupos'].includes(curr.tipo)) return acc + Math.abs(curr.cupos_afectados);
-                            return acc;
-                          }, 0);
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-black text-rose-400 uppercase tracking-wider">Ausentes (Horario)</div>
+                        <div className="text-2xl font-black text-rose-500 flex items-center gap-2">
+                          {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> :
+                            ausentesProj.reduce((acc, curr) => acc + curr.total_activos, 0)}
+                          <span className="text-[10px] text-rose-300 font-bold bg-rose-50 px-1.5 py-0.5 rounded-md">
+                            {ausentesProj.length} GRUPOS
+                          </span>
+                        </div>
+                      </div>
 
-                          // 2. Base Totals
-                          const activeRows = projectionData.filter(row => {
-                            if (sedeFilter === 'todas') return true;
-                            const s = (row.sede || '').toLowerCase();
-                            if (sedeFilter === 'principal') return s.includes('principal');
-                            if (sedeFilter === 'primaria') return s.includes('primaria');
-                            if (sedeFilter === 'maria-inmaculada') return s.includes('maria') || s.includes('inmaculada');
-                            return false;
-                          });
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-black text-amber-400 uppercase tracking-wider">Ajustes Manuales</div>
+                        <div className="text-2xl font-black text-amber-500 flex items-center gap-2">
+                          {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> :
+                            (totalAdj > 0 ? `+${totalAdj}` : totalAdj)}
+                        </div>
+                      </div>
 
-                          const rowsWithoutAbsence = activeRows.filter(r => !r.novedad_horario);
+                      <div className="space-y-1 pl-4 border-l border-gray-100 dark:border-gray-700">
+                        <div className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">Total a Preparar</div>
+                        <div className="flex flex-col">
+                          <div className="text-3xl font-black text-emerald-600">
+                            {loading || projectionLoading ? <Skeleton className="w-16 h-8" /> :
+                              (() => {
+                                const rowsWithoutAbsence = filteredProj.filter(r => !r.novedad_horario);
 
-                          const baseCAJM = rowsWithoutAbsence.reduce((acc, curr) => acc + getRationDistribution(curr).ri_am + getRationDistribution(curr).ri_pm, 0);
-                          const baseLunch = rowsWithoutAbsence.reduce((acc, curr) => acc + getRationDistribution(curr).almuerzo, 0);
+                                const baseCAJM = rowsWithoutAbsence.reduce((acc, curr) => acc + getRationDistribution(curr).ri_am + getRationDistribution(curr).ri_pm, 0);
+                                const baseLunch = rowsWithoutAbsence.reduce((acc, curr) => acc + getRationDistribution(curr).almuerzo, 0);
 
-                          const finalCAJM = Math.max(0, baseCAJM + totalAdj);
-                          const finalLunch = baseLunch;
+                                const finalCAJM = Math.max(0, baseCAJM + totalAdj);
+                                const finalLunch = baseLunch;
 
-                          return (
-                            <div className="flex flex-col">
-                              <span>{finalCAJM + finalLunch}</span>
-                              {!loading && !projectionLoading && (
-                                <div className="text-[9px] font-bold text-gray-400 tracking-tight flex gap-2 mt-1">
-                                  <span>CAJM/T: {finalCAJM}</span>
-                                  <span>•</span>
-                                  <span>ALM: {finalLunch}</span>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
-                    </div>
-                  </div>
-                </div>
+                                return (
+                                  <div className="flex flex-col">
+                                    <span>{finalCAJM + finalLunch}</span>
+                                    {!loading && !projectionLoading && (
+                                      <div className="text-[9px] font-bold text-gray-400 tracking-tight flex gap-2 mt-1">
+                                        <span>CAJM/T: {finalCAJM}</span>
+                                        <span>•</span>
+                                        <span>ALM: {finalLunch}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
@@ -1630,7 +1649,7 @@ export default function ReportesPage() {
                                 {isCancelled ? '0' : (dist.almuerzo > 0 ? dist.almuerzo : '-')}
                               </td>
                               <td className={`px-2 py-2 md:px-6 md:py-4 text-center font-black text-xs md:text-sm ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-900 dark:text-white'}`}>
-                                {isCancelled ? '0' : row.total_activos}
+                                {isCancelled ? '0' : (dist.ri_am + dist.ri_pm + dist.almuerzo)}
                               </td>
                             </tr>
                           );
@@ -1638,46 +1657,67 @@ export default function ReportesPage() {
                       {/* Totals Row (Calculated on visible data) */}
                       <tr className="bg-cyan-50 dark:bg-cyan-900/20 font-black text-cyan-900 dark:text-cyan-100">
                         <td className="px-2 py-2 md:px-6 md:py-4 text-right uppercase tracking-widest text-[9px] md:text-xs">Total Global</td>
-                        <td className="px-2 py-2 md:px-6 md:py-4 text-center text-sm md:text-lg text-blue-600">{
-                          (() => {
-                            const activeRows = projectionData.filter(row => !row.novedad_horario && (sedeFilter === 'todas' || row.sede.toLowerCase().includes(sedeFilter)) && (grupoFilter === 'todos' || row.grupo === grupoFilter));
-                            const baseCAJM = activeRows.reduce((acc, curr) => acc + getRationDistribution(curr).ri_am, 0);
-
-                            // Calculate Manual Adjustments to apply to CAJM
-                            let filteredAdj = manualAdjustments;
-                            if (sedeFilter !== 'todas') {
-                              filteredAdj = filteredAdj.filter(a => {
-                                const s = (a.sede || '').toLowerCase();
-                                if (sedeFilter === 'principal') return s.includes('principal');
-                                if (sedeFilter === 'primaria') return s.includes('primaria');
-                                if (sedeFilter === 'maria-inmaculada') return s.includes('maria') || s.includes('inmaculada');
-                                return false;
-                              });
+                        {(() => {
+                          const activeRows = projectionData.filter(row => {
+                            if (row.novedad_horario) return false;
+                            
+                            let matchSede = true;
+                            if (sedeFilter === 'primaria-principal') {
+                              const s = (row.sede || '').toLowerCase();
+                              matchSede = s.includes('principal') || s.includes('primaria');
+                            } else if (sedeFilter !== 'todas') {
+                              const s = (row.sede || '').toLowerCase();
+                              if (sedeFilter === 'principal') matchSede = s.includes('principal');
+                              else if (sedeFilter === 'primaria') matchSede = s.includes('primaria');
+                              else if (sedeFilter === 'maria-inmaculada') matchSede = s.includes('maria') || s.includes('inmaculada');
+                              else matchSede = false;
                             }
-                            const totalAdj = filteredAdj.reduce((acc, curr) => {
-                              if (['reduccion_cupos', 'no_asiste_grupo'].includes(curr.tipo)) return acc - Math.abs(curr.cupos_afectados);
-                              if (['aumento_cupos'].includes(curr.tipo)) return acc + Math.abs(curr.cupos_afectados);
-                              return acc;
-                            }, 0);
+                            
+                            const matchGrupo = grupoFilter === 'todos' || row.grupo === grupoFilter;
+                            return matchSede && matchGrupo;
+                          });
 
-                            return Math.max(0, baseCAJM + totalAdj);
-                          })()
-                        }
-                        </td>
-                        <td className="px-2 py-2 md:px-6 md:py-4 text-center text-xs md:text-base">{projectionData
-                          .filter(row => !row.novedad_horario && (sedeFilter === 'todas' || row.sede.toLowerCase().includes(sedeFilter)) && (grupoFilter === 'todos' || row.grupo === grupoFilter))
-                          .reduce((acc, curr) => acc + getRationDistribution(curr).ri_pm, 0)}
-                        </td>
-                        <td className="px-2 py-2 md:px-6 md:py-4 text-center text-sm md:text-lg">{
-                          projectionData
-                            .filter(row => !row.novedad_horario && (sedeFilter === 'todas' || row.sede.toLowerCase().includes(sedeFilter)) && (grupoFilter === 'todos' || row.grupo === grupoFilter))
-                            .reduce((acc, curr) => acc + getRationDistribution(curr).almuerzo, 0)
-                        }
-                        </td>
-                        <td className="px-2 py-2 md:px-6 md:py-4 text-center text-sm md:text-lg">{projectionData
-                          .filter(row => !row.novedad_horario && (sedeFilter === 'todas' || row.sede.toLowerCase().includes(sedeFilter)) && (grupoFilter === 'todos' || row.grupo === grupoFilter))
-                          .reduce((acc, curr) => acc + curr.total_activos, 0)}
-                        </td>
+                          const baseCAJM = activeRows.reduce((acc, curr) => acc + getRationDistribution(curr).ri_am, 0);
+                          const totalCAJT = activeRows.reduce((acc, curr) => acc + getRationDistribution(curr).ri_pm, 0);
+                          const totalALM = activeRows.reduce((acc, curr) => acc + getRationDistribution(curr).almuerzo, 0);
+
+                          // Calculate Manual Adjustments to apply to CAJM
+                          let filteredAdj = manualAdjustments;
+                          if (sedeFilter === 'primaria-principal') {
+                            filteredAdj = filteredAdj.filter(a => {
+                              const s = (a.sede || '').toLowerCase();
+                              return s.includes('principal') || s.includes('primaria');
+                            });
+                          } else if (sedeFilter !== 'todas') {
+                            filteredAdj = filteredAdj.filter(a => {
+                              const s = (a.sede || '').toLowerCase();
+                              if (sedeFilter === 'principal') return s.includes('principal');
+                              if (sedeFilter === 'primaria') return s.includes('primaria');
+                              if (sedeFilter === 'maria-inmaculada') return s.includes('maria') || s.includes('inmaculada');
+                              return false;
+                            });
+                          }
+                          const matchGrupo = (a: any) => grupoFilter === 'todos' || !a.grupo || a.grupo === 'todos' || a.grupo === grupoFilter;
+                          filteredAdj = filteredAdj.filter(matchGrupo);
+
+                          const totalAdj = filteredAdj.reduce((acc, curr) => {
+                            if (['reduccion_cupos', 'no_asiste_grupo'].includes(curr.tipo)) return acc - Math.abs(curr.cupos_afectados);
+                            if (['aumento_cupos'].includes(curr.tipo)) return acc + Math.abs(curr.cupos_afectados);
+                            return acc;
+                          }, 0);
+
+                          const finalCAJM = Math.max(0, baseCAJM + totalAdj);
+                          const grandTotal = finalCAJM + totalCAJT + totalALM;
+
+                          return (
+                            <>
+                              <td className="px-2 py-2 md:px-6 md:py-4 text-center text-sm md:text-lg text-blue-600 font-bold">{finalCAJM}</td>
+                              <td className="px-2 py-2 md:px-6 md:py-4 text-center text-xs md:text-base font-bold">{totalCAJT > 0 ? totalCAJT : '-'}</td>
+                              <td className="px-2 py-2 md:px-6 md:py-4 text-center text-sm md:text-lg font-bold">{totalALM > 0 ? totalALM : '-'}</td>
+                              <td className="px-2 py-2 md:px-6 md:py-4 text-center text-sm md:text-lg font-black">{grandTotal}</td>
+                            </>
+                          );
+                        })()}
                       </tr>
                     </tbody>
                   </table>
@@ -1747,7 +1787,9 @@ export default function ReportesPage() {
                     className="w-full pl-3 pr-3 md:pl-5 md:pr-5 py-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 rounded-2xl flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-cyan-500/10 hover:bg-white hover:border-cyan-300 transition-all shadow-sm cursor-pointer dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-800/30 dark:hover:bg-cyan-900/40"
                   >
                     <span className="truncate mr-2">
-                      {sedeFilter === 'todas' ? 'SEDES' : sedes.find(s => s.id === sedeFilter)?.nombre.toUpperCase()}
+                      {sedeFilter === 'todas' ? 'SEDES' : 
+                       sedeFilter === 'primaria-principal' ? 'PRINC. + PRIM.' :
+                       sedes.find(s => s.id === sedeFilter)?.nombre.toUpperCase()}
                     </span>
                     <ChevronDown className={`w-3 h-3 text-cyan-400 transition-transform duration-300 ${showSedeDropdown ? 'rotate-180' : ''}`} />
                   </button>
@@ -1763,6 +1805,13 @@ export default function ReportesPage() {
                           >
                             TODAS LAS SEDES
                             {sedeFilter === 'todas' && <CheckCircle className="w-3.5 h-3.5" />}
+                          </button>
+                          <button
+                            onClick={() => { setSedeFilter('primaria-principal'); setShowSedeDropdown(false); }}
+                            className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-between ${sedeFilter === 'primaria-principal' ? 'bg-cyan-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-cyan-50 hover:text-cyan-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-cyan-900/30 dark:hover:text-cyan-400'}`}
+                          >
+                            PRINC. + PRIM.
+                            {sedeFilter === 'primaria-principal' && <CheckCircle className="w-3.5 h-3.5" />}
                           </button>
                           {sedes.map((sede) => (
                             <button
