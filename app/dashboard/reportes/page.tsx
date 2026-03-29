@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
 import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X, ChevronLeft, School, Clock } from 'lucide-react';
@@ -16,6 +16,7 @@ import StatsDetailModal from '@/components/StatsDetailModal';
 
 export default function ReportesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dateInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [usuario, setUsuario] = useState<any | null>(null);
@@ -77,6 +78,18 @@ export default function ReportesPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Handle URL parameters for tab selection
+  useEffect(() => {
+    if (isMounted) {
+      const tab = searchParams.get('tab');
+      if (tab === 'proyeccion') {
+        setViewMode('proyeccion');
+      } else if (tab === 'historico') {
+        setViewMode('historico');
+      }
+    }
+  }, [isMounted, searchParams]);
 
   useEffect(() => {
     const checkUser = async () => {

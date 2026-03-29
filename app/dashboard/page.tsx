@@ -72,6 +72,12 @@ export default function DashboardPage() {
 
       if (profile) {
         setUsuario(profile);
+        
+        // Redirección Automática para roles específicos
+        if (profile.rol === 'secretaria_educacion' || profile.rol === 'operador') {
+          router.replace('/dashboard/reportes?tab=proyeccion');
+          return;
+        }
       } else {
         // Determine if we need to auto-assign the "acudiente" role for new external users
         let userRole = session.user.user_metadata?.rol;
@@ -87,11 +93,18 @@ export default function DashboardPage() {
             });
         }
 
-        setUsuario({
+        const newUser = {
           email: userEmail,
           nombre: session.user.user_metadata?.nombre || 'Usuario',
           rol: userRole || 'acudiente',
-        });
+        };
+        setUsuario(newUser);
+
+        // Redirección Automática para la sesión actual (metadata)
+        if (newUser.rol === 'secretaria_educacion' || newUser.rol === 'operador') {
+          router.replace('/dashboard/reportes?tab=proyeccion');
+          return;
+        }
       }
 
       fetchStats();
