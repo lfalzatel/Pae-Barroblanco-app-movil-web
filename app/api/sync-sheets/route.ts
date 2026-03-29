@@ -60,6 +60,7 @@ const getFriendlyGroupName = (dbCode: string, sede: string) => {
 
         // Especiales
         'TRANSICIÓN': 'PREESCOLAR',
+        'TS0100': 'PREESCOLAR',
         'LILIANA': 'AULA MULTINIVEL SORDOS',
         'SORDOS': 'AULA MULTINIVEL SORDOS',
         '010400': 'AULA MULTINIVEL SORDOS'
@@ -102,8 +103,10 @@ export async function POST(req: Request) {
 
         // Get Estudiantes (Active)
         const { data: students, error: stError } = await supabase
-            .from('estudiantes') // Verify table name
-            .select('grupo, sede, id'); // Removido codigo_grupo
+            .from('estudiantes')
+            .select('id, nombre, grupo, sede, estado')
+            .eq('estado', 'activo')
+            .not('grupo', 'ilike', '%2025%');
 
         if (stError) throw stError;
 
@@ -221,6 +224,10 @@ export async function POST(req: Request) {
 
         const matchLog: string[] = [];
 
+        // Map to consolidate updates by row number to avoid overwrites
+        // key: `rowNum`, value: { cajm, cajt, almuerzo }
+        const consolidatedUpdates: Record<number, { cajm: number, cajt: number, almuerzo: number }> = {};
+
         // A. SORDOS (Special Case)
         let finalSordosCount = sordosCount.total;
         
@@ -232,10 +239,11 @@ export async function POST(req: Request) {
 
         const sordosRow = findRow('AULA MULTINIVEL SORDOS', anchorIdx) || findRow('AULA SORDOS', anchorIdx);
         if (sordosRow) {
-            dataToUpdate.push({
-                range: `'${sheetName}'!D${sordosRow}:F${sordosRow}`,
-                values: [[finalSordosCount, '', finalSordosCount > 0 ? finalSordosCount : '']]
-            });
+            consolidatedUpdates[sordosRow] = {
+                cajm: finalSordosCount,
+                cajt: 0,
+                almuerzo: finalSordosCount > 0 ? finalSordosCount : 0
+            };
         }
 
         // B. REGULAR GROUPS
@@ -249,7 +257,7 @@ export async function POST(req: Request) {
                 finalCount = 0;
             }
 
-            const excelName = getFriendlyGroupName(code, '');
+            const excelName = getFriendlyGroupName(code, sede);
             if (!excelName) return;
 
             // Determinar Anchor dependiendo de la sede
@@ -263,31 +271,50 @@ export async function POST(req: Request) {
             const rowNum = findRow(excelName, currentAnchor === -1 ? 0 : currentAnchor);
 
             if (rowNum) {
-                matchLog.push(`✓ [${sede}] ${groupKey} -> ${excelName} (Fila ${rowNum})`);
-                
                 // Determinación de jornada y beneficios
                 const codeStr = code.toUpperCase();
-                const isPreescolar = /PREESCOLAR|TRANSICI/i.test(excelName) || codeStr.startsWith('000');
+                const isPreescolar = /PREESCOLAR|TRANSICI/i.test(excelName) || codeStr.startsWith('000') || codeStr === 'TS0100';
                 const isPrimaria = isPreescolar || codeStr.startsWith('001') || codeStr.startsWith('002') || codeStr.startsWith('003') || codeStr.startsWith('004') || codeStr.startsWith('005') || /PRIMERO|SEGUNDO|TERCERO|CUARTO|QUINTO/i.test(excelName);
                 const isSexto = codeStr.startsWith('006') || /SEXTO/i.test(excelName);
-                
-                // CAJM (Mañana) = Primaria + Sexto
-                const isCajm = isPrimaria || isSexto;
-                // CAJT (Tarde) = Séptimo a Once
-                const isCajt = !isCajm;
+                const isSordos = codeStr.includes('0400') || /SORDOS/i.test(excelName);
+                const isSedePrincipal = sede.toUpperCase().includes('PRINCIPAL');
 
-                const valCAJM = isCajm ? (finalCount > 0 ? finalCount : 0) : '';
-                const valCAJT = isCajt ? (finalCount > 0 ? finalCount : 0) : '';
+                // CAJM (Mañana) 
+                const isCajm = isSedePrincipal || isPrimaria || isSexto || isSordos;
                 
-                // Preescolar does not receive Almuerzo
-                const isAlmuerzable = isPrimaria && !isPreescolar;
-                const valAlmuerzo = (isAlmuerzable && finalCount > 0) ? finalCount : (finalCount === 0 && isAlmuerzable ? 0 : '');
+                // CAJT (Tarde) 
+                const isCajt = !isSedePrincipal && !isCajm;
 
-                dataToUpdate.push({
-                    range: `'${sheetName}'!D${rowNum}:F${rowNum}`,
-                    values: [[valCAJM, valCAJT, valAlmuerzo]]
-                });
+                const valCAJM = isCajm ? finalCount : 0;
+                const valCAJT = isCajt ? finalCount : 0;
+                
+                // Almuerzo: Primaria/Sordos (No Preescolar), EXCEPTO Maria Inmaculada donde todos almuerzan (incluyendo preescolar)
+                const isMariaInmaculada = sede.toUpperCase().includes('MARIA');
+                const isAlmuerzable = (isPrimaria || isSordos) && (!isPreescolar || isMariaInmaculada);
+                const valAlmuerzo = (isAlmuerzable && finalCount > 0) ? finalCount : 0;
+
+                // Consolidate in the map
+                if (!consolidatedUpdates[rowNum]) {
+                    consolidatedUpdates[rowNum] = { cajm: 0, cajt: 0, almuerzo: 0 };
+                }
+                consolidatedUpdates[rowNum].cajm += valCAJM;
+                consolidatedUpdates[rowNum].cajt += valCAJT;
+                consolidatedUpdates[rowNum].almuerzo += valAlmuerzo;
+
+                matchLog.push(`✓ [${sede}] ${groupKey} -> ${excelName} (Fila ${rowNum}) [Count: ${finalCount}]`);
             }
+        });
+
+        // Convert consolidated map to dataToUpdate array
+        Object.entries(consolidatedUpdates).forEach(([row, values]) => {
+            dataToUpdate.push({
+                range: `'${sheetName}'!D${row}:F${row}`,
+                values: [[
+                    values.cajm > 0 ? values.cajm : (values.cajm === 0 ? 0 : ''), 
+                    values.cajt > 0 ? values.cajt : (values.cajt === 0 ? 0 : ''), 
+                    values.almuerzo > 0 ? values.almuerzo : (values.almuerzo === 0 ? 0 : '')
+                ]]
+            });
         });
 
         // Execute Batch Update (Values)

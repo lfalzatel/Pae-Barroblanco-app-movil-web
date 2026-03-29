@@ -202,7 +202,7 @@ export default function ReportesPage() {
 
   const getRationDistribution = (item: any) => {
     // Reglas de Negocio:
-    // 1. Refrigerio: TODOS (AM o PM según grupo/jornada - Asumimos AM por defecto si no se detecta PM)
+    // 1. Refrigerio: TODOS (AM o PM según grupo/jornada)
     // 2. Almuerzo: SOLO Primaria (1-5) y Sordos. NO Bachillerato (6-11) ni Preescolar.
     // 3. SEDE: Si la sede es "Sede Primaria", asumimos que es primaria (excepto preescolar).
 
@@ -216,16 +216,20 @@ export default function ReportesPage() {
     // Detect if Sede implies Primary or Maria Inmaculada (Both get Lunch)
     const isSedePrimaria = sedeNorm.includes('primaria');
     const isSedeMariaInmaculada = sedeNorm.includes('maria') || sedeNorm.includes('inmaculada');
+    const isSedePrincipal = sedeNorm.includes('principal');
 
     const isPrimaria = isGradoPrimaria || isSedePrimaria || isSedeMariaInmaculada;
-    const isSordos = gradoNorm.includes('sordos') || grupoNorm.includes('sordos') || grupoNorm.includes('1104');
-    const isPreescolar = gradoNorm.includes('preescolar') || gradoNorm.includes('transicion') || gradoNorm === '0' || grupoNorm.includes('preescolar') || grupoNorm.includes('transicion');
+    const isSordos = gradoNorm.includes('sordos') || grupoNorm.includes('sordos') || grupoNorm.includes('0400');
+    const isPreescolar = gradoNorm.includes('preescolar') || gradoNorm.includes('transicion') || gradoNorm === '0' || grupoNorm.includes('preescolar') || grupoNorm.includes('transicion') || grupoNorm === 'ts0100';
 
     // Almuerzo: Primaria/Sordos (No Preescolar), EXCEPTO Maria Inmaculada donde TODOS almuerzan (incluido Preescolar)
     const recibeAlmuerzo = (isPrimaria || isSordos) && (!isPreescolar || isSedeMariaInmaculada);
 
-    // Lógica simple para AM/PM basada en convención de nombres
-    const isTarde = grupoNorm.includes('pm') || grupoNorm.includes('tarde');
+    // Lógica para AM/PM: 
+    // - En Sede Principal NO hay CAJT, todos son CAJM.
+    // - Sordos siempre es CAJM.
+    // - Otros dependen de si el grupo dice "pm" o "tarde".
+    const isTarde = !isSedePrincipal && !isSordos && (grupoNorm.includes('pm') || grupoNorm.includes('tarde'));
 
     return {
       ri_am: !isTarde ? item.total_activos : 0,
