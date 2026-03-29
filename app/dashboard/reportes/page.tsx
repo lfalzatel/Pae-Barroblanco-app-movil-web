@@ -1608,72 +1608,91 @@ export default function ReportesPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                      {projectionData
-                        .filter(row => {
-                          let matchSede = true;
-                          if (sedeFilter === 'primaria-principal') {
-                            const s = (row.sede || '').toLowerCase();
-                            matchSede = s.includes('principal') || s.includes('primaria');
-                          } else if (sedeFilter !== 'todas') {
-                            const s = (row.sede || '').toLowerCase();
-                            if (sedeFilter === 'principal') matchSede = s.includes('principal');
-                            else if (sedeFilter === 'primaria') matchSede = s.includes('primaria');
-                            else if (sedeFilter === 'maria-inmaculada') matchSede = s.includes('maria') || s.includes('inmaculada');
-                            else matchSede = false;
-                          }
+                      {(() => {
+                        let currentSede = '';
+                        const rows: React.ReactNode[] = [];
 
-                          const matchGrupo = grupoFilter === 'todos' || row.grupo === grupoFilter;
-                          return matchSede && matchGrupo;
-                        })
-                        .sort((a, b) => {
-                          // 1. Sede Priority
-                          const sedeOrder = ['Principal', 'Sede Primaria', 'Sede Maria Inmaculada', 'María Inmaculada'];
-                          const sedeA = sedeOrder.indexOf(a.sede) === -1 ? 99 : sedeOrder.indexOf(a.sede);
-                          const sedeB = sedeOrder.indexOf(b.sede) === -1 ? 99 : sedeOrder.indexOf(b.sede);
-                          if (sedeA !== sedeB) return sedeA - sedeB;
+                        projectionData
+                          .filter(row => {
+                            let matchSede = true;
+                            if (sedeFilter === 'primaria-principal') {
+                              const s = (row.sede || '').toLowerCase();
+                              matchSede = s.includes('principal') || s.includes('primaria');
+                            } else if (sedeFilter !== 'todas') {
+                              const s = (row.sede || '').toLowerCase();
+                              if (sedeFilter === 'principal') matchSede = s.includes('principal');
+                              else if (sedeFilter === 'primaria') matchSede = s.includes('primaria');
+                              else if (sedeFilter === 'maria-inmaculada') matchSede = s.includes('maria') || s.includes('inmaculada');
+                              else matchSede = false;
+                            }
 
-                          // 2. Natural Sort (Numeric aware) for Group
-                          return a.grupo.localeCompare(b.grupo, undefined, { numeric: true, sensitivity: 'base' });
-                        })
-                        .map((row, idx) => {
-                          const dist = getRationDistribution(row);
-                          const isCancelled = row.novedad_horario;
+                            const matchGrupo = grupoFilter === 'todos' || row.grupo === grupoFilter;
+                            return matchSede && matchGrupo;
+                          })
+                          .sort((a, b) => {
+                            // 1. Sede Priority
+                            const sedeOrder = ['Principal', 'Sede Primaria', 'Sede Maria Inmaculada', 'María Inmaculada'];
+                            const sedeA = sedeOrder.indexOf(a.sede) === -1 ? 99 : sedeOrder.indexOf(a.sede);
+                            const sedeB = sedeOrder.indexOf(b.sede) === -1 ? 99 : sedeOrder.indexOf(b.sede);
+                            if (sedeA !== sedeB) return sedeA - sedeB;
 
-                          // Smart Label Logic
-                          const gradoStr = (row.grado || '').toString().toLowerCase().trim();
-                          const grupoStr = (row.grupo || '').toString().toLowerCase().trim();
-                          const isRedundant = grupoStr.includes(gradoStr) || grupoStr.startsWith(gradoStr);
-                          const displayLabel = isRedundant ? row.grupo : `${row.grado} - ${row.grupo}`;
+                            // 2. Natural Sort (Numeric aware) for Group
+                            return a.grupo.localeCompare(b.grupo, undefined, { numeric: true, sensitivity: 'base' });
+                          })
+                          .forEach((row, idx) => {
+                            if (row.sede !== currentSede) {
+                              currentSede = row.sede;
+                              rows.push(
+                                <tr key={`sede-header-${currentSede}-${idx}`} className="bg-cyan-50/80 dark:bg-cyan-900/40 border-y-2 border-cyan-100 dark:border-cyan-800">
+                                  <td colSpan={5} className="px-2 py-3 md:px-6 md:py-4 font-black text-cyan-800 dark:text-cyan-300 uppercase tracking-widest text-xs md:text-sm shadow-sm flex items-center gap-2">
+                                    <School className="w-4 h-4" />
+                                    SEDE: {currentSede || 'NO ESPECIFICADA'}
+                                  </td>
+                                </tr>
+                              );
+                            }
 
-                          return (
-                            <tr key={idx} className={`transition-colors ${isCancelled ? 'bg-rose-50/50 dark:bg-rose-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}>
-                              <td className="px-2 py-2 md:px-6 md:py-4 font-bold text-gray-900 dark:text-white capitalize">
-                                <div className="flex items-center gap-2">
-                                  <span className="uppercase text-[10px] md:text-sm">{displayLabel}</span>
-                                  {isCancelled && (
-                                    <span className="bg-rose-100 text-rose-600 text-[8px] md:text-[9px] px-1 md:px-2 py-0.5 rounded-full uppercase tracking-widest font-black border border-rose-200">
-                                      NO
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-[9px] md:text-[10px] text-gray-400 font-normal uppercase hidden md:inline">({row.sede})</span>
-                              </td>
+                            const dist = getRationDistribution(row);
+                            const isCancelled = row.novedad_horario;
 
-                              <td className={`px-2 py-2 md:px-6 md:py-4 text-center font-mono font-bold text-xs md:text-sm border-l border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-600 dark:text-gray-300'}`}>
-                                {isCancelled ? '0' : (dist.ri_am > 0 ? dist.ri_am : '-')}
-                              </td>
-                              <td className={`px-2 py-2 md:px-6 md:py-4 text-center font-mono font-bold text-xs md:text-sm border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-600 dark:text-gray-300'}`}>
-                                {isCancelled ? '0' : (dist.ri_pm > 0 ? dist.ri_pm : '-')}
-                              </td>
-                              <td className={`px-2 py-2 md:px-6 md:py-4 text-center font-mono font-bold text-xs md:text-sm border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-rose-300 line-through decoration-2' : 'text-gray-600 dark:text-gray-300'}`}>
-                                {isCancelled ? '0' : (dist.almuerzo > 0 ? dist.almuerzo : '-')}
-                              </td>
-                              <td className={`px-2 py-2 md:px-6 md:py-4 text-center font-black text-xs md:text-sm ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-900 dark:text-white'}`}>
-                                {isCancelled ? '0' : (dist.ri_am + dist.ri_pm + dist.almuerzo)}
-                              </td>
-                            </tr>
-                          );
-                        })}
+                            // Smart Label Logic
+                            const gradoStr = (row.grado || '').toString().toLowerCase().trim();
+                            const grupoStr = (row.grupo || '').toString().toLowerCase().trim();
+                            const isRedundant = grupoStr.includes(gradoStr) || grupoStr.startsWith(gradoStr);
+                            const displayLabel = isRedundant ? row.grupo : `${row.grado} - ${row.grupo}`;
+
+                            rows.push(
+                              <tr key={`row-${row.grupo}-${idx}`} className={`transition-colors ${isCancelled ? 'bg-rose-50/50 dark:bg-rose-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}>
+                                <td className="px-2 py-2 md:px-6 md:py-4 font-bold text-gray-900 dark:text-white capitalize">
+                                  <div className="flex items-center gap-2">
+                                    <span className="uppercase text-[10px] md:text-sm">{displayLabel}</span>
+                                    {isCancelled && (
+                                      <span className="bg-rose-100 text-rose-600 text-[8px] md:text-[9px] px-1 md:px-2 py-0.5 rounded-full uppercase tracking-widest font-black border border-rose-200">
+                                        NO
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[9px] md:text-[10px] text-gray-400 font-normal uppercase hidden md:inline">({row.sede})</span>
+                                </td>
+
+                                <td className={`px-2 py-2 md:px-6 md:py-4 text-center font-mono font-bold text-xs md:text-sm border-l border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-600 dark:text-gray-300'}`}>
+                                  {isCancelled ? '0' : (dist.ri_am > 0 ? dist.ri_am : '-')}
+                                </td>
+                                <td className={`px-2 py-2 md:px-6 md:py-4 text-center font-mono font-bold text-xs md:text-sm border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-600 dark:text-gray-300'}`}>
+                                  {isCancelled ? '0' : (dist.ri_pm > 0 ? dist.ri_pm : '-')}
+                                </td>
+                                <td className={`px-2 py-2 md:px-6 md:py-4 text-center font-mono font-bold text-xs md:text-sm border-r border-gray-100 dark:border-gray-700 ${isCancelled ? 'text-rose-300 line-through decoration-2' : 'text-gray-600 dark:text-gray-300'}`}>
+                                  {isCancelled ? '0' : (dist.almuerzo > 0 ? dist.almuerzo : '-')}
+                                </td>
+                                <td className={`px-2 py-2 md:px-6 md:py-4 text-center font-black text-xs md:text-sm ${isCancelled ? 'text-gray-300 line-through' : 'text-gray-900 dark:text-white'}`}>
+                                  {isCancelled ? '0' : (dist.ri_am + dist.ri_pm + dist.almuerzo)}
+                                </td>
+                              </tr>
+                            );
+                          });
+
+                        return rows;
+                      })()}
                       {/* Totals Row (Calculated on visible data) */}
                       <tr className="bg-cyan-50 dark:bg-cyan-900/20 font-black text-cyan-900 dark:text-cyan-100">
                         <td className="px-2 py-2 md:px-6 md:py-4 text-right uppercase tracking-widest text-[9px] md:text-xs">Total Global</td>
