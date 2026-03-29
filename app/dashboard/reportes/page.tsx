@@ -1268,7 +1268,9 @@ export default function ReportesPage() {
           {usuario?.rol === 'admin' && (
             <button
               onClick={async () => {
-                const confirmSync = window.confirm('¿Deseas sincronizar los datos de esta semana con la Hoja Maestra de Google?');
+                const dayNames = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES'];
+                const selectedDayName = dayNames[selectedDayOffset - 1] || 'este día';
+                const confirmSync = window.confirm(`¿Deseas sincronizar los datos del ${selectedDayName} seleccionado con la Hoja Maestra de Google?`);
                 if (!confirmSync) return;
 
                 // Show loading toast or state
@@ -1282,7 +1284,16 @@ export default function ReportesPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                       sheetId: '1NIp7IaTps7E-QqkBc5Yt0rx36HGc-k5d4EiKmtOLFeE',
-                      weekStart: new Date().toISOString()
+                      weekStart: (() => {
+                        const d = new Date(selectedDate);
+                        const day = d.getDay();
+                        const currMonday = new Date(d);
+                        currMonday.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+                        const targetDate = new Date(currMonday);
+                        targetDate.setDate(currMonday.getDate() + (selectedDayOffset - 1));
+                        // For timezone safety similar to fetch
+                        return new Date(targetDate.getTime() - targetDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                      })()
                     })
                   });
 

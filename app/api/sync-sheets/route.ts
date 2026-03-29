@@ -29,7 +29,8 @@ const COLS = {
 // DB Format Assumption: '0060100' -> Grade 06, Group 01
 const getFriendlyGroupName = (dbCode: string, sede: string) => {
     // Estandarizar nombre (Mayúsculas y sin espacios extras)
-    const original = (dbCode || '').trim().toUpperCase();
+    let original = (dbCode || '').trim().toUpperCase();
+    original = original.replace(/-202[56]/g, '').trim();
 
     // Manual Map for common patterns
     const map: Record<string, string> = {
@@ -252,14 +253,24 @@ export async function POST(req: Request) {
 
             if (rowNum) {
                 matchLog.push(`✓ ${groupKey} -> ${excelName} (Fila ${rowNum})`);
-                const isPrimaria = code.startsWith('001') || code.startsWith('002') || code.startsWith('003') || code.startsWith('004') || code.startsWith('005') || code.startsWith('000');
                 
-                const valCAJM = finalCount > 0 ? finalCount : 0;
-                const valAlmuerzo = (isPrimaria && finalCount > 0) ? finalCount : (finalCount === 0 ? 0 : '');
+                // Determinación de jornada y beneficios
+                const codeStr = code.toUpperCase();
+                const isPrimaria = codeStr.startsWith('001') || codeStr.startsWith('002') || codeStr.startsWith('003') || codeStr.startsWith('004') || codeStr.startsWith('005') || codeStr.startsWith('000') || /PRIMERO|SEGUNDO|TERCERO|CUARTO|QUINTO/i.test(excelName);
+                const isSexto = codeStr.startsWith('006') || /SEXTO/i.test(excelName);
+                
+                // CAJM (Mañana) = Primaria + Sexto
+                const isCajm = isPrimaria || isSexto;
+                // CAJT (Tarde) = Séptimo a Once
+                const isCajt = !isCajm;
+
+                const valCAJM = isCajm ? (finalCount > 0 ? finalCount : 0) : '';
+                const valCAJT = isCajt ? (finalCount > 0 ? finalCount : 0) : '';
+                const valAlmuerzo = (isPrimaria && finalCount > 0) ? finalCount : (finalCount === 0 && isPrimaria ? 0 : '');
 
                 dataToUpdate.push({
                     range: `'${sheetName}'!D${rowNum}:F${rowNum}`,
-                    values: [[valCAJM, '', valAlmuerzo]]
+                    values: [[valCAJM, valCAJT, valAlmuerzo]]
                 });
             }
         });
