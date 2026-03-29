@@ -310,9 +310,9 @@ export async function POST(req: Request) {
             dataToUpdate.push({
                 range: `'${sheetName}'!D${row}:F${row}`,
                 values: [[
-                    values.cajm > 0 ? values.cajm : (values.cajm === 0 ? 0 : ''), 
-                    values.cajt > 0 ? values.cajt : (values.cajt === 0 ? 0 : ''), 
-                    values.almuerzo > 0 ? values.almuerzo : (values.almuerzo === 0 ? 0 : '')
+                    values.cajm > 0 ? values.cajm : '', 
+                    values.cajt > 0 ? values.cajt : '', 
+                    values.almuerzo > 0 ? values.almuerzo : ''
                 ]]
             });
         });
