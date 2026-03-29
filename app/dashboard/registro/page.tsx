@@ -677,12 +677,12 @@ function RegistroContent() {
   const handleMarcarTodos = () => {
     const nuevasAsistencias = { ...asistencias };
     estudiantes.forEach(est => {
-      if (est.estado !== 'inactivo' && !nuevasAsistencias[est.id]) {
+      if (est.estado !== 'inactivo') {
         nuevasAsistencias[est.id] = 'recibio';
       }
     });
     setAsistencias(nuevasAsistencias);
-    showToast('Se marcaron todos los pendientes como "Recibió"', 'success');
+    showToast('Se marcaron todos como "Recibió"', 'success');
   };
 
   const handleGuardar = async () => {
@@ -1078,18 +1078,20 @@ function RegistroContent() {
                                 <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{estudiante.matricula} • {formatGroupName(estudiante.grupo)}</div>
                               </div>
                             </div>
-                            <button
-                              onClick={() => handleToggleEstado(estudiante)}
-                              disabled={isLocked}
-                              className="bg-gray-50 dark:bg-gray-700/50 px-2 py-2 rounded-xl flex flex-col items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-700 active:scale-95 disabled:opacity-30 h-14 w-14 justify-center"
-                            >
-                              <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 flex-shrink-0 ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                                <div className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all duration-300 ${estudiante.estado !== 'inactivo' ? 'left-4.5 translate-x-1' : 'left-0.5'}`} style={{ left: estudiante.estado !== 'inactivo' ? '18px' : '2px' }}></div>
-                              </div>
-                              <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest leading-none">
-                                {estudiante.estado !== 'inactivo' ? 'ACTIVO' : 'INACTIVO'}
-                              </span>
-                            </button>
+                            {(usuario?.rol === 'admin' || usuario?.rol === 'coordinador_pae') && (
+                              <button
+                                onClick={() => handleToggleEstado(estudiante)}
+                                disabled={isLocked}
+                                className="bg-gray-50 dark:bg-gray-700/50 px-2 py-2 rounded-xl flex flex-col items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-700 active:scale-95 disabled:opacity-30 h-14 w-14 justify-center"
+                              >
+                                <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 flex-shrink-0 ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                  <div className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all duration-300 ${estudiante.estado !== 'inactivo' ? 'left-4.5 translate-x-1' : 'left-0.5'}`} style={{ left: estudiante.estado !== 'inactivo' ? '18px' : '2px' }}></div>
+                                </div>
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest leading-none">
+                                  {estudiante.estado !== 'inactivo' ? 'ACTIVO' : 'INACTIVO'}
+                                </span>
+                              </button>
+                            )}
                           </div>
 
                           {estudiante.estado !== 'inactivo' && (

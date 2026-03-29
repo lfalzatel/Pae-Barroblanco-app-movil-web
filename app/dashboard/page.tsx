@@ -25,7 +25,8 @@ import {
   Clock,
   Sparkles,
   Rocket,
-  Lock
+  Lock,
+  AlertCircle
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import * as XLSX from 'xlsx';
@@ -449,6 +450,37 @@ export default function DashboardPage() {
           </button>
         </div>
       )}
+
+      {/* Alerta de actualización de estudiantes - Solo para Admin */}
+      {usuario?.rol === 'admin' && (() => {
+        const lastUpdateStr = localStorage.getItem('lastStudentListUpdate');
+        const lastUpdate = lastUpdateStr ? new Date(lastUpdateStr) : null;
+        const now = new Date();
+        const daysSinceUpdate = lastUpdate ? Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24)) : null;
+        const shouldShowAlert = !lastUpdate || daysSinceUpdate === null || daysSinceUpdate >= 14;
+
+        if (shouldShowAlert) {
+          return (
+            <div className="mb-4 p-4 rounded-xl flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-4 duration-300 bg-orange-50 border border-orange-200 text-orange-800 dark:bg-orange-900/30 dark:border-orange-800 dark:text-orange-300">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <div className="flex-1">
+                  <span className="text-sm font-medium">
+                    Recuerda actualizar la lista de estudiantes. Última actualización: {lastUpdate ? lastUpdate.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Nunca'}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push('/dashboard/gestion')}
+                className="ml-4 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-semibold transition-colors active:scale-95"
+              >
+                Ir a Gestión
+              </button>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {/* Header Image */}
       <div className="mb-4 -mx-4 lg:mx-0">

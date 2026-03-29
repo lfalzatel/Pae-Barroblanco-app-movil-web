@@ -129,6 +129,9 @@ export default function GestionPage() {
         throw error;
       }
 
+      // Guardar fecha de actualización
+      localStorage.setItem('lastStudentListUpdate', new Date().toISOString());
+
       // Success
       setIsCreateModalOpen(false);
       setNewStudent({ nombre: '', matricula: '', grado: '', grupo: '', sede: 'Principal', email: '' });
@@ -180,6 +183,9 @@ export default function GestionPage() {
         if (error.code === '23505') throw new Error('La matrícula ya está registrada');
         throw error;
       }
+
+      // Guardar fecha de actualización
+      localStorage.setItem('lastStudentListUpdate', new Date().toISOString());
 
       // Success
       setEditingStudent(null);
@@ -682,7 +688,7 @@ export default function GestionPage() {
               </div>
             </div>
 
-            {usuario?.rol === 'admin' && activeTab === 'estudiantes' && (
+            {(usuario?.rol === 'admin' || usuario?.rol === 'coordinador_pae') && activeTab === 'estudiantes' && (
               <button
                 onClick={() => {
                   setIsCreateModalOpen(true);

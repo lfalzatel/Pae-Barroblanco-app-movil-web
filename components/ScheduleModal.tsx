@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Calendar, Download, Clock, Users, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { generateSchedulePDF } from '../lib/pdf-generator';
 import { supabase } from '@/lib/supabase';
@@ -6,6 +6,8 @@ import { getAcademicBlock } from '@/lib/schedule-utils';
 import { MiniCalendar } from './ui/MiniCalendar';
 import { useModalBack } from '@/hooks/useModalBack';
 import { AlertTriangle } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import * as XLSX from 'xlsx';
 
 interface ScheduleItem {
     time: string;
@@ -33,6 +35,8 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
     const [selectedSede, setSelectedSede] = useState('Principal');
     const [groupSedeMap, setGroupSedeMap] = useState<Record<string, string>>({});
     const [previewUrl, setPreviewUrl] = useState<URL | string | null>(null);
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const scheduleContentRef = useRef<HTMLDivElement>(null);
 
     const getBlockTimeRange = (block: number) => {
         const ranges: Record<number, string> = {
@@ -211,6 +215,180 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
         }
     };
 
+    const handleExcelExport = () => {
+        const filteredSchedule = schedule.filter(s => selectedSede === 'Todas' || s.sede === selectedSede);
+        
+        // Agrupar asistentes por hora
+        const groupedByTime: Record<string, ScheduleItem[]> = {};
+        filteredSchedule
+            .filter(item => item.time !== 'NO_ASISTE')
+            .forEach(item => {
+                if (!groupedByTime[item.time]) groupedByTime[item.time] = [];
+                groupedByTime[item.time].push(item);
+            });
+
+        // Ordenar cronológicamente
+        const toMinutes = (t: string) => {
+            const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (!match) return 0;
+            let h = parseInt(match[1]);
+            const m = parseInt(match[2]);
+            const period = match[3].toUpperCase();
+            if (period === 'PM' && h !== 12) h += 12;
+            if (period === 'AM' && h === 12) h = 0;
+            return h * 60 + m;
+        };
+        const sortedTimes = Object.keys(groupedByTime).sort((a, b) =>
+            toMinutes(a.split(' - ')[0]) - toMinutes(b.split(' - ')[0])
+        );
+
+        // Filas de la tabla agrupadas por hora
+        const excelData: any[] = sortedTimes.map(time => ({
+            'Bloque / Hora': time.split(' - ')[0],
+            'Grupos': groupedByTime[time].map(i => i.group.replace('-2026', '')).join(', '),
+            'Menú / Observaciones': groupedByTime[time].map(i => i.notes).filter(Boolean).join(' | ') || '-',
+        }));
+
+        // Fila de NO ASISTEN al final
+        const noAsisten = filteredSchedule
+            .filter(item => item.time === 'NO_ASISTE')
+            .map(i => i.group.replace('-2026', ''));
+        if (noAsisten.length > 0) {
+            excelData.push({
+                'Bloque / Hora': 'NO ASISTEN',
+                'Grupos': noAsisten.join(', '),
+                'Menú / Observaciones': '-',
+            });
+        }
+
+        // Crear workbook
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Horario PAE');
+        ws['!cols'] = [
+            { wch: 16 },
+            { wch: 35 },
+            { wch: 40 },
+        ];
+
+        XLSX.writeFile(wb, `Horario-PAE-${date}.xlsx`);
+        setShowExportMenu(false);
+    };
+
+    const handleJpgExport = async () => {
+        const filteredSchedule = schedule.filter(s => selectedSede === 'Todas' || s.sede === selectedSede);
+
+        // Agrupar asistentes por hora (Lógica idéntica al PDF)
+        const groupedByTime: Record<string, { groups: string[], notes: string[] }> = {};
+        filteredSchedule
+            .filter(item => item.time !== 'NO_ASISTE')
+            .forEach(item => {
+                const timeKey = item.time;
+                if (!groupedByTime[timeKey]) {
+                    groupedByTime[timeKey] = { groups: [], notes: [] };
+                }
+                const groupName = item.group.replace('-2026', '');
+                groupedByTime[timeKey].groups.push(groupName);
+                if (item.notes) {
+                    const noteWithGroup = `${groupName}: ${item.notes}`;
+                    if (!groupedByTime[timeKey].notes.includes(noteWithGroup)) {
+                        groupedByTime[timeKey].notes.push(noteWithGroup);
+                    }
+                }
+            });
+
+        const toMinutes = (t: string) => {
+            const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (!match) return 0;
+            let h = parseInt(match[1]);
+            const m = parseInt(match[2]);
+            const period = match[3].toUpperCase();
+            if (period === 'PM' && h !== 12) h += 12;
+            if (period === 'AM' && h === 12) h = 0;
+            return h * 60 + m;
+        };
+        const sortedTimes = Object.keys(groupedByTime).sort((a, b) =>
+            toMinutes(a.split(' - ')[0]) - toMinutes(b.split(' - ')[0])
+        );
+
+        const noAsisten = filteredSchedule
+            .filter(item => item.time === 'NO_ASISTE')
+            .map(i => i.group.replace('-2026', ''));
+
+        const formattedDateFull = date
+            ? new Date(date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+            : '';
+
+        // Construir filas HTML con colores explícitos
+        const bodyRows = sortedTimes.map(time => {
+            const data = groupedByTime[time];
+            const grupos = data.groups.join(', ');
+            const notes = data.notes.length > 0 ? data.notes.join(' | ') : '-';
+            return `<tr>
+                <td style="padding:10px;border:1px solid #ddd;text-align:center;font-size:11px;color:#1e293b;">${time.split(' - ')[0]}</td>
+                <td style="padding:10px;border:1px solid #ddd;text-align:center;font-weight:700;font-size:12px;color:#0f172a;">${grupos}</td>
+                <td style="padding:10px;border:1px solid #ddd;text-align:left;font-size:11px;color:#334155;">${notes}</td>
+            </tr>`;
+        }).join('');
+
+        const noAsistenRow = noAsisten.length > 0
+            ? `<tr style="background:#fee2e2;">
+                <td style="padding:10px;border:1px solid #ddd;text-align:center;font-weight:700;font-size:11px;color:#991b1b;">NO ASISTEN</td>
+                <td style="padding:10px;border:1px solid #ddd;text-align:center;font-weight:700;font-size:12px;color:#991b1b;">${noAsisten.join(', ')}</td>
+                <td style="padding:10px;border:1px solid #ddd;font-size:11px;color:#991b1b;">-</td>
+            </tr>` : '';
+
+        // Crear elemento HTML temporal fuera del viewport
+        const el = document.createElement('div');
+        el.style.cssText = 'position:absolute;left:-9999px;top:0;width:900px;background:#fff;padding:40px;font-family:helvetica,arial,sans-serif;color:#000;';
+        el.innerHTML = `
+            <div style="text-align:center;margin-bottom:20px;">
+                <h1 style="font-size:18px;color:#164e63;margin:0 0 6px;">Institución Educativa Barroblanco</h1>
+                <h2 style="font-size:14px;color:#475569;margin:0 0 4px;font-weight:600;">Horario de Restaurante Escolar${selectedSede !== 'Todas' ? ` - Sede ${selectedSede}` : ''}</h2>
+                <p style="font-size:12px;color:#666;margin:0;">Fecha: ${formattedDateFull.charAt(0).toUpperCase() + formattedDateFull.slice(1)}</p>
+            </div>
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr style="background:#06b6d4;color:#fff;">
+                        <th style="padding:8px 10px;border:1px solid #ddd;font-size:12px;width:120px;">Bloque / Hora</th>
+                        <th style="padding:8px 10px;border:1px solid #ddd;font-size:12px;">Grupos</th>
+                        <th style="padding:8px 10px;border:1px solid #ddd;font-size:12px;text-align:left;">Menú / Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody>${bodyRows}${noAsistenRow}</tbody>
+            </table>
+        `;
+        document.body.appendChild(el);
+
+        // Esperar a que el DOM renderice el elemento antes de capturar
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        try {
+            const canvas = await html2canvas(el, {
+                backgroundColor: '#ffffff',
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                width: el.offsetWidth,
+            });
+
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/jpeg', 0.96);
+            link.download = `Horario-PAE-${date}.jpg`;
+            link.click();
+            setShowExportMenu(false);
+        } catch (error) {
+            console.error('Error generating JPG:', error);
+        } finally {
+            document.body.removeChild(el);
+        }
+    };
+
+    const handleDownloadPdf = () => {
+        handleDownload();
+        setShowExportMenu(false);
+    };
+
     if (!isOpen) return null;
 
     const formattedDate = date ? new Date(date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
@@ -312,7 +490,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                 )}
 
                 {/* Body */}
-                <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/30 dark:bg-black/20">
+                <div ref={scheduleContentRef} className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/30 dark:bg-black/20">
                     {loading ? (
                         <div className="py-20 flex flex-col items-center justify-center gap-4">
                             <div className="animate-spin rounded-full h-8 w-8 border-4 border-cyan-600/20 border-t-cyan-600"></div>
@@ -328,82 +506,50 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
                                     return (
                                         <>
-                                            {filtered.map((item, idx) => {
-                                                const hasNotes = !!item.notes;
+                                            {(() => {
+                                                // Separate items with notes from those without
+                                                const itemsWithNotes = filtered.filter(item => !!item.notes);
+                                                const itemsWithoutNotes = filtered.filter(item => !item.notes);
 
-                                                if (hasNotes) {
-                                                    return (
-                                                        <div
-                                                            key={idx}
-                                                            className="bg-amber-50/40 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-[2rem] p-4 flex items-center gap-4 animate-in fade-in duration-300"
-                                                        >
-                                                            <div className="bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 px-3 py-1.5 rounded-xl shadow-sm shrink-0 flex items-center gap-1.5">
-                                                                <Clock className="w-3 h-3 text-amber-500" />
-                                                                <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">
-                                                                    {item.time.split(' - ')[0]}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex flex-col">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="font-black text-lg text-gray-900 dark:text-white leading-none tracking-tight">
-                                                                        {item.group.replace('-2026', '')}
-                                                                    </span>
-                                                                    {item.studentCount !== undefined && (
-                                                                        <span className="text-[9px] font-black text-amber-700/60 dark:text-amber-400/80 bg-white dark:bg-gray-800 border border-amber-100 dark:border-amber-900/30 px-1.5 py-0.5 rounded-md">
-                                                                            {item.studentCount} Estudiantes
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <span className="text-[11px] font-bold text-amber-600/80 dark:text-amber-400/70 mt-1 italic leading-tight">
-                                                                    {item.notes}
-                                                                </span>
+                                                // Group items without notes by time
+                                                const groupedByTime: Record<string, ScheduleItem[]> = {};
+                                                itemsWithoutNotes.forEach(item => {
+                                                    if (!groupedByTime[item.time]) {
+                                                        groupedByTime[item.time] = [];
+                                                    }
+                                                    groupedByTime[item.time].push(item);
+                                                });
 
-                                                                {/* CONFLICT WARNING */}
-                                                                {item.conflict && (
-                                                                    <div className="mt-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 p-2.5 rounded-xl flex items-start gap-2 animate-in fade-in slide-in-from-top-1">
-                                                                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
-                                                                        <div className="flex flex-col">
-                                                                            <span className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-tight">
-                                                                                Bloque {item.conflict.block}: {getBlockTimeRange(item.conflict.block)}
-                                                                            </span>
-                                                                            <p className="text-[9px] font-bold text-amber-600/80 dark:text-amber-500/70 mt-0.5 leading-tight">
-                                                                                Asignado hoy en el mismo bloque académico que la semana pasada. ({item.conflict.lastWeekTime})
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                return (
+                                                // Render items with notes first
+                                                const itemsWithNotesElements = itemsWithNotes.map((item, idx) => (
                                                     <div
-                                                        key={idx}
-                                                        className="flex items-center gap-4 p-4 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-cyan-100 dark:hover:border-cyan-900 hover:shadow-xl hover:shadow-cyan-600/5 transition-all duration-300 group"
+                                                        key={`note-${idx}`}
+                                                        className="bg-amber-50/40 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-[2rem] p-4 flex items-center gap-4 animate-in fade-in duration-300"
                                                     >
-                                                        <div className="flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-900/20 group-hover:border-cyan-100 dark:group-hover:border-cyan-800 transition-colors shrink-0 shadow-sm min-w-[85px]">
-                                                            <Clock className="w-3.5 h-3.5 text-gray-400 dark:text-gray-400 group-hover:text-cyan-600 dark:group-hover:text-cyan-400" />
-                                                            <span className="text-[10px] font-black text-gray-700 dark:text-gray-300 group-hover:text-cyan-900 dark:group-hover:text-cyan-300 leading-tight">
+                                                        <div className="bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 px-3 py-1.5 rounded-xl shadow-sm shrink-0 flex items-center gap-1.5">
+                                                            <Clock className="w-3 h-3 text-amber-500" />
+                                                            <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">
                                                                 {item.time.split(' - ')[0]}
                                                             </span>
                                                         </div>
-
-                                                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                                                        <div className="flex flex-col">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="font-black text-xl text-gray-900 dark:text-white whitespace-nowrap tracking-tight">
+                                                                <span className="font-black text-lg text-gray-900 dark:text-white leading-none tracking-tight">
                                                                     {item.group.replace('-2026', '')}
                                                                 </span>
                                                                 {item.studentCount !== undefined && (
-                                                                    <span className="text-[10px] font-black text-white bg-cyan-600/80 dark:bg-cyan-600/60 px-2 py-0.5 rounded-lg shadow-sm">
+                                                                    <span className="text-[9px] font-black text-amber-700/60 dark:text-amber-400/80 bg-white dark:bg-gray-800 border border-amber-100 dark:border-amber-900/30 px-1.5 py-0.5 rounded-md">
                                                                         {item.studentCount} Estudiantes
                                                                     </span>
                                                                 )}
                                                             </div>
+                                                            <span className="text-[11px] font-bold text-amber-600/80 dark:text-amber-400/70 mt-1 italic leading-tight">
+                                                                {item.notes}
+                                                            </span>
 
                                                             {/* CONFLICT WARNING */}
                                                             {item.conflict && (
-                                                                <div className="mt-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 p-2.5 rounded-xl flex items-start gap-2 animate-in fade-in slide-in-from-top-1">
+                                                                <div className="mt-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 p-2.5 rounded-xl flex items-start gap-2 animate-in fade-in slide-in-from-top-1">
                                                                     <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
                                                                     <div className="flex flex-col">
                                                                         <span className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-tight">
@@ -417,8 +563,43 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                                             )}
                                                         </div>
                                                     </div>
+                                                ));
+
+                                                // Render grouped items by time
+                                                const groupedElements = Object.entries(groupedByTime).map(([time, items], groupIdx) => (
+                                                    <div
+                                                        key={`time-group-${groupIdx}`}
+                                                        className="flex items-center gap-4 p-4 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-cyan-100 dark:hover:border-cyan-900 hover:shadow-xl hover:shadow-cyan-600/5 transition-all duration-300 group"
+                                                    >
+                                                        <div className="flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-900/20 group-hover:border-cyan-100 dark:group-hover:border-cyan-800 transition-colors shrink-0 shadow-sm min-w-[85px]">
+                                                            <Clock className="w-3.5 h-3.5 text-gray-400 dark:text-gray-400 group-hover:text-cyan-600 dark:group-hover:text-cyan-400" />
+                                                            <span className="text-[10px] font-black text-gray-700 dark:text-gray-300 group-hover:text-cyan-900 dark:group-hover:text-cyan-300 leading-tight">
+                                                                {time.split(' - ')[0]}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2 sm:gap-3">
+                                                            {items.map((item, itemIdx) => (
+                                                                <div key={itemIdx} className="flex items-center gap-1.5">
+                                                                    <span className="font-black text-lg text-gray-900 dark:text-white whitespace-nowrap tracking-tight">
+                                                                        {item.group.replace('-2026', '')}
+                                                                    </span>
+                                                                    {itemIdx < items.length - 1 && (
+                                                                        <span className="text-gray-400 dark:text-gray-500 mx-0.5">•</span>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ));
+
+                                                return (
+                                                    <>
+                                                        {itemsWithNotesElements}
+                                                        {groupedElements}
+                                                    </>
                                                 );
-                                            })}
+                                            })()}
 
                                             {/* Not Attending Section */}
                                             {notAttending.length > 0 && (
@@ -532,14 +713,46 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                 {/* Footer Actions */}
                 <div className="p-4 md:p-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 shrink-0">
                     <div className="flex gap-3">
-                        <button
-                            onClick={handleDownload}
-                            disabled={schedule.length === 0}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition-all active:scale-95 disabled:opacity-50"
-                        >
-                            <Download className="w-5 h-5" />
-                            <span>Descargar PDF</span>
-                        </button>
+                        <div className="flex-1 relative">
+                            <button
+                                onClick={() => setShowExportMenu(!showExportMenu)}
+                                disabled={schedule.length === 0}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                <Download className="w-5 h-5" />
+                                <span>Descargar</span>
+                                <ChevronDown className={`w-4 h-4 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {showExportMenu && (
+                                <>
+                                    <div className="fixed inset-0 z-[80]" onClick={() => setShowExportMenu(false)}></div>
+                                    <div className="absolute bottom-full left-0 mb-2 w-full bg-white dark:bg-gray-700 rounded-2xl shadow-lg overflow-hidden z-[90] animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-600">
+                                        <button
+                                            onClick={handleDownloadPdf}
+                                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-600 flex items-center gap-2"
+                                        >
+                                            <Download className="w-4 h-4 text-cyan-600" />
+                                            Descargar como PDF
+                                        </button>
+                                        <button
+                                            onClick={handleExcelExport}
+                                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-600 flex items-center gap-2"
+                                        >
+                                            <FileText className="w-4 h-4 text-green-600" />
+                                            Descargar como Excel (.xlsx)
+                                        </button>
+                                        <button
+                                            onClick={handleJpgExport}
+                                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2"
+                                        >
+                                            <FileText className="w-4 h-4 text-amber-600" />
+                                            Descargar como Imagen JPG
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
 
                         <button
                             onClick={onClose}

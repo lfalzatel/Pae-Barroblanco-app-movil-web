@@ -8,65 +8,120 @@ export const generateSchedulePDF = (scheduleData: any[], date: string, sede: str
     doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, 210, 297, 'F');
 
-    doc.setFontSize(22);
-    doc.setTextColor(22, 78, 99); // Cyan-900 like
-    doc.text('Institución Educativa Barroblanco', 105, 20, { align: 'center' });
-
     doc.setFontSize(16);
-    doc.setTextColor(71, 85, 105); // Slate-600
-    doc.text(`Horario de Restaurante Escolar${sede !== 'Todas' ? ` - Sede ${sede}` : ''}`, 105, 30, { align: 'center' });
+    doc.setTextColor(22, 78, 99); // Cyan-900 like
+    doc.text('Institución Educativa Barroblanco', 105, 16, { align: 'center' });
 
-    doc.setFontSize(12);
+    doc.setFontSize(13);
+    doc.setTextColor(71, 85, 105); // Slate-600
+    doc.text(`Horario de Restaurante Escolar${sede !== 'Todas' ? ` - Sede ${sede}` : ''}`, 105, 24, { align: 'center' });
+
+    doc.setFontSize(11);
     doc.setTextColor(100);
     const formattedDate = new Date(date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    doc.text(`Fecha: ${formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1)}`, 105, 40, { align: 'center' });
+    doc.text(`Fecha: ${formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1)}`, 105, 32, { align: 'center' });
 
-    // Columns for the table
+    // Columns for the table (sin columna Estudiantes)
     const columns = [
         { header: 'Bloque / Hora', dataKey: 'time' },
-        { header: 'Grupo', dataKey: 'group' },
-        { header: 'Estudiantes', dataKey: 'count' },
+        { header: 'Grupos', dataKey: 'groups' },
         { header: 'Menú / Observaciones', dataKey: 'notes' },
     ];
 
-    // Map data to table format
-    const rows = scheduleData.map(item => ({
-        time: item.time,
-        group: item.group.replace('-2026', ''),
-        count: item.studentCount || '-',
-        notes: item.notes || '-'
+    // Separar los que no asisten
+    const noAsistenGroups = scheduleData
+        .filter(item => item.time === 'NO_ASISTE')
+        .map(item => item.group.replace('-2026', ''));
+
+    // Agrupar por hora: una fila por hora única, grupos separados por coma
+    const groupedByTime: Record<string, { groups: string[], notes: string[] }> = {};
+    scheduleData
+        .filter(item => item.time !== 'NO_ASISTE')
+        .forEach(item => {
+            const timeKey = item.time;
+            if (!groupedByTime[timeKey]) {
+                groupedByTime[timeKey] = { groups: [], notes: [] };
+            }
+            const groupName = item.group.replace('-2026', '');
+            groupedByTime[timeKey].groups.push(groupName);
+            if (item.notes) {
+                // Incluir nota solo si ya no está duplicada
+                const noteWithGroup = item.notes ? `${groupName}: ${item.notes}` : '';
+                if (noteWithGroup && !groupedByTime[timeKey].notes.includes(noteWithGroup)) {
+                    groupedByTime[timeKey].notes.push(noteWithGroup);
+                }
+            }
+        });
+
+    // Ordenar cronológicamente por hora
+    const sortedTimes = Object.keys(groupedByTime).sort((a, b) => {
+        const toMinutes = (t: string) => {
+            const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (!match) return 0;
+            let h = parseInt(match[1]);
+            const m = parseInt(match[2]);
+            const period = match[3].toUpperCase();
+            if (period === 'PM' && h !== 12) h += 12;
+            if (period === 'AM' && h === 12) h = 0;
+            return h * 60 + m;
+        };
+        return toMinutes(a.split(' - ')[0]) - toMinutes(b.split(' - ')[0]);
+    });
+
+    const rows = sortedTimes.map(time => ({
+        time: time.split(' - ')[0], // Solo la hora de inicio
+        groups: groupedByTime[time].groups.join(', '),
+        notes: groupedByTime[time].notes.length > 0
+            ? groupedByTime[time].notes.join(' | ')
+            : '-'
     }));
+
+    // Agregar fila de NO ASISTEN al final si hay grupos
+    if (noAsistenGroups.length > 0) {
+        rows.push({
+            time: 'NO ASISTEN',
+            groups: noAsistenGroups.join(', '),
+            notes: '-'
+        });
+    }
 
     // Create table
     autoTable(doc, {
         head: [columns.map(c => c.header)],
         body: rows.map(r => Object.values(r)),
-        startY: 50,
+        startY: 42,
         theme: 'grid',
         headStyles: {
             fillColor: [6, 182, 212], // Cyan-500
             textColor: 255,
-            fontSize: 12,
+            fontSize: 11,
             fontStyle: 'bold',
             halign: 'center'
         },
         bodyStyles: {
             fontSize: 10,
             textColor: 50,
-            halign: 'center' // Center align for cleaner look
+            halign: 'center'
         },
         columnStyles: {
-            0: { halign: 'center', cellWidth: 35 },
-            1: { halign: 'center', fontStyle: 'bold', cellWidth: 35 },
-            2: { halign: 'center', cellWidth: 30 },
-            3: { halign: 'left' } // Notes left aligned for readability
+            0: { halign: 'center', cellWidth: 32 },
+            1: { halign: 'center', fontStyle: 'bold' },
+            2: { halign: 'left' }
         },
         alternateRowStyles: {
             fillColor: [240, 253, 250] // Cyan-50
         },
         styles: {
-            cellPadding: 5,
+            cellPadding: { top: 4, bottom: 4, left: 8, right: 8 },
             valign: 'middle'
+        },
+        didParseCell: (data) => {
+            // Fila de NO ASISTEN: fondo rojizo
+            if (data.row.raw && (data.row.raw as string[])[0] === 'NO ASISTEN') {
+                data.cell.styles.fillColor = [254, 226, 226]; // rojo claro
+                data.cell.styles.textColor = [153, 27, 27];   // rojo oscuro
+                data.cell.styles.fontStyle = 'bold';
+            }
         }
     });
 
