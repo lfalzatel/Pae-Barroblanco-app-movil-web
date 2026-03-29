@@ -230,7 +230,7 @@ export async function POST(req: Request) {
             finalSordosCount = 0;
         }
 
-        const sordosRow = findRow('AULA SORDOS', anchorIdx);
+        const sordosRow = findRow('AULA MULTINIVEL SORDOS', anchorIdx) || findRow('AULA SORDOS', anchorIdx);
         if (sordosRow) {
             dataToUpdate.push({
                 range: `'${sheetName}'!D${sordosRow}:F${sordosRow}`,
@@ -267,7 +267,8 @@ export async function POST(req: Request) {
                 
                 // Determinación de jornada y beneficios
                 const codeStr = code.toUpperCase();
-                const isPrimaria = codeStr.startsWith('001') || codeStr.startsWith('002') || codeStr.startsWith('003') || codeStr.startsWith('004') || codeStr.startsWith('005') || codeStr.startsWith('000') || /PRIMERO|SEGUNDO|TERCERO|CUARTO|QUINTO/i.test(excelName);
+                const isPreescolar = /PREESCOLAR|TRANSICI/i.test(excelName) || codeStr.startsWith('000');
+                const isPrimaria = isPreescolar || codeStr.startsWith('001') || codeStr.startsWith('002') || codeStr.startsWith('003') || codeStr.startsWith('004') || codeStr.startsWith('005') || /PRIMERO|SEGUNDO|TERCERO|CUARTO|QUINTO/i.test(excelName);
                 const isSexto = codeStr.startsWith('006') || /SEXTO/i.test(excelName);
                 
                 // CAJM (Mañana) = Primaria + Sexto
@@ -277,7 +278,10 @@ export async function POST(req: Request) {
 
                 const valCAJM = isCajm ? (finalCount > 0 ? finalCount : 0) : '';
                 const valCAJT = isCajt ? (finalCount > 0 ? finalCount : 0) : '';
-                const valAlmuerzo = (isPrimaria && finalCount > 0) ? finalCount : (finalCount === 0 && isPrimaria ? 0 : '');
+                
+                // Preescolar does not receive Almuerzo
+                const isAlmuerzable = isPrimaria && !isPreescolar;
+                const valAlmuerzo = (isAlmuerzable && finalCount > 0) ? finalCount : (finalCount === 0 && isAlmuerzable ? 0 : '');
 
                 dataToUpdate.push({
                     range: `'${sheetName}'!D${rowNum}:F${rowNum}`,
