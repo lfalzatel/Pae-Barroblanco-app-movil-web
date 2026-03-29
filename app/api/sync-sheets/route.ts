@@ -205,23 +205,37 @@ export async function POST(req: Request) {
         const dataToUpdate: { range: string, values: any[][] }[] = [];
 
         // Helper to find row index
-        const findRow = (search: string, startIdx: number = 0) => {
-            const idx = rows.findIndex((r, i) => i >= startIdx && r[0] && r[0].toString().trim().toUpperCase() === search.toUpperCase());
-            return idx !== -1 ? idx + 1 : null; // returns 1-based row number
+        const findRow = (name: string, fromRow: number = 0, toRow: number = rows.length) => {
+            const normalizedName = name.toUpperCase().trim();
+            for (let i = fromRow; i < toRow && i < rows.length; i++) {
+                const cellValue = rows[i][0]?.toString().toUpperCase().trim();
+                if (cellValue === normalizedName) return i + 1;
+            }
+            return null;
+        };
+
+        // Función para encontrar el inicio de la PRÓXIMA institución (límite)
+        const findNextInstitutionRow = (fromRow: number) => {
+            for (let i = fromRow; i < rows.length; i++) {
+                const cellValue = rows[i][0]?.toString().toUpperCase().trim();
+                // Si encontramos un "I.E." que no sea el actual, es el inicio de otro bloque
+                if (cellValue?.startsWith('I.E.') && !cellValue.includes('BARRO BLANCO')) {
+                    return i; // Devolvemos el índice 0-based de la fila límite
+                }
+            }
+            return rows.length;
         };
 
         // Find Anchors for Sedes 
-        const anchorPrincipal = rows.findIndex((r, i) => r[0] && r[0].toString().toUpperCase().includes('BARRO BLANCO') && !r[0].toString().toUpperCase().includes('PRIMARIA') && !r[0].toString().toUpperCase().includes('MARIA'));
-        const anchorPrimaria = rows.findIndex((r, i) => r[0] && r[0].toString().toUpperCase().includes('PRIMARIA') && (r[0].toString().toUpperCase().includes('BARRO BLANCO') || r[0].toString().toUpperCase().includes('SEDE')));
-        const anchorMaria = rows.findIndex((r, i) => r[0] && r[0].toString().toUpperCase().includes('MARIA INMACULADA'));
+        const anchorPrincipal = findRow('I.E. BARRO BLANCO') || 0;
         
-        // Sordos usually is under the Principal anchor, or we just search globally
-        const anchorIdx = anchorPrincipal !== -1 ? anchorPrincipal : 0;
+        // Detectar el límite de Barro Blanco buscando la siguiente institución
+        const limitBarroBlanco = findNextInstitutionRow(anchorPrincipal);
 
-        if (anchorIdx === -1) {
-            console.warn('Could not find I.E. BARRO BLANCO anchor, searching from top.');
-        }
-
+        // Sub-anchors restringidos al bloque de Barro Blanco
+        const anchorPrimaria = findRow('PRIMARIA', anchorPrincipal, limitBarroBlanco) || -1;
+        const anchorMaria = findRow('MARÍA INMACULADA', (anchorPrimaria !== -1 ? anchorPrimaria : anchorPrincipal), limitBarroBlanco) || -1;
+        
         const matchLog: string[] = [];
 
         // Map to consolidate updates by row number to avoid overwrites
@@ -237,7 +251,7 @@ export async function POST(req: Request) {
             finalSordosCount = 0;
         }
 
-        const sordosRow = findRow('AULA MULTINIVEL SORDOS', anchorIdx) || findRow('AULA SORDOS', anchorIdx);
+        const sordosRow = findRow('AULA MULTINIVEL SORDOS', anchorPrincipal) || findRow('AULA SORDOS', anchorPrincipal);
         if (sordosRow) {
             consolidatedUpdates[sordosRow] = {
                 cajm: finalSordosCount,
@@ -392,11 +406,12 @@ export async function POST(req: Request) {
                 message: 'No se encontraron coincidencias para los grupos en el Excel.',
                 sheetUsed: sheetName,
                 debug: {
-                    anchorFoundAtRow: anchorIdx !== -1 ? anchorIdx + 1 : 'NO ENCONTRADO',
-                    sampleRowsFromSheet: rows.slice(anchorIdx !== -1 ? anchorIdx : 0, (anchorIdx !== -1 ? anchorIdx : 0) + 20).map(r => r[0]),
+                    anchorFoundAtRow: anchorPrincipal,
+                    limitBarroBlanco: limitBarroBlanco,
+                    sampleRowsFromSheet: rows.slice(anchorPrincipal > 0 ? anchorPrincipal - 1 : 0, (anchorPrincipal > 0 ? anchorPrincipal - 1 : 0) + 20).map(r => r[0]),
                     studentGroupsFoundInDB: Object.keys(groupCounts).slice(0, 10),
                     matchLog: matchLog,
-                    totalStudents: students.length
+                    totalStudents: students?.length || 0
                 }
             });
         }
