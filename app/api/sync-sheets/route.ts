@@ -6,8 +6,6 @@ export const dynamic = 'force-dynamic';
 
 // --- CONFIGURATION ---
 const SORDOS_CODES = [
-    '010400', '024000', '020400', '030400', '044000', '050400', 
-    '060400', '070400', '080400', '090400', '110400',
     'LILIANA', 'SORDOS', 'AULA SORDOS', 'AULA MULTINIVEL SORDOS' // Nombres comunes en la App
 ];
 
@@ -28,18 +26,13 @@ const COLS = {
 // Helper to translate DB group code to Excel Name
 // DB Format Assumption: '0060100' -> Grade 06, Group 01
 const getFriendlyGroupName = (dbCode: string, sede: string) => {
-    // Estandarizar nombre (Mayúsculas y sin espacios extras)
-    let original = (dbCode || '').trim().toUpperCase();
-    original = original.replace(/-202[56]/g, '').trim();
+    const original = (dbCode || '').trim().toUpperCase();
 
-    // Manual Map for common patterns
+    // Custom Mapping based on DB codes exactly
     const map: Record<string, string> = {
-        // Sexto
-        '6A': 'SEXTO 1', '6B': 'SEXTO 2', '6C': 'SEXTO 3', '6D': 'SEXTO 4',
-        '0060100': 'SEXTO 1', '0060200': 'SEXTO 2', '0060300': 'SEXTO 3', '0060400': 'SEXTO 4',
+        // Bachillerato
         '601': 'SEXTO 1', '602': 'SEXTO 2', '603': 'SEXTO 3', '604': 'SEXTO 4',
-
-        // Otros Secundarios
+        '0060100': 'SEXTO 1', '0060200': 'SEXTO 2', '0060300': 'SEXTO 3', '0060400': 'SEXTO 4',
         '7A': 'SEPTIMO 1', '7B': 'SEPTIMO 2', '7C': 'SEPTIMO 3',
         '0070100': 'SEPTIMO 1', '0070200': 'SEPTIMO 2', '0070300': 'SEPTIMO 3',
         '8A': 'OCTAVO 1', '8B': 'OCTAVO 2',
@@ -51,12 +44,24 @@ const getFriendlyGroupName = (dbCode: string, sede: string) => {
         '11A': 'ONCE 1', '11B': 'ONCE 2',
         '0110100': 'ONCE 1', '0110200': 'ONCE 2',
 
-        // Primaria
-        '1A': 'PRIMERO', '1B': 'PRIMERO', '0010100': 'PRIMERO',
-        '2A': 'SEGUNDO', '2B': 'SEGUNDO', '0020100': 'SEGUNDO',
-        '3A': 'TERCERO', '3B': 'TERCERO', '0030100': 'TERCERO',
-        '4A': 'CUARTO 1', '4B': 'CUARTO 2', '0040100': 'CUARTO 1', '0040200': 'CUARTO 2',
-        '5A': 'QUINTO 1', '5B': 'QUINTO 2', '0050100': 'QUINTO 1', '0050200': 'QUINTO 2',
+        // Primaria Exact Matches
+        '1A': 'PRIMERO 1', '1B': 'PRIMERO 2', 
+        '010100': 'PRIMERO 1', '010201': 'PRIMERO 2',
+        '2A': 'SEGUNDO 1', '2B': 'SEGUNDO 2', 
+        '020100': 'SEGUNDO 1', '020201': 'SEGUNDO 2',
+        '3A': 'TERCERO 1', '3B': 'TERCERO 2', 
+        '030100': 'TERCERO 1', '030201': 'TERCERO 2',
+        '4A': 'CUARTO 1', '4B': 'CUARTO 2', 
+        '040100': 'CUARTO 1', '040201': 'CUARTO 2', '040300': 'CUARTO 3',
+        '5A': 'QUINTO 1', '5B': 'QUINTO 2', 
+        '050100': 'QUINTO 1', '050201': 'QUINTO 2', '050300': 'QUINTO 3', '050400': 'QUINTO 4',
+
+        // Fallbacks
+        '0010100': 'PRIMERO 1', '0010200': 'PRIMERO 2',
+        '0020100': 'SEGUNDO 1', '0020200': 'SEGUNDO 2',
+        '0030100': 'TERCERO 1', '0030200': 'TERCERO 2',
+        '0040100': 'CUARTO 1', '0040200': 'CUARTO 2', '0040300': 'CUARTO 3',
+        '0050100': 'QUINTO 1', '0050200': 'QUINTO 2', '0050300': 'QUINTO 3',
 
         // Especiales
         'TRANSICIÓN': 'PREESCOLAR',
