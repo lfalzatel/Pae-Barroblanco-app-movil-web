@@ -344,6 +344,7 @@ export async function POST(req: Request) {
             });
         });
 
+        console.log('[ENVIO]', JSON.stringify(dataToUpdate));
         // Execute Batch Update (Values)
         if (dataToUpdate.length > 0) {
             // 1. Update Values
