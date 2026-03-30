@@ -210,8 +210,11 @@ export default function ReportesPage() {
     const grupoNorm = item.grupo?.toLowerCase().trim() || '';
     const sedeNorm = item.sede?.toLowerCase().trim() || '';
 
-    // Detect if grade implies Primary (1-5)
-    const isGradoPrimaria = ['1', '2', '3', '4', '5', 'primero', 'segundo', 'tercero', 'cuarto', 'quinto', 'aceleracion', 'brujula'].some(g => gradoNorm.includes(g) && !gradoNorm.includes('11') && !gradoNorm.includes('10'));
+    // Safeguard: Check if it's explicitly high school to prevent false positives like '704' matching '4'
+    const isBachillerato = ['6', '7', '8', '9', '10', '11', 'sexto', 'septimo', 'octavo', 'noveno', 'decimo', 'undecimo', 'once'].some(g => gradoNorm.includes(g) || grupoNorm.includes(g));
+
+    // Detect if grade/group implies Primary (1-5), ensuring it's not Bachillerato
+    const isGradoPrimaria = !isBachillerato && ['1', '2', '3', '4', '5', 'primero', 'segundo', 'tercero', 'cuarto', 'quinto', 'aceleracion', 'brujula'].some(g => gradoNorm.includes(g) || grupoNorm.includes(g));
 
     // Detect if Sede implies Primary or Maria Inmaculada (Both get Lunch)
     const isSedePrimaria = sedeNorm.includes('primaria');
@@ -219,7 +222,7 @@ export default function ReportesPage() {
     const isSedePrincipal = sedeNorm.includes('principal');
 
     const isPrimaria = isGradoPrimaria || isSedePrimaria || isSedeMariaInmaculada;
-    const isSordos = gradoNorm.includes('sordos') || grupoNorm.includes('sordos') || grupoNorm.includes('0400');
+    const isSordos = gradoNorm.includes('sordos') || grupoNorm.includes('sordos') || grupoNorm.includes('0400') || grupoNorm.includes('liliana') || gradoNorm.includes('liliana');
     const isPreescolar = gradoNorm.includes('preescolar') || gradoNorm.includes('transicion') || gradoNorm === '0' || grupoNorm.includes('preescolar') || grupoNorm.includes('transicion') || grupoNorm === 'ts0100';
 
     // Almuerzo: Primaria/Sordos (No Preescolar), EXCEPTO Maria Inmaculada donde TODOS almuerzan (incluido Preescolar)
@@ -1289,13 +1292,12 @@ export default function ReportesPage() {
                     body: JSON.stringify({
                       sheetId: '1NIp7IaTps7E-QqkBc5Yt0rx36HGc-k5d4EiKmtOLFeE',
                       weekStart: (() => {
-                        const d = new Date(selectedDate);
+                        const d = new Date(selectedDate + 'T12:00:00'); // FIX ZONA HORARIA
                         const day = d.getDay();
                         const currMonday = new Date(d);
                         currMonday.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
                         const targetDate = new Date(currMonday);
                         targetDate.setDate(currMonday.getDate() + (selectedDayOffset - 1));
-                        // For timezone safety similar to fetch
                         return new Date(targetDate.getTime() - targetDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
                       })()
                     })
