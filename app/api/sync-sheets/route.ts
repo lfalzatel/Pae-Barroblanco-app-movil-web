@@ -21,11 +21,13 @@ const COLS = {
 
 // Helper to translate DB group code to Excel Name
 const getFriendlyGroupName = (dbCode: string, sede: string) => {
+    console.log('[MAPEO] groupName recibido:', dbCode);
     const original = (dbCode || '').trim().toUpperCase();
 
     // Custom Mapping based on DB codes exactly
     const map: Record<string, string> = {
         // Bachillerato
+        '6A': 'SEXTO 1', '6B': 'SEXTO 2', '6C': 'SEXTO 3', '6D': 'SEXTO 4',
         '601': 'SEXTO 1', '602': 'SEXTO 2', '603': 'SEXTO 3', '604': 'SEXTO 4',
         '0060100': 'SEXTO 1', '0060200': 'SEXTO 2', '0060300': 'SEXTO 3', '0060400': 'SEXTO 4',
         '7A': 'SEPTIMO 1', '7B': 'SEPTIMO 2', '7C': 'SEPTIMO 3',
@@ -240,7 +242,7 @@ export async function POST(req: Request) {
 
         // Map to consolidate updates by row number to avoid overwrites
         // key: `rowNum`, value: { cajm, cajt, almuerzo }
-        const consolidatedUpdates: Record<number, { cajm: number, cajt: number, almuerzo: number }> = {};
+        const consolidatedUpdates: Record<number, { cajm: number, cajt: number, almuerzo: number, baseCajm: number, baseCajt: number, baseAlmuerzo: number }> = {};
 
         // A. SORDOS (Special Case)
         let finalSordosCount = sordosCount.total;
@@ -256,7 +258,10 @@ export async function POST(req: Request) {
             consolidatedUpdates[sordosRow] = {
                 cajm: finalSordosCount,
                 cajt: 0,
-                almuerzo: finalSordosCount > 0 ? finalSordosCount : 0
+                almuerzo: finalSordosCount,
+                baseCajm: sordosCount.total,
+                baseCajt: 0,
+                baseAlmuerzo: sordosCount.total
             };
         }
 
@@ -305,15 +310,23 @@ export async function POST(req: Request) {
                 // Almuerzo: Primaria/Sordos (No Preescolar), EXCEPTO Maria Inmaculada donde todos almuerzan (incluyendo preescolar)
                 const isMariaInmaculada = sede.toUpperCase().includes('MARIA');
                 const isAlmuerzable = (isPrimaria || isSordos) && (!isPreescolar || isMariaInmaculada);
-                const valAlmuerzo = (isAlmuerzable && finalCount > 0) ? finalCount : 0;
+                const valAlmuerzo = isAlmuerzable ? finalCount : 0;
+
+                const baseCAJM = isCajm ? count : 0;
+                const baseCAJT = isCajt ? count : 0;
+                const baseAlmuerzo = isAlmuerzable ? count : 0;
 
                 // Consolidate in the map
                 if (!consolidatedUpdates[rowNum]) {
-                    consolidatedUpdates[rowNum] = { cajm: 0, cajt: 0, almuerzo: 0 };
+                    consolidatedUpdates[rowNum] = { cajm: 0, cajt: 0, almuerzo: 0, baseCajm: 0, baseCajt: 0, baseAlmuerzo: 0 };
                 }
                 consolidatedUpdates[rowNum].cajm += valCAJM;
                 consolidatedUpdates[rowNum].cajt += valCAJT;
                 consolidatedUpdates[rowNum].almuerzo += valAlmuerzo;
+
+                consolidatedUpdates[rowNum].baseCajm += baseCAJM;
+                consolidatedUpdates[rowNum].baseCajt += baseCAJT;
+                consolidatedUpdates[rowNum].baseAlmuerzo += baseAlmuerzo;
 
                 matchLog.push(`✓ [${sede}] ${groupKey} -> ${excelName} (Fila ${rowNum}) [Count: ${finalCount}]`);
             }
@@ -324,9 +337,9 @@ export async function POST(req: Request) {
             dataToUpdate.push({
                 range: `'${sheetName}'!D${row}:F${row}`,
                 values: [[
-                    values.cajm > 0 ? values.cajm : '', 
-                    values.cajt > 0 ? values.cajt : '', 
-                    values.almuerzo > 0 ? values.almuerzo : ''
+                    values.baseCajm > 0 ? values.cajm : '', 
+                    values.baseCajt > 0 ? values.cajt : '', 
+                    values.baseAlmuerzo > 0 ? values.almuerzo : ''
                 ]]
             });
         });
