@@ -1074,10 +1074,9 @@ export default function GestionPage() {
           </div>
         )}
 
-        {/* Modal Estudiante */}
         {isCreateModalOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300" onClick={() => setIsCreateModalOpen(false)}>
-            <div className="bg-white rounded-[2.5rem] max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium dark:bg-gray-800" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-2xl flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-300" onClick={() => setIsCreateModalOpen(false)}>
+            <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium dark:bg-gray-800" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
@@ -1240,11 +1239,9 @@ export default function GestionPage() {
           )
         }
 
-        {/* Modal Edición Estudiante */}
-        {
-          editingStudent && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300" onClick={() => setEditingStudent(null)}>
-              <div className="bg-white rounded-[2.5rem] max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium dark:bg-gray-800" onClick={(e) => e.stopPropagation()}>
+        {editingStudent && (
+            <div className="fixed inset-0 bg-black/90 backdrop-blur-2xl flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-300" onClick={() => setEditingStudent(null)}>
+              <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium dark:bg-gray-800" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 md:p-8 bg-gradient-to-br from-amber-500 to-amber-600 text-white relative">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
@@ -1814,9 +1811,9 @@ export default function GestionPage() {
 
                 {/* Modal de Segundo Nivel: Detalle del Día Docente */}
                 {selectedDateActivity && (
-                  <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setSelectedDateActivity(null)}>
+                  <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-2xl animate-in fade-in duration-300" onClick={() => setSelectedDateActivity(null)}>
                     <div
-                      className="bg-white rounded-[2.5rem] w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 custom-scrollbar-premium dark:bg-gray-800"
+                      className="bg-white rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 custom-scrollbar-premium dark:bg-gray-800"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="p-6 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center">
@@ -1892,11 +1889,11 @@ export default function GestionPage() {
         {/* Modal Cambio de Rol (Security First) */}
         {docenteParaRol && (
           <div 
-            className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 z-[300] animate-in fade-in duration-500"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300"
             onClick={() => setDocenteParaRol(null)}
           >
             <div 
-              className="bg-white rounded-[3rem] max-w-md w-full max-h-[95vh] overflow-hidden shadow-[0_32px_64px_-15px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 flex flex-col dark:bg-gray-800"
+              className="bg-white rounded-3xl max-w-md w-full max-h-[88vh] overflow-hidden shadow-[0_32px_64px_-15px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 flex flex-col dark:bg-gray-800"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-8 bg-gradient-to-br from-rose-600 to-rose-700 text-white relative">
@@ -1922,7 +1919,7 @@ export default function GestionPage() {
                 </p>
               </div>
 
-              <div className="p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar-premium">
+              <div className="p-5 space-y-6 overflow-y-auto flex-1 custom-scrollbar-premium">
                 <div>
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-4 text-center">Selecciona el Nuevo Nivel de Acceso</label>
                   <div className="grid grid-cols-1 gap-3">

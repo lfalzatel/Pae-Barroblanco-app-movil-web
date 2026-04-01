@@ -766,7 +766,7 @@ function RegistroContent() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* Modal de Novedad */}
       {modalNovedad && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setModalNovedad(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-2xl animate-fade-in" onClick={() => setModalNovedad(null)}>
           <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
             <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Registrar Novedad</h3>

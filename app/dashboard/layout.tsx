@@ -755,13 +755,13 @@ export default function DashboardLayout({
 
             {/* Main Content */}
             <main className="flex-1 md:ml-64 pb-20 md:pb-0 pt-16 md:pt-0" onClick={() => setIsProfileMenuOpen(false)}>
-                <div key={pathname} className="animate-view w-full">
+                <div key={pathname} className="animate-view w-full relative z-40">
                     {children}
                 </div>
             </main>
 
             {/* Mobile Bottom Navigation */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 z-[100] safe-area-bottom dark:bg-gray-800 dark:border-gray-700 transition-colors">
+            <div className="md:hidden fixed bottom-1 left-0 right-0 mx-4 bg-white/70 dark:bg-black/80 backdrop-blur-3xl border border-white/20 dark:border-white/5 flex justify-around p-3 rounded-[2.5rem] z-30 safe-area-bottom shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all">
                 {navItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
@@ -782,7 +782,7 @@ export default function DashboardLayout({
             </div>
 
             {/* Mobile Top Header */}
-            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#00A3E0] flex items-center justify-between px-4 z-50 shadow-md">
+            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#00A3E0] flex items-center justify-between px-4 z-30 shadow-md">
                 <h1 className="text-xl font-black text-white tracking-tight">Sistema PAE</h1>
                 <div className="flex items-center gap-3">
                     <button

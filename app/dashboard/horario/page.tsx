@@ -1300,9 +1300,9 @@ export default function HorarioPage() {
 
             {
                 showConfirmSave && (
-                    <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowConfirmSave(false)}></div>
-                        <div className="bg-white rounded-[3rem] p-10 max-w-sm relative text-center" onClick={(e) => e.stopPropagation()}>
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl" onClick={() => setShowConfirmSave(false)}></div>
+                        <div className="bg-white rounded-3xl p-8 max-w-sm relative text-center" onClick={(e) => e.stopPropagation()}>
                             <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 text-amber-500"><Info size={32} /></div>
                             <h3 className="text-xl font-black mb-2">Faltan Grupos</h3>
                             <p className="text-gray-400 text-sm mb-8">Hay {unassignedCount} grupos sin asignar. ¿Deseas guardar?</p>
@@ -1316,15 +1316,15 @@ export default function HorarioPage() {
             }
             {
                 showInstructions && (
-                    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowInstructions(false)}></div>
-                        <div className="bg-white rounded-[2.5rem] w-full max-w-sm relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl">
-                            <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-white shrink-0">
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl animate-in fade-in duration-300" onClick={() => setShowInstructions(false)}></div>
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 max-w-lg w-full relative max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                            <div className="p-6 border-b border-gray-50 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800 shrink-0">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-blue-50 text-blue-600 rounded-full">
                                         <Info className="w-5 h-5" />
                                     </div>
-                                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Instrucciones</h3>
+                                    <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Instrucciones</h3>
                                 </div>
                                 <button onClick={() => setShowInstructions(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                                     <X className="w-5 h-5 text-gray-400" />
