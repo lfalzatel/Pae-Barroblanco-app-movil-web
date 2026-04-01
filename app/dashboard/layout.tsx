@@ -382,6 +382,19 @@ export default function DashboardLayout({
         setSearchResult(null);
     };
 
+    // Efecto para detectar si venimos de un login de Google y mostrar el Splash
+    useEffect(() => {
+        const showGoogleSplash = localStorage.getItem('pae_show_google_splash');
+        if (showGoogleSplash === 'true') {
+            localStorage.removeItem('pae_show_google_splash');
+            startManualSplash([
+                'Autenticación de Google exitosa',
+                'Sincronizando con Supabase...',
+                '¡Bienvenido de nuevo!'
+            ]);
+        }
+    }, [startManualSplash]);
+
     useEffect(() => {
         const checkUser = async () => {
             const { data: { session } } = await supabase.auth.getSession();
@@ -742,7 +755,9 @@ export default function DashboardLayout({
 
             {/* Main Content */}
             <main className="flex-1 md:ml-64 pb-20 md:pb-0 pt-16 md:pt-0" onClick={() => setIsProfileMenuOpen(false)}>
-                {children}
+                <div key={pathname} className="animate-view w-full">
+                    {children}
+                </div>
             </main>
 
             {/* Mobile Bottom Navigation */}

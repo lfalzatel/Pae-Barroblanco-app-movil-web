@@ -16,17 +16,28 @@ export function SplashScreenProvider({ children }: { children: React.ReactNode }
   const [isSplashComplete, setIsSplashComplete] = useState(false);
   const [customMessages, setCustomMessages] = useState<[string, string, string] | undefined>(undefined);
   const [isManualMode, setIsManualMode] = useState(false);
+  const [currentDuration, setCurrentDuration] = useState(3500); // Default placeholder
+
+  // Determinar duración inicial basada en si ya se ha visto en esta pestaña (sessionStorage)
+  useEffect(() => {
+    const seen = sessionStorage.getItem('pae_splash_seen');
+    if (seen === 'true') {
+        setCurrentDuration(2000); // Agilidad en recargas (F5)
+    } else {
+        setCurrentDuration(3500); // Impacto en primera apertura
+    }
+  }, []);
 
   // Mark splash as complete
   const handleSplashComplete = () => {
-    // Si estamos en modo manual, esperamos a que termine su tiempo interno
-    // para ocultarlo, pero permitimos que continúe si isManualMode ya es false.
     setShowSplash(false);
     setIsSplashComplete(true);
+    // Marcamos como visto (solo afecta a la duración del próximo refresh, NO lo oculta)
     sessionStorage.setItem('pae_splash_seen', 'true');
   };
 
   const startManualSplash = (messages?: [string, string, string]) => {
+    setCurrentDuration(3500); // Premium para Login/Logout
     setIsManualMode(true);
     setCustomMessages(messages);
     setIsSplashComplete(false);
@@ -34,29 +45,15 @@ export function SplashScreenProvider({ children }: { children: React.ReactNode }
   };
 
   const finishManualSplash = () => {
-    // Ya no hacemos nada aquí que afecte la duración,
-    // el componente SplashScreen interno se encargará de completar su tiempo.
     setIsManualMode(false);
   };
-
-  // Check if splash was already seen in this session (only for initial load)
-  useEffect(() => {
-    const seen = sessionStorage.getItem('pae_splash_seen');
-    // Solo ocultar automáticamente al MONTAR el componente si no estamos en modo manual
-    // y ya se ha visto. No reaccionar a cambios posteriores de isManualMode.
-    if (seen === 'true' && !isManualMode) {
-        setShowSplash(false);
-        setIsSplashComplete(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Solo al montar
 
   return (
     <SplashScreenContext.Provider value={{ isSplashComplete, startManualSplash, finishManualSplash }}>
       {showSplash && (
         <SplashScreen 
            onComplete={handleSplashComplete} 
-           duration={3500} 
+           duration={currentDuration} 
            customMessages={customMessages}
         />
       )}

@@ -19,6 +19,16 @@ export default function LoginPage() {
   const [isLoginSuccess, setIsLoginSuccess] = useState(false);
 
   useEffect(() => {
+    // Forzar limpieza inmediata
+    setEmail('');
+    setPassword('');
+    
+    // Pequeño retraso para vaciar si el navegador auto-rellena muy rápido al montar
+    const timer = setTimeout(() => {
+      setEmail('');
+      setPassword('');
+    }, 100);
+
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -26,6 +36,7 @@ export default function LoginPage() {
       }
     };
     checkSession();
+    return () => clearTimeout(timer);
   }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -69,6 +80,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
+    localStorage.setItem('pae_show_google_splash', 'true');
     setError('');
     setLoading(true);
     try {
@@ -165,6 +177,7 @@ export default function LoginPage() {
                   className="w-full px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 text-sm"
                   placeholder="admin@paebarroblanco.edu.co"
                   required
+                  autoComplete="username"
                 />
               </div>
             </div>
@@ -183,6 +196,7 @@ export default function LoginPage() {
                   className="w-full px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 pr-12 text-sm"
                   placeholder="••••••••"
                   required
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
