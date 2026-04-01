@@ -1889,7 +1889,7 @@ export default function GestionPage() {
         {/* Modal Cambio de Rol (Security First) */}
         {docenteParaRol && (
           <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300"
+            className="fixed inset-0 bg-black/90 backdrop-blur-2xl z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300"
             onClick={() => setDocenteParaRol(null)}
           >
             <div 
