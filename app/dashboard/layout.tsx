@@ -39,6 +39,7 @@ import { MiniCalendar } from '@/components/ui/MiniCalendar';
 import { useTheme } from '@/components/ThemeProvider';
 import { getAcademicBlock } from '@/lib/schedule-utils';
 import GlobalNotificationsModal from '@/components/dashboard/GlobalNotificationsModal';
+import { useSplash } from '@/components/SplashScreenProvider';
 
 // Helper functions defined outside to avoid initialization errors
 const formatLocalDate = (date: Date) => {
@@ -66,6 +67,7 @@ export default function DashboardLayout({
     const pathname = usePathname();
     const router = useRouter();
     const { theme, setTheme } = useTheme();
+    const { finishManualSplash, startManualSplash } = useSplash();
     const [usuario, setUsuario] = useState<any | null>(null);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
@@ -418,13 +420,20 @@ export default function DashboardLayout({
                     foto: session.user.user_metadata?.foto || null
                 });
             }
+
+            // Notificar al Splash que el Dashboard está listo
+            finishManualSplash();
         };
 
         checkUser();
 
         const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_OUT') {
-                router.push('/');
+                // El redireccionamiento ya se maneja en handleLogout coordinado con el Splash
+                // Solo actuamos aquí si el evento viene de fuera (ej. otra pestaña)
+                if (window.location.pathname.startsWith('/dashboard')) {
+                    router.replace('/');
+                }
             }
         });
 
@@ -435,12 +444,28 @@ export default function DashboardLayout({
 
     const handleLogout = async () => {
         try {
+            // 1. Activar Splash inmediatamente
+            startManualSplash([
+                'Cerrando sesión...',
+                'Limpiando datos localmente...',
+                '¡Vuelve pronto!'
+            ]);
+
+            // 2. Pequeña espera para que el Splash se monte visualmente
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // 3. Cerrar sesión en Supabase
             await supabase.auth.signOut();
-        } catch (error) {
-            console.error('Error signing out:', error);
-        } finally {
+            
+            // 4. Limpiar almacenamiento
             localStorage.clear();
             sessionStorage.clear();
+            
+            // 5. Redirección suave vía router (mantiene el Splash vivo)
+            router.replace('/');
+        } catch (error) {
+            console.error('Error signing out:', error);
+            // Fallback en caso de error crítico
             window.location.href = '/';
         }
     };
@@ -502,12 +527,10 @@ export default function DashboardLayout({
         }
     };
 
+// ... inside DashboardLayout function ...
+
     if (!usuario) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-600"></div>
-            </div>
-        );
+        return null; // El Splash Screen global cubre la carga inicial
     }
 
     return (
