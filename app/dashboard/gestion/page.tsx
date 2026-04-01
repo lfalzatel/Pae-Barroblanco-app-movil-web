@@ -1075,10 +1075,9 @@ export default function GestionPage() {
         )}
 
         {/* Modal Estudiante */}
-        {
-          isCreateModalOpen && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300">
-              <div className="bg-white rounded-[2.5rem] max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium dark:bg-gray-800">
+        {isCreateModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300" onClick={() => setIsCreateModalOpen(false)}>
+            <div className="bg-white rounded-[2.5rem] max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium dark:bg-gray-800" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
@@ -1244,8 +1243,8 @@ export default function GestionPage() {
         {/* Modal Edición Estudiante */}
         {
           editingStudent && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300">
-              <div className="bg-white rounded-[2.5rem] max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium dark:bg-gray-800">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300" onClick={() => setEditingStudent(null)}>
+              <div className="bg-white rounded-[2.5rem] max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium dark:bg-gray-800" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 md:p-8 bg-gradient-to-br from-amber-500 to-amber-600 text-white relative">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
@@ -1815,7 +1814,7 @@ export default function GestionPage() {
 
                 {/* Modal de Segundo Nivel: Detalle del Día Docente */}
                 {selectedDateActivity && (
-                  <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                  <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setSelectedDateActivity(null)}>
                     <div
                       className="bg-white rounded-[2.5rem] w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 custom-scrollbar-premium dark:bg-gray-800"
                       onClick={(e) => e.stopPropagation()}
@@ -1824,7 +1823,7 @@ export default function GestionPage() {
                         <div>
                           <p className="text-[10px] font-black text-white/50 uppercase tracking-widest leading-none mb-1.5">Bitácora de Sesión</p>
                           <h3 className="text-lg font-black capitalize leading-none tracking-tight">
-                            {new Date(selectedDateActivity.fecha + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            {new Date((selectedDateActivity?.fecha || '') + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                           </h3>
                         </div>
                         <button
@@ -1843,7 +1842,7 @@ export default function GestionPage() {
                             Grupos Atendidos en esta Fecha
                           </h4>
                           <div className="space-y-3 max-h-72 overflow-y-auto pr-2 custom-scrollbar-premium">
-                            {selectedDateActivity.grupos.map((g, idx) => (
+                            {selectedDateActivity?.grupos.map((g, idx) => (
                               <div key={idx} className="flex items-center justify-between p-4 bg-gray-50/50 border border-gray-100 rounded-2xl group transition-all duration-300 hover:bg-white hover:border-cyan-100 dark:bg-gray-700/30 dark:border-gray-600/30 dark:hover:bg-gray-700">
                                 <div className="flex items-center gap-4">
                                   <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center font-black text-cyan-600 text-xs text-transform uppercase border border-cyan-50 group-hover:bg-cyan-600 group-hover:text-white transition-colors duration-300 dark:bg-gray-700 dark:border-gray-600 dark:text-cyan-400">
@@ -1871,7 +1870,7 @@ export default function GestionPage() {
                         <div className="pt-6 border-t border-gray-100 flex items-center justify-between px-2 dark:border-gray-700">
                           <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Resumen Total</div>
                           <div className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-lg font-black shadow-sm shadow-emerald-50">
-                            {selectedDateActivity.total}
+                            {selectedDateActivity?.total}
                           </div>
                         </div>
 

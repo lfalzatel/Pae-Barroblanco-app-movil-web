@@ -766,7 +766,7 @@ function RegistroContent() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* Modal de Novedad */}
       {modalNovedad && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setModalNovedad(null)}>
           <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
             <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Registrar Novedad</h3>
@@ -774,7 +774,7 @@ function RegistroContent() {
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-6" onClick={(e) => e.stopPropagation()}>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{modalNovedad.nombre}</p>
 
               <div className="mb-4">

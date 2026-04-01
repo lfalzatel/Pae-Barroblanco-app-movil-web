@@ -1302,7 +1302,7 @@ export default function HorarioPage() {
                 showConfirmSave && (
                     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowConfirmSave(false)}></div>
-                        <div className="bg-white rounded-[3rem] p-10 max-w-sm relative text-center">
+                        <div className="bg-white rounded-[3rem] p-10 max-w-sm relative text-center" onClick={(e) => e.stopPropagation()}>
                             <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 text-amber-500"><Info size={32} /></div>
                             <h3 className="text-xl font-black mb-2">Faltan Grupos</h3>
                             <p className="text-gray-400 text-sm mb-8">Hay {unassignedCount} grupos sin asignar. ¿Deseas guardar?</p>
