@@ -75,8 +75,7 @@ export default function DashboardPage() {
         
         // Redirección Automática para roles específicos
         if (profile.rol === 'secretaria_educacion' || profile.rol === 'operador') {
-          router.replace('/dashboard/reportes?tab=proyeccion');
-          return;
+          return; // Their own dashboard handles data fetching
         }
       } else {
         // Determine if we need to auto-assign the "acudiente" role for new external users
@@ -102,8 +101,7 @@ export default function DashboardPage() {
 
         // Redirección Automática para la sesión actual (metadata)
         if (newUser.rol === 'secretaria_educacion' || newUser.rol === 'operador') {
-          router.replace('/dashboard/reportes?tab=proyeccion');
-          return;
+          return; // Their own dashboard handles data fetching
         }
       }
 
