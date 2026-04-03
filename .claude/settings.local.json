@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"/c/6. Mis proyectos PWA/3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App \\(PWA\\)/app\" -type f -name \"*.tsx\" -o -name \"*.ts\")",
+      "Bash(ls -la \"/c/6. Mis proyectos PWA/3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App \\(PWA\\)/app/\")",
+      "Bash(find \"/c/6. Mis proyectos PWA/3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App \\(PWA\\)/app/components\" -type f -name \"*.tsx\")",
+      "Bash(ls -la \"/c/6. Mis proyectos PWA/3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App \\(PWA\\)/\")",
+      "Bash(find \"/c/6. Mis proyectos PWA/3.Sistema-pae-barroblanco v-vercel-Converting to Progressive Web App \\(PWA\\)\" -type d -name \"components\" -o -type d -name \"lib\")",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(xargs grep:*)",
+      "Bash(wc:*)"
+    ]
+  }
+}
