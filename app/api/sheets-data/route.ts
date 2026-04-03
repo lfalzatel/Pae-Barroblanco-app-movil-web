@@ -117,8 +117,9 @@ function isSchoolHeader(cell: string): boolean {
 }
 
 function isTotalRow(cell: string): boolean {
-    const v = cell.toUpperCase().trim();
-    return v.startsWith('TOTAL COMPLEMENTOS') || v.startsWith('TOTAL A ENTREGAR') || v === 'TOTAL';
+    // Cualquier fila cuyo texto empiece con "TOTAL" es una fila de total/resumen
+    // (sub-total de sede, grand total de colegio o resumen municipal).
+    return cell.toUpperCase().trim().startsWith('TOTAL');
 }
 
 /** Encabezado de sede: texto con "SEDE", sin datos numéricos en B-H, no es colegio ni total */
