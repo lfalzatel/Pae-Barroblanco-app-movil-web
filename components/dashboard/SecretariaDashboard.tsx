@@ -17,10 +17,6 @@ const SHEET_ID = '1NIp7IaTps7E-QqkBc5Yt0rx36HGc-k5d4EiKmtOLFeE';
 
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
 
-const MESES_NOMBRES = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-];
 
 interface GroupRow {
     nombre: string;
@@ -71,10 +67,8 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
 
     // Filters
     const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
-    const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
     const [selectedDay, setSelectedDay] = useState<number | null>(null);
     const [schoolDropOpen, setSchoolDropOpen] = useState(false);
-    const [monthDropOpen, setMonthDropOpen] = useState(false);
 
     const fetchData = useCallback(async (sheetName?: string) => {
         setLoading(true);
@@ -85,48 +79,25 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
             if (!res.ok) throw new Error((await res.json()).error || 'Error al leer datos');
             const json: ApiResponse = await res.json();
             setData(json);
-
-            if (selectedMonth === null && json.sheets.length > 0) {
-                const cur = new Date().getMonth();
-                setSelectedMonth(json.sheets.some(s => s.month === cur) ? cur : (json.sheets[0]?.month ?? null));
-            }
         } catch (err: any) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
-    }, [selectedMonth]);
+    }, []);
 
     useEffect(() => { fetchData(); }, []);
 
     useEffect(() => {
         if (!data) return;
-        const match = findMatchingSheet(data.sheets, selectedMonth, selectedDay);
+        const match = selectedDay !== null
+            ? (data.sheets.find(s => s.day === selectedDay)?.name ?? null)
+            : null;
         if (match && match !== data.currentSheet) fetchData(match);
-    }, [selectedMonth, selectedDay]);
+    }, [selectedDay]);
 
-    function findMatchingSheet(sheets: SheetMeta[], month: number | null, day: number | null): string | null {
-        if (month !== null && day !== null) {
-            const exact = sheets.find(s => s.month === month && s.day === day);
-            if (exact) return exact.name;
-        }
-        if (day !== null && month === null) {
-            const byDay = sheets.find(s => s.day === day);
-            if (byDay) return byDay.name;
-        }
-        if (month !== null && day === null) {
-            const byMonth = sheets.find(s => s.month === month);
-            if (byMonth) return byMonth.name;
-        }
-        return null;
-    }
-
-    const availableMonths = data
-        ? Array.from(new Set(data.sheets.map(s => s.month).filter((m): m is number => m !== null))).sort((a, b) => a - b)
-        : [];
-
-    const availableDaysForMonth = data && selectedMonth !== null
-        ? new Set(data.sheets.filter(s => s.month === selectedMonth).map(s => s.day).filter((d): d is number => d !== null))
+    const availableDays = data
+        ? new Set(data.sheets.map(s => s.day).filter((d): d is number => d !== null))
         : new Set<number>();
 
     const schools = data?.schools ?? [];
@@ -146,7 +117,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
           ).map(c => c.key)
         : [];
 
-    const closeDropdowns = () => { setSchoolDropOpen(false); setMonthDropOpen(false); };
+    const closeDropdowns = () => { setSchoolDropOpen(false); };
 
     return (
         <div className="p-4 lg:p-8 max-w-7xl mx-auto pb-28 md:pb-10" onClick={closeDropdowns}>
@@ -190,10 +161,10 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
             )}
 
             {/* ── TOTAL CARD ── */}
-            <div className="mb-5 rounded-3xl bg-gradient-to-br from-blue-600 to-blue-700 p-5 shadow-xl shadow-blue-900/20 text-white">
+            <div className="mb-5 rounded-3xl bg-gradient-to-br from-cyan-600 to-cyan-700 p-5 shadow-xl shadow-cyan-900/20 text-white">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <p className="text-blue-200 text-xs font-bold uppercase tracking-widest">
+                        <p className="text-cyan-200 text-xs font-bold uppercase tracking-widest">
                             {activeSchool ? 'Total institución' : 'Total municipal'}
                         </p>
                         {loading
@@ -215,8 +186,8 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                         { label: 'Almuerzo', value: cardTotals.almuerzo, Icon: Utensils },
                     ].map(({ label, value, Icon }) => (
                         <div key={label} className="bg-white/15 backdrop-blur rounded-2xl p-3 text-center">
-                            <Icon className="w-4 h-4 mx-auto mb-1 text-blue-200" />
-                            <p className="text-[10px] font-bold text-blue-200 uppercase tracking-wider leading-none mb-1">{label}</p>
+                            <Icon className="w-4 h-4 mx-auto mb-1 text-cyan-200" />
+                            <p className="text-[10px] font-bold text-cyan-200 uppercase tracking-wider leading-none mb-1">{label}</p>
                             {loading
                                 ? <div className="h-5 w-10 bg-white/20 rounded-lg animate-pulse mx-auto" />
                                 : <p className="text-lg font-black tabular-nums leading-none">{value.toLocaleString('es-CO')}</p>
@@ -226,108 +197,84 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                 </div>
 
                 {data?.currentSheet && (
-                    <p className="mt-3 text-[10px] text-blue-300 font-medium text-right">
+                    <p className="mt-3 text-[10px] text-cyan-300 font-medium text-right">
                         Hoja: {data.currentSheet}
                     </p>
                 )}
             </div>
 
-            {/* ── FILTERS ROW 1: Colegio + Mes ── */}
-            <div className="flex gap-3 mb-3">
-                {/* Colegio */}
-                <div className="relative flex-1" onClick={e => e.stopPropagation()}>
-                    <button
-                        onClick={() => { setSchoolDropOpen(p => !p); setMonthDropOpen(false); }}
-                        className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm text-sm font-semibold text-gray-700 dark:text-gray-200 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
-                    >
-                        <div className="flex items-center gap-2 min-w-0">
-                            <Building2 className="w-4 h-4 text-blue-500 shrink-0" />
-                            <span className="truncate text-xs">
-                                {selectedSchool ?? 'Todos los colegios'}
-                            </span>
-                        </div>
-                        <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${schoolDropOpen ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {schoolDropOpen && (
-                        <div className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl z-[150] overflow-hidden max-h-72 overflow-y-auto">
-                            <button
-                                onClick={() => { setSelectedSchool(null); setSchoolDropOpen(false); }}
-                                className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors ${selectedSchool === null ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                            >
-                                Todos los colegios
-                            </button>
-                            {schools.map(s => (
-                                <button
-                                    key={s.nombre}
-                                    onClick={() => { setSelectedSchool(s.nombre); setSchoolDropOpen(false); }}
-                                    className={`w-full text-left px-4 py-3 text-xs font-medium transition-colors border-t border-gray-50 dark:border-gray-700/50 ${selectedSchool === s.nombre ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                                >
-                                    {s.nombre}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Mes */}
-                <div className="relative flex-1" onClick={e => e.stopPropagation()}>
-                    <button
-                        onClick={() => { setMonthDropOpen(p => !p); setSchoolDropOpen(false); }}
-                        className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm text-sm font-semibold text-gray-700 dark:text-gray-200 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
-                    >
-                        <span className="truncate text-xs">
-                            {selectedMonth !== null ? MESES_NOMBRES[selectedMonth] : 'Mes actual'}
+            {/* ── FILTRO: Colegio ── */}
+            <div className="relative mb-3" onClick={e => e.stopPropagation()}>
+                <button
+                    onClick={() => setSchoolDropOpen(p => !p)}
+                    className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm font-bold text-gray-700 dark:text-gray-200 hover:border-cyan-300 dark:hover:border-cyan-700 transition-colors"
+                >
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Building2 className="w-4 h-4 text-cyan-500 shrink-0" />
+                        <span className="truncate text-xs uppercase tracking-wider">
+                            {selectedSchool ?? 'Todos los colegios'}
                         </span>
-                        <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${monthDropOpen ? 'rotate-180' : ''}`} />
-                    </button>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-300 ${schoolDropOpen ? 'rotate-180' : ''}`} />
+                </button>
 
-                    {monthDropOpen && (
-                        <div className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl z-[150] overflow-hidden">
-                            {availableMonths.length > 0
-                                ? availableMonths.map(m => (
+                {schoolDropOpen && (
+                    <>
+                        <div className="fixed inset-0 z-[140]" onClick={() => setSchoolDropOpen(false)} />
+                        <div className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl z-[150] overflow-hidden max-h-72 overflow-y-auto animate-in zoom-in-95 duration-200">
+                            <div className="p-1.5 space-y-0.5">
+                                <button
+                                    onClick={() => { setSelectedSchool(null); setSchoolDropOpen(false); }}
+                                    className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between ${selectedSchool === null ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                >
+                                    Todos los colegios
+                                    {selectedSchool === null && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
+                                </button>
+                                {schools.map(s => (
                                     <button
-                                        key={m}
-                                        onClick={() => { setSelectedMonth(m); setSelectedDay(null); setMonthDropOpen(false); }}
-                                        className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors ${selectedMonth === m ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                        key={s.nombre}
+                                        onClick={() => { setSelectedSchool(s.nombre); setSchoolDropOpen(false); }}
+                                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between gap-2 ${selectedSchool === s.nombre ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
                                     >
-                                        {MESES_NOMBRES[m]}
+                                        <span className="truncate">{s.nombre}</span>
+                                        {selectedSchool === s.nombre && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
                                     </button>
-                                ))
-                                : <p className="px-4 py-3 text-sm text-gray-400">Sin datos de meses disponibles</p>
-                            }
+                                ))}
+                            </div>
                         </div>
-                    )}
-                </div>
+                    </>
+                )}
             </div>
 
-            {/* ── FILTER ROW 2: Days ── */}
-            <div className="flex gap-2 mb-6">
-                <button
-                    onClick={() => setSelectedDay(null)}
-                    className={`flex-1 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${selectedDay === null ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'}`}
-                >
-                    Todos
-                </button>
-                {DIAS.map((label, idx) => {
-                    const available = availableDaysForMonth.size === 0 || availableDaysForMonth.has(idx);
-                    return (
-                        <button
-                            key={label}
-                            onClick={() => setSelectedDay(selectedDay === idx ? null : idx)}
-                            disabled={!available && availableDaysForMonth.size > 0}
-                            className={`flex-1 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
-                                selectedDay === idx
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                                    : available
-                                    ? 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
-                                    : 'bg-gray-100 dark:bg-gray-900 text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                            }`}
-                        >
-                            {label}
-                        </button>
-                    );
-                })}
+            {/* ── FILTRO: Días (cápsula estilo campana) ── */}
+            <div className="mb-6">
+                <div className="flex p-1 bg-gray-100/80 dark:bg-gray-800/80 rounded-full border border-gray-200/50 dark:border-gray-700/50 shadow-inner">
+                    <button
+                        onClick={() => setSelectedDay(null)}
+                        className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-full transition-all duration-300 ${selectedDay === null ? 'bg-cyan-600 text-white shadow-md' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                    >
+                        Todos
+                    </button>
+                    {DIAS.map((label, idx) => {
+                        const available = availableDays.size === 0 || availableDays.has(idx);
+                        return (
+                            <button
+                                key={label}
+                                onClick={() => setSelectedDay(selectedDay === idx ? null : idx)}
+                                disabled={!available && availableDays.size > 0}
+                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-full transition-all duration-300 ${
+                                    selectedDay === idx
+                                        ? 'bg-cyan-600 text-white shadow-md'
+                                        : available
+                                        ? 'text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+                                        : 'text-gray-300 dark:text-gray-700 cursor-not-allowed'
+                                }`}
+                            >
+                                {label}
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* ── CONTENT ── */}
@@ -340,7 +287,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                 <div>
                     <button
                         onClick={() => setSelectedSchool(null)}
-                        className="flex items-center gap-1.5 text-sm font-bold text-blue-600 dark:text-blue-400 mb-4 hover:underline"
+                        className="flex items-center gap-1.5 text-sm font-bold text-cyan-600 dark:text-cyan-400 mb-4 hover:underline"
                     >
                         <ChevronLeft className="w-4 h-4" /> Todos los colegios
                     </button>
