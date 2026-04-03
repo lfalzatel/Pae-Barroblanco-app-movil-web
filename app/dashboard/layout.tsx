@@ -770,12 +770,18 @@ export default function DashboardLayout({
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`group flex flex-col items-center justify-center flex-1 py-1 rounded-lg transition-all duration-200 relative ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'}`}
+                            className="group flex flex-col items-center justify-center flex-1 py-1 relative"
                         >
-                            <div className={`relative transition-transform duration-200 ease-out ${isRegistrar ? 'animate-pulse' : ''} ${isActive ? 'scale-110' : 'group-hover:scale-125'}`}>
-                                <Icon className={`w-6 h-6 mb-1 ${isActive ? 'fill-current' : ''} ${isRegistrar ? 'text-gray-500 drop-shadow-[0_0_8px_rgba(37,99,235,0.5)] dark:text-gray-400' : ''}`} />
+                            <div className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-2xl transition-all duration-300 ${
+                                isActive
+                                    ? 'bg-blue-600 text-white scale-110 shadow-md shadow-blue-300/40 dark:shadow-blue-900/50'
+                                    : 'text-blue-500 dark:text-blue-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:scale-105'
+                            }`}>
+                                <div className={`relative ${isRegistrar && !isActive ? 'animate-pulse' : ''}`}>
+                                    <Icon className={`w-5 h-5 ${isRegistrar && !isActive ? 'drop-shadow-[0_0_8px_rgba(37,99,235,0.5)]' : ''}`} />
+                                </div>
+                                <span className={`text-[10px] ${isActive ? 'font-black' : 'font-medium'}`}>{item.label}</span>
                             </div>
-                            <span className={`text-[10px] font-medium ${isRegistrar ? 'font-black text-gray-500 dark:text-gray-300' : ''}`}>{item.label}</span>
                         </Link>
                     );
                 })}

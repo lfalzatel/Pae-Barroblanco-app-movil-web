@@ -52,11 +52,11 @@ interface SecretariaDashboardProps {
 
 // Columnas de complemento en orden
 const COLS = [
-    { key: 'riAm',    label: 'RI/AM',    color: 'text-amber-700  dark:text-amber-400'  },
-    { key: 'riPm',    label: 'RI/PM',    color: 'text-orange-700 dark:text-orange-400' },
-    { key: 'cajm',    label: 'CAJM',     color: 'text-blue-700   dark:text-blue-400'   },
-    { key: 'cajt',    label: 'CAJT',     color: 'text-indigo-700 dark:text-indigo-400' },
-    { key: 'almuerzo',label: 'Almuerzo', color: 'text-emerald-700 dark:text-emerald-400'},
+    { key: 'riAm',    label: 'RI/AM',    color: 'text-amber-700 dark:text-amber-400',   badge: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-100 dark:border-amber-800/30'   },
+    { key: 'riPm',    label: 'RI/PM',    color: 'text-orange-700 dark:text-orange-400',  badge: 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border border-orange-100 dark:border-orange-800/30'  },
+    { key: 'cajm',    label: 'CAJM',     color: 'text-blue-700 dark:text-blue-400',      badge: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800/30'      },
+    { key: 'cajt',    label: 'CAJT',     color: 'text-indigo-700 dark:text-indigo-400',  badge: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800/30'  },
+    { key: 'almuerzo',label: 'Almuerzo', color: 'text-emerald-700 dark:text-emerald-400', badge: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800/30' },
 ] as const;
 
 type ColKey = typeof COLS[number]['key'];
@@ -114,20 +114,18 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
 
     // Sedes to show in the table (filtered by selectedSede if set)
     const activeSedes = activeSchool
-        ? (selectedSede
+        ? (selectedSede !== null
             ? (activeSchool.sedes ?? []).filter(s => s.nombre === selectedSede)
             : (activeSchool.sedes ?? []))
         : [];
 
-    // Sedes available in the filter (only those with a name, i.e. multi-sede schools)
-    const sedeOptions = activeSchool
-        ? (activeSchool.sedes ?? []).filter(s => s.nombre)
-        : [];
+    // All sedes as filter options (including unnamed = sede principal)
+    const sedeOptions = activeSchool ? (activeSchool.sedes ?? []) : [];
     const hasSedeFilter = sedeOptions.length > 1;
 
     // Totals to show in the card
     const cardTotals = (() => {
-        if (selectedSede && activeSchool) {
+        if (selectedSede !== null && activeSchool) {
             const s = activeSedes[0];
             return s
                 ? { riAm: s.riAm, riPm: s.riPm, cajm: s.cajm, cajt: s.cajt, almuerzo: s.almuerzo, total: s.total }
@@ -208,7 +206,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                 <div className="flex items-start justify-between mb-5">
                     <div>
                         <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
-                            {selectedSede ? selectedSede : activeSchool ? 'Total institución' : 'Total municipal'}
+                            {selectedSede !== null ? (selectedSede || 'Sede Principal') : activeSchool ? 'Total institución' : 'Total municipal'}
                         </p>
                         {loading
                             ? <div className="h-10 w-32 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse mt-1" />
@@ -302,11 +300,11 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                     >
                         <div className="flex items-center gap-2 min-w-0">
                             <MapPin className="w-4 h-4 text-cyan-500 shrink-0" />
-                            <span className={`truncate text-xs font-black uppercase tracking-wider ${selectedSede ? 'text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
-                                {selectedSede ?? 'Todas las sedes'}
+                            <span className={`truncate text-xs font-black uppercase tracking-wider ${selectedSede !== null ? 'text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                                {selectedSede !== null ? (selectedSede || 'Sede Principal') : 'Todas las sedes'}
                             </span>
                         </div>
-                        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-300 ${sedeDropOpen ? 'rotate-180' : ''} ${selectedSede ? 'text-cyan-400' : 'text-gray-400'}`} />
+                        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-300 ${sedeDropOpen ? 'rotate-180' : ''} ${selectedSede !== null ? 'text-cyan-400' : 'text-gray-400'}`} />
                     </button>
 
                     {sedeDropOpen && (
@@ -323,11 +321,11 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                                     </button>
                                     {sedeOptions.map(s => (
                                         <button
-                                            key={s.nombre}
+                                            key={s.nombre || '__principal__'}
                                             onClick={() => { setSelectedSede(s.nombre); setSedeDropOpen(false); }}
                                             className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between gap-2 ${selectedSede === s.nombre ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
                                         >
-                                            <span className="truncate">{s.nombre}</span>
+                                            <span className="truncate">{s.nombre || 'Sede Principal'}</span>
                                             {selectedSede === s.nombre && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
                                         </button>
                                     ))}
@@ -524,7 +522,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
 
                                     <div className="flex flex-wrap gap-1.5">
                                         {COLS.filter(c => school[c.key] > 0).map(c => (
-                                            <span key={c.key} className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-gray-100 dark:bg-gray-700 text-[10px] font-black text-gray-600 dark:text-gray-300">
+                                            <span key={c.key} className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-black ${c.badge}`}>
                                                 {c.label}: <span className="tabular-nums">{school[c.key].toLocaleString('es-CO')}</span>
                                             </span>
                                         ))}
