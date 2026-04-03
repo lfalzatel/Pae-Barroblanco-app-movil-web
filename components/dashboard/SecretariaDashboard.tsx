@@ -8,6 +8,7 @@ import {
     ChevronDown,
     TrendingUp,
     ChevronLeft,
+    MapPin,
 } from 'lucide-react';
 
 const SHEET_ID = '1NIp7IaTps7E-QqkBc5Yt0rx36HGc-k5d4EiKmtOLFeE';
@@ -65,7 +66,9 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
     // Filters
     const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
     const [selectedDay, setSelectedDay] = useState<number | null>(null);
+    const [selectedSede, setSelectedSede] = useState<string | null>(null);
     const [schoolDropOpen, setSchoolDropOpen] = useState(false);
+    const [sedeDropOpen, setSedeDropOpen] = useState(false);
     const [weekDate, setWeekDate] = useState(() => new Date());
 
     const fetchData = useCallback(async (sheetName?: string) => {
@@ -94,6 +97,9 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
         if (match && match !== data.currentSheet) fetchData(match);
     }, [selectedDay]);
 
+    // Reset sede filter when school changes
+    useEffect(() => { setSelectedSede(null); }, [selectedSchool]);
+
     const availableDays = data
         ? new Set(data.sheets.map(s => s.day).filter((d): d is number => d !== null))
         : new Set<number>();
@@ -103,16 +109,36 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
     // The selected school object (for detail view)
     const activeSchool = selectedSchool ? schools.find(s => s.nombre === selectedSchool) ?? null : null;
 
-    // Totals to show in the card
-    const cardTotals = activeSchool
-        ? { riAm: activeSchool.riAm, riPm: activeSchool.riPm, cajm: activeSchool.cajm, cajt: activeSchool.cajt, almuerzo: activeSchool.almuerzo, total: activeSchool.total }
-        : (data?.totals ?? { riAm: 0, riPm: 0, cajm: 0, cajt: 0, almuerzo: 0, total: 0 });
+    // Sedes to show in the table (filtered by selectedSede if set)
+    const activeSedes = activeSchool
+        ? (selectedSede
+            ? (activeSchool.sedes ?? []).filter(s => s.nombre === selectedSede)
+            : (activeSchool.sedes ?? []))
+        : [];
 
-    // Which columns have at least one non-zero value in the groups (for the table)
+    // Sedes available in the filter (only those with a name, i.e. multi-sede schools)
+    const sedeOptions = activeSchool
+        ? (activeSchool.sedes ?? []).filter(s => s.nombre)
+        : [];
+    const hasSedeFilter = sedeOptions.length > 1;
+
+    // Totals to show in the card
+    const cardTotals = (() => {
+        if (selectedSede && activeSchool) {
+            const s = activeSedes[0];
+            return s
+                ? { riAm: s.riAm, riPm: s.riPm, cajm: s.cajm, cajt: s.cajt, almuerzo: s.almuerzo, total: s.total }
+                : { riAm: 0, riPm: 0, cajm: 0, cajt: 0, almuerzo: 0, total: 0 };
+        }
+        if (activeSchool) {
+            return { riAm: activeSchool.riAm, riPm: activeSchool.riPm, cajm: activeSchool.cajm, cajt: activeSchool.cajt, almuerzo: activeSchool.almuerzo, total: activeSchool.total };
+        }
+        return data?.totals ?? { riAm: 0, riPm: 0, cajm: 0, cajt: 0, almuerzo: 0, total: 0 };
+    })();
+
+    // Which columns have at least one non-zero value in the visible sedes (for the table)
     const visibleCols: ColKey[] = activeSchool
-        ? COLS.filter(c =>
-            (activeSchool.sedes ?? []).some(sede => sede.grupos.some(g => g[c.key] > 0))
-          ).map(c => c.key)
+        ? COLS.filter(c => activeSedes.some(sede => sede.grupos.some(g => g[c.key] > 0))).map(c => c.key)
         : [];
 
     function getMonday(date: Date): Date {
@@ -131,7 +157,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
         setWeekDate(d => { const n = new Date(d); n.setDate(n.getDate() + dir * 7); return n; });
     }
 
-    const closeDropdowns = () => { setSchoolDropOpen(false); };
+    const closeDropdowns = () => { setSchoolDropOpen(false); setSedeDropOpen(false); };
 
     return (
         <div className="p-4 lg:p-8 max-w-7xl mx-auto pb-28 md:pb-10" onClick={closeDropdowns}>
@@ -179,7 +205,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                 <div className="flex items-start justify-between mb-5">
                     <div>
                         <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
-                            {activeSchool ? 'Total institución' : 'Total municipal'}
+                            {selectedSede ? selectedSede : activeSchool ? 'Total institución' : 'Total municipal'}
                         </p>
                         {loading
                             ? <div className="h-10 w-32 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse mt-1" />
@@ -216,46 +242,93 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                 )}
             </div>
 
-            {/* ── FILTRO: Colegio ── */}
-            <div className="relative mb-3" onClick={e => e.stopPropagation()}>
-                <button
-                    onClick={() => setSchoolDropOpen(p => !p)}
-                    className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm font-bold text-gray-700 dark:text-gray-200 hover:border-cyan-300 dark:hover:border-cyan-700 transition-colors"
-                >
-                    <div className="flex items-center gap-2 min-w-0">
-                        <Building2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                        <span className="truncate text-xs uppercase tracking-wider">
-                            {selectedSchool ?? 'Todos los colegios'}
-                        </span>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-300 ${schoolDropOpen ? 'rotate-180' : ''}`} />
-                </button>
+            {/* ── FILTRO: Colegio + Sede ── */}
+            <div className="flex gap-2 mb-3" onClick={e => e.stopPropagation()}>
 
-                {schoolDropOpen && (
-                    <>
-                        <div className="fixed inset-0 z-[140]" onClick={() => setSchoolDropOpen(false)} />
-                        <div className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl z-[150] overflow-hidden max-h-72 overflow-y-auto animate-in zoom-in-95 duration-200">
-                            <div className="p-1.5 space-y-0.5">
-                                <button
-                                    onClick={() => { setSelectedSchool(null); setSchoolDropOpen(false); }}
-                                    className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between ${selectedSchool === null ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                                >
-                                    Todos los colegios
-                                    {selectedSchool === null && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
-                                </button>
-                                {schools.map(s => (
-                                    <button
-                                        key={s.nombre}
-                                        onClick={() => { setSelectedSchool(s.nombre); setSchoolDropOpen(false); }}
-                                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between gap-2 ${selectedSchool === s.nombre ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                                    >
-                                        <span className="truncate">{s.nombre}</span>
-                                        {selectedSchool === s.nombre && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
-                                    </button>
-                                ))}
-                            </div>
+                {/* Colegio */}
+                <div className="relative flex-1">
+                    <button
+                        onClick={() => { setSchoolDropOpen(p => !p); setSedeDropOpen(false); }}
+                        className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm font-bold text-gray-700 dark:text-gray-200 hover:border-cyan-300 dark:hover:border-cyan-700 transition-colors"
+                    >
+                        <div className="flex items-center gap-2 min-w-0">
+                            <Building2 className="w-4 h-4 text-cyan-500 shrink-0" />
+                            <span className="truncate text-xs uppercase tracking-wider">
+                                {selectedSchool ?? 'Todos los colegios'}
+                            </span>
                         </div>
-                    </>
+                        <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-300 ${schoolDropOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {schoolDropOpen && (
+                        <>
+                            <div className="fixed inset-0 z-[140]" onClick={() => setSchoolDropOpen(false)} />
+                            <div className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl z-[150] overflow-hidden max-h-72 overflow-y-auto animate-in zoom-in-95 duration-200">
+                                <div className="p-1.5 space-y-0.5">
+                                    <button
+                                        onClick={() => { setSelectedSchool(null); setSchoolDropOpen(false); }}
+                                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between ${selectedSchool === null ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                    >
+                                        Todos los colegios
+                                        {selectedSchool === null && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
+                                    </button>
+                                    {schools.map(s => (
+                                        <button
+                                            key={s.nombre}
+                                            onClick={() => { setSelectedSchool(s.nombre); setSchoolDropOpen(false); }}
+                                            className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between gap-2 ${selectedSchool === s.nombre ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                        >
+                                            <span className="truncate">{s.nombre}</span>
+                                            {selectedSchool === s.nombre && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* Sede — solo aparece cuando la institución tiene múltiples sedes */}
+                {hasSedeFilter && (
+                    <div className="relative shrink-0">
+                        <button
+                            onClick={() => { setSedeDropOpen(p => !p); setSchoolDropOpen(false); }}
+                            className={`h-full flex items-center gap-1.5 px-3 rounded-2xl border shadow-sm font-bold transition-colors ${selectedSede ? 'bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-700 text-cyan-700 dark:text-cyan-300' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-cyan-300 dark:hover:border-cyan-700'}`}
+                        >
+                            <MapPin className="w-4 h-4 text-cyan-500 shrink-0" />
+                            <span className="text-xs font-black uppercase tracking-wider whitespace-nowrap">
+                                {selectedSede ? selectedSede.replace(/^SEDE\s*/i, '') : 'Sede'}
+                            </span>
+                            <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform duration-300 ${sedeDropOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {sedeDropOpen && (
+                            <>
+                                <div className="fixed inset-0 z-[140]" onClick={() => setSedeDropOpen(false)} />
+                                <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl z-[150] overflow-hidden min-w-[180px] animate-in zoom-in-95 duration-200">
+                                    <div className="p-1.5 space-y-0.5">
+                                        <button
+                                            onClick={() => { setSelectedSede(null); setSedeDropOpen(false); }}
+                                            className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between ${selectedSede === null ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                        >
+                                            Todas las sedes
+                                            {selectedSede === null && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
+                                        </button>
+                                        {sedeOptions.map(s => (
+                                            <button
+                                                key={s.nombre}
+                                                onClick={() => { setSelectedSede(s.nombre); setSedeDropOpen(false); }}
+                                                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between gap-2 ${selectedSede === s.nombre ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                            >
+                                                <span className="truncate">{s.nombre}</span>
+                                                {selectedSede === s.nombre && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 )}
             </div>
 
@@ -348,8 +421,8 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {(activeSchool.sedes ?? []).map((sede, sedeIdx) => {
-                                            const multiSede = activeSchool.sedes.length > 1;
+                                        {activeSedes.map((sede, sedeIdx) => {
+                                            const multiSede = activeSedes.length > 1;
                                             return (
                                                 <React.Fragment key={sedeIdx}>
                                                     {/* Encabezado de sede — solo cuando hay más de una */}
@@ -400,11 +473,11 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                                             <td className="px-4 py-3 text-xs font-black text-blue-700 dark:text-blue-300 uppercase tracking-wider">Total</td>
                                             {visibleCols.map(key => (
                                                 <td key={key} className="px-4 py-3 text-right tabular-nums text-xs font-black text-blue-700 dark:text-blue-300">
-                                                    {activeSchool[key].toLocaleString('es-CO')}
+                                                    {cardTotals[key].toLocaleString('es-CO')}
                                                 </td>
                                             ))}
                                             <td className="px-4 py-3 text-right tabular-nums text-xs font-black text-blue-700 dark:text-blue-300">
-                                                {activeSchool.total.toLocaleString('es-CO')}
+                                                {cardTotals.total.toLocaleString('es-CO')}
                                             </td>
                                         </tr>
                                     </tfoot>

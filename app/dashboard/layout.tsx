@@ -761,7 +761,7 @@ export default function DashboardLayout({
             </main>
 
             {/* Mobile Bottom Navigation */}
-            <div className="md:hidden fixed bottom-2 left-0 right-0 mx-4 bg-white/70 dark:bg-black/80 backdrop-blur-3xl border border-white/20 dark:border-white/5 flex justify-around p-3 rounded-[2.5rem] z-[100] shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+            <div className="md:hidden fixed bottom-2 left-0 right-0 mx-4 bg-white/70 dark:bg-black/80 backdrop-blur-3xl border border-white/20 dark:border-white/5 flex justify-around p-3 rounded-[2.5rem] z-[100] shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
                 {navItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
@@ -770,9 +770,9 @@ export default function DashboardLayout({
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex flex-col items-center justify-center flex-1 py-1 rounded-lg transition-colors relative ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'}`}
+                            className={`group flex flex-col items-center justify-center flex-1 py-1 rounded-lg transition-all duration-200 relative ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'}`}
                         >
-                            <div className={`relative ${isRegistrar ? 'animate-pulse' : ''}`}>
+                            <div className={`relative transition-transform duration-200 ${isRegistrar ? 'animate-pulse' : ''} ${isActive ? 'scale-[1.1]' : 'group-hover:scale-[1.2]'}`}>
                                 <Icon className={`w-6 h-6 mb-1 ${isActive ? 'fill-current' : ''} ${isRegistrar ? 'text-gray-500 drop-shadow-[0_0_8px_rgba(37,99,235,0.5)] dark:text-gray-400' : ''}`} />
                             </div>
                             <span className={`text-[10px] font-medium ${isRegistrar ? 'font-black text-gray-500 dark:text-gray-300' : ''}`}>{item.label}</span>
