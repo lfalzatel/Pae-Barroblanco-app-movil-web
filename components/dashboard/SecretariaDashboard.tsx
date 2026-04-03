@@ -10,43 +10,52 @@ import {
     Utensils,
     Package,
     TrendingUp,
+    ChevronLeft,
 } from 'lucide-react';
 
 const SHEET_ID = '1NIp7IaTps7E-QqkBc5Yt0rx36HGc-k5d4EiKmtOLFeE';
 
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
-const DIA_KEYS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
 
 const MESES_NOMBRES = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 
-interface School {
+interface GroupRow {
     nombre: string;
-    riAm: number;
-    riPm: number;
-    cajm: number;
-    cajt: number;
-    almuerzo: number;
+    riAm: number; riPm: number; cajm: number; cajt: number; almuerzo: number; total: number;
 }
 
-interface SheetMeta {
-    name: string;
-    month: number | null;
-    day: number | null;
+interface School {
+    nombre: string;
+    riAm: number; riPm: number; cajm: number; cajt: number; almuerzo: number; total: number;
+    grupos: GroupRow[];
 }
+
+interface SheetMeta { name: string; month: number | null; day: number | null; }
 
 interface ApiResponse {
     sheets: SheetMeta[];
     currentSheet: string;
     schools: School[];
-    totals: { riAm: number; riPm: number; cajm: number; cajt: number; almuerzo: number };
+    totals: { riAm: number; riPm: number; cajm: number; cajt: number; almuerzo: number; total: number };
 }
 
 interface SecretariaDashboardProps {
     usuario: { nombre: string; rol: string; email: string };
 }
+
+// Columnas de complemento en orden
+const COLS = [
+    { key: 'riAm',    label: 'RI/AM',    color: 'text-amber-700  dark:text-amber-400'  },
+    { key: 'riPm',    label: 'RI/PM',    color: 'text-orange-700 dark:text-orange-400' },
+    { key: 'cajm',    label: 'CAJM',     color: 'text-blue-700   dark:text-blue-400'   },
+    { key: 'cajt',    label: 'CAJT',     color: 'text-indigo-700 dark:text-indigo-400' },
+    { key: 'almuerzo',label: 'Almuerzo', color: 'text-emerald-700 dark:text-emerald-400'},
+] as const;
+
+type ColKey = typeof COLS[number]['key'];
 
 export default function SecretariaDashboard({ usuario }: SecretariaDashboardProps) {
     const [data, setData] = useState<ApiResponse | null>(null);
@@ -54,7 +63,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
     const [error, setError] = useState<string | null>(null);
 
     // Filters
-    const [selectedSchool, setSelectedSchool] = useState<string>('todos');
+    const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
     const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
     const [selectedDay, setSelectedDay] = useState<number | null>(null);
     const [schoolDropOpen, setSchoolDropOpen] = useState(false);
@@ -70,11 +79,9 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
             const json: ApiResponse = await res.json();
             setData(json);
 
-            // Auto-select current month if not yet set
             if (selectedMonth === null && json.sheets.length > 0) {
-                const curMonth = new Date().getMonth();
-                const hasMonth = json.sheets.some(s => s.month === curMonth);
-                setSelectedMonth(hasMonth ? curMonth : (json.sheets[0]?.month ?? null));
+                const cur = new Date().getMonth();
+                setSelectedMonth(json.sheets.some(s => s.month === cur) ? cur : (json.sheets[0]?.month ?? null));
             }
         } catch (err: any) {
             setError(err.message);
@@ -85,70 +92,57 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
 
     useEffect(() => { fetchData(); }, []);
 
-    // When month or day selection changes, find and load matching sheet
     useEffect(() => {
         if (!data) return;
         const match = findMatchingSheet(data.sheets, selectedMonth, selectedDay);
-        if (match && match !== data.currentSheet) {
-            fetchData(match);
-        }
+        if (match && match !== data.currentSheet) fetchData(match);
     }, [selectedMonth, selectedDay]);
 
     function findMatchingSheet(sheets: SheetMeta[], month: number | null, day: number | null): string | null {
-        if (month === null && day === null) return null;
-
-        // Try exact match (month AND day)
         if (month !== null && day !== null) {
             const exact = sheets.find(s => s.month === month && s.day === day);
             if (exact) return exact.name;
         }
-
-        // Match only by day (if no month filtering possible)
         if (day !== null && month === null) {
             const byDay = sheets.find(s => s.day === day);
             if (byDay) return byDay.name;
         }
-
-        // Match only by month
         if (month !== null && day === null) {
             const byMonth = sheets.find(s => s.month === month);
             if (byMonth) return byMonth.name;
         }
-
         return null;
     }
 
-    // Derive available months from sheet list
     const availableMonths = data
         ? [...new Set(data.sheets.map(s => s.month).filter((m): m is number => m !== null))].sort((a, b) => a - b)
         : [];
 
-    // Derive available days for selected month
     const availableDaysForMonth = data && selectedMonth !== null
         ? new Set(data.sheets.filter(s => s.month === selectedMonth).map(s => s.day).filter((d): d is number => d !== null))
         : new Set<number>();
 
-    // Client-side school filter
     const schools = data?.schools ?? [];
-    const filteredSchools = selectedSchool === 'todos' ? schools : schools.filter(s => s.nombre === selectedSchool);
 
-    const displayTotals = filteredSchools.reduce(
-        (acc, s) => ({
-            riAm: acc.riAm + s.riAm,
-            riPm: acc.riPm + s.riPm,
-            cajm: acc.cajm + s.cajm,
-            cajt: acc.cajt + s.cajt,
-            almuerzo: acc.almuerzo + s.almuerzo,
-        }),
-        { riAm: 0, riPm: 0, cajm: 0, cajt: 0, almuerzo: 0 }
-    );
+    // The selected school object (for detail view)
+    const activeSchool = selectedSchool ? schools.find(s => s.nombre === selectedSchool) ?? null : null;
 
-    const grandTotal = displayTotals.riAm + displayTotals.riPm + displayTotals.cajm + displayTotals.cajt + displayTotals.almuerzo;
+    // Totals to show in the card
+    const cardTotals = activeSchool
+        ? { riAm: activeSchool.riAm, riPm: activeSchool.riPm, cajm: activeSchool.cajm, cajt: activeSchool.cajt, almuerzo: activeSchool.almuerzo, total: activeSchool.total }
+        : (data?.totals ?? { riAm: 0, riPm: 0, cajm: 0, cajt: 0, almuerzo: 0, total: 0 });
+
+    // Which columns have at least one non-zero value in the groups (for the table)
+    const visibleCols: ColKey[] = activeSchool
+        ? COLS.filter(c => activeSchool.grupos.some(g => g[c.key] > 0)).map(c => c.key)
+        : [];
+
+    const closeDropdowns = () => { setSchoolDropOpen(false); setMonthDropOpen(false); };
 
     return (
-        <div className="p-4 lg:p-8 max-w-7xl mx-auto pb-28 md:pb-10" onClick={() => { setSchoolDropOpen(false); setMonthDropOpen(false); }}>
+        <div className="p-4 lg:p-8 max-w-7xl mx-auto pb-28 md:pb-10" onClick={closeDropdowns}>
 
-            {/* Header */}
+            {/* ── HEADER ── */}
             <div className="mb-6">
                 <div className="flex items-center gap-2 mb-1">
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-widest rounded-lg dark:bg-blue-900/30 dark:text-blue-300">
@@ -164,7 +158,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                             Complementos <span className="text-blue-600">PAE</span>
                         </h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">
-                            Totales municipales · Todos los colegios
+                            {activeSchool ? activeSchool.nombre : 'Todos los colegios · Rionegro'}
                         </p>
                     </div>
                     <button
@@ -178,7 +172,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                 </div>
             </div>
 
-            {/* Error */}
+            {/* ── ERROR ── */}
             {error && (
                 <div className="mb-4 p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 flex items-center gap-3 text-red-700 dark:text-red-400">
                     <AlertCircle className="w-5 h-5 shrink-0" />
@@ -190,10 +184,12 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
             <div className="mb-5 rounded-3xl bg-gradient-to-br from-blue-600 to-blue-700 p-5 shadow-xl shadow-blue-900/20 text-white">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <p className="text-blue-200 text-xs font-bold uppercase tracking-widest">Total complementos</p>
+                        <p className="text-blue-200 text-xs font-bold uppercase tracking-widest">
+                            {activeSchool ? 'Total institución' : 'Total municipal'}
+                        </p>
                         {loading
                             ? <div className="h-9 w-28 bg-white/20 rounded-xl animate-pulse mt-1" />
-                            : <p className="text-4xl font-black tabular-nums">{grandTotal.toLocaleString('es-CO')}</p>
+                            : <p className="text-4xl font-black tabular-nums">{cardTotals.total.toLocaleString('es-CO')}</p>
                         }
                     </div>
                     <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center">
@@ -203,12 +199,12 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
 
                 <div className="grid grid-cols-5 gap-2">
                     {[
-                        { label: 'RI/AM', value: displayTotals.riAm, icon: Coffee },
-                        { label: 'RI/PM', value: displayTotals.riPm, icon: Coffee },
-                        { label: 'CAJM', value: displayTotals.cajm, icon: Package },
-                        { label: 'CAJT', value: displayTotals.cajt, icon: Package },
-                        { label: 'Almuerzo', value: displayTotals.almuerzo, icon: Utensils },
-                    ].map(({ label, value, icon: Icon }) => (
+                        { label: 'RI/AM',    value: cardTotals.riAm,    Icon: Coffee   },
+                        { label: 'RI/PM',    value: cardTotals.riPm,    Icon: Coffee   },
+                        { label: 'CAJM',     value: cardTotals.cajm,    Icon: Package  },
+                        { label: 'CAJT',     value: cardTotals.cajt,    Icon: Package  },
+                        { label: 'Almuerzo', value: cardTotals.almuerzo, Icon: Utensils },
+                    ].map(({ label, value, Icon }) => (
                         <div key={label} className="bg-white/15 backdrop-blur rounded-2xl p-3 text-center">
                             <Icon className="w-4 h-4 mx-auto mb-1 text-blue-200" />
                             <p className="text-[10px] font-bold text-blue-200 uppercase tracking-wider leading-none mb-1">{label}</p>
@@ -223,7 +219,6 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                 {data?.currentSheet && (
                     <p className="mt-3 text-[10px] text-blue-300 font-medium text-right">
                         Hoja: {data.currentSheet}
-                        {selectedSchool !== 'todos' && ` · ${selectedSchool}`}
                     </p>
                 )}
             </div>
@@ -238,22 +233,28 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                     >
                         <div className="flex items-center gap-2 min-w-0">
                             <Building2 className="w-4 h-4 text-blue-500 shrink-0" />
-                            <span className="truncate">
-                                {selectedSchool === 'todos' ? 'Todos los colegios' : selectedSchool}
+                            <span className="truncate text-xs">
+                                {selectedSchool ?? 'Todos los colegios'}
                             </span>
                         </div>
                         <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${schoolDropOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {schoolDropOpen && (
-                        <div className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl z-[150] overflow-hidden max-h-60 overflow-y-auto">
-                            {[{ nombre: 'todos', label: 'Todos los colegios' }, ...schools.map(s => ({ nombre: s.nombre, label: s.nombre }))].map(opt => (
+                        <div className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl z-[150] overflow-hidden max-h-72 overflow-y-auto">
+                            <button
+                                onClick={() => { setSelectedSchool(null); setSchoolDropOpen(false); }}
+                                className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors ${selectedSchool === null ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                            >
+                                Todos los colegios
+                            </button>
+                            {schools.map(s => (
                                 <button
-                                    key={opt.nombre}
-                                    onClick={() => { setSelectedSchool(opt.nombre); setSchoolDropOpen(false); }}
-                                    className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors ${selectedSchool === opt.nombre ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                    key={s.nombre}
+                                    onClick={() => { setSelectedSchool(s.nombre); setSchoolDropOpen(false); }}
+                                    className={`w-full text-left px-4 py-3 text-xs font-medium transition-colors border-t border-gray-50 dark:border-gray-700/50 ${selectedSchool === s.nombre ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                                 >
-                                    {opt.label}
+                                    {s.nombre}
                                 </button>
                             ))}
                         </div>
@@ -266,20 +267,14 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                         onClick={() => { setMonthDropOpen(p => !p); setSchoolDropOpen(false); }}
                         className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm text-sm font-semibold text-gray-700 dark:text-gray-200 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
                     >
-                        <span className="truncate">
-                            {selectedMonth !== null ? MESES_NOMBRES[selectedMonth] : 'Todos los meses'}
+                        <span className="truncate text-xs">
+                            {selectedMonth !== null ? MESES_NOMBRES[selectedMonth] : 'Mes actual'}
                         </span>
                         <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${monthDropOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {monthDropOpen && (
                         <div className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl z-[150] overflow-hidden">
-                            <button
-                                onClick={() => { setSelectedMonth(null); setSelectedDay(null); setMonthDropOpen(false); }}
-                                className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors ${selectedMonth === null ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                            >
-                                Todos los meses
-                            </button>
                             {availableMonths.length > 0
                                 ? availableMonths.map(m => (
                                     <button
@@ -290,11 +285,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                                         {MESES_NOMBRES[m]}
                                     </button>
                                 ))
-                                : (
-                                    <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">
-                                        Sin datos de meses disponibles
-                                    </p>
-                                )
+                                : <p className="px-4 py-3 text-sm text-gray-400">Sin datos de meses disponibles</p>
                             }
                         </div>
                     )}
@@ -305,12 +296,12 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
             <div className="flex gap-2 mb-6">
                 <button
                     onClick={() => setSelectedDay(null)}
-                    className={`flex-1 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${selectedDay === null ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700'}`}
+                    className={`flex-1 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${selectedDay === null ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'}`}
                 >
                     Todos
                 </button>
                 {DIAS.map((label, idx) => {
-                    const available = availableDaysForMonth.has(idx) || availableDaysForMonth.size === 0;
+                    const available = availableDaysForMonth.size === 0 || availableDaysForMonth.has(idx);
                     return (
                         <button
                             key={label}
@@ -320,7 +311,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                                 selectedDay === idx
                                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
                                     : available
-                                    ? 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700'
+                                    ? 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
                                     : 'bg-gray-100 dark:bg-gray-900 text-gray-300 dark:text-gray-600 cursor-not-allowed'
                             }`}
                         >
@@ -330,62 +321,114 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                 })}
             </div>
 
-            {/* ── SCHOOL BREAKDOWN ── */}
+            {/* ── CONTENT ── */}
             {loading ? (
                 <div className="space-y-3">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="h-20 rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse" />
-                    ))}
+                    {[1, 2, 3].map(i => <div key={i} className="h-20 rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse" />)}
                 </div>
-            ) : filteredSchools.length === 0 ? (
-                <div className="text-center py-12 text-gray-400 dark:text-gray-600">
-                    <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p className="font-medium">Sin datos para los filtros seleccionados</p>
+            ) : activeSchool ? (
+                /* ── DETAIL VIEW: groups table ── */
+                <div>
+                    <button
+                        onClick={() => setSelectedSchool(null)}
+                        className="flex items-center gap-1.5 text-sm font-bold text-blue-600 dark:text-blue-400 mb-4 hover:underline"
+                    >
+                        <ChevronLeft className="w-4 h-4" /> Todos los colegios
+                    </button>
+
+                    {activeSchool.grupos.length === 0 ? (
+                        <p className="text-center py-8 text-gray-400 text-sm">No hay grupos con datos para esta institución</p>
+                    ) : (
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                                            <th className="text-left px-4 py-3 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Grupo</th>
+                                            {visibleCols.map(key => {
+                                                const col = COLS.find(c => c.key === key)!;
+                                                return (
+                                                    <th key={key} className={`text-right px-4 py-3 text-xs font-black uppercase tracking-wider ${col.color}`}>
+                                                        {col.label}
+                                                    </th>
+                                                );
+                                            })}
+                                            <th className="text-right px-4 py-3 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {activeSchool.grupos.map((grupo, i) => (
+                                            <tr key={i} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                                <td className="px-4 py-3 font-semibold text-gray-800 dark:text-gray-200 text-xs">{grupo.nombre}</td>
+                                                {visibleCols.map(key => (
+                                                    <td key={key} className="px-4 py-3 text-right tabular-nums font-medium text-gray-700 dark:text-gray-300 text-xs">
+                                                        {grupo[key] > 0 ? grupo[key].toLocaleString('es-CO') : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                                                    </td>
+                                                ))}
+                                                <td className="px-4 py-3 text-right tabular-nums font-black text-gray-900 dark:text-white text-xs">{grupo.total.toLocaleString('es-CO')}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="bg-blue-50 dark:bg-blue-900/20 border-t-2 border-blue-100 dark:border-blue-900">
+                                            <td className="px-4 py-3 text-xs font-black text-blue-700 dark:text-blue-300 uppercase tracking-wider">Total</td>
+                                            {visibleCols.map(key => (
+                                                <td key={key} className="px-4 py-3 text-right tabular-nums text-xs font-black text-blue-700 dark:text-blue-300">
+                                                    {activeSchool[key].toLocaleString('es-CO')}
+                                                </td>
+                                            ))}
+                                            <td className="px-4 py-3 text-right tabular-nums text-xs font-black text-blue-700 dark:text-blue-300">
+                                                {activeSchool.total.toLocaleString('es-CO')}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    )}
                 </div>
             ) : (
-                <div className="space-y-3">
-                    {filteredSchools.map(school => {
-                        const total = school.riAm + school.riPm + school.cajm + school.cajt + school.almuerzo;
-                        const pct = grandTotal > 0 ? Math.round((total / grandTotal) * 100) : 0;
-                        return (
-                            <div key={school.nombre} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm">
-                                <div className="flex items-start justify-between gap-3 mb-3">
-                                    <div className="min-w-0">
-                                        <p className="font-bold text-gray-900 dark:text-white text-sm leading-tight truncate">{school.nombre}</p>
-                                        <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium mt-0.5">{pct}% del total municipal</p>
+                /* ── LIST VIEW: school cards ── */
+                schools.length === 0 ? (
+                    <div className="text-center py-12 text-gray-400 dark:text-gray-600">
+                        <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                        <p className="font-medium">Sin datos para los filtros seleccionados</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {schools.map(school => {
+                            const grandTotal = data?.totals.total ?? 1;
+                            const pct = grandTotal > 0 ? Math.round((school.total / grandTotal) * 100) : 0;
+                            return (
+                                <button
+                                    key={school.nombre}
+                                    onClick={() => setSelectedSchool(school.nombre)}
+                                    className="w-full text-left bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm hover:border-blue-200 dark:hover:border-blue-800 hover:shadow-md transition-all active:scale-[0.99]"
+                                >
+                                    <div className="flex items-start justify-between gap-3 mb-2">
+                                        <p className="font-bold text-gray-900 dark:text-white text-sm leading-tight">{school.nombre}</p>
+                                        <div className="shrink-0 text-right">
+                                            <p className="text-xl font-black text-blue-600 dark:text-blue-400 tabular-nums leading-none">{school.total.toLocaleString('es-CO')}</p>
+                                            <p className="text-[10px] text-gray-400 font-medium">{pct}% del total</p>
+                                        </div>
                                     </div>
-                                    <div className="shrink-0 text-right">
-                                        <p className="text-xl font-black text-blue-600 dark:text-blue-400 tabular-nums">{total.toLocaleString('es-CO')}</p>
-                                        <p className="text-[10px] text-gray-400 font-medium">complementos</p>
+
+                                    <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full mb-3 overflow-hidden">
+                                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
                                     </div>
-                                </div>
 
-                                {/* Progress bar */}
-                                <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full mb-3 overflow-hidden">
-                                    <div
-                                        className="h-full bg-blue-500 rounded-full transition-all duration-500"
-                                        style={{ width: `${pct}%` }}
-                                    />
-                                </div>
-
-                                {/* Breakdown chips */}
-                                <div className="flex flex-wrap gap-1.5">
-                                    {[
-                                        { label: 'RI/AM', value: school.riAm, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-                                        { label: 'RI/PM', value: school.riPm, color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
-                                        { label: 'CAJM', value: school.cajm, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-                                        { label: 'CAJT', value: school.cajt, color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
-                                        { label: 'Alm', value: school.almuerzo, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-                                    ].map(({ label, value, color }) => (
-                                        <span key={label} className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-black ${color}`}>
-                                            {label}: <span className="tabular-nums">{value.toLocaleString('es-CO')}</span>
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {COLS.filter(c => school[c.key] > 0).map(c => (
+                                            <span key={c.key} className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-gray-100 dark:bg-gray-700 text-[10px] font-black text-gray-600 dark:text-gray-300">
+                                                {c.label}: <span className="tabular-nums">{school[c.key].toLocaleString('es-CO')}</span>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )
             )}
         </div>
     );
