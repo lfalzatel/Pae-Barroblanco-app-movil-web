@@ -68,10 +68,40 @@ export interface Totals {
     total: number;
 }
 
+// ── Known institutions ────────────────────────────────────────────────────────
+function normalize(s: string): string {
+    return s
+        .toUpperCase()
+        .replace(/[ÁÀÂÄ]/g, 'A').replace(/[ÉÈÊË]/g, 'E').replace(/[ÍÌÎÏ]/g, 'I')
+        .replace(/[ÓÒÔÖ]/g, 'O').replace(/[ÚÙÛÜ]/g, 'U').replace(/Ñ/g, 'N')
+        .replace(/\./g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+const KNOWN_SCHOOLS = new Set([
+    'IE ANA GOMEZ DE SIERRA',
+    'IE ANTONIO DONADO CAMACAHO',
+    'IE BALTAZAR SALAZAR',
+    'IE BARRO BLANCO',
+    'IE GILBERTO ECHEVERRI MEJIA',
+    'IE DOMINGO SAVIO',
+    'IE ESCUELA NORMAL SUPERIOR DE MARIA',
+    'IE CONCEJO MUNICIPAL EL PORVENIR',
+    'IE GUILLERMO GAVIRIA CORREA',
+    'IE LICEO JOSE MARIA CORDOBA',
+    'IE JOSEFINA MUNOZ GONZALEZ',
+    'IE LA MOSQUITA',
+    'IE BALDOMERO SANIN CANO',
+    'IE SAN ANTONIO',
+    'IE SAN JOSE DE LAS CUCHILLAS',
+    'IE SANTA BARBARA',
+    'IE TECNICO INDUSTRIAL SANTIAGO DE ARMA',
+]);
+
 // ── Parser ────────────────────────────────────────────────────────────────────
 function isSchoolHeader(cell: string): boolean {
-    const v = cell.toUpperCase().trim();
-    return v.startsWith('I.E.') || v.startsWith('INSTITUCIÓN') || v.startsWith('INSTITUCION');
+    return KNOWN_SCHOOLS.has(normalize(cell));
 }
 
 function isTotalRow(cell: string): boolean {
