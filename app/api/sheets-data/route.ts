@@ -48,7 +48,7 @@ export interface GroupRow {
     total: number;
 }
 
-export interface School {
+export interface Sede {
     nombre: string;
     riAm: number;
     riPm: number;
@@ -57,6 +57,18 @@ export interface School {
     almuerzo: number;
     total: number;
     grupos: GroupRow[];
+}
+
+export interface School {
+    nombre: string;
+    riAm: number;
+    riPm: number;
+    cajm: number;
+    cajt: number;
+    almuerzo: number;
+    total: number;
+    grupos: GroupRow[];   // plano — compatibilidad
+    sedes: Sede[];        // agrupado por sede; siempre >= 1 elemento
 }
 
 export interface Totals {
@@ -109,6 +121,13 @@ function isTotalRow(cell: string): boolean {
     return v.startsWith('TOTAL COMPLEMENTOS') || v.startsWith('TOTAL A ENTREGAR') || v === 'TOTAL';
 }
 
+/** Encabezado de sede: texto con "SEDE", sin datos numéricos en B-H, no es colegio ni total */
+function isSedeHeader(cell: string, row: any[]): boolean {
+    if (!cell || isSchoolHeader(cell) || isTotalRow(cell)) return false;
+    if (!cell.toUpperCase().includes('SEDE')) return false;
+    return ![1, 2, 3, 4, 5, 6, 7].some(idx => n(row[idx]) > 0);
+}
+
 function parseRow(row: any[]): Omit<GroupRow, 'nombre'> {
     // Columns: A=name, B=RI/AM, C=RI/PM, D=CAJM, E=CAJT, F=Almuerzo, G=? (skip), H=Total
     const riAm    = n(row[1]);
@@ -125,46 +144,107 @@ function parseRow(row: any[]): Omit<GroupRow, 'nombre'> {
 function parseSchoolsFromRows(rows: any[][]): School[] {
     const schools: School[] = [];
     let current: School | null = null;
+    let currentSede: Sede | null = null;
+
+    function newSede(nombre: string): Sede {
+        return { nombre, riAm: 0, riPm: 0, cajm: 0, cajt: 0, almuerzo: 0, total: 0, grupos: [] };
+    }
+
+    function flushSede() {
+        if (!current || !currentSede) return;
+        // No empujar sedes vacías
+        if (currentSede.grupos.length === 0) {
+            currentSede = null;
+            return;
+        }
+        if (currentSede.total === 0) {
+            currentSede.riAm     = currentSede.grupos.reduce((s, g) => s + g.riAm, 0);
+            currentSede.riPm     = currentSede.grupos.reduce((s, g) => s + g.riPm, 0);
+            currentSede.cajm     = currentSede.grupos.reduce((s, g) => s + g.cajm, 0);
+            currentSede.cajt     = currentSede.grupos.reduce((s, g) => s + g.cajt, 0);
+            currentSede.almuerzo = currentSede.grupos.reduce((s, g) => s + g.almuerzo, 0);
+            currentSede.total    = currentSede.riAm + currentSede.riPm + currentSede.cajm
+                                 + currentSede.cajt + currentSede.almuerzo;
+        }
+        current.sedes.push(currentSede);
+        currentSede = null;
+    }
 
     for (const row of rows) {
         const cell = String(row[0] || '').trim();
         if (!cell) continue;
 
+        // ── Encabezado de colegio ──────────────────────────────────────────────
         if (isSchoolHeader(cell)) {
-            // Save previous school if any (in case TOTAL row was missing)
-            if (current) schools.push(current);
-            current = { nombre: cell, riAm: 0, riPm: 0, cajm: 0, cajt: 0, almuerzo: 0, total: 0, grupos: [] };
-        } else if (isTotalRow(cell) && current) {
-            // Official total row → use it as the school's summary
-            const vals = parseRow(row);
-            current.riAm    = vals.riAm;
-            current.riPm    = vals.riPm;
-            current.cajm    = vals.cajm;
-            current.cajt    = vals.cajt;
-            current.almuerzo = vals.almuerzo;
-            current.total   = vals.total;
-            schools.push(current);
-            current = null;
-        } else if (current) {
-            // Intermediate row → group
-            const vals = parseRow(row);
-            // Only add if row has at least some data
-            if (vals.riAm + vals.riPm + vals.cajm + vals.cajt + vals.almuerzo > 0) {
-                current.grupos.push({ nombre: cell, ...vals });
+            flushSede();
+            if (current) {
+                current.grupos   = current.sedes.flatMap(s => s.grupos);
+                current.riAm     = current.sedes.reduce((s, se) => s + se.riAm, 0);
+                current.riPm     = current.sedes.reduce((s, se) => s + se.riPm, 0);
+                current.cajm     = current.sedes.reduce((s, se) => s + se.cajm, 0);
+                current.cajt     = current.sedes.reduce((s, se) => s + se.cajt, 0);
+                current.almuerzo = current.sedes.reduce((s, se) => s + se.almuerzo, 0);
+                current.total    = current.riAm + current.riPm + current.cajm
+                                 + current.cajt + current.almuerzo;
+                schools.push(current);
             }
+            current = { nombre: cell, riAm: 0, riPm: 0, cajm: 0, cajt: 0, almuerzo: 0, total: 0, grupos: [], sedes: [] };
+            currentSede = newSede('');
+            continue;
+        }
+
+        if (!current) continue;
+
+        // ── Cualquier fila TOTAL ───────────────────────────────────────────────
+        // Si la sede actual tiene grupos → es el sub-total de esa sede, cerrarla.
+        // Si no hay grupos → es el grand total del colegio, ignorar (siempre se computa de sedes).
+        if (isTotalRow(cell)) {
+            if (currentSede && currentSede.grupos.length > 0) {
+                const vals = parseRow(row);
+                if (vals.total > 0) {
+                    currentSede.riAm     = vals.riAm;
+                    currentSede.riPm     = vals.riPm;
+                    currentSede.cajm     = vals.cajm;
+                    currentSede.cajt     = vals.cajt;
+                    currentSede.almuerzo = vals.almuerzo;
+                    currentSede.total    = vals.total;
+                }
+                flushSede();
+            }
+            continue;
+        }
+
+        // ── Encabezado de sede (texto sin datos numéricos) ────────────────────
+        if (isSedeHeader(cell, row)) {
+            if (currentSede && currentSede.grupos.length === 0 && currentSede.nombre === '') {
+                // Renombrar la sede por defecto antes de que lleguen grupos
+                currentSede.nombre = cell;
+            } else {
+                flushSede();
+                currentSede = newSede(cell);
+            }
+            continue;
+        }
+
+        // ── Fila de grupo con datos numéricos ─────────────────────────────────
+        const vals = parseRow(row);
+        if (vals.riAm + vals.riPm + vals.cajm + vals.cajt + vals.almuerzo > 0) {
+            if (!currentSede) currentSede = newSede('');
+            currentSede.grupos.push({ nombre: cell, ...vals });
         }
     }
 
-    // Flush last school (in case no TOTAL row at end)
+    // ── Flush del último colegio ───────────────────────────────────────────────
     if (current) {
-        if (current.total === 0) {
-            current.riAm    = current.grupos.reduce((s, g) => s + g.riAm, 0);
-            current.riPm    = current.grupos.reduce((s, g) => s + g.riPm, 0);
-            current.cajm    = current.grupos.reduce((s, g) => s + g.cajm, 0);
-            current.cajt    = current.grupos.reduce((s, g) => s + g.cajt, 0);
-            current.almuerzo = current.grupos.reduce((s, g) => s + g.almuerzo, 0);
-            current.total   = current.riAm + current.riPm + current.cajm + current.cajt + current.almuerzo;
-        }
+        flushSede();
+        current.grupos   = current.sedes.flatMap(s => s.grupos);
+        current.riAm     = current.sedes.reduce((s, se) => s + se.riAm, 0);
+        current.riPm     = current.sedes.reduce((s, se) => s + se.riPm, 0);
+        current.cajm     = current.sedes.reduce((s, se) => s + se.cajm, 0);
+        current.cajt     = current.sedes.reduce((s, se) => s + se.cajt, 0);
+        current.almuerzo = current.sedes.reduce((s, se) => s + se.almuerzo, 0);
+        current.total    = current.riAm + current.riPm + current.cajm
+                         + current.cajt + current.almuerzo;
         schools.push(current);
     }
 

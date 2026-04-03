@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Building2,
     RefreshCw,
@@ -27,10 +27,17 @@ interface GroupRow {
     riAm: number; riPm: number; cajm: number; cajt: number; almuerzo: number; total: number;
 }
 
+interface Sede {
+    nombre: string;
+    riAm: number; riPm: number; cajm: number; cajt: number; almuerzo: number; total: number;
+    grupos: GroupRow[];
+}
+
 interface School {
     nombre: string;
     riAm: number; riPm: number; cajm: number; cajt: number; almuerzo: number; total: number;
     grupos: GroupRow[];
+    sedes: Sede[];
 }
 
 interface SheetMeta { name: string; month: number | null; day: number | null; }
@@ -115,7 +122,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
     }
 
     const availableMonths = data
-        ? [...new Set(data.sheets.map(s => s.month).filter((m): m is number => m !== null))].sort((a, b) => a - b)
+        ? Array.from(new Set(data.sheets.map(s => s.month).filter((m): m is number => m !== null))).sort((a, b) => a - b)
         : [];
 
     const availableDaysForMonth = data && selectedMonth !== null
@@ -134,7 +141,9 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
 
     // Which columns have at least one non-zero value in the groups (for the table)
     const visibleCols: ColKey[] = activeSchool
-        ? COLS.filter(c => activeSchool.grupos.some(g => g[c.key] > 0)).map(c => c.key)
+        ? COLS.filter(c =>
+            (activeSchool.sedes ?? []).some(sede => sede.grupos.some(g => g[c.key] > 0))
+          ).map(c => c.key)
         : [];
 
     const closeDropdowns = () => { setSchoolDropOpen(false); setMonthDropOpen(false); };
@@ -197,7 +206,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                     </div>
                 </div>
 
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {[
                         { label: 'RI/AM',    value: cardTotals.riAm,    Icon: Coffee   },
                         { label: 'RI/PM',    value: cardTotals.riPm,    Icon: Coffee   },
@@ -357,17 +366,52 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {activeSchool.grupos.map((grupo, i) => (
-                                            <tr key={i} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                                                <td className="px-4 py-3 font-semibold text-gray-800 dark:text-gray-200 text-xs">{grupo.nombre}</td>
-                                                {visibleCols.map(key => (
-                                                    <td key={key} className="px-4 py-3 text-right tabular-nums font-medium text-gray-700 dark:text-gray-300 text-xs">
-                                                        {grupo[key] > 0 ? grupo[key].toLocaleString('es-CO') : <span className="text-gray-300 dark:text-gray-600">—</span>}
-                                                    </td>
-                                                ))}
-                                                <td className="px-4 py-3 text-right tabular-nums font-black text-gray-900 dark:text-white text-xs">{grupo.total.toLocaleString('es-CO')}</td>
-                                            </tr>
-                                        ))}
+                                        {(activeSchool.sedes ?? []).map((sede, sedeIdx) => {
+                                            const multiSede = activeSchool.sedes.length > 1;
+                                            return (
+                                                <React.Fragment key={sedeIdx}>
+                                                    {/* Encabezado de sede — solo cuando hay más de una */}
+                                                    {multiSede && (
+                                                        <tr className="bg-slate-100 dark:bg-slate-800/60">
+                                                            <td colSpan={visibleCols.length + 2}
+                                                                className="px-4 py-2 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                                                                {sede.nombre || 'SEDE PRINCIPAL'}
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                    {/* Filas de grupos */}
+                                                    {sede.grupos.map((grupo, i) => (
+                                                        <tr key={i} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                                            <td className="px-4 py-3 font-semibold text-gray-800 dark:text-gray-200 text-xs">{grupo.nombre}</td>
+                                                            {visibleCols.map(key => (
+                                                                <td key={key} className="px-4 py-3 text-right tabular-nums font-medium text-gray-700 dark:text-gray-300 text-xs">
+                                                                    {grupo[key] > 0 ? grupo[key].toLocaleString('es-CO') : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                                                                </td>
+                                                            ))}
+                                                            <td className="px-4 py-3 text-right tabular-nums font-black text-gray-900 dark:text-white text-xs">
+                                                                {grupo.total.toLocaleString('es-CO')}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                    {/* Sub-total por sede */}
+                                                    {multiSede && (
+                                                        <tr className="bg-slate-50 dark:bg-slate-900/40 border-t border-slate-200 dark:border-slate-700">
+                                                            <td className="px-4 py-2.5 text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                                                Subtotal {sede.nombre || 'Sede'}
+                                                            </td>
+                                                            {visibleCols.map(key => (
+                                                                <td key={key} className="px-4 py-2.5 text-right tabular-nums text-[10px] font-black text-slate-600 dark:text-slate-300">
+                                                                    {sede[key] > 0 ? sede[key].toLocaleString('es-CO') : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                                                                </td>
+                                                            ))}
+                                                            <td className="px-4 py-2.5 text-right tabular-nums text-[10px] font-black text-slate-600 dark:text-slate-300">
+                                                                {sede.total.toLocaleString('es-CO')}
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </React.Fragment>
+                                            );
+                                        })}
                                     </tbody>
                                     <tfoot>
                                         <tr className="bg-blue-50 dark:bg-blue-900/20 border-t-2 border-blue-100 dark:border-blue-900">
