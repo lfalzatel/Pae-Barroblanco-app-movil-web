@@ -6,9 +6,6 @@ import {
     RefreshCw,
     AlertCircle,
     ChevronDown,
-    Coffee,
-    Utensils,
-    Package,
     TrendingUp,
     ChevronLeft,
 } from 'lucide-react';
@@ -69,6 +66,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
     const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
     const [selectedDay, setSelectedDay] = useState<number | null>(null);
     const [schoolDropOpen, setSchoolDropOpen] = useState(false);
+    const [weekDate, setWeekDate] = useState(() => new Date());
 
     const fetchData = useCallback(async (sheetName?: string) => {
         setLoading(true);
@@ -117,6 +115,22 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
           ).map(c => c.key)
         : [];
 
+    function getMonday(date: Date): Date {
+        const d = new Date(date);
+        const day = d.getDay();
+        d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+        return d;
+    }
+    function getWeekLabel(date: Date): string {
+        const monday = getMonday(date);
+        const friday = new Date(monday);
+        friday.setDate(monday.getDate() + 4);
+        return `${monday.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} - ${friday.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}`;
+    }
+    function handleMoveWeek(dir: number) {
+        setWeekDate(d => { const n = new Date(d); n.setDate(n.getDate() + dir * 7); return n; });
+    }
+
     const closeDropdowns = () => { setSchoolDropOpen(false); };
 
     return (
@@ -161,43 +175,42 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
             )}
 
             {/* ── TOTAL CARD ── */}
-            <div className="mb-5 rounded-3xl bg-gradient-to-br from-cyan-600 to-cyan-700 p-5 shadow-xl shadow-cyan-900/20 text-white">
-                <div className="flex items-center justify-between mb-4">
+            <div className="mb-5 rounded-3xl bg-white dark:bg-gray-800 p-5 shadow-xl shadow-gray-900/5 border border-gray-100 dark:border-gray-700">
+                <div className="flex items-start justify-between mb-5">
                     <div>
-                        <p className="text-cyan-200 text-xs font-bold uppercase tracking-widest">
+                        <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
                             {activeSchool ? 'Total institución' : 'Total municipal'}
                         </p>
                         {loading
-                            ? <div className="h-9 w-28 bg-white/20 rounded-xl animate-pulse mt-1" />
-                            : <p className="text-4xl font-black tabular-nums">{cardTotals.total.toLocaleString('es-CO')}</p>
+                            ? <div className="h-10 w-32 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse mt-1" />
+                            : <p className="text-4xl font-black tabular-nums text-gray-900 dark:text-white">{cardTotals.total.toLocaleString('es-CO')}</p>
                         }
                     </div>
-                    <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center">
-                        <TrendingUp className="w-7 h-7 text-white" />
+                    <div className="w-12 h-12 bg-cyan-50 dark:bg-cyan-900/20 rounded-2xl flex items-center justify-center shrink-0">
+                        <TrendingUp className="w-6 h-6 text-cyan-500" />
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-x-3 gap-y-4">
                     {[
-                        { label: 'RI/AM',    value: cardTotals.riAm,    Icon: Coffee   },
-                        { label: 'RI/PM',    value: cardTotals.riPm,    Icon: Coffee   },
-                        { label: 'CAJM',     value: cardTotals.cajm,    Icon: Package  },
-                        { label: 'CAJT',     value: cardTotals.cajt,    Icon: Package  },
-                        { label: 'Almuerzo', value: cardTotals.almuerzo, Icon: Utensils },
-                    ].map(({ label, value, Icon }) => (
-                        <div key={label} className="bg-white/15 backdrop-blur rounded-2xl p-3 text-center">
-                            <Icon className="w-4 h-4 mx-auto mb-1 text-cyan-200" />
-                            <p className="text-[10px] font-bold text-cyan-200 uppercase tracking-wider leading-none mb-1">{label}</p>
+                        { label: 'RI/AM',    value: cardTotals.riAm,     labelColor: 'text-amber-400',   valueColor: 'text-amber-600 dark:text-amber-400'   },
+                        { label: 'RI/PM',    value: cardTotals.riPm,     labelColor: 'text-orange-400',  valueColor: 'text-orange-600 dark:text-orange-400'  },
+                        { label: 'CAJM',     value: cardTotals.cajm,     labelColor: 'text-blue-400',    valueColor: 'text-blue-600 dark:text-blue-400'      },
+                        { label: 'CAJT',     value: cardTotals.cajt,     labelColor: 'text-indigo-400',  valueColor: 'text-indigo-600 dark:text-indigo-400'  },
+                        { label: 'Almuerzo', value: cardTotals.almuerzo, labelColor: 'text-emerald-400', valueColor: 'text-emerald-600 dark:text-emerald-400' },
+                    ].map(({ label, value, labelColor, valueColor }) => (
+                        <div key={label} className="space-y-0.5">
+                            <div className={`text-[10px] font-black ${labelColor} uppercase tracking-wider`}>{label}</div>
                             {loading
-                                ? <div className="h-5 w-10 bg-white/20 rounded-lg animate-pulse mx-auto" />
-                                : <p className="text-lg font-black tabular-nums leading-none">{value.toLocaleString('es-CO')}</p>
+                                ? <div className="h-7 w-12 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
+                                : <div className={`text-2xl font-black tabular-nums leading-none ${valueColor}`}>{value.toLocaleString('es-CO')}</div>
                             }
                         </div>
                     ))}
                 </div>
 
                 {data?.currentSheet && (
-                    <p className="mt-3 text-[10px] text-cyan-300 font-medium text-right">
+                    <p className="mt-4 text-[10px] text-gray-400 font-medium text-right">
                         Hoja: {data.currentSheet}
                     </p>
                 )}
@@ -244,6 +257,28 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                         </div>
                     </>
                 )}
+            </div>
+
+            {/* ── FILTRO: Semana ── */}
+            <div className="mb-3">
+                <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 p-0.5 rounded-[2rem] flex items-center shadow-lg shadow-cyan-100 dark:shadow-cyan-900/20 border border-cyan-500/30 w-full justify-between">
+                    <button
+                        onClick={() => handleMoveWeek(-1)}
+                        className="p-2 hover:bg-white/10 rounded-full text-white transition-colors active:scale-90"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <div className="px-4 text-center">
+                        <span className="block text-[8px] text-cyan-200 font-bold uppercase tracking-widest">Semana</span>
+                        <span className="text-xs font-black text-white tracking-wide uppercase whitespace-nowrap">{getWeekLabel(weekDate)}</span>
+                    </div>
+                    <button
+                        onClick={() => handleMoveWeek(1)}
+                        className="p-2 hover:bg-white/10 rounded-full text-white transition-colors active:scale-90"
+                    >
+                        <ChevronLeft className="w-5 h-5 rotate-180" />
+                    </button>
+                </div>
             </div>
 
             {/* ── FILTRO: Días (cápsula estilo campana) ── */}
