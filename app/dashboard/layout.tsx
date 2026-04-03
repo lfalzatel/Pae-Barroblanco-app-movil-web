@@ -772,7 +772,7 @@ export default function DashboardLayout({
                             href={item.href}
                             className={`group flex flex-col items-center justify-center flex-1 py-1 rounded-lg transition-all duration-200 relative ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'}`}
                         >
-                            <div className={`relative transition-transform duration-200 ${isRegistrar ? 'animate-pulse' : ''} ${isActive ? 'scale-[1.1]' : 'group-hover:scale-[1.2]'}`}>
+                            <div className={`relative transition-transform duration-200 ease-out ${isRegistrar ? 'animate-pulse' : ''} ${isActive ? 'scale-110' : 'group-hover:scale-125'}`}>
                                 <Icon className={`w-6 h-6 mb-1 ${isActive ? 'fill-current' : ''} ${isRegistrar ? 'text-gray-500 drop-shadow-[0_0_8px_rgba(37,99,235,0.5)] dark:text-gray-400' : ''}`} />
                             </div>
                             <span className={`text-[10px] font-medium ${isRegistrar ? 'font-black text-gray-500 dark:text-gray-300' : ''}`}>{item.label}</span>

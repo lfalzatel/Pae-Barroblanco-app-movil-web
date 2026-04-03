@@ -9,6 +9,9 @@ import {
     TrendingUp,
     ChevronLeft,
     MapPin,
+    Coffee,
+    Package,
+    Utensils,
 } from 'lucide-react';
 
 const SHEET_ID = '1NIp7IaTps7E-QqkBc5Yt0rx36HGc-k5d4EiKmtOLFeE';
@@ -217,19 +220,24 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-x-3 gap-y-4">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {[
-                        { label: 'RI/AM',    value: cardTotals.riAm,     labelColor: 'text-amber-400',   valueColor: 'text-amber-600 dark:text-amber-400'   },
-                        { label: 'RI/PM',    value: cardTotals.riPm,     labelColor: 'text-orange-400',  valueColor: 'text-orange-600 dark:text-orange-400'  },
-                        { label: 'CAJM',     value: cardTotals.cajm,     labelColor: 'text-blue-400',    valueColor: 'text-blue-600 dark:text-blue-400'      },
-                        { label: 'CAJT',     value: cardTotals.cajt,     labelColor: 'text-indigo-400',  valueColor: 'text-indigo-600 dark:text-indigo-400'  },
-                        { label: 'Almuerzo', value: cardTotals.almuerzo, labelColor: 'text-emerald-400', valueColor: 'text-emerald-600 dark:text-emerald-400' },
-                    ].map(({ label, value, labelColor, valueColor }) => (
-                        <div key={label} className="space-y-0.5">
-                            <div className={`text-[10px] font-black ${labelColor} uppercase tracking-wider`}>{label}</div>
+                        { label: 'RI/AM',    value: cardTotals.riAm,     Icon: Coffee,   bg: 'bg-amber-50 dark:bg-amber-900/10',    border: 'border-amber-100 dark:border-amber-800/30',    iconBg: 'bg-amber-100 dark:bg-amber-800/50',    iconColor: 'text-amber-600 dark:text-amber-400',    labelColor: 'text-amber-600 dark:text-amber-400',    valueColor: 'text-amber-700 dark:text-amber-300'    },
+                        { label: 'RI/PM',    value: cardTotals.riPm,     Icon: Coffee,   bg: 'bg-orange-50 dark:bg-orange-900/10',   border: 'border-orange-100 dark:border-orange-800/30',   iconBg: 'bg-orange-100 dark:bg-orange-800/50',   iconColor: 'text-orange-600 dark:text-orange-400',   labelColor: 'text-orange-600 dark:text-orange-400',   valueColor: 'text-orange-700 dark:text-orange-300'   },
+                        { label: 'CAJM',     value: cardTotals.cajm,     Icon: Package,  bg: 'bg-blue-50 dark:bg-blue-900/10',      border: 'border-blue-100 dark:border-blue-800/30',      iconBg: 'bg-blue-100 dark:bg-blue-800/50',      iconColor: 'text-blue-600 dark:text-blue-400',      labelColor: 'text-blue-600 dark:text-blue-400',      valueColor: 'text-blue-700 dark:text-blue-300'      },
+                        { label: 'CAJT',     value: cardTotals.cajt,     Icon: Package,  bg: 'bg-indigo-50 dark:bg-indigo-900/10',  border: 'border-indigo-100 dark:border-indigo-800/30',  iconBg: 'bg-indigo-100 dark:bg-indigo-800/50',  iconColor: 'text-indigo-600 dark:text-indigo-400',  labelColor: 'text-indigo-600 dark:text-indigo-400',  valueColor: 'text-indigo-700 dark:text-indigo-300'  },
+                        { label: 'Almuerzo', value: cardTotals.almuerzo, Icon: Utensils, bg: 'bg-emerald-50 dark:bg-emerald-900/10', border: 'border-emerald-100 dark:border-emerald-800/30', iconBg: 'bg-emerald-100 dark:bg-emerald-800/50', iconColor: 'text-emerald-600 dark:text-emerald-400', labelColor: 'text-emerald-600 dark:text-emerald-400', valueColor: 'text-emerald-700 dark:text-emerald-300' },
+                    ].map(({ label, value, Icon, bg, border, iconBg, iconColor, labelColor, valueColor }) => (
+                        <div key={label} className={`${bg} rounded-xl p-2.5 border ${border}`}>
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                                <div className={`p-1 ${iconBg} rounded-lg ${iconColor} shrink-0`}>
+                                    <Icon className="w-3 h-3" />
+                                </div>
+                                <span className={`text-[10px] font-black ${labelColor} uppercase tracking-wider`}>{label}</span>
+                            </div>
                             {loading
-                                ? <div className="h-7 w-12 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
-                                : <div className={`text-2xl font-black tabular-nums leading-none ${valueColor}`}>{value.toLocaleString('es-CO')}</div>
+                                ? <div className="h-6 w-10 bg-white/60 dark:bg-white/10 rounded-lg animate-pulse" />
+                                : <div className={`text-xl font-black tabular-nums leading-none ${valueColor}`}>{value.toLocaleString('es-CO')}</div>
                             }
                         </div>
                     ))}
@@ -242,44 +250,85 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                 )}
             </div>
 
-            {/* ── FILTRO: Colegio + Sede ── */}
-            <div className="flex gap-2 mb-3" onClick={e => e.stopPropagation()}>
+            {/* ── FILTRO: Colegio ── */}
+            <div className="relative mb-2" onClick={e => e.stopPropagation()}>
+                <button
+                    onClick={() => { setSchoolDropOpen(p => !p); setSedeDropOpen(false); }}
+                    className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm font-bold text-gray-700 dark:text-gray-200 hover:border-cyan-300 dark:hover:border-cyan-700 transition-colors"
+                >
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Building2 className="w-4 h-4 text-cyan-500 shrink-0" />
+                        <span className="truncate text-xs uppercase tracking-wider">
+                            {selectedSchool ?? 'Todos los colegios'}
+                        </span>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-300 ${schoolDropOpen ? 'rotate-180' : ''}`} />
+                </button>
 
-                {/* Colegio */}
-                <div className="relative flex-1">
+                {schoolDropOpen && (
+                    <>
+                        <div className="fixed inset-0 z-[140]" onClick={() => setSchoolDropOpen(false)} />
+                        <div className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl z-[150] overflow-hidden max-h-72 overflow-y-auto animate-in zoom-in-95 duration-200">
+                            <div className="p-1.5 space-y-0.5">
+                                <button
+                                    onClick={() => { setSelectedSchool(null); setSchoolDropOpen(false); }}
+                                    className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between ${selectedSchool === null ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                >
+                                    Todos los colegios
+                                    {selectedSchool === null && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
+                                </button>
+                                {schools.map(s => (
+                                    <button
+                                        key={s.nombre}
+                                        onClick={() => { setSelectedSchool(s.nombre); setSchoolDropOpen(false); }}
+                                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between gap-2 ${selectedSchool === s.nombre ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                    >
+                                        <span className="truncate">{s.nombre}</span>
+                                        {selectedSchool === s.nombre && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {/* ── FILTRO: Sede — solo cuando la institución tiene múltiples sedes ── */}
+            {hasSedeFilter && (
+                <div className="relative mb-3" onClick={e => e.stopPropagation()}>
                     <button
-                        onClick={() => { setSchoolDropOpen(p => !p); setSedeDropOpen(false); }}
-                        className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm font-bold text-gray-700 dark:text-gray-200 hover:border-cyan-300 dark:hover:border-cyan-700 transition-colors"
+                        onClick={() => { setSedeDropOpen(p => !p); setSchoolDropOpen(false); }}
+                        className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-2xl border shadow-sm font-bold transition-colors ${selectedSede ? 'bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-700' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-cyan-300 dark:hover:border-cyan-700'}`}
                     >
                         <div className="flex items-center gap-2 min-w-0">
-                            <Building2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                            <span className="truncate text-xs uppercase tracking-wider">
-                                {selectedSchool ?? 'Todos los colegios'}
+                            <MapPin className="w-4 h-4 text-cyan-500 shrink-0" />
+                            <span className={`truncate text-xs font-black uppercase tracking-wider ${selectedSede ? 'text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                                {selectedSede ?? 'Todas las sedes'}
                             </span>
                         </div>
-                        <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-300 ${schoolDropOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-300 ${sedeDropOpen ? 'rotate-180' : ''} ${selectedSede ? 'text-cyan-400' : 'text-gray-400'}`} />
                     </button>
 
-                    {schoolDropOpen && (
+                    {sedeDropOpen && (
                         <>
-                            <div className="fixed inset-0 z-[140]" onClick={() => setSchoolDropOpen(false)} />
-                            <div className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl z-[150] overflow-hidden max-h-72 overflow-y-auto animate-in zoom-in-95 duration-200">
+                            <div className="fixed inset-0 z-[140]" onClick={() => setSedeDropOpen(false)} />
+                            <div className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl z-[150] overflow-hidden animate-in zoom-in-95 duration-200">
                                 <div className="p-1.5 space-y-0.5">
                                     <button
-                                        onClick={() => { setSelectedSchool(null); setSchoolDropOpen(false); }}
-                                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between ${selectedSchool === null ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                        onClick={() => { setSelectedSede(null); setSedeDropOpen(false); }}
+                                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between ${selectedSede === null ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
                                     >
-                                        Todos los colegios
-                                        {selectedSchool === null && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
+                                        Todas las sedes
+                                        {selectedSede === null && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
                                     </button>
-                                    {schools.map(s => (
+                                    {sedeOptions.map(s => (
                                         <button
                                             key={s.nombre}
-                                            onClick={() => { setSelectedSchool(s.nombre); setSchoolDropOpen(false); }}
-                                            className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between gap-2 ${selectedSchool === s.nombre ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                            onClick={() => { setSelectedSede(s.nombre); setSedeDropOpen(false); }}
+                                            className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between gap-2 ${selectedSede === s.nombre ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
                                         >
                                             <span className="truncate">{s.nombre}</span>
-                                            {selectedSchool === s.nombre && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
+                                            {selectedSede === s.nombre && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
                                         </button>
                                     ))}
                                 </div>
@@ -287,50 +336,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                         </>
                     )}
                 </div>
-
-                {/* Sede — solo aparece cuando la institución tiene múltiples sedes */}
-                {hasSedeFilter && (
-                    <div className="relative shrink-0">
-                        <button
-                            onClick={() => { setSedeDropOpen(p => !p); setSchoolDropOpen(false); }}
-                            className={`h-full flex items-center gap-1.5 px-3 rounded-2xl border shadow-sm font-bold transition-colors ${selectedSede ? 'bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-700 text-cyan-700 dark:text-cyan-300' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-cyan-300 dark:hover:border-cyan-700'}`}
-                        >
-                            <MapPin className="w-4 h-4 text-cyan-500 shrink-0" />
-                            <span className="text-xs font-black uppercase tracking-wider whitespace-nowrap">
-                                {selectedSede ? selectedSede.replace(/^SEDE\s*/i, '') : 'Sede'}
-                            </span>
-                            <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform duration-300 ${sedeDropOpen ? 'rotate-180' : ''}`} />
-                        </button>
-
-                        {sedeDropOpen && (
-                            <>
-                                <div className="fixed inset-0 z-[140]" onClick={() => setSedeDropOpen(false)} />
-                                <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl z-[150] overflow-hidden min-w-[180px] animate-in zoom-in-95 duration-200">
-                                    <div className="p-1.5 space-y-0.5">
-                                        <button
-                                            onClick={() => { setSelectedSede(null); setSedeDropOpen(false); }}
-                                            className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between ${selectedSede === null ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                                        >
-                                            Todas las sedes
-                                            {selectedSede === null && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
-                                        </button>
-                                        {sedeOptions.map(s => (
-                                            <button
-                                                key={s.nombre}
-                                                onClick={() => { setSelectedSede(s.nombre); setSedeDropOpen(false); }}
-                                                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between gap-2 ${selectedSede === s.nombre ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                                            >
-                                                <span className="truncate">{s.nombre}</span>
-                                                {selectedSede === s.nombre && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shrink-0" />}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                )}
-            </div>
+            )}
 
             {/* ── FILTRO: Semana ── */}
             <div className="mb-3">
