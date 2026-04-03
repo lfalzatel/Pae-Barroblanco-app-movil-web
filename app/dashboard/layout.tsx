@@ -669,7 +669,7 @@ export default function DashboardLayout({
                         </button>
 
                         {isProfileMenuOpen && (
-                            <div className="absolute bottom-full mb-2 left-0 w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200 dark:bg-gray-800 dark:border-gray-700">
+                            <div className="absolute bottom-full mb-2 left-0 w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in slide-in-from-bottom-2 fade-in duration-200 dark:bg-gray-800 dark:border-gray-700">
                                 <Link
                                     href="/dashboard/perfil"
                                     className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:text-gray-200 dark:hover:bg-gray-700"
@@ -755,13 +755,13 @@ export default function DashboardLayout({
 
             {/* Main Content */}
             <main className="flex-1 md:ml-64 pb-20 md:pb-0 pt-16 md:pt-0" onClick={() => setIsProfileMenuOpen(false)}>
-                <div key={pathname} className="animate-view w-full relative z-40">
+                <div key={pathname} className="w-full">
                     {children}
                 </div>
             </main>
 
             {/* Mobile Bottom Navigation */}
-            <div className="md:hidden fixed bottom-1 left-0 right-0 mx-4 bg-white/70 dark:bg-black/80 backdrop-blur-3xl border border-white/20 dark:border-white/5 flex justify-around p-3 rounded-[2.5rem] z-30 safe-area-bottom shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all">
+            <div className="md:hidden fixed bottom-2 left-0 right-0 mx-4 bg-white/70 dark:bg-black/80 backdrop-blur-3xl border border-white/20 dark:border-white/5 flex justify-around p-3 rounded-[2.5rem] z-[100] shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
                 {navItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
@@ -782,7 +782,7 @@ export default function DashboardLayout({
             </div>
 
             {/* Mobile Top Header */}
-            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#00A3E0] flex items-center justify-between px-4 z-30 shadow-md">
+            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#00A3E0] flex items-center justify-between px-4 z-[100] shadow-md">
                 <h1 className="text-xl font-black text-white tracking-tight">Sistema PAE</h1>
                 <div className="flex items-center gap-3">
                     <button
@@ -820,8 +820,8 @@ export default function DashboardLayout({
 
                         {isProfileMenuOpen && (
                             <>
-                                <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm" onClick={() => setIsProfileMenuOpen(false)}></div>
-                                <div className="absolute top-full mt-2 right-0 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in slide-in-from-top-2 fade-in duration-200">
+                                <div className="fixed inset-0 z-[99] bg-black/20 backdrop-blur-sm" onClick={() => setIsProfileMenuOpen(false)}></div>
+                                <div className="absolute top-full mt-2 right-0 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-[101] animate-in slide-in-from-top-2 fade-in duration-200">
                                     <Link
                                         href="/dashboard/perfil"
                                         className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors bg-gray-50/50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
