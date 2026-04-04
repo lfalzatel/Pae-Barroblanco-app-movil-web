@@ -826,7 +826,10 @@ export default function GestionPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-white rounded-[2rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 flex flex-col items-center justify-center text-center dark:bg-gray-800 dark:border-gray-700 animate-card-mix [animation-delay:0.1s]">
+              <div 
+                className="bg-white rounded-[2rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 flex flex-col items-center justify-center text-center dark:bg-gray-800 dark:border-gray-700 animate-card-mix"
+                style={{ animationDelay: '0.1s' }}
+              >
                 <div className="text-3xl font-black text-cyan-600 leading-none mb-2 dark:text-cyan-400">
                   {loading ? <Skeleton className="h-9 w-12" /> : <AnimatedNumber value={estudiantesFiltrados.length} />}
                 </div>
@@ -834,7 +837,8 @@ export default function GestionPage() {
               </div>
               <button
                 onClick={() => setShowStatsModal(true)}
-                className="bg-white rounded-[2rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 flex flex-col items-center justify-center text-center hover:bg-cyan-50 transition-all cursor-pointer active:scale-95 group relative overflow-hidden dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 animate-card-mix [animation-delay:0.35s]"
+                className="bg-white rounded-[2rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 flex flex-col items-center justify-center text-center hover:bg-cyan-50 transition-all cursor-pointer active:scale-95 group relative overflow-hidden dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 animate-card-mix"
+                style={{ animationDelay: '0.35s' }}
               >
                 <div className="absolute inset-0 bg-cyan-100/50 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="text-3xl font-black text-emerald-500 leading-none mb-2 relative z-10 flex items-center gap-1">

@@ -1460,7 +1460,10 @@ export default function ReportesPage() {
             </div>
 
             {/* Projection Summary Card (New Feature) */}
-            <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-xl shadow-cyan-900/5 border border-gray-100 dark:border-gray-700 relative overflow-hidden">
+            <div 
+              className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-xl shadow-cyan-900/5 border border-gray-100 dark:border-gray-700 relative overflow-hidden animate-card-mix"
+              style={{ animationDelay: '0.1s' }}
+            >
               <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-50 dark:bg-cyan-900/20 rounded-bl-[100%] -mr-10 -mt-10 z-0"></div>
 
               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 relative z-10">Resumen de Proyección Diaria</h3>
@@ -1522,16 +1525,18 @@ export default function ReportesPage() {
                       <div className="space-y-1">
                         <div className="text-[10px] font-black text-blue-400 uppercase tracking-wider">Matrícula Base</div>
                         <div className="text-2xl font-black text-blue-600 flex items-center gap-2">
-                          {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> :
-                            filteredProj.reduce((acc, curr) => acc + (curr.total_estudiantes - curr.total_inactivos), 0)}
+                          {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> : (
+                            <AnimatedNumber value={filteredProj.reduce((acc, curr) => acc + (curr.total_estudiantes - curr.total_inactivos), 0)} />
+                          )}
                         </div>
                       </div>
 
                       <div className="space-y-1">
                         <div className="text-[10px] font-black text-rose-400 uppercase tracking-wider">Ausentes (Horario)</div>
                         <div className="text-2xl font-black text-rose-500 flex items-center gap-2">
-                          {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> :
-                            ausentesProj.reduce((acc, curr) => acc + curr.total_activos, 0)}
+                          {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> : (
+                            <AnimatedNumber value={ausentesProj.reduce((acc, curr) => acc + curr.total_activos, 0)} />
+                          )}
                           <span className="text-[10px] text-rose-300 font-bold bg-rose-50 px-1.5 py-0.5 rounded-md">
                             {ausentesProj.length} GRUPOS
                           </span>
@@ -1541,8 +1546,9 @@ export default function ReportesPage() {
                       <div className="space-y-1">
                         <div className="text-[10px] font-black text-amber-400 uppercase tracking-wider">Ajustes Manuales</div>
                         <div className="text-2xl font-black text-amber-500 flex items-center gap-2">
-                          {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> :
-                            (totalAdj > 0 ? `+${totalAdj}` : totalAdj)}
+                          {loading || projectionLoading ? <Skeleton className="w-12 h-6" /> : (
+                            <AnimatedNumber value={totalAdj} />
+                          )}
                         </div>
                       </div>
 
@@ -1562,7 +1568,9 @@ export default function ReportesPage() {
 
                                 return (
                                   <div className="flex flex-col">
-                                    <span>{finalCAJM + finalLunch}</span>
+                                    <span className="text-3xl font-black text-emerald-600">
+                                      <AnimatedNumber value={finalCAJM + finalLunch} />
+                                    </span>
                                     {!loading && !projectionLoading && (
                                       <div className="text-[9px] font-bold text-gray-400 tracking-tight flex gap-2 mt-1">
                                         <span>CAJM/T: {finalCAJM}</span>
@@ -1914,11 +1922,14 @@ export default function ReportesPage() {
             </div>
 
             {/* Estadísticas principales */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+            <div key={viewMode} className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
               {/* Pending Groups - New Card */}
 
               {/* Total Estudiantes */}
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group dark:bg-gray-800 dark:border-gray-700 animate-card-mix [animation-delay:0.1s]">
+              <div 
+                className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group dark:bg-gray-800 dark:border-gray-700 animate-card-mix"
+                style={{ animationDelay: '0.1s' }}
+              >
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="text-2xl md:text-3xl font-black text-blue-600 tracking-tighter">
@@ -1943,7 +1954,8 @@ export default function ReportesPage() {
               <button
                 onClick={() => openGroupModal('recibieron')}
                 disabled={stats.recibieron === 0}
-                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix [animation-delay:0.35s]"
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix"
+                style={{ animationDelay: '0.35s' }}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -1969,7 +1981,8 @@ export default function ReportesPage() {
               <button
                 onClick={() => openGroupModal('noRecibieron')}
                 disabled={stats.noRecibieron === 0}
-                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix [animation-delay:0.6s]"
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix"
+                style={{ animationDelay: '0.6s' }}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -1995,7 +2008,8 @@ export default function ReportesPage() {
               <button
                 onClick={() => openGroupModal('ausentes')}
                 disabled={stats.ausentes === 0}
-                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix [animation-delay:0.85s]"
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix"
+                style={{ animationDelay: '0.85s' }}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -2020,7 +2034,8 @@ export default function ReportesPage() {
               {/* Tarjeta Grupos Pendientes */}
               <button
                 onClick={() => openGroupModal('pendientes')}
-                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix [animation-delay:1.1s]"
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix"
+                style={{ animationDelay: '1.1s' }}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -2042,7 +2057,8 @@ export default function ReportesPage() {
               <button
                 onClick={() => openGroupModal('inactivos')}
                 disabled={stats.inactivos === 0}
-                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix [animation-delay:1.35s]"
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix"
+                style={{ animationDelay: '1.35s' }}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
