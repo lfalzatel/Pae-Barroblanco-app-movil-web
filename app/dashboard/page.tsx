@@ -814,57 +814,101 @@ export default function DashboardPage() {
       </div>
 
       {/* Footer / Credits */}
-      <div className="mt-8 text-center">
+      <div className="mt-8 flex justify-center pb-8">
         <button
           onClick={() => setCreditsOpen(true)}
-          className="text-[10px] text-blue-400 font-bold uppercase tracking-widest hover:text-cyan-600 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/40 rounded-full shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 transition-all active:scale-95 group animate-pulse-glow"
         >
-          © 2026 PAE Barroblanco - Versión Académica SENA
+          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            © 2026 PAE Barroblanco - Autoría Académica
+          </span>
         </button>
       </div>
 
-      {/* Credits Modal */}
+      {/* Credits Modal (Redesigned 85vh) */}
       {creditsOpen && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setCreditsOpen(false)}></div>
-          <div className="bg-white dark:bg-gray-900 rounded-[2rem] p-8 max-w-md relative animate-in zoom-in-95 duration-200 shadow-2xl overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-cyan-500 to-blue-600"></div>
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6">
+          {/* Backdrop (Backdrop-blur for glass effect) */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" 
+            onClick={() => setCreditsOpen(false)}
+          ></div>
+          
+          {/* Modal Container */}
+          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] max-w-lg w-full max-h-[85vh] relative animate-in zoom-in-95 duration-200 shadow-2xl overflow-hidden flex flex-col border border-white/20">
+            {/* Top Gradient Header Bar */}
+            <div className="h-2 bg-gradient-to-r from-blue-500 via-cyan-400 to-indigo-600"></div>
 
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-cyan-50 dark:bg-cyan-900/30 rounded-2xl mx-auto flex items-center justify-center mb-4 text-cyan-600 dark:text-cyan-400">
-                <FileText className="w-8 h-8" />
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+              <div className="text-center mb-8">
+                <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 rounded-3xl mx-auto flex items-center justify-center mb-4 text-blue-600 dark:text-blue-400 shadow-inner">
+                  <FileText className="w-10 h-10" />
+                </div>
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Créditos y Autoría</h3>
+                <div className="h-1 w-12 bg-blue-500 mx-auto mt-2 rounded-full"></div>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-[0.2em] mt-3">Información Legal & Propiedad Intelectual</p>
               </div>
-              <h3 className="text-xl font-black text-gray-900 dark:text-white">Créditos y Autoría</h3>
-              <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mt-1">Información Legal</p>
+
+              <div className="space-y-6">
+                {/* Author Section */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+                  <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-1">Autor Principal</p>
+                  <p className="text-lg font-black text-gray-900 dark:text-white">
+                    Luis Fernando Alzate Lopez
+                  </p>
+                </div>
+
+                {/* Legal Block */}
+                <div className="space-y-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                  <p className="text-justify font-medium">
+                    "El presente desarrollo de software, denominado <span className="text-blue-600 dark:text-blue-400 font-bold">Sistema PAE Barroblanco</span>, es una obra original e inédita de Luis Fernando Alzate Lopez."
+                  </p>
+                  <p className="text-justify text-xs opacity-80">
+                    Si bien los derechos patrimoniales se rigen por el reglamento del SENA y la Secretaría de Educación en el marco del proyecto académico, el autor se reserva de forma permanente e irrenunciable los derechos morales sobre la obra intelectual (Art. 30, Ley 23 de 1982 de la República de Colombia).
+                  </p>
+                  
+                  <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                        <p className="text-[10px] uppercase font-black text-gray-900 dark:text-white tracking-wider">Nota sobre Propiedad Intelectual</p>
+                    </div>
+                    <p className="text-[11px] text-justify bg-blue-50/30 dark:bg-blue-900/10 p-3 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
+                      Cualquier versión posterior, mejora incremental significativa o software derivado desarrollado fuera del marco de la práctica institucional actual, constituirá una propiedad intelectual distinta, autónoma y privada del autor.
+                    </p>
+                  </div>
+
+                  <div className="pt-2">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                        <p className="text-[10px] uppercase font-black text-gray-900 dark:text-white tracking-wider">Exclusividad de la Evolución Tecnológica</p>
+                    </div>
+                    <p className="text-[11px] text-justify">
+                      Se hace constar que el código fuente base, la lógica de negocio core y la arquitectura del sistema son propiedad del autor. Cualquier evolución, producto derivado o comercialización futura desarrollada por <span className="font-bold">Luis Fernando Alzate Lopez</span> fuera de este alcance institucional, es 100% de su propiedad intelectual independiente y autónoma.
+                    </p>
+                    <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
+                        <p className="text-[10px] text-red-600 dark:text-red-400 font-bold leading-tight uppercase">
+                            Prohibición:
+                        </p>
+                        <p className="text-[10px] text-red-700 dark:text-red-300 mt-1">
+                            No se autoriza la copia, distribución o uso de este código base por terceros ajenos a la institución asignada originalmente.
+                        </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-white/5">
-              <p>
-                <span className="font-bold text-gray-900 dark:text-white">Autor:</span> Luis Fernando Alzate Lopez
-              </p>
-              <p className="text-justify text-xs">
-                "El presente desarrollo de software, denominado Sistema PAE Barroblanco, es una obra original de Luis Fernando Alzate Lopez. Si bien los derechos patrimoniales se rigen por el reglamento del SENA/Secretaría de Educación, el autor se reserva de forma permanente e irrenunciable los derechos morales sobre la obra (Art. 30, Ley 23 de 1982)."
-              </p>
-              <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-[10px] uppercase font-bold text-gray-400">Nota sobre Propiedad Intelectual</p>
-                <p className="text-[10px] mt-1 text-justify">
-                  Cualquier versión posterior, mejora incremental o software derivado desarrollado fuera del marco institucional, constituirá una propiedad intelectual distinta y autónoma.
-                </p>
-                <p className="text-[10px] uppercase font-bold text-gray-400">Exclusividad de la Evolución Tecnológica:</p>
-                <p className="text-[10px] mt-1 text-justify">
-                  Se hace constar que el código fuente base, la lógica de negocio y la arquitectura del sistema son propiedad del autor. Cualquier evolución, producto derivado o versión comercial que sea desarrollada por Luis Fernando Alzate Lopez fuera de este contrato, es 100% de su propiedad intelectual independiente y autónoma.
-<br />No se autoriza el uso de este código base por terceros fuera de la institución asignada.
-                </p>
-                
-              </div>
+            {/* Footer Action Bar */}
+            <div className="p-6 bg-gray-50/50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-white/5">
+              <button
+                onClick={() => setCreditsOpen(false)}
+                className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-[1.2rem] text-xs font-black uppercase tracking-[0.2em] hover:bg-black dark:hover:bg-gray-200 transition-all hover:scale-[1.02] active:scale-95 shadow-lg"
+              >
+                Cerrar Panel
+              </button>
             </div>
-
-            <button
-              onClick={() => setCreditsOpen(false)}
-              className="mt-6 w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black dark:hover:bg-gray-200 transition-all"
-            >
-              Cerrar
-            </button>
           </div>
         </div>
       )}

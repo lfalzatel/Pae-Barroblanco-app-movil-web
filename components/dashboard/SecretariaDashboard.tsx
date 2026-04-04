@@ -512,7 +512,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                         <p className="font-medium">Sin datos para los filtros seleccionados</p>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-3" key={loading ? 'loading' : 'ready'}>
                         {schools.map((school, idx) => {
                             const grandTotal = data?.totals.total ?? 1;
                             const pct = grandTotal > 0 ? Math.round((school.total / grandTotal) * 100) : 0;
@@ -526,7 +526,9 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                                     <div className="flex items-start justify-between gap-3 mb-2">
                                         <p className="font-bold text-gray-900 dark:text-white text-sm leading-tight">{school.nombre}</p>
                                         <div className="shrink-0 text-right">
-                                            <p className="text-xl font-black text-blue-600 dark:text-blue-400 tabular-nums leading-none">{school.total.toLocaleString('es-CO')}</p>
+                                            <p className="text-xl font-black text-blue-600 dark:text-blue-400 tabular-nums leading-none">
+                                                <AnimatedNumber value={school.total} />
+                                            </p>
                                             <p className="text-[10px] text-gray-400 font-medium">{pct}% del total</p>
                                         </div>
                                     </div>
@@ -538,7 +540,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                                     <div className="flex flex-wrap gap-1.5">
                                         {COLS.filter(c => school[c.key] > 0).map(c => (
                                             <span key={c.key} className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-black ${c.badge}`}>
-                                                {c.label}: <span className="tabular-nums">{school[c.key].toLocaleString('es-CO')}</span>
+                                                {c.label}: <span className="tabular-nums"><AnimatedNumber value={school[c.key]} /></span>
                                             </span>
                                         ))}
                                     </div>
@@ -565,19 +567,37 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                             <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
                                 <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
                                 <div>
-                                    <span className="font-bold text-gray-900 dark:text-white">Detección de Cruces:</span> Alertas inteligentes si el bloque coincide con semanas previas.
+                                    <span className="font-bold text-gray-900 dark:text-white">Detección de Cruces:</span> Alertas inteligentes en Novedades e Historial si el bloque coincide con la semana pasada.
                                 </div>
                             </li>
                             <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
                                 <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
                                 <div>
-                                    <span className="font-bold text-gray-900 dark:text-white">Optimización PWA:</span> Soporte completo para instalación y persistencia de sesión.
+                                    <span className="font-bold text-gray-900 dark:text-white">Optimización PWA:</span> Soporte completo para instalación en móviles y persistencia de sesión.
                                 </div>
                             </li>
                             <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
                                 <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
                                 <div>
-                                    <span className="font-bold text-gray-900 dark:text-white">Modo Oscuro Pro:</span> Consistencia visual adaptativa en todas las vistas.
+                                    <span className="font-bold text-gray-900 dark:text-white">Footer Institucional:</span> Información de contacto y address integrada en PDF y vistas.
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                <div>
+                                    <span className="font-bold text-gray-900 dark:text-white">Modo Oscuro Pro:</span> Consistencia visual y adaptativa en todas las vistas del sistema.
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                <div>
+                                    <span className="font-bold text-gray-900 dark:text-white">Reportes Premium:</span> Generación de reportes PDF y Excel con filtros avanzados por sede.
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                <div>
+                                    <span className="font-bold text-gray-900 dark:text-white">Centro de Novedades:</span> Gestión centralizada de eventos institucionales y faltas alimentarias.
                                 </div>
                             </li>
                         </ul>
@@ -598,19 +618,31 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                             <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
                                 <div className="mt-1 w-1.5 h-1.5 rounded-full bg-fuchsia-400 animate-pulse"></div>
                                 <div>
-                                    <span className="font-bold text-gray-900 dark:text-white">Biometría:</span> Login con huella y FaceID nativo.
+                                    <span className="font-bold text-gray-900 dark:text-white">Biometría Real:</span> Login directo con huella dactilar y FaceID nativo.
                                 </div>
                             </li>
                             <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
                                 <div className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-300"></div>
                                 <div>
-                                    <span className="font-bold text-gray-900 dark:text-white">Pasarela de Pagos:</span> Gestión de recaudos y pagos en línea.
+                                    <span className="font-bold text-gray-900 dark:text-white">Pasarela de Pagos:</span> Módulo para gestión de recaudos y pagos en línea.
                                 </div>
                             </li>
                             <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
                                 <div className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-300"></div>
                                 <div>
-                                    <span className="font-bold text-gray-900 dark:text-white">Mensajería Push:</span> Notificaciones en tiempo real y chat.
+                                    <span className="font-bold text-gray-900 dark:text-white">Multi-Sede:</span> Arquitectura para soportar múltiples instituciones educativas.
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                                <div>
+                                    <span className="font-bold text-gray-900 dark:text-white">Mensajería Push:</span> Notificaciones en tiempo real y chat institucional.
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                                <div>
+                                    <span className="font-bold text-gray-900 dark:text-white">Perfil & Configuración:</span> Gestión avanzada de cuenta y personalización.
                                 </div>
                             </li>
                         </ul>
@@ -618,46 +650,103 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                 </div>
             </div>
 
+
             {/* Footer / Credits */}
-            <div className="mt-8 text-center pb-8">
+            <div className="mt-8 flex justify-center pb-8">
                 <button
                     onClick={() => setCreditsOpen(true)}
-                    className="text-[10px] text-blue-400 font-bold uppercase tracking-widest hover:text-cyan-600 transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/40 rounded-full shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 transition-all active:scale-95 group animate-pulse-glow"
                 >
-                    © 2026 PAE Barroblanco - Versión Académica SENA
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        © 2026 PAE Barroblanco - Autoría Académica
+                    </span>
                 </button>
             </div>
 
-            {/* Credits Modal */}
+            {/* Credits Modal (Redesigned 85vh) */}
             {creditsOpen && (
-                <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setCreditsOpen(false)}></div>
-                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] p-8 max-w-md relative animate-in zoom-in-95 duration-200 shadow-2xl overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-cyan-500 to-blue-600"></div>
+                <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6">
+                    {/* Backdrop (Backdrop-blur for glass effect) */}
+                    <div 
+                        className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" 
+                        onClick={() => setCreditsOpen(false)}
+                    ></div>
+                    
+                    {/* Modal Container */}
+                    <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] max-w-lg w-full max-h-[85vh] relative animate-in zoom-in-95 duration-200 shadow-2xl overflow-hidden flex flex-col border border-white/20">
+                        {/* Top Gradient Header Bar */}
+                        <div className="h-2 bg-gradient-to-r from-blue-500 via-cyan-400 to-indigo-600"></div>
 
-                        <div className="text-center mb-6">
-                            <div className="w-16 h-16 bg-cyan-50 dark:bg-cyan-900/30 rounded-2xl mx-auto flex items-center justify-center mb-4 text-cyan-600 dark:text-cyan-400">
-                                <FileText className="w-8 h-8" />
+                        {/* Scrollable Content Area */}
+                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                            <div className="text-center mb-8">
+                                <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 rounded-3xl mx-auto flex items-center justify-center mb-4 text-blue-600 dark:text-blue-400 shadow-inner">
+                                    <FileText className="w-10 h-10" />
+                                </div>
+                                <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Créditos y Autoría</h3>
+                                <div className="h-1 w-12 bg-blue-500 mx-auto mt-2 rounded-full"></div>
+                                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-[0.2em] mt-3">Información Legal & Propiedad Intelectual</p>
                             </div>
-                            <h3 className="text-xl font-black text-gray-900 dark:text-white">Créditos y Autoría</h3>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mt-1">Información Legal</p>
+
+                            <div className="space-y-6">
+                                {/* Author Section */}
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+                                    <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-1">Autor Principal</p>
+                                    <p className="text-lg font-black text-gray-900 dark:text-white">
+                                        Luis Fernando Alzate Lopez
+                                    </p>
+                                </div>
+
+                                {/* Legal Block */}
+                                <div className="space-y-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                    <p className="text-justify font-medium">
+                                        "El presente desarrollo de software, denominado <span className="text-blue-600 dark:text-blue-400 font-bold">Sistema PAE Barroblanco</span>, es una obra original e inédita de Luis Fernando Alzate Lopez."
+                                    </p>
+                                    <p className="text-justify text-xs opacity-80">
+                                        Si bien los derechos patrimoniales se rigen por el reglamento del SENA y la Secretaría de Educación en el marco del proyecto académico, el autor se reserva de forma permanente e irrenunciable los derechos morales sobre la obra intelectual (Art. 30, Ley 23 de 1982 de la República de Colombia).
+                                    </p>
+                                    
+                                    <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                                            <p className="text-[10px] uppercase font-black text-gray-900 dark:text-white tracking-wider">Nota sobre Propiedad Intelectual</p>
+                                        </div>
+                                        <p className="text-[11px] text-justify bg-blue-50/30 dark:bg-blue-900/10 p-3 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
+                                            Cualquier versión posterior, mejora incremental significativa o software derivado desarrollado fuera del marco de la práctica institucional actual, constituirá una propiedad intelectual distinta, autónoma y privada del autor.
+                                        </p>
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                                            <p className="text-[10px] uppercase font-black text-gray-900 dark:text-white tracking-wider">Exclusividad de la Evolución Tecnológica</p>
+                                        </div>
+                                        <p className="text-[11px] text-justify">
+                                            Se hace constar que el código fuente base, la lógica de negocio core y la arquitectura del sistema son propiedad del autor. Cualquier evolución, producto derivado o comercialización futura desarrollada por <span className="font-bold">Luis Fernando Alzate Lopez</span> fuera de este alcance institucional, es 100% de su propiedad intelectual independiente y autónoma.
+                                        </p>
+                                        <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
+                                            <p className="text-[10px] text-red-600 dark:text-red-400 font-bold leading-tight uppercase">
+                                                Prohibición:
+                                            </p>
+                                            <p className="text-[10px] text-red-700 dark:text-red-300 mt-1">
+                                                No se autoriza la copia, distribución o uso de este código base por terceros ajenos a la institución asignada originalmente.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="space-y-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-white/5">
-                            <p>
-                                <span className="font-bold text-gray-900 dark:text-white">Autor:</span> Luis Fernando Alzate Lopez
-                            </p>
-                            <p className="text-justify text-[10px]">
-                                "El presente desarrollo de software, denominado Sistema PAE Barroblanco, es una obra original de Luis Fernando Alzate Lopez."
-                            </p>
+                        {/* Footer Action Bar */}
+                        <div className="p-6 bg-gray-50/50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-white/5">
+                            <button
+                                onClick={() => setCreditsOpen(false)}
+                                className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-[1.2rem] text-xs font-black uppercase tracking-[0.2em] hover:bg-black dark:hover:bg-gray-200 transition-all hover:scale-[1.02] active:scale-95 shadow-lg"
+                            >
+                                Cerrar Panel
+                            </button>
                         </div>
-
-                        <button
-                            onClick={() => setCreditsOpen(false)}
-                            className="mt-6 w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black dark:hover:bg-gray-200 transition-all"
-                        >
-                            Cerrar
-                        </button>
                     </div>
                 </div>
             )}
