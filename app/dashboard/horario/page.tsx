@@ -938,7 +938,7 @@ export default function HorarioPage() {
             {
                 editingSlot && (
                     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setEditingSlot(null)}></div>
+                        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setEditingSlot(null)}></div>
                         <div className="bg-white dark:bg-gray-800 rounded-[3rem] w-full max-w-xl relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl">
                             {/* Header Premium */}
                             <div className="p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden">
@@ -1066,7 +1066,7 @@ export default function HorarioPage() {
             {
                 showCalendar && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowCalendar(false)}></div>
+                        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowCalendar(false)}></div>
                         <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-[2.5rem] w-full max-w-[90vw] md:max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20 mx-auto">
                             <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-br from-cyan-600 to-cyan-700 flex items-center justify-between text-white">
                                 <h3 className="font-black flex items-center gap-3 uppercase text-[11px] tracking-[0.2em]">
@@ -1109,7 +1109,7 @@ export default function HorarioPage() {
             {
                 showEventModal && (
                     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowEventModal(false)}></div>
+                        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowEventModal(false)}></div>
                         <div className="bg-white dark:bg-gray-800 rounded-3xl md:rounded-[3rem] w-full max-w-lg relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl max-h-[90vh]">
                             <div className="p-5 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden shrink-0">
                                 <div className="relative z-10">
@@ -1247,7 +1247,7 @@ export default function HorarioPage() {
             {
                 showEventDateSelector && (
                     <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowEventDateSelector(false)}></div>
+                        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowEventDateSelector(false)}></div>
                         <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-[2.5rem] w-full max-w-[90vw] md:max-w-sm relative z-[610] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20 mx-auto">
                             <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-br from-cyan-600 to-cyan-700 flex items-center justify-between text-white">
                                 <h3 className="font-black flex items-center gap-3 uppercase text-[11px] tracking-[0.2em]">
@@ -1301,7 +1301,7 @@ export default function HorarioPage() {
             {
                 showConfirmSave && (
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl" onClick={() => setShowConfirmSave(false)}></div>
+                        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowConfirmSave(false)}></div>
                         <div className="bg-white rounded-3xl p-8 max-w-sm relative text-center" onClick={(e) => e.stopPropagation()}>
                             <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 text-amber-500"><Info size={32} /></div>
                             <h3 className="text-xl font-black mb-2">Faltan Grupos</h3>
@@ -1317,7 +1317,7 @@ export default function HorarioPage() {
             {
                 showInstructions && (
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowInstructions(false)}></div>
+                        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowInstructions(false)}></div>
                         <div className="bg-white dark:bg-gray-800 rounded-[3rem] w-full max-w-lg relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
                             {/* Header Premium */}
                             <div className="p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden shrink-0">

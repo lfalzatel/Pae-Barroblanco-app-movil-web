@@ -23,7 +23,7 @@ export function DateSelectionModal({
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
+                className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in duration-300"
                 onClick={onClose}
             />
             <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-[2.5rem] w-full max-w-[90vw] md:max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20 mx-auto">

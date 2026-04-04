@@ -669,7 +669,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                 <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6">
                     {/* Backdrop (Backdrop-blur for glass effect) */}
                     <div 
-                        className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" 
+                        className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in duration-300" 
                         onClick={() => setCreditsOpen(false)}
                     ></div>
                     

@@ -766,7 +766,7 @@ function RegistroContent() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* Modal de Novedad */}
       {modalNovedad && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-2xl animate-fade-in" onClick={() => setModalNovedad(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setModalNovedad(null)}>
           <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
             <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Registrar Novedad</h3>
@@ -1160,7 +1160,7 @@ function RegistroContent() {
       {/* Date Picker Modal */}
       {showCalendar && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowCalendar(false)}></div>
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowCalendar(false)}></div>
           <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-[2.5rem] w-full max-w-[90vw] md:max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20 mx-auto">
             <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-br from-cyan-600 to-cyan-700 flex items-center justify-between text-white">
               <h3 className="font-black flex items-center gap-3 uppercase text-[11px] tracking-[0.2em]">

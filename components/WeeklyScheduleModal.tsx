@@ -194,7 +194,7 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}></div>
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}></div>
             <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-lg relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
                 {/* Header - More Compact */}
                 <div className="p-4 md:p-5 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
@@ -317,7 +317,7 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
             </div>
             {/* PDF Preview Modal Overlay */}
             {previewUrl && (
-                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-2xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
                         {/* Preview Header */}
                         <div className="p-4 bg-gray-900 dark:bg-black text-white flex items-center justify-between shrink-0">

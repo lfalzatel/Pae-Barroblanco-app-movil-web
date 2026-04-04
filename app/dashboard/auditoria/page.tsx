@@ -405,7 +405,7 @@ export default function AuditoriaPage() {
             {/* Detail Modal - Glassmorphism Style */}
             {selectedLog && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setSelectedLog(null)} />
+                    <div className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setSelectedLog(null)} />
                     <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl w-full max-w-3xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300 border border-white/20 ring-1 ring-black/5">
 
                         {/* Modal Header */}
