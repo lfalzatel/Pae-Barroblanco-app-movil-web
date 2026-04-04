@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
-import { Utensils, Eye, EyeOff, LogIn } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, LogIn, Fingerprint } from 'lucide-react';
 import Image from 'next/image';
 import InstallPrompt from '../components/InstallPrompt';
 import { useSplash } from '../components/SplashScreenProvider';
@@ -108,27 +108,34 @@ export default function LoginPage() {
 
   return (
     <>
-      <div className={`min-h-screen bg-gradient-to-br from-blue-900 via-blue-700 to-blue-500 flex items-center justify-center p-4 transition-opacity duration-500 ${isLoginSuccess ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`min-h-screen bg-gradient-to-br from-[#1b5e20] via-[#2e7d32] to-[#40a851] flex items-center justify-center p-4 transition-opacity duration-500 ${isLoginSuccess ? 'opacity-0' : 'opacity-100'}`}>
         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
           {/* Logo */}
           <div className="flex justify-center mb-4">
-            <div className="bg-blue-600 rounded-2xl p-4 shadow-lg">
-              <Utensils className="w-10 h-10 text-white" />
+            <div className="bg-[#40a851] rounded-2xl p-4 shadow-lg border-2 border-white/10 ring-4 ring-green-500/10 text-center">
+              <Image 
+                src="/icon-512x512-1.png" 
+                alt="Logo PAE" 
+                width={80} 
+                height={80} 
+                className="priority"
+                priority
+              />
             </div>
           </div>
 
           {/* Título */}
           <div className="text-center mb-4">
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Sistema PAE</h1>
-            <p className="text-gray-600 text-sm">Barroblanco Institución Educativa</p>
-            <p className="text-xs text-gray-500 mt-0.5">Programa de Alimentación Escolar</p>
+            <h1 className="text-2xl font-black text-gray-900 mb-1 tracking-tight">Sistema PAE</h1>
+            <p className="text-[#388e3c] text-[10px] font-black uppercase tracking-widest">Barroblanco Institución Educativa</p>
+            <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-wider">Programa de Alimentación Escolar</p>
           </div>
 
           {/* Botón Google */}
           <button
             type="button"
             onClick={handleGoogleLogin}
-            className="w-full bg-white hover:bg-gray-50 text-gray-700 font-semibold py-2.5 px-4 rounded-xl border border-gray-300 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm text-sm"
+            className="w-full bg-white hover:bg-gray-50 text-gray-700 font-black py-3 px-4 rounded-xl border border-gray-100 transition-all duration-200 flex items-center justify-center gap-3 shadow-md active:scale-95 text-xs uppercase tracking-widest"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -148,16 +155,16 @@ export default function LoginPage() {
                 fill="#EA4335"
               />
             </svg>
-            Google
+            Ingresar con Google
           </button>
 
           {/* Separador */}
-          <div className="relative my-4">
+          <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-200" />
+              <span className="w-full border-t border-gray-100" />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-gray-500">O continuar con correo</span>
+            <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest leading-none">
+              <span className="bg-white px-4 text-gray-400">O credenciales directas</span>
             </div>
           </div>
 
@@ -165,8 +172,8 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">
-                Correo Electrónico
+              <label htmlFor="email" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">
+                Correo Institucional
               </label>
               <div className="relative">
                 <input
@@ -174,8 +181,8 @@ export default function LoginPage() {
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 text-sm"
-                  placeholder="admin@paebarroblanco.edu.co"
+                  className="w-full px-5 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner"
+                  placeholder="ejemplo@paebarroblanco.edu.co"
                   required
                   autoComplete="username"
                 />
@@ -184,8 +191,8 @@ export default function LoginPage() {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1">
-                Contraseña
+              <label htmlFor="password" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">
+                Contraseña Administrativa
               </label>
               <div className="relative">
                 <input
@@ -193,7 +200,7 @@ export default function LoginPage() {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 pr-12 text-sm"
+                  className="w-full px-5 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner pr-14"
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
@@ -201,7 +208,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-300 hover:text-green-600 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -210,7 +217,8 @@ export default function LoginPage() {
 
             {/* Error */}
             {error && (
-              <div className={`border px-4 py-3 rounded-xl text-sm ${error.includes('pronto') ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+              <div className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-in fade-in duration-300 ${error.includes('pronto') ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
+                <AlertCircle className="w-4 h-4 shrink-0" />
                 {error}
               </div>
             )}
@@ -219,13 +227,13 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="w-full bg-[#40a851] hover:bg-[#388e3c] text-white font-black py-4 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center gap-3 shadow-xl shadow-green-100 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-[10px] uppercase tracking-[0.2em]"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               ) : (
                 <>
-                  <LogIn className="w-5 h-5" />
+                  <LogIn className="w-4 h-4" />
                   Iniciar Sesión
                 </>
               )}
@@ -237,7 +245,7 @@ export default function LoginPage() {
               onClick={async () => {
                 setError('');
                 if (!email) {
-                  setError('Ingresa tu correo arriba primero para usar huella');
+                  setError('Ingresa tu correo institucional primero');
                   return;
                 }
                 setLoading(true);
@@ -247,15 +255,15 @@ export default function LoginPage() {
                   });
                   if (error) throw error;
                 } catch (e: any) {
-                  setError(e.message || 'Error al validar huella');
+                  setError(e.message || 'Error al validar identidad biométrica');
                   setLoading(false);
                 }
               }}
               disabled={loading}
-              className="w-full mt-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold py-2.5 px-4 rounded-xl border border-purple-100 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm text-sm"
+              className="w-full mt-2 bg-white hover:bg-gray-50 text-purple-600 font-black py-3 px-4 rounded-2xl border border-gray-100 transition-all duration-300 flex items-center justify-center gap-3 shadow-sm active:scale-95 text-[9px] uppercase tracking-widest"
             >
-              <span className="text-xl">👆</span>
-              Ingresar con Huella
+              <Fingerprint className="w-4 h-4" />
+              Ingresar con Huella / FaceID
             </button>
 
             <InstallPrompt />
