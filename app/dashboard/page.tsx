@@ -765,23 +765,16 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Card 2: Upcoming (Admin Only - Temporarily visible for verification) */}
-        {/* {(usuario.rol === 'rector' || usuario.rol === 'coordinador_pae') && ( */}
+        {/* Card 2: Upcoming (Public) */}
         <div className="bg-gradient-to-br from-fuchsia-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 border border-fuchsia-100 dark:border-fuchsia-900/30 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-fuchsia-100 dark:bg-fuchsia-900/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
 
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-fuchsia-100 dark:bg-fuchsia-900/50 rounded-lg text-fuchsia-600 dark:text-fuchsia-400">
-                  <Rocket className="w-5 h-5" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Próximas Actualizaciones</h3>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-fuchsia-100 dark:bg-fuchsia-900/50 rounded-lg text-fuchsia-600 dark:text-fuchsia-400">
+                <Rocket className="w-5 h-5" />
               </div>
-              <div className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-[10px] font-bold text-gray-500 flex items-center gap-1 uppercase">
-                <Lock className="w-3 h-3" />
-                Admin
-              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Próximas Actualizaciones</h3>
             </div>
 
             <ul className="space-y-3">
@@ -818,7 +811,6 @@ export default function DashboardPage() {
             </ul>
           </div>
         </div>
-        {/* )} */}
       </div>
 
       {/* Footer / Credits */}

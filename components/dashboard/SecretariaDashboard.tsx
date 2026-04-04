@@ -12,6 +12,10 @@ import {
     Coffee,
     Package,
     Utensils,
+    Sparkles,
+    Rocket,
+    Lock,
+    FileText
 } from 'lucide-react';
 import AnimatedNumber from '../AnimatedNumber';
 
@@ -74,6 +78,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
     const [schoolDropOpen, setSchoolDropOpen] = useState(false);
     const [sedeDropOpen, setSedeDropOpen] = useState(false);
     const [weekDate, setWeekDate] = useState(() => new Date());
+    const [creditsOpen, setCreditsOpen] = useState(false);
 
     const fetchData = useCallback(async (sheetName?: string) => {
         setLoading(true);
@@ -508,14 +513,15 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {schools.map(school => {
+                        {schools.map((school, idx) => {
                             const grandTotal = data?.totals.total ?? 1;
                             const pct = grandTotal > 0 ? Math.round((school.total / grandTotal) * 100) : 0;
                             return (
                                 <button
                                     key={school.nombre}
                                     onClick={() => setSelectedSchool(school.nombre)}
-                                    className="w-full text-left bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm hover:border-blue-200 dark:hover:border-blue-800 hover:shadow-md transition-all active:scale-[0.99]"
+                                    className="w-full text-left bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm hover:border-blue-200 dark:hover:border-blue-800 hover:shadow-md transition-all active:scale-[0.99] animate-card-mix"
+                                    style={{ animationDelay: `${0.3 + idx * 0.05}s` }}
                                 >
                                     <div className="flex items-start justify-between gap-3 mb-2">
                                         <p className="font-bold text-gray-900 dark:text-white text-sm leading-tight">{school.nombre}</p>
@@ -541,6 +547,119 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                         })}
                     </div>
                 )
+            )}
+
+            {/* ── ROADMAP / UPDATES (Democratizado) ── */}
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Card 1: Improved Features */}
+                <div className="bg-gradient-to-br from-indigo-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 border border-indigo-100 dark:border-indigo-900/30 shadow-sm relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100 dark:bg-indigo-900/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg text-indigo-600 dark:text-indigo-400">
+                                <Sparkles className="w-5 h-5" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Funciones Mejoradas</h3>
+                        </div>
+                        <ul className="space-y-3">
+                            <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                <div>
+                                    <span className="font-bold text-gray-900 dark:text-white">Detección de Cruces:</span> Alertas inteligentes si el bloque coincide con semanas previas.
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                <div>
+                                    <span className="font-bold text-gray-900 dark:text-white">Optimización PWA:</span> Soporte completo para instalación y persistencia de sesión.
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                <div>
+                                    <span className="font-bold text-gray-900 dark:text-white">Modo Oscuro Pro:</span> Consistencia visual adaptativa en todas las vistas.
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                {/* Card 2: Upcoming Updates */}
+                <div className="bg-gradient-to-br from-fuchsia-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 border border-fuchsia-100 dark:border-fuchsia-900/30 shadow-sm relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-fuchsia-100 dark:bg-fuchsia-900/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-fuchsia-100 dark:bg-fuchsia-900/50 rounded-lg text-fuchsia-600 dark:text-fuchsia-400">
+                                <Rocket className="w-5 h-5" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Próximas Actualizaciones</h3>
+                        </div>
+                        <ul className="space-y-3">
+                            <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-fuchsia-400 animate-pulse"></div>
+                                <div>
+                                    <span className="font-bold text-gray-900 dark:text-white">Biometría:</span> Login con huella y FaceID nativo.
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                                <div>
+                                    <span className="font-bold text-gray-900 dark:text-white">Pasarela de Pagos:</span> Gestión de recaudos y pagos en línea.
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                                <div>
+                                    <span className="font-bold text-gray-900 dark:text-white">Mensajería Push:</span> Notificaciones en tiempo real y chat.
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer / Credits */}
+            <div className="mt-8 text-center pb-8">
+                <button
+                    onClick={() => setCreditsOpen(true)}
+                    className="text-[10px] text-blue-400 font-bold uppercase tracking-widest hover:text-cyan-600 transition-colors"
+                >
+                    © 2026 PAE Barroblanco - Versión Académica SENA
+                </button>
+            </div>
+
+            {/* Credits Modal */}
+            {creditsOpen && (
+                <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setCreditsOpen(false)}></div>
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] p-8 max-w-md relative animate-in zoom-in-95 duration-200 shadow-2xl overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-cyan-500 to-blue-600"></div>
+
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-cyan-50 dark:bg-cyan-900/30 rounded-2xl mx-auto flex items-center justify-center mb-4 text-cyan-600 dark:text-cyan-400">
+                                <FileText className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-xl font-black text-gray-900 dark:text-white">Créditos y Autoría</h3>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mt-1">Información Legal</p>
+                        </div>
+
+                        <div className="space-y-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                            <p>
+                                <span className="font-bold text-gray-900 dark:text-white">Autor:</span> Luis Fernando Alzate Lopez
+                            </p>
+                            <p className="text-justify text-[10px]">
+                                "El presente desarrollo de software, denominado Sistema PAE Barroblanco, es una obra original de Luis Fernando Alzate Lopez."
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => setCreditsOpen(false)}
+                            className="mt-6 w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black dark:hover:bg-gray-200 transition-all"
+                        >
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
             )}
         </div>
     );
