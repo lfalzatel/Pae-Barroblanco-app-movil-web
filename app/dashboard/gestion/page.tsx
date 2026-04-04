@@ -930,18 +930,20 @@ export default function GestionPage() {
                             </div>
                           </div>
 
-                          {/* Toggle de Estado Estilo Registro */}
-                          <button
-                            onClick={() => handleToggleEstado(estudiante)}
-                            className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-xl flex flex-col items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-700 active:scale-95 h-12 w-14 justify-center flex-shrink-0"
-                          >
-                            <div className={`w-7 h-3.5 rounded-full relative transition-colors duration-300 ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                              <div className={`w-2.5 h-2.5 bg-white rounded-full absolute top-0.5 transition-all duration-300 ${estudiante.estado !== 'inactivo' ? 'right-0.5 translate-x-0' : 'left-0.5'}`} style={{ left: estudiante.estado !== 'inactivo' ? '16px' : '2px' }}></div>
-                            </div>
-                            <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest leading-none">
-                              {estudiante.estado !== 'inactivo' ? 'ACTIVO' : 'INACTIVO'}
-                            </span>
-                          </button>
+                          {/* Toggle de Estado Estilo Registro - Solo Admin/Coordinador */}
+                          {(usuario?.rol === 'admin' || usuario?.rol === 'coordinador_pae') && (
+                            <button
+                              onClick={() => handleToggleEstado(estudiante)}
+                              className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-xl flex flex-col items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-700 active:scale-95 h-12 w-14 justify-center flex-shrink-0"
+                            >
+                              <div className={`w-7 h-3.5 rounded-full relative transition-colors duration-300 ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                <div className={`w-2.5 h-2.5 bg-white rounded-full absolute top-0.5 transition-all duration-300 ${estudiante.estado !== 'inactivo' ? 'right-0.5 translate-x-0' : 'left-0.5'}`} style={{ left: estudiante.estado !== 'inactivo' ? '16px' : '2px' }}></div>
+                              </div>
+                              <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest leading-none">
+                                {estudiante.estado !== 'inactivo' ? 'ACTIVO' : 'INACTIVO'}
+                              </span>
+                            </button>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2">
