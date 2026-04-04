@@ -1317,45 +1317,69 @@ export default function HorarioPage() {
             {
                 showInstructions && (
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl animate-in fade-in duration-300" onClick={() => setShowInstructions(false)}></div>
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 max-w-lg w-full relative max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                            <div className="p-6 border-b border-gray-50 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800 shrink-0">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-blue-50 text-blue-600 rounded-full">
-                                        <Info className="w-5 h-5" />
-                                    </div>
-                                    <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Instrucciones</h3>
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowInstructions(false)}></div>
+                        <div className="bg-white dark:bg-gray-800 rounded-[3rem] w-full max-w-lg relative overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-2xl max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+                            {/* Header Premium */}
+                            <div className="p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white flex justify-between items-center relative overflow-hidden shrink-0">
+                                <div className="relative z-10">
+                                    <h3 className="text-2xl font-black">Instrucciones de Uso</h3>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">
+                                        Guía rápida para la gestión de horarios
+                                    </p>
                                 </div>
-                                <button onClick={() => setShowInstructions(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                                    <X className="w-5 h-5 text-gray-400" />
-                                </button>
+                                <button onClick={() => setShowInstructions(false)} className="relative z-10 p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
+                                <Info className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 rotate-12" />
                             </div>
 
-                            <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar">
+                            <div className="p-6 md:p-8 space-y-4 overflow-y-auto custom-scrollbar-premium bg-white dark:bg-gray-800">
                                 {[
-                                    { n: 1, t: "Selecciona un Grupo:", d: "Toca un grupo disponible de la lista derecha. Se pondrá azul." },
-                                    { n: 2, t: "Asigna Hora:", d: "Toca una franja horaria en la izquierda para asignar el grupo seleccionado." },
-                                    { n: 3, t: "Editar/Desasignar:", d: "Toca una franja ya ocupada para ver detalles, agregar notas o eliminar la asignación." },
-                                    { n: 4, t: "Guardar:", d: "¡No olvides tocar el botón \"Guardar\" en la parte superior para aplicar los cambios!" }
+                                    { 
+                                        n: "1", 
+                                        t: "Selecciona un Grupo", 
+                                        d: "Toca un grupo disponible de la lista derecha. Se iluminará en azul.",
+                                        icon: <Users className="w-5 h-5 text-cyan-600" /> 
+                                    },
+                                    { 
+                                        n: "2", 
+                                        t: "Asigna la Hora", 
+                                        d: "Toca una franja horaria en la izquierda para ubicar al grupo seleccionado.",
+                                        icon: <Clock className="w-5 h-5 text-cyan-600" /> 
+                                    },
+                                    { 
+                                        n: "3", 
+                                        t: "Editar o Eliminar", 
+                                        d: "Toca una franja ya ocupada para ver detalles, agregar notas o borrar la asignación.",
+                                        icon: <Edit2 className="w-5 h-5 text-cyan-600" /> 
+                                    },
+                                    { 
+                                        n: "4", 
+                                        t: "Guardar Cambios", 
+                                        d: "¡Importante! Toca el botón central superior para que los cambios sean permanentes.",
+                                        icon: <Save className="w-5 h-5 text-cyan-600" /> 
+                                    }
                                 ].map((step, idx) => (
-                                    <div key={idx} className="flex gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-lg shadow-blue-200">
-                                            {step.n}
+                                    <div key={idx} className="group/step bg-gray-50 dark:bg-gray-900/50 p-5 rounded-[2rem] border border-gray-100 dark:border-gray-700/50 flex gap-5 items-start hover:border-cyan-100 transition-all">
+                                        <div className="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 flex items-center justify-center text-cyan-600 font-black text-lg shrink-0 shadow-sm border border-gray-100 dark:border-gray-700">
+                                            {step.icon}
                                         </div>
                                         <div className="flex flex-col gap-1">
-                                            <h4 className="font-black text-gray-900 text-sm">{step.t}</h4>
-                                            <p className="text-[11px] font-bold text-gray-400 leading-relaxed">{step.d}</p>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">Paso {step.n}</span>
+                                                <div className="h-[1px] w-4 bg-cyan-100 dark:bg-cyan-900" />
+                                            </div>
+                                            <h4 className="font-black text-gray-900 dark:text-white text-[15px] leading-tight">{step.t}</h4>
+                                            <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 leading-relaxed">{step.d}</p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="p-6 pt-2">
+                            <div className="p-8 pt-0">
                                 <button
                                     onClick={() => setShowInstructions(false)}
-                                    className="w-full py-5 bg-[#0a0a0b] hover:bg-black text-white rounded-2xl font-black text-sm tracking-widest transition-all shadow-xl active:scale-[0.98]"
+                                    className="w-full py-5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-[2rem] font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-cyan-100 dark:shadow-cyan-900/20 transition-all active:scale-[0.98]"
                                 >
-                                    Entendido
+                                    Entendido, ¡Comencemos!
                                 </button>
                             </div>
                         </div>
