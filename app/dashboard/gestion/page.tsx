@@ -859,41 +859,41 @@ export default function GestionPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <div className="flex flex-row gap-2 mb-4">
                 <div className="flex-1 relative group">
-                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-cyan-400 w-5 h-5 group-focus-within:text-cyan-600 transition-colors" />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400 w-4 h-4 group-focus-within:text-cyan-600 transition-colors" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Buscar estudiante o matrícula..."
-                    className="w-full pl-14 pr-6 py-4 bg-gray-50/50 border border-gray-100 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-inner transition-all font-bold text-gray-700 text-sm placeholder:text-gray-300 placeholder:font-medium dark:bg-gray-700/50 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
+                    placeholder="Buscar..."
+                    className="w-full pl-10 pr-3 py-3.5 bg-gray-50/50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-inner transition-all font-bold text-gray-700 text-[11px] placeholder:text-gray-300 dark:bg-gray-700/50 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                   />
                 </div>
                 
-                <div className="w-full sm:w-56 relative group">
-                  <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-                    <Calendar className="w-5 h-5 text-cyan-500 shrink-0" />
-                    <div className="w-[1px] h-4 bg-cyan-200 dark:bg-cyan-800"></div>
+                <div className="flex-1 relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
+                    <Calendar className="w-4 h-4 text-cyan-500 shrink-0" />
+                    <div className="w-[1px] h-3.5 bg-cyan-200 dark:bg-cyan-800"></div>
                   </div>
                   <select
                     value={periodoFilter}
                     onChange={(e) => setPeriodoFilter(e.target.value)}
-                    className="w-full pl-14 pr-10 py-4 bg-white/50 backdrop-blur-md border border-cyan-100/50 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-sm transition-all font-black text-cyan-700 text-[10px] uppercase tracking-widest appearance-none cursor-pointer dark:bg-gray-800/50 dark:border-cyan-900/30 dark:text-cyan-400"
+                    className="w-full pl-10 pr-8 py-3.5 bg-white/50 backdrop-blur-md border border-cyan-100/50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-sm transition-all font-black text-cyan-700 text-[9px] uppercase tracking-wider appearance-none cursor-pointer dark:bg-gray-800/50 dark:border-cyan-900/30 dark:text-cyan-400"
                   >
                     <option value="30_dias">Últimos 30 días</option>
-                    <option value="02">Febrero 2026</option>
-                    <option value="03">Marzo 2026</option>
-                    <option value="04">Abril 2026</option>
-                    <option value="05">Mayo 2026</option>
-                    <option value="06">Junio 2026</option>
-                    <option value="07">Julio 2026</option>
-                    <option value="08">Agosto 2026</option>
-                    <option value="09">Septiembre 2026</option>
-                    <option value="10">Octubre 2026</option>
-                    <option value="11">Noviembre 2026</option>
+                    <option value="02">Febrero</option>
+                    <option value="03">Marzo</option>
+                    <option value="04">Abril</option>
+                    <option value="05">Mayo</option>
+                    <option value="06">Junio</option>
+                    <option value="07">Julio</option>
+                    <option value="08">Agosto</option>
+                    <option value="09">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
                   </select>
-                  <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-cyan-500 w-4 h-4 pointer-events-none group-hover:translate-y-[-40%] transition-transform" />
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-cyan-500 w-3 h-3 pointer-events-none transition-transform" />
                 </div>
               </div>
             </div>
