@@ -914,59 +914,72 @@ export default function GestionPage() {
                 loading ? (
                   [...Array(6)].map((_, i) => <Skeleton key={i} className="h-28 rounded-[2rem]" />)
                 ) : (
-                  estudiantesFiltrados.map(estudiante => (
-                    <div key={estudiante.id} className={`bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100 transition-all hover:shadow-md ${estudiante.estado === 'inactivo' ? 'opacity-50 grayscale' : ''} dark:bg-gray-800 dark:border-gray-700`}>
-                      <div className="flex items-center gap-4">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-inner ${['bg-cyan-50 text-cyan-600 dark:bg-cyan-900/20 dark:text-cyan-400', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400', 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'][estudiante.nombre.length % 3]}`}>
-                          <span className="font-black text-xl leading-none">{estudiante.nombre.charAt(0)}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-black text-gray-900 text-sm truncate uppercase tracking-tight dark:text-white">{estudiante.nombre}</div>
-                          <div className="text-[10px] font-bold text-gray-400 mt-0.5 dark:text-gray-500">
-                            <span className="bg-gray-100 px-2 py-0.5 rounded-lg text-gray-500 mr-2 dark:bg-gray-700 dark:text-gray-300">{estudiante.matricula}</span>
-                            <span className="text-cyan-600 font-black dark:text-cyan-400">{estudiante.grado}-{estudiante.grupo}</span>
+                  estudiantesFiltrados.map((estudiante, index) => (
+                    <div 
+                      key={estudiante.id} 
+                      className={`bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100 transition-all hover:shadow-md ${estudiante.estado === 'inactivo' ? 'opacity-50 grayscale' : ''} dark:bg-gray-800 dark:border-gray-700 animate-card-mix`}
+                      style={{ animationDelay: `${index * 0.05}s` }}
+                    >
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-black text-gray-900 text-base truncate uppercase tracking-tight dark:text-white">{estudiante.nombre}</div>
+                            <div className="text-[10px] font-bold text-gray-400 mt-0.5 flex items-center gap-2 dark:text-gray-500">
+                              <span className="bg-gray-100 px-2 py-0.5 rounded-lg text-gray-500 dark:bg-gray-700 dark:text-gray-300">{estudiante.matricula}</span>
+                              <span className="text-cyan-600 font-extrabold dark:text-cyan-400">{estudiante.grado}-{estudiante.grupo}</span>
+                            </div>
                           </div>
 
-                          <div className="flex gap-2 mt-4">
+                          {/* Toggle de Estado Estilo Registro */}
+                          <button
+                            onClick={() => handleToggleEstado(estudiante)}
+                            className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-xl flex flex-col items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-700 active:scale-95 h-12 w-14 justify-center flex-shrink-0"
+                          >
+                            <div className={`w-7 h-3.5 rounded-full relative transition-colors duration-300 ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                              <div className={`w-2.5 h-2.5 bg-white rounded-full absolute top-0.5 transition-all duration-300 ${estudiante.estado !== 'inactivo' ? 'right-0.5 translate-x-0' : 'left-0.5'}`} style={{ left: estudiante.estado !== 'inactivo' ? '16px' : '2px' }}></div>
+                            </div>
+                            <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest leading-none">
+                              {estudiante.estado !== 'inactivo' ? 'ACTIVO' : 'INACTIVO'}
+                            </span>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setSelectedStudent(estudiante)}
+                            className="flex-1 px-4 py-3 bg-cyan-600 text-white rounded-xl shadow-lg shadow-cyan-100 transition-all active:scale-95 flex items-center justify-center gap-2"
+                            title="Ver Historial"
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">HISTORIAL</span>
+                          </button>
+                          {usuario?.rol === 'admin' && (
                             <button
-                              onClick={() => setSelectedStudent(estudiante)}
-                              className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-cyan-100 transition-all active:scale-95"
+                              onClick={() => {
+                                setEditingStudent(estudiante);
+                                setEditFormData({
+                                  nombre: estudiante.nombre,
+                                  matricula: estudiante.matricula,
+                                  grado: estudiante.grado,
+                                  grupo: estudiante.grupo,
+                                  sede: estudiante.sede,
+                                  email: estudiante.email || ''
+                                });
+                                setIsNewGroup(false);
+                              }}
+                              className="p-3 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-500 hover:text-white transition-all shadow-sm flex items-center justify-center"
+                              title="Editar Estudiante"
                             >
-                              Historial
+                              <Edit2 className="w-4 h-4" />
                             </button>
-                            {usuario?.rol === 'admin' && (
-                              <button
-                                onClick={() => {
-                                  setEditingStudent(estudiante);
-                                  setEditFormData({
-                                    nombre: estudiante.nombre,
-                                    matricula: estudiante.matricula,
-                                    grado: estudiante.grado,
-                                    grupo: estudiante.grupo,
-                                    sede: estudiante.sede,
-                                    email: estudiante.email || ''
-                                  });
-                                  setIsNewGroup(false);
-                                }}
-                                className="px-4 py-2 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-500 hover:text-white transition-all shadow-sm flex items-center justify-center"
-                                title="Editar Estudiante"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleGenerateReport(estudiante)}
-                              className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl transition-all hover:bg-emerald-500 hover:text-white"
-                            >
-                              <FileDown className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleToggleEstado(estudiante)}
-                              className={`px-4 py-2 rounded-xl transition-all ${estudiante.estado === 'inactivo' ? 'bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white' : 'bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white'}`}
-                            >
-                              {estudiante.estado === 'inactivo' ? <UserPlus className="w-4 h-4" /> : <UserMinus className="w-4 h-4" />}
-                            </button>
-                          </div>
+                          )}
+                          <button
+                            onClick={() => handleGenerateReport(estudiante)}
+                            className="p-3 bg-emerald-50 text-emerald-600 rounded-xl transition-all hover:bg-emerald-500 hover:text-white flex items-center justify-center"
+                            title="Descargar Excel"
+                          >
+                            <FileDown className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     </div>
