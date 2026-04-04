@@ -845,7 +845,7 @@ export default function DashboardLayout({
                                         Mi Perfil
                                     </Link>
 
-                                    {['admin', 'coordinador_pae'].includes(usuario.rol) && (
+                                    {usuario.rol === 'admin' && (
                                         <>
                                             <Link
                                                 href="/dashboard/admin"
@@ -863,15 +863,18 @@ export default function DashboardLayout({
                                                 <FileText className="w-4 h-4" />
                                                 Auditoría
                                             </Link>
-                                            <Link
-                                                href="/dashboard/novedades"
-                                                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-cyan-600 hover:bg-cyan-50 transition-colors bg-cyan-50/10 dark:bg-gray-800 dark:text-cyan-400 dark:hover:bg-gray-700"
-                                                onClick={() => setIsProfileMenuOpen(false)}
-                                            >
-                                                <Globe className="w-4 h-4" />
-                                                Recursos Externos
-                                            </Link>
                                         </>
+                                    )}
+
+                                    {['admin', 'coordinador_pae', 'secretaria_educacion'].includes(usuario.rol) && (
+                                        <Link
+                                            href="/dashboard/novedades"
+                                            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-cyan-600 hover:bg-cyan-50 transition-colors bg-cyan-50/10 dark:bg-gray-800 dark:text-cyan-400 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
+                                            onClick={() => setIsProfileMenuOpen(false)}
+                                        >
+                                            <Globe className="w-4 h-4" />
+                                            Recursos Externos
+                                        </Link>
                                     )}
 
                                     <button
