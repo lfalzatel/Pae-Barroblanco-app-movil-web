@@ -761,7 +761,7 @@ export default function DashboardLayout({
             </main>
 
             {/* Mobile Bottom Navigation */}
-            <div className="md:hidden fixed bottom-2 left-0 right-0 mx-4 bg-white/70 dark:bg-black/80 backdrop-blur-3xl border border-white/20 dark:border-white/5 flex justify-around p-3 rounded-[2.5rem] z-[100] shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
+            <div className="md:hidden fixed bottom-2 left-0 right-0 mx-4 bg-white/50 dark:bg-black/50 backdrop-blur-3xl border border-white/30 dark:border-white/10 flex justify-around p-3 rounded-[2.5rem] z-[100] shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
                 {navItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
@@ -774,11 +774,11 @@ export default function DashboardLayout({
                         >
                             <div className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-2xl transition-all duration-300 ${
                                 isActive
-                                    ? 'bg-blue-600 text-white scale-110 shadow-md shadow-blue-300/40 dark:shadow-blue-900/50'
-                                    : 'text-blue-500 dark:text-blue-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:scale-105'
+                                    ? 'bg-cyan-600 text-white scale-110 shadow-lg shadow-cyan-400/40 dark:shadow-cyan-900/50'
+                                    : 'text-cyan-600 dark:text-cyan-400 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-900/20 group-hover:scale-105'
                             }`}>
                                 <div className={`relative ${isRegistrar && !isActive ? 'animate-pulse' : ''}`}>
-                                    <Icon className={`w-5 h-5 ${isRegistrar && !isActive ? 'drop-shadow-[0_0_8px_rgba(37,99,235,0.5)]' : ''}`} />
+                                    <Icon className={`w-5 h-5 ${isRegistrar && !isActive ? 'drop-shadow-[0_0_8px_rgba(8,145,178,0.5)]' : ''}`} />
                                 </div>
                                 <span className={`text-[10px] ${isActive ? 'font-black' : 'font-medium'}`}>{item.label}</span>
                             </div>
