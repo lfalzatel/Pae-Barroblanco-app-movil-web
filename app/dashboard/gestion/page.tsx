@@ -948,52 +948,84 @@ export default function GestionPage() {
 
             {/* Modal de Estadísticas Detalladas */}
             {showStatsModal && (
-              <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300" onClick={() => setShowStatsModal(false)}>
-                <div className="bg-white rounded-[3rem] p-8 w-full max-w-sm shadow-2xl relative animate-in zoom-in-95 duration-200 dark:bg-gray-900" onClick={e => e.stopPropagation()}>
-                  <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-t-[3rem] -z-10" />
-                  <button onClick={() => setShowStatsModal(false)} className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors">
-                    <X size={20} />
-                  </button>
-
-                  <div className="text-center mb-6 pt-4">
-                    <div className="w-20 h-20 bg-white rounded-3xl mx-auto flex items-center justify-center shadow-xl mb-4 text-emerald-500 transform -rotate-3">
-                      <Users size={32} />
-                    </div>
-                    <h3 className="text-white font-black text-2xl tracking-tight mb-1">Cobertura PAE</h3>
-                    <p className="text-white text-[10px] font-bold uppercase tracking-widest">Últimos 30 días</p>
+              <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-[500] animate-in fade-in duration-300" onClick={() => setShowStatsModal(false)}>
+                <div className="bg-white/90 backdrop-blur-2xl rounded-[2.5rem] p-0 w-full max-w-[360px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] relative overflow-hidden animate-in zoom-in-95 duration-200 dark:bg-gray-900/90 border border-white/50" onClick={e => e.stopPropagation()}>
+                  
+                  {/* Decorative Header Mesh */}
+                  <div className="absolute top-0 left-0 right-0 h-44 bg-gradient-to-br from-cyan-500 via-emerald-400 to-cyan-600">
+                    <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-center dark:bg-emerald-900/20 dark:border-emerald-800/30">
-                        <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{statsDetail?.avgDaily}</div>
-                        <div className="text-[9px] font-black text-emerald-400 uppercase tracking-tight dark:text-emerald-600">Promedio Diario</div>
+                  <button onClick={() => setShowStatsModal(false)} className="absolute top-5 right-5 p-2 bg-white/20 hover:bg-white/40 rounded-full text-white transition-all active:scale-90 z-10 backdrop-blur-lg border border-white/30">
+                    <X size={18} />
+                  </button>
+
+                  <div className="relative pt-10 pb-6 px-8 text-center text-white">
+                    <div className="w-20 h-20 bg-white rounded-[2rem] mx-auto flex items-center justify-center shadow-2xl mb-5 transform -rotate-6 transition-transform hover:rotate-0 duration-500">
+                      <div className="bg-gradient-to-br from-cyan-400 to-emerald-500 text-transparent bg-clip-text">
+                        <Users size={32} />
                       </div>
-                      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-center dark:bg-gray-800 dark:border-gray-700/50">
-                        <div className="text-2xl font-black text-gray-700 dark:text-gray-200">{statsDetail?.totalStudents}</div>
-                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-tight dark:text-gray-500">Estudiantes Activos</div>
+                    </div>
+                    <h3 className="font-black text-2xl tracking-tighter mb-1 drop-shadow-sm">Cobertura Real</h3>
+                    <div className="flex items-center justify-center gap-2">
+                       <span className="h-1.5 w-1.5 rounded-full bg-white/60 animate-pulse"></span>
+                       <p className="text-white/80 text-[9px] font-black uppercase tracking-[0.2em]">{periodoFilter === '30_dias' ? 'Últimos 30 días' : 'Datos del Mes'}</p>
+                    </div>
+                  </div>
+
+                  <div className="px-6 pb-8 space-y-5 -mt-2">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white/50 border border-white p-5 rounded-[1.8rem] shadow-sm text-center backdrop-blur-xl relative group overflow-hidden dark:bg-gray-800/50 dark:border-gray-700/50">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-emerald-400 opacity-50"></div>
+                        <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 leading-none mb-1.5">{statsDetail?.avgDaily}</div>
+                        <div className="text-[8px] font-black text-gray-400 uppercase tracking-widest dark:text-gray-500">Promedio Día</div>
+                      </div>
+                      <div className="bg-white/50 border border-white p-5 rounded-[1.8rem] shadow-sm text-center backdrop-blur-xl relative group overflow-hidden dark:bg-gray-800/50 dark:border-gray-700/50">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-cyan-400 opacity-50"></div>
+                        <div className="text-3xl font-black text-gray-800 dark:text-white leading-none mb-1.5">{statsDetail?.totalStudents}</div>
+                        <div className="text-[8px] font-black text-gray-400 uppercase tracking-widest dark:text-gray-500">Matrícula Sede</div>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 max-h-60 overflow-y-auto custom-scrollbar dark:bg-gray-800 dark:border-gray-700">
-                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 dark:text-gray-500">Historial Diario</h4>
-                      <div className="space-y-2">
-                        {statsDetail?.dailyHistory.map((day, i) => (
-                          <div key={i} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0 dark:border-gray-700">
-                            <div className="flex items-center gap-2">
-                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                              <span className="text-xs font-bold text-gray-600 capitalize dark:text-gray-300">
-                                {new Date(day.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
-                              </span>
+                    <div className="bg-gray-50/50 backdrop-blur-md rounded-[2rem] p-5 border border-white/50 dark:bg-gray-800/20 dark:border-gray-700">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest dark:text-gray-500 flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
+                          Historial Diario
+                        </h4>
+                        <div className="px-2 py-0.5 bg-gray-100 rounded-lg text-[8px] font-black text-gray-400 dark:bg-gray-700">{statsDetail?.daysCounted} Días</div>
+                      </div>
+                      
+                      <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
+                        {statsDetail?.dailyHistory.map((day, i) => {
+                          // Health Indicator Logic
+                          const colorClass = day.percentage > 40 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' : 
+                                           day.percentage > 20 ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]' : 
+                                           'bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.5)]';
+                          
+                          return (
+                            <div key={i} className="flex justify-between items-center px-3 py-2.5 bg-white/40 border border-white/50 rounded-xl dark:bg-gray-800/40 dark:border-gray-700/30 transition-all hover:translate-x-1 duration-300">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-2 h-2 rounded-full ${colorClass}`} />
+                                <span className="text-[11px] font-bold text-gray-600 capitalize dark:text-gray-300">
+                                  {new Date(day.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <span className="text-xs font-black text-gray-900 dark:text-white">{day.count}</span>
+                                <div className="min-w-[32px] text-right">
+                                  <span className={`text-[10px] font-black ${day.percentage > 40 ? 'text-emerald-500' : 'text-gray-400'}`}>
+                                    {day.percentage.toFixed(0)}%
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs font-black text-gray-900 dark:text-white">{day.count}</span>
-                              <span className="text-[10px] font-bold text-gray-400 w-8 text-right">{day.percentage.toFixed(0)}%</span>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                         {(!statsDetail?.dailyHistory || statsDetail.dailyHistory.length === 0) && (
-                          <div className="text-center text-xs text-gray-400 py-4 italic">No hay registros recientes</div>
+                          <div className="text-center text-[10px] text-gray-400 py-6 font-bold uppercase tracking-widest italic animate-pulse">
+                            Esperando registros...
+                          </div>
                         )}
                       </div>
                     </div>
