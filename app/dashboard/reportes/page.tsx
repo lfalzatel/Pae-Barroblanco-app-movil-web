@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { Skeleton } from '@/components/ui/Skeleton';
 import StatsDetailModal from '@/components/StatsDetailModal';
+import AnimatedNumber from '@/components/AnimatedNumber';
 
 export default function ReportesPage() {
   const router = useRouter();
@@ -1917,14 +1918,14 @@ export default function ReportesPage() {
               {/* Pending Groups - New Card */}
 
               {/* Total Estudiantes */}
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group dark:bg-gray-800 dark:border-gray-700">
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group dark:bg-gray-800 dark:border-gray-700 animate-card-mix [animation-delay:0.1s]">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="text-2xl md:text-3xl font-black text-blue-600 tracking-tighter">
                       {loading ? (
                         <Skeleton className="h-8 w-16 mb-1" />
                       ) : (
-                        stats.totalEstudiantes.toLocaleString()
+                        <AnimatedNumber value={stats.totalEstudiantes} />
                       )}
                     </div>
                     <div className="text-gray-400 text-[10px] font-black uppercase tracking-wider">TOTAL</div>
@@ -1942,7 +1943,7 @@ export default function ReportesPage() {
               <button
                 onClick={() => openGroupModal('recibieron')}
                 disabled={stats.recibieron === 0}
-                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix [animation-delay:0.35s]"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -1950,7 +1951,7 @@ export default function ReportesPage() {
                       {loading ? (
                         <Skeleton className="h-8 w-16 mb-1" />
                       ) : (
-                        stats.recibieron.toLocaleString()
+                        <AnimatedNumber value={stats.recibieron} />
                       )}
                     </div>
                     <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">RECIBIERON</div>
@@ -1968,7 +1969,7 @@ export default function ReportesPage() {
               <button
                 onClick={() => openGroupModal('noRecibieron')}
                 disabled={stats.noRecibieron === 0}
-                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix [animation-delay:0.6s]"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -1976,7 +1977,7 @@ export default function ReportesPage() {
                       {loading ? (
                         <Skeleton className="h-8 w-16 mb-1" />
                       ) : (
-                        stats.noRecibieron.toLocaleString()
+                        <AnimatedNumber value={stats.noRecibieron} />
                       )}
                     </div>
                     <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">NO RECIBIERON</div>
@@ -1994,7 +1995,7 @@ export default function ReportesPage() {
               <button
                 onClick={() => openGroupModal('ausentes')}
                 disabled={stats.ausentes === 0}
-                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix [animation-delay:0.85s]"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -2002,7 +2003,7 @@ export default function ReportesPage() {
                       {loading ? (
                         <Skeleton className="h-8 w-16 mb-1" />
                       ) : (
-                        stats.ausentes.toLocaleString()
+                        <AnimatedNumber value={stats.ausentes} />
                       )}
                     </div>
                     <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">NO ASISTIERON</div>
@@ -2019,12 +2020,12 @@ export default function ReportesPage() {
               {/* Tarjeta Grupos Pendientes */}
               <button
                 onClick={() => openGroupModal('pendientes')}
-                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix [animation-delay:1.1s]"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="text-3xl font-black text-orange-500 tracking-tighter">
-                      {loading ? <Skeleton className="h-8 w-16" /> : stats.pendingGroupsCount}
+                      {loading ? <Skeleton className="h-8 w-16" /> : <AnimatedNumber value={stats.pendingGroupsCount} />}
                     </div>
                     <div className="text-orange-300 text-[9px] font-black uppercase tracking-widest">GRUPOS PENDIENTES</div>
                   </div>
@@ -2041,7 +2042,7 @@ export default function ReportesPage() {
               <button
                 onClick={() => openGroupModal('inactivos')}
                 disabled={stats.inactivos === 0}
-                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700"
+                className="bg-white rounded-[2.25rem] p-5 shadow-xl shadow-cyan-900/5 border border-gray-100 relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:scale-[1.02] transition-all text-left dark:bg-gray-800 dark:border-gray-700 animate-card-mix [animation-delay:1.35s]"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -2049,7 +2050,7 @@ export default function ReportesPage() {
                       {loading ? (
                         <Skeleton className="h-8 w-16 mb-1" />
                       ) : (
-                        stats.inactivos.toLocaleString()
+                        <AnimatedNumber value={stats.inactivos} />
                       )}
                     </div>
                     <div className="text-gray-400 text-[9px] font-black uppercase tracking-widest">INACTIVOS</div>

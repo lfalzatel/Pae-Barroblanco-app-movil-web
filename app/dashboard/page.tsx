@@ -29,6 +29,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import AnimatedNumber from '@/components/AnimatedNumber';
 import * as XLSX from 'xlsx';
 import { useHaptics } from '../../hooks/useHaptics';
 
@@ -551,14 +552,14 @@ export default function DashboardPage() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {/* Total Estudiantes */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group animate-card-mix [animation-delay:0.1s]">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <div className="text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tighter">
                   {loading ? (
                     <Skeleton className="h-8 w-16 mb-1 dark:bg-gray-700" />
                   ) : (
-                    stats.totalEstudiantes.toLocaleString()
+                    <AnimatedNumber value={stats.totalEstudiantes} />
                   )}
                 </div>
                 <div className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-wider">TOTAL</div>
@@ -576,7 +577,7 @@ export default function DashboardPage() {
           <button
             onClick={() => openGroupModal('recibieron')}
             disabled={stats.recibieron === 0}
-            className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group hover:border-emerald-400 dark:hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-50 dark:hover:shadow-emerald-900/10 transition-all text-left"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group hover:border-emerald-400 dark:hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-50 dark:hover:shadow-emerald-900/10 transition-all text-left animate-card-mix [animation-delay:0.35s]"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
@@ -584,7 +585,7 @@ export default function DashboardPage() {
                   {loading ? (
                     <Skeleton className="h-8 w-16 mb-1 dark:bg-gray-700" />
                   ) : (
-                    stats.recibieron.toLocaleString()
+                    <AnimatedNumber value={stats.recibieron} />
                   )}
                 </div>
                 <div className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-wider">RECIBIERON</div>
@@ -602,7 +603,7 @@ export default function DashboardPage() {
           <button
             onClick={() => openGroupModal('noRecibieron')}
             disabled={stats.noRecibieron === 0}
-            className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-50 dark:hover:shadow-amber-900/10 transition-all text-left"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-50 dark:hover:shadow-amber-900/10 transition-all text-left animate-card-mix [animation-delay:0.6s]"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
@@ -610,7 +611,7 @@ export default function DashboardPage() {
                   {loading ? (
                     <Skeleton className="h-8 w-16 mb-1 dark:bg-gray-700" />
                   ) : (
-                    stats.noRecibieron.toLocaleString()
+                    <AnimatedNumber value={stats.noRecibieron} />
                   )}
                 </div>
                 <div className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-wider">NO RECIBIERON</div>
@@ -628,7 +629,7 @@ export default function DashboardPage() {
           <button
             onClick={() => openGroupModal('ausentes')}
             disabled={stats.ausentes === 0}
-            className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group hover:border-rose-400 dark:hover:border-rose-500/50 hover:shadow-lg hover:shadow-rose-50 dark:hover:shadow-rose-900/10 transition-all text-left"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/10 relative overflow-hidden flex flex-col justify-between h-full group hover:border-rose-400 dark:hover:border-rose-500/50 hover:shadow-lg hover:shadow-rose-50 dark:hover:shadow-rose-900/10 transition-all text-left animate-card-mix [animation-delay:0.85s]"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
@@ -636,7 +637,7 @@ export default function DashboardPage() {
                   {loading ? (
                     <Skeleton className="h-8 w-16 mb-1 dark:bg-gray-700" />
                   ) : (
-                    stats.ausentes.toLocaleString()
+                    <AnimatedNumber value={stats.ausentes} />
                   )}
                 </div>
                 <div className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-wider">NO ASISTIERON</div>

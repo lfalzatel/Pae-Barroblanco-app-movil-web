@@ -13,6 +13,7 @@ import {
     Package,
     Utensils,
 } from 'lucide-react';
+import AnimatedNumber from '../AnimatedNumber';
 
 const SHEET_ID = '1NIp7IaTps7E-QqkBc5Yt0rx36HGc-k5d4EiKmtOLFeE';
 
@@ -210,7 +211,9 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                         </p>
                         {loading
                             ? <div className="h-10 w-32 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse mt-1" />
-                            : <p className="text-4xl font-black tabular-nums text-gray-900 dark:text-white">{cardTotals.total.toLocaleString('es-CO')}</p>
+                            : <div className="text-4xl font-black tabular-nums text-gray-900 dark:text-white animate-card-mix [animation-delay:0.1s]">
+                                <AnimatedNumber value={cardTotals.total} />
+                              </div>
                         }
                     </div>
                     <div className="w-12 h-12 bg-cyan-50 dark:bg-cyan-900/20 rounded-2xl flex items-center justify-center shrink-0">
@@ -225,8 +228,12 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                         { label: 'CAJM',     value: cardTotals.cajm,     Icon: Package,  bg: 'bg-blue-50 dark:bg-blue-900/10',      border: 'border-blue-100 dark:border-blue-800/30',      iconBg: 'bg-blue-100 dark:bg-blue-800/50',      iconColor: 'text-blue-600 dark:text-blue-400',      labelColor: 'text-blue-600 dark:text-blue-400',      valueColor: 'text-blue-700 dark:text-blue-300'      },
                         { label: 'CAJT',     value: cardTotals.cajt,     Icon: Package,  bg: 'bg-indigo-50 dark:bg-indigo-900/10',  border: 'border-indigo-100 dark:border-indigo-800/30',  iconBg: 'bg-indigo-100 dark:bg-indigo-800/50',  iconColor: 'text-indigo-600 dark:text-indigo-400',  labelColor: 'text-indigo-600 dark:text-indigo-400',  valueColor: 'text-indigo-700 dark:text-indigo-300'  },
                         { label: 'Almuerzo', value: cardTotals.almuerzo, Icon: Utensils, bg: 'bg-emerald-50 dark:bg-emerald-900/10', border: 'border-emerald-100 dark:border-emerald-800/30', iconBg: 'bg-emerald-100 dark:bg-emerald-800/50', iconColor: 'text-emerald-600 dark:text-emerald-400', labelColor: 'text-emerald-600 dark:text-emerald-400', valueColor: 'text-emerald-700 dark:text-emerald-300' },
-                    ].map(({ label, value, Icon, bg, border, iconBg, iconColor, labelColor, valueColor }) => (
-                        <div key={label} className={`${bg} rounded-xl p-2.5 border ${border}`}>
+                    ].map(({ label, value, Icon, bg, border, iconBg, iconColor, labelColor, valueColor }, idx) => (
+                        <div 
+                            key={label} 
+                            className={`${bg} rounded-xl p-2.5 border ${border} animate-card-mix`}
+                            style={{ animationDelay: `${0.2 + (idx * 0.05)}s` }}
+                        >
                             <div className="flex items-center gap-1.5 mb-1.5">
                                 <div className={`p-1 ${iconBg} rounded-lg ${iconColor} shrink-0`}>
                                     <Icon className="w-3 h-3" />
@@ -235,7 +242,9 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
                             </div>
                             {loading
                                 ? <div className="h-6 w-10 bg-white/60 dark:bg-white/10 rounded-lg animate-pulse" />
-                                : <div className={`text-xl font-black tabular-nums leading-none ${valueColor}`}>{value.toLocaleString('es-CO')}</div>
+                                : <div className={`text-xl font-black tabular-nums leading-none ${valueColor}`}>
+                                    <AnimatedNumber value={value} delay={(0.2 + (idx * 0.05)) * 1000} />
+                                  </div>
                             }
                         </div>
                     ))}

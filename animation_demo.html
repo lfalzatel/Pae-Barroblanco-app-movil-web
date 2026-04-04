@@ -99,35 +99,69 @@
         /* ANIMACIONES                                      */
         /* ------------------------------------------------ */
         
-        /* Opción 1: Polos Opuestos */
-        .option-1 .nav-item .icon { transform: translateY(-4px); transition: 0.4s; }
-        .option-1 .nav-item .label { transform: translateY(4px); transition: 0.4s; }
-        .option-1 .nav-item.active .icon, .option-1 .nav-item.active .label { transform: translateY(0); }
-
-        /* Opción 2: Escalado */
-        .option-2 .nav-item.active .nav-inner { transform: scale(1.2); }
-
-        /* Opción 3: Elevación */
-        .option-3 .nav-item.active .icon { transform: translateY(-3px); transition: 0.4s; }
-
-        /* Opción 4: Fusión Dinámica Base */
-        @keyframes split-rejoin-icon {
-            0% { transform: translateY(0); }
-            40% { transform: translateY(-15px); }
-            100% { transform: translateY(0); }
+        /* ... (animaciones previas) ... */
+        
+        /* ------------------------------------------------ */
+        /* ANIMACIONES DE TARJETAS (NUEVAS)                 */
+        /* ------------------------------------------------ */
+        @keyframes card-slide-up {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes split-rejoin-label {
-            0% { transform: translateY(0); }
-            40% { transform: translateY(12px); }
-            100% { transform: translateY(0); }
+        @keyframes card-pop {
+            0% { opacity: 0; transform: scale(0.6); }
+            70% { transform: scale(1.08); }
+            100% { opacity: 1; transform: scale(1); }
         }
-        .option-4 .nav-item.active .icon { animation: split-rejoin-icon 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .option-4 .nav-item.active .label { animation: split-rejoin-label 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes card-blur-reveal {
+            from { opacity: 0; filter: blur(12px); transform: translateY(10px); }
+            to { opacity: 1; filter: blur(0); transform: translateY(0); }
+        }
+        @keyframes card-glow-pulse {
+            0% { opacity: 0; box-shadow: 0 0 0px #0891b2; }
+            50% { opacity: 1; box-shadow: 0 0 30px #0891b2; }
+            100% { opacity: 1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        }
+        @keyframes card-3d-flip {
+            from { opacity: 0; transform: perspective(1000px) rotateX(-45deg) translateY(20px); }
+            to { opacity: 1; transform: perspective(1000px) rotateX(0) translateY(0); }
+        }
 
-        /* Opción 5: Propuesta Real Integrada */
-        .option-5 .nav-item.active .nav-inner { transform: scale(1.1); transition: 0.4s; }
-        .option-5 .nav-item.active .icon { animation: split-rejoin-icon 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .option-5 .nav-item.active .label { animation: split-rejoin-label 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        /* MIX: Cascada + Blur */
+        @keyframes card-mix-reveal {
+            from { 
+                opacity: 0; 
+                transform: translateY(40px) scale(0.95); 
+                filter: blur(15px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+                filter: blur(0); 
+            }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            background: #0f172a;
+            border-radius: 20px;
+            border: 1px solid #1e293b;
+        }
+
+        .lab-card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid #334155;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            opacity: 0; /* Por defecto ocultas para disparar la animación */
+        }
 
         .controls {
             margin-top: 30px;
@@ -145,10 +179,10 @@
             font-weight: bold;
             transition: all 0.3s;
         }
-        .btn.active {
-            background: #0891b2;
-            color: white;
-        }
+        .btn.active { background: #0891b2; color: white; }
+        .btn-card { background: #1e293b; border: 1px solid #334155; }
+        .btn-card:hover { border-color: #0891b2; }
+
     </style>
 </head>
 <body class="cyan-theme">
@@ -205,6 +239,23 @@
         <div class="btn" onclick="switchTheme('option-5', 'Propuesta 5', 'Estilos reales de la app + Fusión dinámica.', this)">Prop 5</div>
     </div>
 
+    <div class="mt-8 pt-8 border-t border-slate-700 w-full max-w-md">
+        <h2 class="text-xl font-bold mb-4 text-center tracking-tight">LABORATORIO 2: TARJETAS DE DATOS</h2>
+        
+        <div id="cards-container" class="stats-grid">
+            <!-- Cards will be injected here -->
+        </div>
+
+        <div class="controls mt-6">
+            <div class="btn btn-card" onclick="playCardAnim('card-slide-up', true)">1. Cascada</div>
+            <div class="btn btn-card" onclick="playCardAnim('card-pop', false)">2. Pop</div>
+            <div class="btn btn-card" onclick="playCardAnim('card-blur-reveal', true)">3. Foco</div>
+            <div class="btn btn-card" onclick="playCardAnim('card-glow-pulse', false)">4. Glow</div>
+            <div class="btn btn-card" onclick="playCardAnim('card-3d-flip', true)">5. 3D</div>
+            <div class="btn btn-card bg-emerald-600 text-white border-emerald-600" onclick="playCardAnim('card-mix-reveal', true)">6. El MIX (1+3)</div>
+        </div>
+    </div>
+
     <script>
         function setActive(el) {
             const items = el.parentElement.querySelectorAll('.nav-item');
@@ -219,9 +270,64 @@
             document.getElementById('demo-desc').innerText = desc;
             
             const buttons = document.querySelectorAll('.btn');
-            buttons.forEach(b => b.classList.remove('active'));
+            buttons.forEach(b => {
+                if (!b.classList.contains('btn-card')) b.classList.remove('active');
+            });
             btn.classList.add('active');
         }
+
+        // --- CARDS SYSTEM ---
+        const cardsData = [
+            { val: 842, label: 'TOTAL ESTUDIANTES', color: 'text-blue-400' },
+            { val: 645, label: 'RECIBIERON HOY', color: 'text-emerald-400' },
+            { val: 24, label: 'AUSENTES', color: 'text-orange-400' },
+            { val: 12, label: 'NO RECIBIERON', color: 'text-red-400' }
+        ];
+
+        function animateNumber(obj, start, end, duration, delay) {
+            setTimeout(() => {
+                let startTimestamp = null;
+                const step = (timestamp) => {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    obj.innerHTML = Math.floor(progress * (end - start) + start);
+                    if (progress < 1) {
+                        window.requestAnimationFrame(step);
+                    }
+                };
+                window.requestAnimationFrame(step);
+            }, delay * 1000);
+        }
+
+        function playCardAnim(animClass, staggered) {
+            const container = document.getElementById('cards-container');
+            container.innerHTML = ''; // Limpiar
+            
+            cardsData.forEach((data, i) => {
+                const card = document.createElement('div');
+                card.className = 'lab-card';
+                
+                const valId = `val-${i}`;
+                card.innerHTML = `
+                    <div id="${valId}" class="text-2xl font-black ${data.color} tracking-tighter">0</div>
+                    <div class="text-[9px] font-bold text-gray-500 mt-1 uppercase tracking-widest">${data.label}</div>
+                `;
+                
+                const delay = staggered ? (i * 0.1) : 0;
+                card.style.animation = `${animClass} 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}s forwards`;
+                
+                container.appendChild(card);
+
+                // Animación del número
+                const valEl = card.querySelector(`#${valId}`);
+                animateNumber(valEl, 0, data.val, 1000, delay);
+            });
+        }
+
+        // Init cards
+        playCardAnim('card-slide-up', true);
     </script>
+
+
 </body>
 </html>
