@@ -1273,7 +1273,7 @@ export default function ReportesPage() {
             </button>
           </div>
 
-          {usuario?.rol === 'admin' && (
+          {(usuario?.rol === 'admin' || usuario?.rol === 'coordinador_pae') && (
             <button
               onClick={async () => {
                 const dayNames = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES'];
