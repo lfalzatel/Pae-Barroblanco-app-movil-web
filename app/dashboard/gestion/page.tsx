@@ -1075,7 +1075,7 @@ export default function GestionPage() {
         )}
 
         {isCreateModalOpen && (
-          <div className="fixed inset-0 bg-black/90 backdrop-blur-2xl flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-300" onClick={() => setIsCreateModalOpen(false)}>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-300" onClick={() => setIsCreateModalOpen(false)}>
             <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium dark:bg-gray-800" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative">
                   <div className="flex justify-between items-center">
@@ -1240,7 +1240,7 @@ export default function GestionPage() {
         }
 
         {editingStudent && (
-            <div className="fixed inset-0 bg-black/90 backdrop-blur-2xl flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-300" onClick={() => setEditingStudent(null)}>
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-300" onClick={() => setEditingStudent(null)}>
               <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 custom-scrollbar-premium dark:bg-gray-800" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 md:p-8 bg-gradient-to-br from-amber-500 to-amber-600 text-white relative">
                   <div className="flex justify-between items-center">
@@ -1409,8 +1409,8 @@ export default function GestionPage() {
         {/* Modal Estudiante Detalle (History) */}
         {
           selectedStudent && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300">
-              <div className="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-gray-800">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300" onClick={() => setSelectedStudent(null)}>
+              <div className="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-gray-800" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-4">
@@ -1590,7 +1590,7 @@ export default function GestionPage() {
         {/* Modal Detalle Día Estudiante */}
         {
           selectedStudentDate && (
-            <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setSelectedStudentDate(null)}>
               <div
                 className="bg-white rounded-[2.5rem] w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 custom-scrollbar-premium dark:bg-gray-800"
                 onClick={(e) => e.stopPropagation()}
@@ -1682,8 +1682,8 @@ export default function GestionPage() {
         {/* Modal Docente Detalle (Activity) */}
         {
           selectedDocente && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300">
-              <div className="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-gray-800">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300" onClick={() => setSelectedDocente(null)}>
+              <div className="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-gray-800" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-4">
@@ -1811,7 +1811,7 @@ export default function GestionPage() {
 
                 {/* Modal de Segundo Nivel: Detalle del Día Docente */}
                 {selectedDateActivity && (
-                  <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-2xl animate-in fade-in duration-300" onClick={() => setSelectedDateActivity(null)}>
+                  <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setSelectedDateActivity(null)}>
                     <div
                       className="bg-white rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 custom-scrollbar-premium dark:bg-gray-800"
                       onClick={(e) => e.stopPropagation()}
@@ -1889,7 +1889,7 @@ export default function GestionPage() {
         {/* Modal Cambio de Rol (Security First) */}
         {docenteParaRol && (
           <div 
-            className="fixed inset-0 bg-black/90 backdrop-blur-2xl z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300"
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300"
             onClick={() => setDocenteParaRol(null)}
           >
             <div 
