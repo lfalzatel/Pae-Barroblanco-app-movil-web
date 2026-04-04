@@ -33,7 +33,8 @@ import {
     Monitor,
     Fingerprint,
     AlertTriangle,
-    Share2
+    Share2,
+    Globe
 } from 'lucide-react';
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
 import { useTheme } from '@/components/ThemeProvider';
@@ -501,7 +502,7 @@ export default function DashboardLayout({
     }
 
     if (['admin', 'coordinador_pae', 'secretaria_educacion'].includes(usuario?.rol)) {
-        navItems.push({ href: '/dashboard/novedades', label: 'Novedades', icon: AlertTriangle });
+        navItems.push({ href: '/dashboard/novedades', label: 'Recursos Externos', icon: Globe });
     }
 
     const touchStartRef = useRef<{ x: number, y: number } | null>(null);
@@ -761,8 +762,8 @@ export default function DashboardLayout({
             </main>
 
             {/* Mobile Bottom Navigation */}
-            <div className="md:hidden fixed bottom-2 left-0 right-0 mx-4 bg-white/50 dark:bg-black/50 backdrop-blur-3xl border border-white/30 dark:border-white/10 flex justify-around p-3 rounded-[2.5rem] z-[100] shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-                {navItems.map((item) => {
+            <div className="md:hidden fixed bottom-2 left-0 right-0 mx-4 bg-white/10 dark:bg-black/30 backdrop-blur-3xl border border-white/30 dark:border-white/10 flex justify-around p-3 rounded-[2.5rem] z-[100] shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
+                {navItems.filter(item => item.label !== 'Recursos Externos').map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
                     const isRegistrar = item.label === 'Registrar';
@@ -854,6 +855,14 @@ export default function DashboardLayout({
                                             >
                                                 <FileText className="w-4 h-4" />
                                                 Auditoría
+                                            </Link>
+                                            <Link
+                                                href="/dashboard/novedades"
+                                                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-cyan-600 hover:bg-cyan-50 transition-colors bg-cyan-50/10 dark:bg-gray-800 dark:text-cyan-400 dark:hover:bg-gray-700"
+                                                onClick={() => setIsProfileMenuOpen(false)}
+                                            >
+                                                <Globe className="w-4 h-4" />
+                                                Recursos Externos
                                             </Link>
                                         </>
                                     )}
