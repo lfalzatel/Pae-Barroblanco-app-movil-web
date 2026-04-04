@@ -1065,7 +1065,7 @@ export default function HorarioPage() {
 
             {
                 showCalendar && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowCalendar(false)}></div>
                         <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-[2.5rem] w-full max-w-[90vw] md:max-w-sm relative z-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-white/20 mx-auto">
                             <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-br from-cyan-600 to-cyan-700 flex items-center justify-between text-white">
