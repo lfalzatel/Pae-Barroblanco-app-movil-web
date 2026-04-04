@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useModalBack } from '@/hooks/useModalBack';
-import { ArrowLeft, Search, Eye, FileDown, Users, User, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2, School, ChevronDown, Info, Shield, FileText, Truck, Edit2 } from 'lucide-react';
+import { ArrowLeft, Search, Eye, FileDown, Users, User, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2, School, ChevronDown, Info, Shield, FileText, Truck, Edit2, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -40,6 +40,7 @@ export default function GestionPage() {
   const [docentes, setDocentes] = useState<Docente[]>([]);
   const [gruposDisponibles, setGruposDisponibles] = useState<string[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Estudiante | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   useModalBack(!!selectedStudent, () => setSelectedStudent(null), 'student-history-modal');
 
   const [selectedDocente, setSelectedDocente] = useState<Docente | null>(null);
@@ -306,14 +307,15 @@ export default function GestionPage() {
       if (!selectedStudent) return;
 
       try {
-        const ninetyDaysAgo = new Date();
-        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        setCurrentMonth(new Date());
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setDate(sixMonthsAgo.getDate() - 180);
 
         const { data, error } = await supabase
           .from('asistencia_pae')
           .select('*')
           .eq('estudiante_id', selectedStudent.id)
-          .gte('fecha', new Date(ninetyDaysAgo.getTime() - ninetyDaysAgo.getTimezoneOffset() * 60000).toISOString().split('T')[0])
+          .gte('fecha', new Date(sixMonthsAgo.getTime() - sixMonthsAgo.getTimezoneOffset() * 60000).toISOString().split('T')[0])
           .order('fecha', { ascending: false });
 
         if (error) throw error;
@@ -332,6 +334,7 @@ export default function GestionPage() {
   useEffect(() => {
     const fetchDocenteHistory = async () => {
       if (!selectedDocente) return;
+      setCurrentMonth(new Date());
 
       try {
         const { data, error } = await supabase
@@ -1493,7 +1496,23 @@ export default function GestionPage() {
                         <Calendar className="w-4 h-4 text-cyan-600" />
                         Mapa de Asistencia
                       </h4>
-                      <span className="text-[9px] font-bold text-gray-300 uppercase tracking-wider">Últimas 5 semanas</span>
+                      <div className="flex items-center gap-3">
+                        <button 
+                           onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
+                           className="p-1.5 bg-gray-50 border border-gray-100 rounded-lg hover:bg-white transition-colors dark:bg-gray-700 dark:border-gray-600"
+                        >
+                          <ChevronLeft className="w-3 h-3 text-cyan-600" />
+                        </button>
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest min-w-[100px] text-center">
+                          {currentMonth.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
+                        </span>
+                        <button 
+                           onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
+                           className="p-1.5 bg-gray-50 border border-gray-100 rounded-lg hover:bg-white transition-colors dark:bg-gray-700 dark:border-gray-600"
+                        >
+                          <ChevronRight className="w-3 h-3 text-cyan-600" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100/50 shadow-inner dark:bg-gray-900/50 dark:border-gray-700/50">
@@ -1505,53 +1524,62 @@ export default function GestionPage() {
                       </div>
 
                       <div className="grid grid-cols-7 gap-1.5">
-                        {Array.from({ length: 35 }).map((_, i) => {
-                          const d = (() => {
-                            const today = new Date();
-                            const currentDay = today.getDay();
-                            const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
-                            const startOfWeek = new Date(today);
-                            startOfWeek.setDate(today.getDate() - daysSinceMonday);
-                            const startDate = new Date(startOfWeek);
-                            startDate.setDate(startOfWeek.getDate() - 28);
-                            const date = new Date(startDate);
-                            date.setDate(startDate.getDate() + i);
-                            return date;
-                          })();
-                          const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                          const todayStr = new Date().toISOString().split('T')[0];
-                          const record = studentHistory.find(r => r.fecha === dateStr);
-                          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                          const hasNovelty = record?.novedad_tipo || record?.novedad_descripcion;
-                          const isFuture = dateStr > todayStr;
+                        {(() => {
+                          const year = currentMonth.getFullYear();
+                          const month = currentMonth.getMonth();
+                          const firstDay = new Date(year, month, 1);
+                          const lastDay = new Date(year, month + 1, 0);
+                          
+                          const days = [];
+                          // Lead empty cells (Mon-Sun)
+                          let startDayOfWeek = firstDay.getDay(); 
+                          let leadingEmpty = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
 
-                          return (
-                            <button
-                              key={i}
-                              onClick={() => record && setSelectedStudentDate(record)}
-                              disabled={!record}
-                              className={`aspect-square rounded-xl flex flex-col items-center justify-center relative border transition-all duration-300 ${isFuture ? 'opacity-10 bg-gray-100 border-transparent cursor-default dark:bg-gray-800' :
-                                record ? (
-                                  record.estado === 'recibio' ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-100 active:scale-90' :
-                                    record.estado === 'no_recibio' ? 'bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-100 active:scale-90' :
-                                      'bg-gray-400 border-gray-300 text-white active:scale-90'
-                                ) : isWeekend ? 'bg-gray-100 border-transparent text-gray-300 dark:bg-gray-700/50 dark:text-gray-500' : 'bg-white border-gray-100 text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-500'
-                                }`}
-                            >
-                              <span className="text-[10px] font-black">{d.getDate()}</span>
-                              {hasNovelty && (
-                                <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse shadow-sm shadow-amber-200"></div>
-                              )}
-                            </button>
-                          );
-                        })}
+                          for (let i = 0; i < leadingEmpty; i++) {
+                            days.push(null);
+                          }
+                          for (let i = 1; i <= lastDay.getDate(); i++) {
+                            days.push(new Date(year, month, i));
+                          }
+
+                          return days.map((d, i) => {
+                            if (!d) return <div key={`empty-${i}`} className="aspect-square"></div>;
+
+                            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            const todayStr = new Date().toISOString().split('T')[0];
+                            const record = studentHistory.find(r => r.fecha === dateStr);
+                            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                            const hasNovelty = record?.novedad_tipo || record?.novedad_descripcion;
+                            const isFuture = dateStr > todayStr;
+
+                            return (
+                              <button
+                                key={dateStr}
+                                onClick={() => record && setSelectedStudentDate(record)}
+                                disabled={!record}
+                                className={`aspect-square rounded-xl flex flex-col items-center justify-center relative border transition-all duration-300 ${isFuture ? 'opacity-10 bg-gray-100 border-transparent cursor-default dark:bg-gray-800' :
+                                  record ? (
+                                    record.estado === 'recibio' ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-100 active:scale-90' :
+                                      record.estado === 'no_recibio' ? 'bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-100 active:scale-90' :
+                                        'bg-gray-400 border-gray-300 text-white active:scale-90'
+                                  ) : isWeekend ? 'bg-gray-100 border-transparent text-gray-300 dark:bg-gray-700/50 dark:text-gray-500' : 'bg-white border-gray-100 text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-500'
+                                  }`}
+                              >
+                                <span className="text-[10px] font-black">{d.getDate()}</span>
+                                {hasNovelty && (
+                                  <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse shadow-sm shadow-amber-200"></div>
+                                )}
+                              </button>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
 
-                    <div className="flex gap-4 text-[9px] font-black uppercase tracking-widest justify-center pt-2 opacity-60">
-                      <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-emerald-500 rounded-full shadow-sm"></div> Recibió</div>
-                      <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-rose-500 rounded-full shadow-sm"></div> No recibió</div>
-                      <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-amber-400 rounded-full shadow-sm"></div> Novedad</div>
+                    <div className="flex gap-4 text-[9px] font-black uppercase tracking-widest justify-center pt-2 text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center gap-1.5 transition-opacity hover:opacity-100"><div className="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-sm shadow-emerald-200"></div> Recibió</div>
+                      <div className="flex items-center gap-1.5 transition-opacity hover:opacity-100"><div className="w-2.5 h-2.5 bg-rose-500 rounded-full shadow-sm shadow-rose-200"></div> No recibió</div>
+                      <div className="flex items-center gap-1.5 transition-opacity hover:opacity-100"><div className="w-2.5 h-2.5 bg-amber-400 rounded-full shadow-sm shadow-amber-200"></div> Novedad</div>
                     </div>
                   </div>
 
@@ -1737,7 +1765,23 @@ export default function GestionPage() {
                         <Calendar className="w-4 h-4 text-cyan-600" />
                         Mapa de Productividad
                       </h4>
-                      <span className="text-[9px] font-bold text-gray-300 uppercase tracking-wider">Últimos 35 días</span>
+                      <div className="flex items-center gap-3">
+                        <button 
+                           onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
+                           className="p-1.5 bg-gray-50 border border-gray-100 rounded-lg hover:bg-white transition-colors dark:bg-gray-700 dark:border-gray-600"
+                        >
+                          <ChevronLeft className="w-3 h-3 text-cyan-600" />
+                        </button>
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest min-w-[100px] text-center">
+                          {currentMonth.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
+                        </span>
+                        <button 
+                           onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
+                           className="p-1.5 bg-gray-50 border border-gray-100 rounded-lg hover:bg-white transition-colors dark:bg-gray-700 dark:border-gray-600"
+                        >
+                          <ChevronRight className="w-3 h-3 text-cyan-600" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="bg-gray-50/50 p-5 rounded-[2rem] border border-gray-100/50 shadow-inner dark:bg-gray-900/50 dark:border-gray-700/50">
@@ -1751,52 +1795,61 @@ export default function GestionPage() {
                       </div>
 
                       <div className="grid grid-cols-7 gap-1.5">
-                        {Array.from({ length: 35 }).map((_, i) => {
-                          const d = (() => {
-                            const today = new Date();
-                            const currentDay = today.getDay();
-                            const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
-                            const startOfWeek = new Date(today);
-                            startOfWeek.setDate(today.getDate() - daysSinceMonday);
-                            const startDate = new Date(startOfWeek);
-                            startDate.setDate(startOfWeek.getDate() - 28);
-                            const date = new Date(startDate);
-                            date.setDate(startDate.getDate() + i);
-                            return date;
-                          })();
-                          const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                          const todayStr = new Date().toISOString().split('T')[0];
-                          const record = docenteHistory.find(r => r.fecha === dateStr);
-                          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                          const isFuture = dateStr > todayStr;
+                        {(() => {
+                          const year = currentMonth.getFullYear();
+                          const month = currentMonth.getMonth();
+                          const firstDay = new Date(year, month, 1);
+                          const lastDay = new Date(year, month + 1, 0);
+                          
+                          const days = [];
+                          // Lead empty cells (Mon-Sun)
+                          let startDayOfWeek = firstDay.getDay(); 
+                          let leadingEmpty = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
 
-                          return (
-                            <button
-                              key={i}
-                              onClick={() => record && setSelectedDateActivity(record)}
-                              disabled={!record}
-                              title={dateStr + (record ? ` - ${record.total} registros` : '')}
-                              className={`aspect-square rounded-xl flex flex-col items-center justify-center border transition-all duration-300
-                          ${isFuture ? 'opacity-10 bg-gray-100 border-transparent cursor-default dark:bg-gray-700' :
-                                  record
-                                    ? 'bg-cyan-600 border-cyan-500 text-white shadow-lg shadow-cyan-100 active:scale-95 cursor-pointer'
-                                    : isWeekend
-                                      ? 'bg-gray-100 border-transparent text-gray-300 dark:bg-gray-700/50 dark:text-gray-500'
-                                      : 'bg-white border-gray-100 text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-500'
-                                }
-                            `}
-                            >
-                              <span className={`text-[10px] font-black ${record ? 'text-white' : ''}`}>
-                                {d.getDate()}
-                              </span>
-                              {record && (
-                                <span className="text-[8px] font-black opacity-70 mt-0.5 leading-none">
-                                  {record.total}
+                          for (let i = 0; i < leadingEmpty; i++) {
+                            days.push(null);
+                          }
+                          for (let i = 1; i <= lastDay.getDate(); i++) {
+                            days.push(new Date(year, month, i));
+                          }
+
+                          return days.map((d, i) => {
+                            if (!d) return <div key={`doc-empty-${i}`} className="aspect-square"></div>;
+
+                            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            const todayStr = new Date().toISOString().split('T')[0];
+                            const record = docenteHistory.find(r => r.fecha === dateStr);
+                            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                            const isFuture = dateStr > todayStr;
+
+                            return (
+                              <button
+                                key={dateStr}
+                                onClick={() => record && setSelectedDateActivity(record)}
+                                disabled={!record}
+                                title={dateStr + (record ? ` - ${record.total} registros` : '')}
+                                className={`aspect-square rounded-xl flex flex-col items-center justify-center border transition-all duration-300
+                            ${isFuture ? 'opacity-10 bg-gray-100 border-transparent cursor-default dark:bg-gray-700' :
+                                    record
+                                      ? 'bg-cyan-600 border-cyan-500 text-white shadow-lg shadow-cyan-100 active:scale-95 cursor-pointer'
+                                      : isWeekend
+                                        ? 'bg-gray-100 border-transparent text-gray-300 dark:bg-gray-700/50 dark:text-gray-500'
+                                        : 'bg-white border-gray-100 text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-500'
+                                  }
+                              `}
+                              >
+                                <span className={`text-[10px] font-black ${record ? 'text-white' : ''}`}>
+                                  {d.getDate()}
                                 </span>
-                              )}
-                            </button>
-                          );
-                        })}
+                                {record && (
+                                  <span className="text-[8px] font-black opacity-70 mt-0.5 leading-none">
+                                    {record.total}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
                   </div>
