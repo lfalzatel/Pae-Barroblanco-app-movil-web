@@ -73,13 +73,13 @@ export function SplashScreen({ onComplete, duration = 3000, customMessages }: Sp
           <div className="absolute -inset-4 border-b-4 border-l-4 border-transparent border-b-green-700 border-l-green-600/20 rounded-full animate-spin-reverse"></div>
 
           {/* Circular Logo Wrapper */}
-          <div className="relative w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-green-600/50 to-emerald-400/50 shadow-[0_0_60px_rgba(64,168,81,0.4)] animate-bounce-slow">
+          <div className="relative w-44 h-44 rounded-full p-1 bg-gradient-to-tr from-green-600/50 to-emerald-400/50 shadow-[0_0_60px_rgba(64,168,81,0.4)] animate-bounce-slow">
             <div className="w-full h-full rounded-full bg-[#40a851] p-2 overflow-hidden flex items-center justify-center border-2 border-white/20 shadow-inner">
                 <Image
                 src="/icon-512x512.png"
                 alt="Sistema PAE Logo"
-                width={100}
-                height={100}
+                width={150}
+                height={150}
                 className="priority"
                 priority
                 />
