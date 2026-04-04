@@ -33,6 +33,7 @@ export default function GestionPage() {
   const router = useRouter();
   const [usuario, setUsuario] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [periodoFilter, setPeriodoFilter] = useState('30_dias');
   const [sedeFilter, setSedeFilter] = useState('Principal');
   const [grupoFilter, setGrupoFilter] = useState('todos');
   const [activeTab, setActiveTab] = useState<'estudiantes' | 'docentes'>('estudiantes');
@@ -427,24 +428,66 @@ export default function GestionPage() {
 
   const calcularAsistenciaReal = async () => {
     try {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const totalStudentsCount = estudiantesFiltrados.length;
+      if (totalStudentsCount === 0) return { percentage: '0.0', details: null };
 
-      const studentIds = estudiantesFiltrados.map(e => e.id);
-      if (studentIds.length === 0) return { percentage: '0.0', details: null };
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      let startDateStr = '';
+      let endDateStr = '';
 
-      // Fetch all 'recibio' events for these students in last 30 days
-      const { data, error } = await supabase
+      if (periodoFilter === '30_dias') {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(now.getDate() - 30);
+        startDateStr = new Date(thirtyDaysAgo.getTime() - thirtyDaysAgo.getTimezoneOffset() * 60000)
+          .toISOString()
+          .split('T')[0];
+      } else {
+        // periodoFilter is 'MM' (month number)
+        const monthNum = parseInt(periodoFilter) - 1;
+        const firstDay = new Date(currentYear, monthNum, 1);
+        const lastDay = new Date(currentYear, monthNum + 1, 0);
+        
+        startDateStr = new Date(firstDay.getTime() - firstDay.getTimezoneOffset() * 60000)
+          .toISOString()
+          .split('T')[0];
+        endDateStr = new Date(lastDay.getTime() - lastDay.getTimezoneOffset() * 60000)
+          .toISOString()
+          .split('T')[0];
+      }
+
+      // Use Join to filter by students directly in Supabase (Avoids URL length issues)
+      let queryBuilder = supabase
         .from('asistencia_pae')
-        .select('fecha, estado')
-        .in('estudiante_id', studentIds)
+        .select('fecha, estado, estudiantes!inner(id, nombre, sede, grupo, matricula)')
         .eq('estado', 'recibio')
-        .gte(
-          'fecha',
-          new Date(thirtyDaysAgo.getTime() - thirtyDaysAgo.getTimezoneOffset() * 60000)
-            .toISOString()
-            .split('T')[0]
-        );
+        .not('estudiantes.grupo', 'ilike', '%2025%')
+        .gte('fecha', startDateStr);
+
+      if (endDateStr) {
+        queryBuilder = queryBuilder.lte('fecha', endDateStr);
+      }
+
+      // Replicate the client-side filters in the query for accuracy and performance
+      const sedeMap: Record<string, string> = {
+        'principal': 'Principal',
+        'primaria': 'Sede Primaria',
+        'maria-inmaculada': 'Sede Maria Inmaculada'
+      };
+
+      if (sedeFilter !== 'todas') {
+        queryBuilder = queryBuilder.eq('estudiantes.sede', sedeMap[sedeFilter] || 'Principal');
+      }
+
+      if (grupoFilter !== 'todos') {
+        queryBuilder = queryBuilder.eq('estudiantes.grupo', grupoFilter);
+      }
+
+      if (searchQuery) {
+        queryBuilder = queryBuilder.or(`nombre.ilike.%${searchQuery}%,matricula.ilike.%${searchQuery}%`, { foreignTable: 'estudiantes' });
+      }
+
+      const { data, error } = await queryBuilder;
 
       if (error) throw error;
       if (!data || data.length === 0) return { percentage: '0.0', details: null };
@@ -462,20 +505,20 @@ export default function GestionPage() {
       if (numberOfDays === 0) return { percentage: '0.0', details: null };
 
       const avgDailyAttendance = totalRecibio / numberOfDays;
-      const coveragePercentage = (avgDailyAttendance / studentIds.length) * 100;
+      const coveragePercentage = (avgDailyAttendance / totalStudentsCount) * 100;
 
       // Build detail history
       const history = uniqueDays.map(date => ({
         date,
         count: dailyCounts[date],
-        percentage: (dailyCounts[date] / studentIds.length) * 100
+        percentage: (dailyCounts[date] / totalStudentsCount) * 100
       }));
 
       return {
         percentage: coveragePercentage.toFixed(1),
         details: {
           avgDaily: Math.round(avgDailyAttendance),
-          totalStudents: studentIds.length,
+          totalStudents: totalStudentsCount,
           daysCounted: numberOfDays,
           dailyHistory: history
         }
@@ -495,7 +538,7 @@ export default function GestionPage() {
       setStatsDetail(result.details);
     };
     updateStats();
-  }, [estudiantesFiltrados]);
+  }, [estudiantesFiltrados, periodoFilter]);
 
   // ... (Report Generation functions remain the same) ...
 
@@ -816,15 +859,42 @@ export default function GestionPage() {
                 </div>
               </div>
 
-              <div className="relative group">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-cyan-400 w-5 h-5 group-focus-within:text-cyan-600 transition-colors" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar estudiante o matrícula..."
-                  className="w-full pl-14 pr-6 py-4 bg-gray-50/50 border border-gray-100 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-inner transition-all font-bold text-gray-700 text-sm placeholder:text-gray-300 placeholder:font-medium dark:bg-gray-700/50 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
-                />
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                <div className="flex-1 relative group">
+                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-cyan-400 w-5 h-5 group-focus-within:text-cyan-600 transition-colors" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar estudiante o matrícula..."
+                    className="w-full pl-14 pr-6 py-4 bg-gray-50/50 border border-gray-100 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-inner transition-all font-bold text-gray-700 text-sm placeholder:text-gray-300 placeholder:font-medium dark:bg-gray-700/50 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
+                  />
+                </div>
+                
+                <div className="w-full sm:w-56 relative group">
+                  <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                    <Calendar className="w-5 h-5 text-cyan-500 shrink-0" />
+                    <div className="w-[1px] h-4 bg-cyan-200 dark:bg-cyan-800"></div>
+                  </div>
+                  <select
+                    value={periodoFilter}
+                    onChange={(e) => setPeriodoFilter(e.target.value)}
+                    className="w-full pl-14 pr-10 py-4 bg-white/50 backdrop-blur-md border border-cyan-100/50 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 shadow-sm transition-all font-black text-cyan-700 text-[10px] uppercase tracking-widest appearance-none cursor-pointer dark:bg-gray-800/50 dark:border-cyan-900/30 dark:text-cyan-400"
+                  >
+                    <option value="30_dias">Últimos 30 días</option>
+                    <option value="02">Febrero 2026</option>
+                    <option value="03">Marzo 2026</option>
+                    <option value="04">Abril 2026</option>
+                    <option value="05">Mayo 2026</option>
+                    <option value="06">Junio 2026</option>
+                    <option value="07">Julio 2026</option>
+                    <option value="08">Agosto 2026</option>
+                    <option value="09">Septiembre 2026</option>
+                    <option value="10">Octubre 2026</option>
+                    <option value="11">Noviembre 2026</option>
+                  </select>
+                  <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-cyan-500 w-4 h-4 pointer-events-none group-hover:translate-y-[-40%] transition-transform" />
+                </div>
               </div>
             </div>
 
