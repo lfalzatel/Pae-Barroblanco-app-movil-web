@@ -775,13 +775,20 @@ export default function DashboardLayout({
                         >
                             <div className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-2xl transition-all duration-300 ${
                                 isActive
-                                    ? 'bg-cyan-600 text-white scale-110 shadow-lg shadow-cyan-400/40 dark:shadow-cyan-900/50'
+                                    ? 'bg-cyan-600 text-white scale-110 -translate-y-2 shadow-lg shadow-cyan-400/40 dark:shadow-cyan-900/50 delay-[150ms]'
                                     : 'text-cyan-600 dark:text-cyan-400 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-900/20 group-hover:scale-105'
                             }`}>
                                 <div className={`relative ${isRegistrar && !isActive ? 'animate-pulse' : ''}`}>
                                     <Icon className={`w-5 h-5 ${isRegistrar && !isActive ? 'drop-shadow-[0_0_8px_rgba(8,145,178,0.5)]' : ''} ${isActive ? 'animate-[nav-split-icon_0.6s_cubic-bezier(0.34,1.56,0.64,1)]' : ''}`} />
+                                    {isRegistrar && !isActive && (
+                                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-900" />
+                                    )}
                                 </div>
-                                <span className={`text-[10px] ${isActive ? 'font-black animate-[nav-split-label_0.6s_cubic-bezier(0.34,1.56,0.64,1)]' : 'font-medium'}`}>{item.label}</span>
+                                <span className={`text-[10px] ${
+                                    isActive ? 'font-black animate-[nav-split-label_0.6s_cubic-bezier(0.34,1.56,0.64,1)]' : 'font-medium'
+                                }`}>
+                                    {item.label}
+                                </span>
                             </div>
                         </Link>
                     );
