@@ -41,5 +41,17 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+}
 
+/* Animaciones para el menú inferior */
+@keyframes nav-split-icon {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes nav-split-label {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(8px); }
+  100% { transform: translateY(0); }
 }

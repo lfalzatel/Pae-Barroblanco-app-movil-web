@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio de Animación - Sistema PAE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .phone-mockup {
+            width: 320px;
+            height: 580px;
+            background: #1e293b;
+            border: 8px solid #334155;
+            border-radius: 40px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+        }
+
+        .screen-content {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ------------------------------------------------ */
+        /* ESTRUCTURA Y COLORES REALES (Cyan #0891b2)       */
+        /* ------------------------------------------------ */
+        .cyan-theme { --primary: #0891b2; --bg-active: #0891b2; }
+
+        .nav-container {
+            position: absolute;
+            bottom: 8px;
+            left: 12px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(64px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 2.5rem;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px;
+            z-index: 100;
+        }
+
+        .nav-item {
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 4px 0;
+            position: relative;
+            color: #0891b2; /* cyan-600 */
+        }
+
+        .nav-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 6px 10px;
+            border-radius: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-item.active .nav-inner {
+            background: #0891b2;
+            color: white;
+            box-shadow: 0 8px 16px rgba(8, 145, 178, 0.4);
+        }
+
+        .label {
+            font-size: 10px;
+            font-weight: 500;
+            opacity: 0.8;
+        }
+        .nav-item.active .label {
+            font-weight: 900;
+            opacity: 1;
+        }
+
+        /* ------------------------------------------------ */
+        /* ANIMACIONES                                      */
+        /* ------------------------------------------------ */
+        
+        /* Opción 1: Polos Opuestos */
+        .option-1 .nav-item .icon { transform: translateY(-4px); transition: 0.4s; }
+        .option-1 .nav-item .label { transform: translateY(4px); transition: 0.4s; }
+        .option-1 .nav-item.active .icon, .option-1 .nav-item.active .label { transform: translateY(0); }
+
+        /* Opción 2: Escalado */
+        .option-2 .nav-item.active .nav-inner { transform: scale(1.2); }
+
+        /* Opción 3: Elevación */
+        .option-3 .nav-item.active .icon { transform: translateY(-3px); transition: 0.4s; }
+
+        /* Opción 4: Fusión Dinámica Base */
+        @keyframes split-rejoin-icon {
+            0% { transform: translateY(0); }
+            40% { transform: translateY(-15px); }
+            100% { transform: translateY(0); }
+        }
+        @keyframes split-rejoin-label {
+            0% { transform: translateY(0); }
+            40% { transform: translateY(12px); }
+            100% { transform: translateY(0); }
+        }
+        .option-4 .nav-item.active .icon { animation: split-rejoin-icon 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .option-4 .nav-item.active .label { animation: split-rejoin-label 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+        /* Opción 5: Propuesta Real Integrada */
+        .option-5 .nav-item.active .nav-inner { transform: scale(1.1); transition: 0.4s; }
+        .option-5 .nav-item.active .icon { animation: split-rejoin-icon 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .option-5 .nav-item.active .label { animation: split-rejoin-label 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn {
+            background: #334155;
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn.active {
+            background: #0891b2;
+            color: white;
+        }
+    </style>
+</head>
+<body class="cyan-theme">
+
+    <h1 class="text-2xl font-black mb-6 tracking-tighter uppercase text-center">Laboratorio PAE - Comparativa</h1>
+
+    <div class="phone-mockup" id="mockup">
+        <div class="screen-content pt-10">
+            <h2 id="demo-title" class="text-xl font-bold text-[#0891b2]">Propuesta 1</h2>
+            <p id="demo-desc" class="text-sm text-gray-400 mt-4 px-6">
+                Atracción sencilla de polos opuestos con colores reales.
+            </p>
+            <div class="mt-20 opacity-10">
+                <div class="w-full h-32 bg-gray-700 rounded-xl mb-4"></div>
+                <div class="w-2/3 h-4 bg-gray-700 rounded-full mx-auto"></div>
+            </div>
+        </div>
+
+        <div id="nav-wrapper" class="option-1">
+            <div class="nav-container">
+                <div class="nav-item active" onclick="setActive(this)">
+                    <div class="nav-inner">
+                        <svg class="icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        <span class="label">Inicio</span>
+                    </div>
+                </div>
+                <div class="nav-item" onclick="setActive(this)">
+                    <div class="nav-inner">
+                        <svg class="icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        <span class="label">Registrar</span>
+                    </div>
+                </div>
+                <div class="nav-item" onclick="setActive(this)">
+                    <div class="nav-inner">
+                        <svg class="icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        <span class="label">Gestión</span>
+                    </div>
+                </div>
+                <div class="nav-item" onclick="setActive(this)">
+                    <div class="nav-inner">
+                        <svg class="icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 01-2 2h22a2 2 0 01-2-2v-6a2 2 0 00-2-2h-2a2 2 0 00-2 2v6M9 19h6m-3-3v3m0 0v1m-3-3v1m6-1v1"></path></svg>
+                        <span class="label">Reportes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="btn active" onclick="switchTheme('option-1', 'Propuesta 1', 'Atracción básica de polos opuestos.', this)">Prop 1</div>
+        <div class="btn" onclick="switchTheme('option-2', 'Propuesta 2', 'Escalado suave del contenedor activo.', this)">Prop 2</div>
+        <div class="btn" onclick="switchTheme('option-3', 'Propuesta 3', 'Elevación simple del icono.', this)">Prop 3</div>
+        <div class="btn" onclick="switchTheme('option-4', 'Propuesta 4', 'Fusión dinámica (separar y unir).', this)">Prop 4</div>
+        <div class="btn" onclick="switchTheme('option-5', 'Propuesta 5', 'Estilos reales de la app + Fusión dinámica.', this)">Prop 5</div>
+    </div>
+
+    <script>
+        function setActive(el) {
+            const items = el.parentElement.querySelectorAll('.nav-item');
+            items.forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function switchTheme(themeClass, title, desc, btn) {
+            const wrapper = document.getElementById('nav-wrapper');
+            wrapper.className = themeClass;
+            document.getElementById('demo-title').innerText = title;
+            document.getElementById('demo-desc').innerText = desc;
+            
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+    </script>
+</body>
+</html>
