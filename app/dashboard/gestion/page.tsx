@@ -457,40 +457,60 @@ export default function GestionPage() {
       }
 
       // Use Join to filter by students directly in Supabase (Avoids URL length issues)
-      let queryBuilder = supabase
-        .from('asistencia_pae')
-        .select('fecha, estado, estudiantes!inner(id, nombre, sede, grupo, matricula)')
-        .eq('estado', 'recibio')
-        .not('estudiantes.grupo', 'ilike', '%2025%')
-        .gte('fecha', startDateStr);
+      // Proceso de carga masiva por bloques para superar el límite de 1000 filas de Supabase
+      let allData: any[] = [];
+      let from = 0;
+      const PAGE_SIZE = 1000;
+      let hasMore = true;
 
-      if (endDateStr) {
-        queryBuilder = queryBuilder.lte('fecha', endDateStr);
-      }
-
-      // Replicate the client-side filters in the query for accuracy and performance
       const sedeMap: Record<string, string> = {
         'principal': 'Principal',
         'primaria': 'Sede Primaria',
         'maria-inmaculada': 'Sede Maria Inmaculada'
       };
 
-      if (sedeFilter !== 'todas') {
-        queryBuilder = queryBuilder.eq('estudiantes.sede', sedeMap[sedeFilter] || 'Principal');
+      while (hasMore) {
+        let pageQuery = supabase
+          .from('asistencia_pae')
+          .select('fecha, estado, estudiantes!inner(id, nombre, sede, grupo, matricula)')
+          .eq('estado', 'recibio')
+          .not('estudiantes.grupo', 'ilike', '%2025%')
+          .gte('fecha', startDateStr);
+
+        if (endDateStr) {
+          pageQuery = pageQuery.lte('fecha', endDateStr);
+        }
+
+        if (sedeFilter !== 'todas') {
+          pageQuery = pageQuery.eq('estudiantes.sede', sedeMap[sedeFilter] || 'Principal');
+        }
+
+        if (grupoFilter !== 'todos') {
+          pageQuery = pageQuery.eq('estudiantes.grupo', grupoFilter);
+        }
+
+        if (searchQuery) {
+          pageQuery = pageQuery.or(`nombre.ilike.%${searchQuery}%,matricula.ilike.%${searchQuery}%`, { foreignTable: 'estudiantes' });
+        }
+
+        const { data: pageData, error: pageError } = await pageQuery.range(from, from + PAGE_SIZE - 1);
+
+        if (pageError) throw pageError;
+
+        if (pageData && pageData.length > 0) {
+          allData = [...allData, ...pageData];
+          if (pageData.length < PAGE_SIZE) {
+            hasMore = false;
+          } else {
+            from += PAGE_SIZE;
+          }
+        } else {
+          hasMore = false;
+        }
       }
 
-      if (grupoFilter !== 'todos') {
-        queryBuilder = queryBuilder.eq('estudiantes.grupo', grupoFilter);
-      }
-
-      if (searchQuery) {
-        queryBuilder = queryBuilder.or(`nombre.ilike.%${searchQuery}%,matricula.ilike.%${searchQuery}%`, { foreignTable: 'estudiantes' });
-      }
-
-      const { data, error } = await queryBuilder;
-
-      if (error) throw error;
-      if (!data || data.length === 0) return { percentage: '0.0', details: null };
+      if (allData.length === 0) return { percentage: '0.0', details: null };
+      const data = allData;
 
       // Group by date to find unique days and daily counts
       const dailyCounts: Record<string, number> = {};
