@@ -28,10 +28,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'No hay nadie suscrito en la base de datos.' });
     }
 
-    const colombiaTime = new Date(new Date().getTime() - (5 * 60 * 60 * 1000));
+    const formattedTime = new Date().toLocaleTimeString('es-CO', {
+      timeZone: 'America/Bogota',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+
     const payload = JSON.stringify({
       title: 'Prueba Maestro 👋',
-      body: `Enviado el ${colombiaTime.toLocaleTimeString('es-CO')} (Hora Col)`,
+      body: `Enviado el ${formattedTime} (Hora Exacta)`,
       url: '/dashboard',
     });
 
