@@ -28,9 +28,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'No hay nadie suscrito en la base de datos.' });
     }
 
+    const colombiaTime = new Date(new Date().getTime() - (5 * 60 * 60 * 1000));
     const payload = JSON.stringify({
       title: 'Prueba Maestro 👋',
-      body: `Enviado el ${new Date().toLocaleTimeString('es-CO')}`,
+      body: `Enviado el ${colombiaTime.toLocaleTimeString('es-CO')} (Hora Col)`,
       url: '/dashboard',
     });
 
@@ -44,12 +45,19 @@ export async function GET(req: NextRequest) {
       })
     );
 
-    const detailedResults = results.map((r, i) => ({
-      endpoint: subscriptions[i].endpoint.substring(0, 40) + '...',
-      status: r.status,
-      error: r.status === 'rejected' ? (r.reason as any).message : null,
-      statusCode: r.status === 'rejected' ? (r.reason as any).statusCode : 200
-    }));
+    const detailedResults = results.map((r, i) => {
+      const endpoint = subscriptions[i].endpoint;
+      const browser = endpoint.includes('fcm.googleapis.com') ? 'Android/Chrome' : 
+                      endpoint.includes('push.apple.com') ? 'iOS/Safari' : 'PC/Otro';
+      
+      return {
+        browser,
+        endpoint: endpoint.substring(0, 30) + '...',
+        status: r.status,
+        error: r.status === 'rejected' ? (r.reason as any).message : null,
+        statusCode: r.status === 'rejected' ? (r.reason as any).statusCode : 200
+      };
+    });
 
     return NextResponse.json({
       message: 'Intento de envío completado',

@@ -83,9 +83,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Payload de la notificación
+    const colombiaTime = new Date(new Date().getTime() - (5 * 60 * 60 * 1000));
+    const timestamp = colombiaTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
+
     const payload = JSON.stringify({
       title,
-      body: message,
+      body: `${message}\n(Enviado a las ${timestamp})`,
       url: url || '/dashboard',
       tag: 'pae-horario',
     });

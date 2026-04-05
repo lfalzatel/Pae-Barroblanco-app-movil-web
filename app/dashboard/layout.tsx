@@ -84,17 +84,19 @@ export default function DashboardLayout({
             const data = await res.json();
             
             if (data.error) {
-                alert(`Error: ${data.error}`);
+                alert(`Error del servidor: ${data.error}`);
             } else if (data.message === 'No hay nadie suscrito en la base de datos.') {
-                alert('No hay ninguna suscripción activa en la base de datos. Por favor, asegúrate de haber activado las notificaciones en tu perfil primero.');
-            } else if (data.results && data.results.some((r: any) => r.status === 'fulfilled')) {
-                alert('¡Prueba enviada con éxito! Revisa tu celular o PC. Si no llega, verifica los permisos del sistema operativo.');
-            } else {
-                alert('La prueba se procesó pero parece haber fallado en el envío. Verifica tu conexión.');
+                alert('No hay suscriptores. Ve a tu perfil y activa la campana azul.');
+            } else if (data.results) {
+                const resultsMsg = data.results.map((r: any) => 
+                    `${r.browser}: ${r.status === 'fulfilled' ? '✅ ENVIADO' : '❌ FALLÓ (' + r.statusCode + ')'}`
+                ).join('\n');
+                
+                alert(`Resultado del envío:\n\n${resultsMsg}\n\nSi tu móvil sale con ✅ pero no suena, revisa los ajustes de Notificaciones de tu celular.`);
             }
         } catch (err) {
             console.error('Error testing push:', err);
-            alert('Error de conexión al intentar enviar la prueba.');
+            alert('Error al conectar con la API de prueba.');
         } finally {
             setIsTestLoading(false);
             setIsProfileMenuOpen(false);
