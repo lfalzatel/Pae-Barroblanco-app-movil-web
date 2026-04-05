@@ -16,6 +16,7 @@ interface UsePushNotificationsReturn {
   isSubscribed: boolean;
   isLoading: boolean;
   subscribe: () => Promise<void>;
+  unsubscribe: () => Promise<void>;
   dismiss: () => void;
   shouldShowBanner: boolean;
 }
@@ -123,6 +124,39 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     }
   };
 
+  const unsubscribe = async () => {
+    if (!isSupported || isLoading) return;
+    setIsLoading(true);
+
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const subscription = await reg.pushManager.getSubscription();
+
+      if (subscription) {
+        // 1. Eliminar del servidor
+        const { data: { session } } = await supabase.auth.getSession();
+        await fetch('/api/push/subscribe', {
+          method: 'DELETE',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
+          body: JSON.stringify({ endpoint: subscription.endpoint }),
+        });
+
+        // 2. Desuscribir en el navegador
+        await subscription.unsubscribe();
+      }
+
+      setIsSubscribed(false);
+      localStorage.setItem(STORAGE_KEY, 'dismissed');
+    } catch (e) {
+      console.error('Error al desascribirse de notificaciones:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const dismiss = () => {
     localStorage.setItem(STORAGE_KEY, 'dismissed');
     setShouldShowBanner(false);
@@ -134,6 +168,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     isSubscribed,
     isLoading,
     subscribe,
+    unsubscribe,
     dismiss,
     shouldShowBanner,
   };

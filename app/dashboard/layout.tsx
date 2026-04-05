@@ -17,6 +17,7 @@ import {
     Menu,
     Calendar,
     Bell,
+    BellOff,
     CheckCircle,
     Clock,
     FileText,
@@ -70,7 +71,7 @@ export default function DashboardLayout({
     const router = useRouter();
     const { theme, setTheme } = useTheme();
     const { finishManualSplash, startManualSplash } = useSplash();
-    const { subscribe, dismiss, shouldShowBanner, isLoading } = usePushNotifications();
+    const { subscribe, unsubscribe, isSubscribed, dismiss, shouldShowBanner, isLoading } = usePushNotifications();
     const [usuario, setUsuario] = useState<any | null>(null);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
@@ -759,6 +760,34 @@ export default function DashboardLayout({
                                     Vincular Huella / FaceID
                                 </button>
 
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        isSubscribed ? unsubscribe() : subscribe();
+                                    }}
+                                    disabled={isLoading}
+                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left dark:text-gray-200 dark:hover:bg-gray-700 relative"
+                                >
+                                    <div className="relative">
+                                        {isSubscribed ? (
+                                            <Bell className="w-4 h-4 text-cyan-600 dark:text-cyan-400 animate-pulse" />
+                                        ) : (
+                                            <BellOff className="w-4 h-4 text-gray-400" />
+                                        )}
+                                        {isSubscribed && (
+                                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-white dark:border-gray-800" />
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col leading-tight">
+                                        <span className={isSubscribed ? "text-cyan-700 dark:text-cyan-300 font-bold" : ""}>
+                                            {isSubscribed ? 'Notificaciones Activas' : 'Activar Notificaciones'}
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 font-medium">
+                                            {isLoading ? 'Procesando...' : (isSubscribed ? 'Recibiendo alertas push' : 'Recibe avisos de cambios')}
+                                        </span>
+                                    </div>
+                                </button>
+
                                 {!isStandalone && deferredPrompt && (
                                     <button
                                         onClick={() => {
@@ -985,6 +1014,31 @@ export default function DashboardLayout({
                                     >
                                         <Fingerprint className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                                         Vincular Biometría
+                                    </button>
+
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            isSubscribed ? unsubscribe() : subscribe();
+                                        }}
+                                        disabled={isLoading}
+                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left bg-gray-50/50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700 relative"
+                                    >
+                                        <div className="relative">
+                                            {isSubscribed ? (
+                                                <Bell className="w-4 h-4 text-cyan-600 dark:text-cyan-400 animate-pulse" />
+                                            ) : (
+                                                <BellOff className="w-4 h-4 text-gray-400" />
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col leading-tight">
+                                            <span className={isSubscribed ? "text-cyan-700 dark:text-cyan-300 font-bold" : ""}>
+                                                {isSubscribed ? 'Notificaciones' : 'Activar Push'}
+                                            </span>
+                                            <span className="text-[9px] text-gray-400 font-medium">
+                                                {isLoading ? '...' : (isSubscribed ? 'Activadas' : 'Recibir alertas')}
+                                            </span>
+                                        </div>
                                     </button>
 
                                     {!isStandalone && deferredPrompt && (

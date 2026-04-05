@@ -58,3 +58,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    // Verificar autenticación
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+    const body = await req.json();
+    const { endpoint } = body;
+
+    if (!endpoint) return NextResponse.json({ error: 'Endpoint requerido' }, { status: 400 });
+
+    const { error } = await supabaseAdmin
+      .from('push_subscriptions')
+      .delete()
+      .eq('endpoint', endpoint);
+
+    if (error) return NextResponse.json({ error: 'Error eliminado suscripción' }, { status: 500 });
+
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    console.error('Error en DELETE /api/push/subscribe:', e);
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 });
+  }
+}
