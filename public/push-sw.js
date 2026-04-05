@@ -1,7 +1,14 @@
 // =====================================================
 // PAE Barroblanco — Push Notification Service Worker
-// Importado por el SW generado de Workbox (next-pwa)
 // =====================================================
+
+self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Forzar activación inmediata
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim()); // Tomar control de las pestañas abiertas inmediatamente
+});
 
 self.addEventListener('push', (event) => {
   if (!event.data) return;
@@ -10,17 +17,21 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data.json();
   } catch (e) {
-    data = { title: 'Sistema PAE', body: event.data.text() };
+    data = { 
+      title: 'Sistema PAE', 
+      body: event.data.text() || 'Hay una nueva novedad en el horario escolar.' 
+    };
   }
 
   const title = data.title || 'Sistema PAE';
   const options = {
-    body: data.body || 'Hay una nueva novedad en el horario escolar.',
+    body: data.body || 'Revisa los cambios en el horario del PAE.',
     icon: '/icon-192x192.png',
     badge: '/icon-192x192.png',
-    vibrate: [200, 100, 200, 100, 200],
+    vibrate: [300, 100, 300, 100, 300], // Vibración triple más fuerte
     tag: data.tag || 'pae-notification',
     renotify: true,
+    requireInteraction: true, // La notificación no desaparece hasta que el usuario la toque
     data: {
       url: data.url || '/dashboard',
     },
@@ -44,16 +55,14 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Si ya hay una ventana abierta, enfocarla y navegar
       for (const client of clientList) {
-        if ('focus' in client) {
-          client.focus();
-          if ('navigate' in client) client.navigate(urlToOpen);
-          return;
+        if (client.url.includes(urlToOpen) && 'focus' in client) {
+          return client.focus();
         }
       }
-      // Si no hay ventana abierta, abrir una nueva
-      return clients.openWindow(urlToOpen);
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
     })
   );
 });

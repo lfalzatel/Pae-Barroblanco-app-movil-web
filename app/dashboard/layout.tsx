@@ -76,6 +76,24 @@ export default function DashboardLayout({
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
 
+    const handleTestPush = async () => {
+        setIsTestLoading(true);
+        try {
+            const res = await fetch('/api/push/test');
+            const data = await res.json();
+            if (data.results && data.results.some((r: any) => r.status === 'fulfilled')) {
+                // Success log or toast could go here
+            } else {
+                alert('No se pudo enviar la prueba. Verifica si estás suscrito.');
+            }
+        } catch (err) {
+            console.error('Error testing push:', err);
+        } finally {
+            setIsTestLoading(false);
+            setIsProfileMenuOpen(false);
+        }
+    };
+
     const handleShareApp = async () => {
         const shareData = {
             title: 'Sistema PAE - IE Barroblanco',
@@ -106,6 +124,16 @@ export default function DashboardLayout({
     const [notifEvents, setNotifEvents] = useState<any[]>([]);
     const [isWeeklySearching, setIsWeeklySearching] = useState(false);
     const [weekStart, setWeekStart] = useState<Date>(new Date());
+    
+    // Force Service Worker Update
+    useEffect(() => {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.update();
+            });
+        }
+    }, []);
+
     const [dailySubTab, setDailySubTab] = useState<'today' | 'tomorrow'>(() => {
         const d = new Date();
         const hour = d.getHours();
@@ -115,6 +143,7 @@ export default function DashboardLayout({
         return hour >= 18 ? 'tomorrow' : 'today';
     });
     const [selectedDayInWeek, setSelectedDayInWeek] = useState(0);
+    const [isTestLoading, setIsTestLoading] = useState(false);
 
     const [hasNotification, setHasNotification] = useState(false);
     const [groupExceptions, setGroupExceptions] = useState<{ notAttending: any[], otherNotes: any[] }>({ notAttending: [], otherNotes: [] });
@@ -760,6 +789,17 @@ export default function DashboardLayout({
                                     Vincular Huella / FaceID
                                 </button>
 
+                                {(usuario.rol === 'admin' || usuario.rol === 'coordinador_pae') && (
+                                    <button
+                                        onClick={handleTestPush}
+                                        disabled={isTestLoading}
+                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50 w-full transition-colors text-left border-t border-gray-50 dark:border-gray-700 dark:hover:bg-blue-900/20"
+                                    >
+                                        <Bell className={`w-4 h-4 ${isTestLoading ? 'animate-spin' : ''}`} />
+                                        {isTestLoading ? 'Enviando...' : 'Probar Notificación'}
+                                    </button>
+                                )}
+
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -1015,6 +1055,17 @@ export default function DashboardLayout({
                                         <Fingerprint className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                                         Vincular Biometría
                                     </button>
+
+                                    {(usuario.rol === 'admin' || usuario.rol === 'coordinador_pae') && (
+                                        <button
+                                            onClick={handleTestPush}
+                                            disabled={isTestLoading}
+                                            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50 w-full transition-colors text-left border-t border-gray-50 dark:border-gray-700 dark:hover:bg-blue-900/20"
+                                        >
+                                            <Bell className={`w-4 h-4 ${isTestLoading ? 'animate-spin' : ''}`} />
+                                            {isTestLoading ? 'Enviando...' : 'Probar Notificación'}
+                                        </button>
+                                    )}
 
                                     <button
                                         onClick={(e) => {

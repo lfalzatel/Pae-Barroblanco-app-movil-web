@@ -51,12 +51,15 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if (!profile || (profile.rol !== 'admin' && profile.rol !== 'coordinador' && profile.rol !== 'coordinadora')) {
+    if (!profile || !['admin', 'coordinador', 'coordinadora', 'coordinador_pae'].includes(profile.rol)) {
+      console.warn(`Intento de envío de push bloqueado. Usuario: ${user.id}, Rol: ${profile?.rol}`);
       return NextResponse.json({ error: 'Permisos insuficientes' }, { status: 403 });
     }
 
     const body = await req.json();
     const { title, message, url, user_id } = body;
+    
+    console.log(`Iniciando envío de push: "${title}" - Para: ${user_id || 'Todos'}`);
 
     if (!title || !message) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
@@ -68,8 +71,10 @@ export async function POST(req: NextRequest) {
       query = query.eq('user_id', user_id);
     }
     const { data: subscriptions, error } = await query;
+    console.log(`Encontrados ${subscriptions?.length || 0} dispositivos suscritos.`);
 
     if (error) {
+      console.error('Error fetching subscriptions:', error);
       return NextResponse.json({ error: 'Error obteniendo suscripciones' }, { status: 500 });
     }
 
@@ -104,13 +109,15 @@ export async function POST(req: NextRequest) {
     results.forEach((result, idx) => {
       if (result.status === 'rejected') {
         const err = result.reason as any;
-        if (err?.statusCode === 410) {
+        console.error(`Error enviando a ${subscriptions[idx].endpoint.substring(0, 30)}... :`, err.message || err);
+        if (err?.statusCode === 410 || err?.statusCode === 404) {
           expiredEndpoints.push(subscriptions[idx].endpoint);
         }
       }
     });
 
     if (expiredEndpoints.length > 0) {
+      console.log(`Limpiando ${expiredEndpoints.length} suscripciones expiradas.`);
       await supabaseAdmin
         .from('push_subscriptions')
         .delete()
