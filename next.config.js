@@ -6,6 +6,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   swcMinify: true,
   disable: process.env.NODE_ENV === "development",
   workboxOptions: {
+    importScripts: ['/push-sw.js'],
     disableDevLogs: true,
     runtimeCaching: [
       {

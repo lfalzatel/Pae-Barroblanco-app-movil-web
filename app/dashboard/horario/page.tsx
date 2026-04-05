@@ -425,12 +425,50 @@ export default function HorarioPage() {
             }));
 
             await supabase.from('schedules').upsert({ date: selectedDate, items, updated_at: new Date().toISOString() }, { onConflict: 'date' });
+            
+            // Trigger push notification if there are critical changes (NO_ASISTE or notes)
+            const hasNoAsiste = items.some(item => item.time === 'NO_ASISTE');
+            const hasNotes = items.some(item => item.notes && item.notes.trim().length > 0);
+            
+            if (hasNoAsiste || hasNotes) {
+                const message = hasNoAsiste 
+                    ? `Hay grupos que no asisten y novedades para el ${formatDateLabel(selectedDate)}.`
+                    : `Se han registrado nuevas notas en el horario del ${formatDateLabel(selectedDate)}.`;
+                
+                triggerPushNotification('Actualización de Horario PAE', message);
+            }
+
             setNotif({ type: 'success', msg: 'Horario guardado' });
             setShowConfirmSave(false);
         } catch (e) {
             setNotif({ type: 'error', msg: 'Error al guardar' });
         } finally {
             setSaving(false);
+        }
+    };
+
+    /**
+     * Helper to send push notifications for critical updates
+     */
+    const triggerPushNotification = async (title: string, message: string) => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            await fetch('/api/push/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                    title,
+                    message,
+                    url: `${window.location.origin}/dashboard`
+                })
+            });
+        } catch (error) {
+            console.error('Error triggering push notification:', error);
         }
     };
 
@@ -460,6 +498,13 @@ export default function HorarioPage() {
         if (!error) {
             setNotif({ type: 'success', msg: 'Evento actualizado' });
             setShowEventModal(false);
+            
+            // Trigger push notify for institutional events
+            triggerPushNotification(
+                'Evento Institucional PAE', 
+                `Nuevo evento: ${eventForm.titulo} para el ${formatDateLabel(eventDate)}.`
+            );
+            
             initData();
         }
         setSaving(false);

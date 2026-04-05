@@ -41,6 +41,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { getAcademicBlock } from '@/lib/schedule-utils';
 import GlobalNotificationsModal from '@/components/dashboard/GlobalNotificationsModal';
 import { useSplash } from '@/components/SplashScreenProvider';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 // Helper functions defined outside to avoid initialization errors
 const formatLocalDate = (date: Date) => {
@@ -69,6 +70,7 @@ export default function DashboardLayout({
     const router = useRouter();
     const { theme, setTheme } = useTheme();
     const { finishManualSplash, startManualSplash } = useSplash();
+    const { subscribe, dismiss, shouldShowBanner, isLoading } = usePushNotifications();
     const [usuario, setUsuario] = useState<any | null>(null);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
@@ -115,6 +117,61 @@ export default function DashboardLayout({
 
     const [hasNotification, setHasNotification] = useState(false);
     const [groupExceptions, setGroupExceptions] = useState<{ notAttending: any[], otherNotes: any[] }>({ notAttending: [], otherNotes: [] });
+
+    // Verificación inicial + Realtime: punto rojo reactivo al instante
+    useEffect(() => {
+        const todayStr = formatLocalDate(new Date());
+
+        const checkExceptions = (items: any[]) => {
+            return items.some((i: any) =>
+                i.time === 'NO_ASISTE' || (!!i.notes && i.notes.trim() !== '')
+            );
+        };
+
+        // 1. Verificación inicial al cargar
+        const checkTodaySchedule = async () => {
+            try {
+                const { data } = await supabase
+                    .from('schedules')
+                    .select('items')
+                    .eq('date', todayStr)
+                    .maybeSingle();
+                if (data?.items && Array.isArray(data.items)) {
+                    if (checkExceptions(data.items)) setHasNotification(true);
+                }
+            } catch (e) {
+                // Silencioso
+            }
+        };
+        checkTodaySchedule();
+
+        // 2. Suscripción Realtime: detectar cambios en el horario de hoy al instante
+        const channel = supabase
+            .channel('schedule-notifications')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'schedules',
+                    filter: `date=eq.${todayStr}`,
+                },
+                (payload) => {
+                    const newItems = (payload.new as any)?.items;
+                    if (newItems && Array.isArray(newItems)) {
+                        if (checkExceptions(newItems)) {
+                            setHasNotification(true);
+                        }
+                    }
+                }
+            )
+            .subscribe();
+
+        // 3. Limpieza al desmontar el componente
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
 
     // Initial Date Logic for Notification Modal
     useEffect(() => {
@@ -189,9 +246,9 @@ export default function DashboardLayout({
                 const rawItems = data.items;
                 const relevant = rawItems.filter((i: any) => {
                     const isSedeMatch = selectedSede === 'Todas' || !i.sede || (i.sede && i.sede.includes(selectedSede));
-                    const isTimeMatch = i.time === 'NO_ASISTE';
-                    const hasNotes = !!i.notes;
-                    return isSedeMatch && (isTimeMatch || hasNotes);
+                    const isNoAsiste = i.time === 'NO_ASISTE';
+                    const hasNotes = !!i.notes && i.notes.trim() !== '';
+                    return isSedeMatch && (isNoAsiste || hasNotes);
                 });
 
                 if (relevant.length === 0) {
@@ -757,6 +814,37 @@ export default function DashboardLayout({
             {/* Main Content */}
             <main className="flex-1 md:ml-64 pb-20 md:pb-0 pt-16 md:pt-0" onClick={() => setIsProfileMenuOpen(false)}>
                 <div key={pathname} className="w-full">
+                    {/* Push Notifications Permission Banner */}
+                    {shouldShowBanner && (
+                        <div className="mx-4 mt-4 mb-2 animate-in slide-in-from-top duration-500">
+                            <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 rounded-2xl p-4 shadow-lg shadow-cyan-200/50 dark:shadow-cyan-900/30 flex items-center justify-between border border-white/20">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm shadow-inner">
+                                        <Bell className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <h4 className="text-white text-xs font-black uppercase tracking-tight">Notificaciones Push</h4>
+                                        <p className="text-white/80 text-[10px] font-bold leading-tight">Recibe avisos de cambios de horario al instante.</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={dismiss}
+                                        className="px-3 py-1.5 text-[9px] font-black uppercase text-white/70 hover:text-white transition-colors"
+                                    >
+                                        Ahora no
+                                    </button>
+                                    <button 
+                                        onClick={subscribe}
+                                        disabled={isLoading}
+                                        className="bg-white text-cyan-700 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase shadow-sm hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                                    >
+                                        {isLoading ? 'Activando...' : 'Activar'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {children}
                 </div>
             </main>
