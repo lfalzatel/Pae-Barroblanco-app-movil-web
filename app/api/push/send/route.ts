@@ -2,34 +2,46 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
 
-// Configurar VAPID
-webpush.setVapidDetails(
-  'mailto:admin@iebarroblanco.edu.co',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(req: NextRequest) {
   try {
-    // Verificar autenticación del usuario y rol
+    // 1. Validar variables de entorno críticas
+    const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const privateKey = process.env.VAPID_PRIVATE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!publicKey || !privateKey || !supabaseUrl || !serviceRoleKey) {
+      console.error('Missing environment variables for push notifications');
+      return NextResponse.json({ error: 'Configuración de servidor incompleta' }, { status: 500 });
+    }
+
+    // 2. Configurar VAPID en tiempo de ejecución
+    webpush.setVapidDetails(
+      'mailto:admin@iebarroblanco.edu.co',
+      publicKey,
+      privateKey
+    );
+
+    // 3. Inicializar administrador de Supabase
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+    // 4. Verificar autenticación del usuario y rol
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await createClient(
+    const supabaseCheck = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    ).auth.getUser(token);
+    );
+    
+    const { data: { user }, error: authError } = await supabaseCheck.auth.getUser(token);
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+      console.error('Auth Error in Push Send:', authError?.message || 'No user found');
+      return NextResponse.json({ error: 'Token inválido', details: authError?.message }, { status: 401 });
     }
 
     // Verificar rol en perfiles_publicos
