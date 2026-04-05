@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
           endpoint: sub.endpoint,
           keys: { p256dh: sub.p256dh, auth: sub.auth }
         };
-        return webpush.sendNotification(pushSubscription, payload);
+        return webpush.sendNotification(pushSubscription, payload, { urgency: 'high' });
       })
     );
 

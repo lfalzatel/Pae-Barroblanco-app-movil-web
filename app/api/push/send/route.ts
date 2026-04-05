@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
             auth: sub.auth,
           },
         };
-        return webpush.sendNotification(pushSubscription, payload);
+        return webpush.sendNotification(pushSubscription, payload, { urgency: 'high' });
       })
     );
 
