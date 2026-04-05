@@ -75,19 +75,26 @@ export default function DashboardLayout({
     const [usuario, setUsuario] = useState<any | null>(null);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+    const [isTestLoading, setIsTestLoading] = useState(false);
 
     const handleTestPush = async () => {
         setIsTestLoading(true);
         try {
             const res = await fetch('/api/push/test');
             const data = await res.json();
-            if (data.results && data.results.some((r: any) => r.status === 'fulfilled')) {
-                // Success log or toast could go here
+            
+            if (data.error) {
+                alert(`Error: ${data.error}`);
+            } else if (data.message === 'No hay nadie suscrito en la base de datos.') {
+                alert('No hay ninguna suscripción activa en la base de datos. Por favor, asegúrate de haber activado las notificaciones en tu perfil primero.');
+            } else if (data.results && data.results.some((r: any) => r.status === 'fulfilled')) {
+                alert('¡Prueba enviada con éxito! Revisa tu celular o PC. Si no llega, verifica los permisos del sistema operativo.');
             } else {
-                alert('No se pudo enviar la prueba. Verifica si estás suscrito.');
+                alert('La prueba se procesó pero parece haber fallado en el envío. Verifica tu conexión.');
             }
         } catch (err) {
             console.error('Error testing push:', err);
+            alert('Error de conexión al intentar enviar la prueba.');
         } finally {
             setIsTestLoading(false);
             setIsProfileMenuOpen(false);
@@ -143,7 +150,6 @@ export default function DashboardLayout({
         return hour >= 18 ? 'tomorrow' : 'today';
     });
     const [selectedDayInWeek, setSelectedDayInWeek] = useState(0);
-    const [isTestLoading, setIsTestLoading] = useState(false);
 
     const [hasNotification, setHasNotification] = useState(false);
     const [groupExceptions, setGroupExceptions] = useState<{ notAttending: any[], otherNotes: any[] }>({ notAttending: [], otherNotes: [] });
