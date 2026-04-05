@@ -28,10 +28,12 @@ self.addEventListener('push', (event) => {
     body: data.body || 'Revisa los cambios en el horario del PAE.',
     icon: '/icon-192x192.png',
     badge: '/icon-192x192.png',
-    vibrate: [200, 100, 200], // Patrón estándar y compatible
+    vibrate: [500, 110, 500], // Doble pulso estándar (500ms vibrar, 110ms pausa, 500ms vibrar)
     tag: data.tag || 'pae-notification',
     renotify: true,
-    requireInteraction: true, // La notificación no desaparece hasta que el usuario la toque
+    requireInteraction: true, // La notificación persiste
+    silent: false, // Forzar que no sea silenciosa (depende de ajustes del SO)
+    timestamp: Date.now(),
     data: {
       url: data.url || '/dashboard',
     },
