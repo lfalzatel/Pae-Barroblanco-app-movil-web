@@ -295,3 +295,233 @@ export const generateWeeklySchedulePDF = (weeklyData: any[], weekStart: Date, re
         doc.save(`Horario_Semanal_${weekRange.replace(/ /g, '_')}.pdf`);
     }
 };
+
+export const generateDetailedReportPDF = (params: {
+    allPeriodRecords: any[],
+    allStudents: any[],
+    stats: any,
+    filters: { periodo: string, sede: string, grupo: string, startDate: string, endDate: string },
+    sedeStats?: any[],
+    grupoStats?: any[]
+}) => {
+    const { allPeriodRecords, allStudents, stats, filters, sedeStats, grupoStats } = params;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const todayStr = new Date().toLocaleDateString('es-CO');
+
+    // 1. Título y Estética Premium
+    doc.setFillColor(22, 101, 52); // Verde esmeralda oscuro
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    
+    doc.setFontSize(22);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.text('REPORTE DE ASISTENCIA PAE', pageWidth / 2, 20, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('INSTITUCIÓN EDUCATIVA BARROBLANCO', pageWidth / 2, 28, { align: 'center' });
+    doc.text(`Generado el: ${todayStr}`, pageWidth / 2, 34, { align: 'center' });
+
+    // 2. Información de Filtros
+    let currentY = 50;
+    doc.setTextColor(50);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Parámetros del Reporte', 14, currentY);
+    currentY += 7;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const filterLines = [
+        `Periodo: ${filters.startDate} al ${filters.endDate} (${filters.periodo.toUpperCase()})`,
+        `Sede: ${filters.sede === 'todas' ? 'TODAS LAS SEDES' : filters.sede.toUpperCase()}`,
+        `Grupo: ${filters.grupo === 'todos' ? 'TODOS LOS GRUPOS' : filters.grupo}`
+    ];
+    filterLines.forEach(line => {
+        doc.text(line, 14, currentY);
+        currentY += 5;
+    });
+
+    // 3. Resumen Estadístico (Dashboard style)
+    currentY += 5;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Consolidado General', 14, currentY);
+    
+    autoTable(doc, {
+        startY: currentY + 5,
+        head: [['Métrica', 'Valor']],
+        body: [
+            ['Total Estudiantes (Activos)', stats.totalEstudiantes.toString()],
+            ['Total Raciones Entregadas', stats.recibieron.toString()],
+            ['No Recibieron Ración', stats.noRecibieron.toString()],
+            ['Estudiantes Ausentes', stats.ausentes.toString()],
+            ['Tasa de Asistencia', `${stats.porcentajeAsistencia}%`]
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [22, 101, 52] },
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 80 } }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 15;
+
+    // 4. Lógica de Matriz Semanal (Solo si hay un grupo seleccionado)
+    if (filters.grupo !== 'todos' && (filters.periodo === 'mes' || filters.periodo === 'semana')) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Matriz de Asistencia Diaria - Grupo ${filters.grupo}`, 14, currentY);
+        currentY += 8;
+
+        // Agrupar registros por fecha y estudiante
+        const attendanceMap: Record<string, Record<string, string>> = {};
+        allPeriodRecords.forEach(r => {
+            if (!attendanceMap[r.estudiantes.id]) attendanceMap[r.estudiantes.id] = {};
+            attendanceMap[r.estudiantes.id][r.fecha] = r.estado;
+        });
+
+        // Generar lista de fechas (solo días de semana) entre startDate y endDate
+        const allDates: string[] = [];
+        let curr = new Date(filters.startDate + 'T00:00:00');
+        const end = new Date(filters.endDate + 'T00:00:00');
+        while (curr <= end) {
+            if (curr.getDay() !== 0 && curr.getDay() !== 6) {
+                allDates.push(new Date(curr.getTime() - curr.getTimezoneOffset() * 60000).toISOString().split('T')[0]);
+            }
+            curr.setDate(curr.getDate() + 1);
+        }
+
+        // Agrupar fechas por semanas
+        const weeks: string[][] = [];
+        let currentWeek: string[] = [];
+        allDates.forEach((date, i) => {
+            currentWeek.push(date);
+            const d = new Date(date + 'T00:00:00');
+            // Si es viernes o la última fecha, cerrar semana
+            if (d.getDay() === 5 || i === allDates.length - 1) {
+                weeks.push(currentWeek);
+                currentWeek = [];
+            }
+        });
+
+        // Renderizar una tabla por cada semana
+        const sortedStudents = [...allStudents].sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+        weeks.forEach((weekDates, weekIdx) => {
+            if (currentY > 230) {
+                doc.addPage();
+                currentY = 20;
+            }
+
+            const weekLabel = `Semana ${weekIdx + 1} (${weekDates[0]} al ${weekDates[weekDates.length - 1]})`;
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(22, 101, 52);
+            doc.text(weekLabel, 14, currentY);
+            
+            const matrixHead = [['Estudiante', ...weekDates.map(d => {
+                const day = new Date(d + 'T00:00:00').toLocaleDateString('es-CO', { weekday: 'short' });
+                const dayNum = d.split('-')[2];
+                return `${day} ${dayNum}`;
+            })]];
+
+            const matrixBody = sortedStudents.map(student => {
+                const row: string[] = [student.nombre];
+                weekDates.forEach(date => {
+                    const estado = attendanceMap[student.id]?.[date];
+                    if (estado === 'recibio') row.push('SI');
+                    else if (estado === 'no_recibio') row.push('NO');
+                    else if (estado === 'ausente') row.push('AUS');
+                    else row.push('-');
+                });
+                return row;
+            });
+
+            autoTable(doc, {
+                startY: currentY + 4,
+                head: matrixHead,
+                body: matrixBody,
+                theme: 'grid',
+                headStyles: { fillColor: [51, 65, 85], fontSize: 7, halign: 'center' },
+                bodyStyles: { fontSize: 7, halign: 'center' },
+                columnStyles: { 0: { halign: 'left', cellWidth: 45 } },
+                styles: { cellPadding: 1 },
+                didParseCell: (data) => {
+                    if (data.cell.text[0] === 'SI') data.cell.styles.textColor = [22, 101, 52];
+                    if (data.cell.text[0] === 'NO') data.cell.styles.textColor = [220, 38, 38];
+                    if (data.cell.text[0] === 'AUS') data.cell.styles.textColor = [156, 163, 175];
+                }
+            });
+
+            currentY = (doc as any).lastAutoTable.finalY + 12;
+        });
+
+    } else {
+        // Reporte Consolidado (Sin matriz, listado agrupado o estadísticas por sede)
+        if (sedeStats && sedeStats.length > 0) {
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Resumen Detallado por Sede', 14, currentY);
+            
+            autoTable(doc, {
+                startY: currentY + 5,
+                head: [['Sede', 'Total Est.', 'Recibieron', 'No Recibieron', 'Ausentes', '% Asist.']],
+                body: sedeStats.map(s => [
+                    s.sede, 
+                    s.total.toString(), 
+                    s.recibieron.toString(), 
+                    s.noRecibieron.toString(), 
+                    s.ausentes.toString(), 
+                    `${s.porcentaje}%`
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [15, 118, 110] },
+                styles: { fontSize: 8 }
+            });
+            currentY = (doc as any).lastAutoTable.finalY + 15;
+        }
+
+        if (grupoStats && grupoStats.length > 0) {
+            if (currentY > 250) { doc.addPage(); currentY = 20; }
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Rendimiento por Grupos', 14, currentY);
+
+            autoTable(doc, {
+                startY: currentY + 5,
+                head: [['Grupo', 'Sede', 'Total', 'Recibieron', 'Ausentes', '% Asist.', 'Estado']],
+                body: grupoStats.map(g => [
+                    g.grupo, g.sede, g.total.toString(), g.recibieron.toString(), g.ausentes.toString(), `${g.porcentaje}%`, g.estado
+                ]),
+                theme: 'striped',
+                headStyles: { fillColor: [71, 85, 105] },
+                styles: { fontSize: 7 },
+                didParseCell: (data) => {
+                    if (data.column.index === 6) {
+                        const val = data.cell.text[0];
+                        if (val === 'Excelente') data.cell.styles.textColor = [22, 101, 52];
+                        if (val === 'Crítico') data.cell.styles.textColor = [220, 38, 38];
+                    }
+                }
+            });
+        }
+    }
+
+    // Pie de Página
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(
+            `Página ${i} de ${pageCount} - I.E. Barroblanco Sistema PAE - Documento Oficial`,
+            pageWidth / 2,
+            doc.internal.pageSize.height - 10,
+            { align: 'center' }
+        );
+    }
+
+    const filename = `Reporte_PAE_${filters.sede}_${filters.grupo}_${filters.startDate}.pdf`;
+    doc.save(filename);
+};

@@ -967,103 +967,102 @@ export default function ReportesPage() {
 
   const handleExportPDF = async () => {
     try {
-      // Dynamic imports for PDF generation
-      const jsPDF = (await import('jspdf')).default;
-      const autoTable = (await import('jspdf-autotable')).default;
+      // 1. Calcular fechas de inicio y fin (mismo algoritmo que Excel)
+      let startDate = selectedDate;
+      let endDate = selectedDate;
+      const refDate = new Date(selectedDate + 'T12:00:00');
 
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.width;
-      const todayStr = new Date().toLocaleDateString('es-CO');
-
-      // 1. Título y Cabecera
-      doc.setFontSize(18);
-      doc.setTextColor(22, 101, 52); // Verde esmeralda
-      doc.text('REPORTE DE ASISTENCIA PAE', pageWidth / 2, 20, { align: 'center' });
-
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Institución Educativa Barroblanco', pageWidth / 2, 28, { align: 'center' });
-      doc.text(`Generado el: ${todayStr}`, pageWidth / 2, 34, { align: 'center' });
-
-      // Info de Filtros
-      doc.setFontSize(11);
-      doc.setTextColor(0);
-      let periodText = "";
-      if (periodo === 'fecha') periodText = selectedDate;
-      else if (periodo === 'semana') periodText = getWeekRangeLabel(selectedDate);
-      else if (periodo === 'mes') periodText = getMonthLabel(selectedDate);
-      else periodText = "Hoy";
-
-      doc.text(`Periodo: ${periodText}`, 14, 45);
-      doc.text(`Sede: ${sedeFilter === 'todas' ? 'Todas las Sedes' : sedeFilter.toUpperCase()}`, 14, 51);
-      doc.text(`Grupo: ${grupoFilter === 'todos' ? 'Todos los Grupos' : grupoFilter}`, 14, 57);
-
-      // 2. Tabla Resumen
-      doc.setFontSize(13);
-      doc.text('Resumen General', 14, 70);
-
-      autoTable(doc, {
-        startY: 75,
-        head: [['Concepto', 'Total']],
-        body: [
-          ['Total Estudiantes', stats.totalEstudiantes.toString()],
-          ['Recibieron Ración', stats.recibieron.toString()],
-          ['No Recibieron', stats.noRecibieron.toString()],
-          ['Ausentes', stats.ausentes.toString()],
-          ['% Asistencia', `${((stats.recibieron / (stats.totalEstudiantes || 1)) * 100).toFixed(1)}%`]
-        ],
-        theme: 'striped',
-        headStyles: { fillColor: [22, 101, 52] }
-      });
-
-      // 3. Detalle de Registros
-      const finalY = (doc as any).lastAutoTable.finalY || 75;
-      doc.setFontSize(13);
-      doc.text('Detalle de Asistencia Reciente', 14, finalY + 15);
-
-      const tableData = registros.map(r => [
-        r.estudiantes?.nombre || '-',
-        r.estudiantes?.grupo || '-',
-        r.estado === 'recibio' ? 'Recibió' : r.estado === 'no_recibio' ? 'No Recibió' : 'Ausente',
-        new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        new Date(r.created_at).toLocaleDateString('es-CO')
-      ]);
-
-      autoTable(doc, {
-        startY: finalY + 20,
-        head: [['Estudiante', 'Grupo', 'Estado', 'Hora', 'Fecha']],
-        body: tableData,
-        theme: 'grid',
-        headStyles: { fillColor: [37, 99, 235] }, // Blue-600
-        styles: { fontSize: 8 },
-        columnStyles: {
-          0: { cellWidth: 70 },
-          1: { cellWidth: 25 },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 25 },
-          4: { cellWidth: 30 }
-        }
-      });
-
-      // Pie de página con numeración
-      const pageCount = (doc as any).internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text(
-          `Página ${i} de ${pageCount} - PAE Barroblanco Digital`,
-          pageWidth / 2,
-          doc.internal.pageSize.height - 10,
-          { align: 'center' }
-        );
+      if (periodo === 'semana') {
+        const day = refDate.getDay();
+        const diff = refDate.getDate() - (day === 0 ? 6 : day - 1);
+        const start = new Date(refDate.getFullYear(), refDate.getMonth(), diff);
+        const end = new Date(refDate.getFullYear(), refDate.getMonth(), diff + 6);
+        startDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        endDate = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      } else if (periodo === 'mes') {
+        const start = new Date(refDate.getFullYear(), refDate.getMonth(), 1);
+        const end = new Date(refDate.getFullYear(), refDate.getMonth() + 1, 0);
+        startDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        endDate = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
       }
 
-      // Descargar
-      const filename = `Reporte_PAE_${sedeFilter}_${periodo}_${selectedDate}.pdf`;
-      doc.save(filename);
-      setShowExportMenu(false);
+      // 2. Preparar Estadísticas por Sede/Grupo (si no hay filtro de grupo)
+      // Estas estadísticas enriquecen el PDF igual que al Excel
+      const sedeMap: Record<string, string> = {
+        'principal': 'Principal',
+        'primaria': 'Primaria',
+        'maria-inmaculada': 'Maria Inmaculada'
+      };
 
+      let sedeStats: any[] = [];
+      let grupoStats: any[] = [];
+
+      if (grupoFilter === 'todos') {
+        // Lógica simplificada pero robusta para sedes
+        const allSedes = ['Principal', 'Primaria', 'Maria Inmaculada'];
+        for (const sede of allSedes) {
+          const studentsInSede = allStudents.filter(s => s.sede === sede);
+          const attendanceInSede = allPeriodRecords.filter(a => a.estudiantes.sede === sede);
+          
+          const registeredDays = new Set(attendanceInSede.map(a => a.fecha)).size || 1;
+          const recibieron = attendanceInSede.filter(a => a.estado === 'recibio').length;
+          const noRecibieron = attendanceInSede.filter(a => a.estado === 'no_recibio').length;
+          const ausentes = attendanceInSede.filter(a => a.estado === 'ausente').length;
+          const expected = studentsInSede.length * registeredDays;
+
+          sedeStats.push({
+            sede,
+            total: studentsInSede.length,
+            recibieron, noRecibieron, ausentes,
+            porcentaje: expected > 0 ? ((recibieron / expected) * 100).toFixed(1) : '0.0'
+          });
+        }
+
+        // Lógica para grupos relevantes
+        const groups = Array.from(new Set(allStudents.map(s => `${s.grupo}-${s.sede}`)));
+        groups.forEach(key => {
+          const [grupo, sede] = key.split('-');
+          const studentsInGroup = allStudents.filter(s => s.grupo === grupo && s.sede === sede);
+          const attendanceInGroup = allPeriodRecords.filter(a => a.estudiantes.grupo === grupo && a.estudiantes.sede === sede);
+          
+          const registeredDays = new Set(attendanceInGroup.map(a => a.fecha)).size || 1;
+          const recibieron = attendanceInGroup.filter(a => a.estado === 'recibio').length;
+          const ausentes = attendanceInGroup.filter(a => a.estado === 'ausente').length;
+          const expected = studentsInGroup.length * registeredDays;
+          const porcentaje = expected > 0 ? (recibieron / expected) * 100 : 0;
+
+          if (expected > 0) {
+            grupoStats.push({
+              grupo, sede,
+              total: studentsInGroup.length,
+              recibieron, ausentes,
+              porcentaje: porcentaje.toFixed(1),
+              estado: porcentaje >= 90 ? 'Excelente' : porcentaje >= 70 ? 'Bueno' : porcentaje >= 50 ? 'Regular' : 'Crítico'
+            });
+          }
+        });
+        grupoStats.sort((a,b) => a.sede.localeCompare(b.sede) || a.grupo.localeCompare(b.grupo));
+      }
+
+      // 3. Importar Generador y Ejecutar
+      const { generateDetailedReportPDF } = await import('@/lib/pdf-generator');
+      
+      generateDetailedReportPDF({
+        allPeriodRecords,
+        allStudents: grupoFilter !== 'todos' ? allStudents.filter(s => s.grupo === grupoFilter) : allStudents,
+        stats,
+        filters: {
+          periodo,
+          sede: sedeFilter,
+          grupo: grupoFilter,
+          startDate,
+          endDate
+        },
+        sedeStats,
+        grupoStats
+      });
+
+      setShowExportMenu(false);
     } catch (error: any) {
       console.error('Error exporting PDF:', error);
       alert('Error al generar el archivo PDF.');
