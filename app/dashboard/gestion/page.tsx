@@ -223,19 +223,21 @@ export default function GestionPage() {
       if (profile) {
         setUsuario(profile);
       } else {
-        const userRole = session.user.user_metadata?.rol;
+        let userRole = session.user.user_metadata?.rol;
         const userEmail = session.user.email || '';
 
-        if (!userRole && !userEmail.endsWith('@barroblanco.edu.co')) {
+        if (!userRole) {
+            userRole = userEmail.endsWith('@barroblanco.edu.co') ? 'estudiante' : 'acudiente';
             await supabase.auth.updateUser({
-                data: { rol: 'acudiente' }
+                data: { rol: userRole }
             });
         }
 
         setUsuario({
           email: userEmail,
           nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
-          rol: userRole || 'acudiente',
+          rol: userRole,
+          id: session.user.id,
           foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
         });
       }

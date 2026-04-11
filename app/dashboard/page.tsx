@@ -78,25 +78,24 @@ export default function DashboardPage() {
         if (profile.rol === 'secretaria_educacion' || profile.rol === 'operador') {
           return; // Their own dashboard handles data fetching
         }
-      } else {
-        // Determine if we need to auto-assign the "acudiente" role for new external users
+        // Determine if we need to auto-assign a role for new users
         let userRole = session.user.user_metadata?.rol;
         const userEmail = session.user.email || '';
         
-        // If the user has no defined role and does not belong to the institution
-        if (!userRole && !userEmail.endsWith('@barroblanco.edu.co')) {
-            userRole = 'acudiente';
+        if (!userRole) {
+            // Logic: institutional email -> estudiante, otherwise -> acudiente
+            userRole = userEmail.endsWith('@barroblanco.edu.co') ? 'estudiante' : 'acudiente';
             
             // Persist this default role back to Auth metadata so it survives re-logins
             await supabase.auth.updateUser({
-                data: { rol: 'acudiente' }
+                data: { rol: userRole }
             });
         }
 
         const newUser = {
           email: userEmail,
           nombre: session.user.user_metadata?.nombre || 'Usuario',
-          rol: userRole || 'acudiente',
+          rol: userRole,
         };
         setUsuario(newUser);
 

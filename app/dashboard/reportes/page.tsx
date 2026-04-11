@@ -105,20 +105,19 @@ export default function ReportesPage() {
       let userRole = session.user.user_metadata?.rol;
       const userEmail = session.user.email || '';
       
-      // If the user has no defined role and does not belong to the institution
-      if (!userRole && !userEmail.endsWith('@barroblanco.edu.co')) {
-          userRole = 'acudiente';
+      if (!userRole) {
+          userRole = userEmail.endsWith('@barroblanco.edu.co') ? 'estudiante' : 'acudiente';
           
           // Persist this default role back to Auth metadata so it survives re-logins
           await supabase.auth.updateUser({
-              data: { rol: 'acudiente' }
+              data: { rol: userRole }
           });
       }
 
       setUsuario({
         email: userEmail,
         nombre: session.user.user_metadata?.nombre || 'Usuario',
-        rol: userRole || 'acudiente',
+        rol: userRole,
       });
     };
 

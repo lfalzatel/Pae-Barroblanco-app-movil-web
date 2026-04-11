@@ -24,7 +24,10 @@ BEGIN
         NEW.raw_user_meta_data ->> 'name',
         split_part(NEW.email, '@', 1)
       ),
-      'estudiante',  -- Rol por defecto para usuarios de Google
+      CASE 
+        WHEN NEW.email LIKE '%@barroblanco.edu.co' THEN 'estudiante'
+        ELSE 'acudiente'
+      END,  -- Rol por defecto según dominio
       NEW.raw_user_meta_data ->> 'picture'
     )
     ON CONFLICT (id) DO NOTHING;  -- Si ya existe el perfil (ej: reconexión), no sobreescribir

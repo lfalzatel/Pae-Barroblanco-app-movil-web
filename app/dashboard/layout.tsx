@@ -508,24 +508,24 @@ export default function DashboardLayout({
             if (profile) {
                 setUsuario(profile);
             } else {
-                // Determine if we need to auto-assign the "acudiente" role for new external users
+                // Determine if we need to auto-assign a role for new users
                 let userRole = session.user.user_metadata?.rol;
                 const userEmail = session.user.email || '';
                 
-                // If the user has no defined role and does not belong to the institution
-                if (!userRole && !userEmail.endsWith('@barroblanco.edu.co')) {
-                    userRole = 'acudiente';
+                if (!userRole) {
+                    // Logic: institutional email -> estudiante, otherwise -> acudiente
+                    userRole = userEmail.endsWith('@barroblanco.edu.co') ? 'estudiante' : 'acudiente';
                     
                     // Persist this default role back to Auth metadata so it survives re-logins
                     await supabase.auth.updateUser({
-                        data: { rol: 'acudiente' }
+                        data: { rol: userRole }
                     });
                 }
 
                 setUsuario({
                     nombre: session.user.user_metadata?.nombre || 'Usuario',
                     email: userEmail,
-                    rol: userRole || 'acudiente', // Keep fallback just in case
+                    rol: userRole,
                     foto: session.user.user_metadata?.foto || null
                 });
             }
@@ -990,7 +990,7 @@ export default function DashboardLayout({
                             </div>
                             <div className="flex flex-col items-start">
                                 <span className="text-[8px] font-extrabold text-blue-100 uppercase tracking-widest leading-none mb-0.5">
-                                    {['admin', 'coordinador_pae', 'estudiante', 'estudiante_pae', 'acudiente', 'secretaria_educacion', 'operador'].includes(usuario.rol) ? (usuario.rol === 'coordinador_pae' ? 'Coordinador PAE' : usuario.rol.replace('_', ' ')) : 'Docente'}
+                                    {['admin', 'coordinador_pae', 'estudiante', 'estudiante_pae', 'acudiente', 'secretaria_educacion', 'operador', 'docente'].includes(usuario.rol) ? (usuario.rol === 'coordinador_pae' ? 'Coordinador PAE' : usuario.rol.replace('_', ' ')) : (usuario.rol || 'Usuario')}
                                 </span>
                                 <span className="text-white font-bold text-xs leading-none max-w-[80px] truncate">{usuario.nombre.split(' ')[0]}</span>
                             </div>

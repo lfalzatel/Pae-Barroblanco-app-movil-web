@@ -325,11 +325,13 @@ export default function AdminPage() {
             let userRole = session?.user.user_metadata?.rol;
             const userEmail = session?.user.email || '';
 
-            if (session && !userRole && !userEmail.endsWith('@barroblanco.edu.co')) {
+            if (session && !userRole) {
+                // Logic: institutional email -> estudiante, otherwise -> acudiente
+                userRole = userEmail.endsWith('@barroblanco.edu.co') ? 'estudiante' : 'acudiente';
+                
                 await supabase.auth.updateUser({
-                    data: { rol: 'acudiente' }
+                    data: { rol: userRole }
                 });
-                userRole = 'acudiente';
             }
 
             if (!session || userRole !== 'admin') {
