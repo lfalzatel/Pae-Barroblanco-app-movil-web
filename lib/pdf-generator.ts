@@ -377,8 +377,10 @@ export const generateDetailedReportPDF = (params: {
         // Agrupar registros por fecha y estudiante
         const attendanceMap: Record<string, Record<string, string>> = {};
         allPeriodRecords.forEach(r => {
-            if (!attendanceMap[r.estudiantes.id]) attendanceMap[r.estudiantes.id] = {};
-            attendanceMap[r.estudiantes.id][r.fecha] = r.estado;
+            const est = Array.isArray(r.estudiantes) ? r.estudiantes[0] : r.estudiantes;
+            if (!est?.id) return;
+            if (!attendanceMap[est.id]) attendanceMap[est.id] = {};
+            attendanceMap[est.id][r.fecha] = r.estado;
         });
 
         // Generar lista de fechas (solo días de semana) entre startDate y endDate

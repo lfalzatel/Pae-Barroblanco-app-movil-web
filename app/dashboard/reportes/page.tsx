@@ -967,90 +967,158 @@ export default function ReportesPage() {
 
   const handleExportPDF = async () => {
     try {
-      // 1. Calcular fechas de inicio y fin (mismo algoritmo que Excel)
-      let startDate = selectedDate;
-      let endDate = selectedDate;
-      const refDate = new Date(selectedDate + 'T12:00:00');
+      // 1. Cálculo de fechas idéntico al Excel (con ajuste de zona horaria)
+      let reportDate = selectedDate;
+      const today = new Date();
+      if (periodo === 'hoy') {
+        const offset = today.getTimezoneOffset() * 60000;
+        reportDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
+      }
+
+      const [pYear, pMonth, pDay] = reportDate.split('-').map(Number);
+      const analysisDate = new Date(pYear, pMonth - 1, pDay);
+
+      let startDate = reportDate;
+      let endDate = reportDate;
 
       if (periodo === 'semana') {
-        const day = refDate.getDay();
-        const diff = refDate.getDate() - (day === 0 ? 6 : day - 1);
-        const start = new Date(refDate.getFullYear(), refDate.getMonth(), diff);
-        const end = new Date(refDate.getFullYear(), refDate.getMonth(), diff + 6);
+        const d = new Date(analysisDate);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const start = new Date(d.getFullYear(), d.getMonth(), diff);
+        const end = new Date(d.getFullYear(), d.getMonth(), diff + 6);
         startDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
         endDate = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
       } else if (periodo === 'mes') {
-        const start = new Date(refDate.getFullYear(), refDate.getMonth(), 1);
-        const end = new Date(refDate.getFullYear(), refDate.getMonth() + 1, 0);
+        const start = new Date(analysisDate.getFullYear(), analysisDate.getMonth(), 1);
+        const end = new Date(analysisDate.getFullYear(), analysisDate.getMonth() + 1, 0);
         startDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
         endDate = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
       }
 
-      // 2. Preparar Estadísticas por Sede/Grupo (si no hay filtro de grupo)
-      // Estas estadísticas enriquecen el PDF igual que al Excel
+      // 2. Fetch de Datos Frescos (Fuente de Verdad de Supabase)
       const sedeMap: Record<string, string> = {
         'principal': 'Principal',
-        'primaria': 'Primaria',
+        'primaria': 'Sede Primaria',
         'maria-inmaculada': 'Maria Inmaculada'
       };
 
+      // Consultar estudiantes
+      let queryEst = supabase.from('estudiantes').select('id, nombre, grupo, sede, estado').not('grupo', 'ilike', '%2025%');
+      if (sedeFilter === 'primaria-principal') {
+        queryEst = queryEst.in('sede', ['Principal', 'Primaria', 'Sede Primaria']);
+      } else if (sedeFilter !== 'todas') {
+        queryEst = queryEst.eq('sede', sedeMap[sedeFilter] || 'Principal');
+      }
+      if (grupoFilter !== 'todos') {
+        queryEst = queryEst.eq('grupo', grupoFilter);
+      }
+      const { data: allStudentsData } = await queryEst;
+      const students = allStudentsData || [];
+
+      // Consultar asistencia del periodo completo
+      let queryAsist = supabase.from('asistencia_pae').select(`
+        id, estado, fecha, created_at,
+        estudiantes!inner (id, nombre, grupo, sede)
+      `)
+      .gte('fecha', startDate)
+      .lte('fecha', endDate);
+
+      if (sedeFilter === 'primaria-principal') {
+        queryAsist = queryAsist.in('estudiantes.sede', ['Principal', 'Primaria', 'Sede Primaria']);
+      } else if (sedeFilter !== 'todas') {
+        queryAsist = queryAsist.eq('estudiantes.sede', sedeMap[sedeFilter] || 'Principal');
+      }
+      if (grupoFilter !== 'todos') {
+        queryAsist = queryAsist.eq('estudiantes.grupo', grupoFilter);
+      }
+
+      const { data: attendanceData } = await queryAsist;
+      const records = (attendanceData || []) as any[];
+
+      // 3. Re-calcular estadísticas globales (idéntico a la lógica de la UI pero con datos frescos)
+      const recibieronCount = records.filter(r => r.estado === 'recibio').length;
+      const noRecibieronCount = records.filter(r => r.estado === 'no_recibio').length;
+      const ausentesCount = records.filter(r => r.estado === 'ausente').length;
+      
+      let businessDays = 0;
+      let dTrack = new Date(startDate + 'T00:00:00');
+      const dEnd = new Date(endDate + 'T00:00:00');
+      while (dTrack <= dEnd) {
+        if (dTrack.getDay() !== 0 && dTrack.getDay() !== 6) businessDays++;
+        dTrack.setDate(dTrack.getDate() + 1);
+      }
+      if (businessDays === 0) businessDays = 1;
+
+      const totalActiveEst = students.filter(s => s.estado === 'activo' || s.estado === 'active').length;
+      const totalPotential = totalActiveEst * businessDays;
+      const asistenciaPerc = totalPotential > 0 ? ((recibieronCount / totalPotential) * 100).toFixed(1) : '0.0';
+
+      const statsToPass = {
+        totalEstudiantes: students.length,
+        recibieron: recibieronCount,
+        noRecibieron: noRecibieronCount,
+        ausentes: ausentesCount,
+        porcentajeAsistencia: asistenciaPerc
+      };
+
+      // 4. Estadísticas Detalladas (si grupo === 'todos')
       let sedeStats: any[] = [];
       let grupoStats: any[] = [];
 
       if (grupoFilter === 'todos') {
-        // Lógica simplificada pero robusta para sedes
-        const allSedes = ['Principal', 'Primaria', 'Maria Inmaculada'];
-        for (const sede of allSedes) {
-          const studentsInSede = allStudents.filter(s => s.sede === sede);
-          const attendanceInSede = allPeriodRecords.filter(a => a.estudiantes.sede === sede);
-          
-          const registeredDays = new Set(attendanceInSede.map(a => a.fecha)).size || 1;
-          const recibieron = attendanceInSede.filter(a => a.estado === 'recibio').length;
-          const noRecibieron = attendanceInSede.filter(a => a.estado === 'no_recibio').length;
-          const ausentes = attendanceInSede.filter(a => a.estado === 'ausente').length;
-          const expected = studentsInSede.length * registeredDays;
-
-          sedeStats.push({
-            sede,
-            total: studentsInSede.length,
-            recibieron, noRecibieron, ausentes,
-            porcentaje: expected > 0 ? ((recibieron / expected) * 100).toFixed(1) : '0.0'
+        const allSedes = ['Principal', 'Primaria', 'Sede Primaria', 'Maria Inmaculada'];
+        for (const sName of allSedes) {
+          const sStus = students.filter(s => s.sede === sName);
+          const sRecs = records.filter(r => {
+            const e = Array.isArray(r.estudiantes) ? r.estudiantes[0] : r.estudiantes;
+            return e?.sede === sName;
           });
-        }
-
-        // Lógica para grupos relevantes
-        const groups = Array.from(new Set(allStudents.map(s => `${s.grupo}-${s.sede}`)));
-        groups.forEach(key => {
-          const [grupo, sede] = key.split('-');
-          const studentsInGroup = allStudents.filter(s => s.grupo === grupo && s.sede === sede);
-          const attendanceInGroup = allPeriodRecords.filter(a => a.estudiantes.grupo === grupo && a.estudiantes.sede === sede);
+          const sRegDays = new Set(sRecs.map(r => r.fecha)).size || 1;
+          const sRecibió = sRecs.filter(r => r.estado === 'recibio').length;
+          const sPot = sStus.length * sRegDays;
           
-          const registeredDays = new Set(attendanceInGroup.map(a => a.fecha)).size || 1;
-          const recibieron = attendanceInGroup.filter(a => a.estado === 'recibio').length;
-          const ausentes = attendanceInGroup.filter(a => a.estado === 'ausente').length;
-          const expected = studentsInGroup.length * registeredDays;
-          const porcentaje = expected > 0 ? (recibieron / expected) * 100 : 0;
-
-          if (expected > 0) {
-            grupoStats.push({
-              grupo, sede,
-              total: studentsInGroup.length,
-              recibieron, ausentes,
-              porcentaje: porcentaje.toFixed(1),
-              estado: porcentaje >= 90 ? 'Excelente' : porcentaje >= 70 ? 'Bueno' : porcentaje >= 50 ? 'Regular' : 'Crítico'
+          if (sStus.length > 0) {
+            sedeStats.push({
+              sede: sName,
+              total: sStus.length,
+              recibieron: sRecibió,
+              noRecibieron: sRecs.filter(r => r.estado === 'no_recibio').length,
+              ausentes: sRecs.filter(r => r.estado === 'ausente').length,
+              porcentaje: sPot > 0 ? ((sRecibió / sPot) * 100).toFixed(1) : '0.0'
             });
           }
+        }
+
+        const groups = Array.from(new Set(students.map(s => `${s.grupo}|${s.sede}`)));
+        groups.forEach(gKey => {
+          const [gName, gSede] = gKey.split('|');
+          const gStus = students.filter(s => s.grupo === gName && s.sede === gSede);
+          const gRecs = records.filter(r => {
+            const e = Array.isArray(r.estudiantes) ? r.estudiantes[0] : r.estudiantes;
+            return e?.grupo === gName && e?.sede === gSede;
+          });
+          const gRegDays = new Set(gRecs.map(r => r.fecha)).size || 1;
+          const gRecibió = gRecs.filter(r => r.estado === 'recibio').length;
+          const gPot = gStus.length * gRegDays;
+          const gPerc = gPot > 0 ? (gRecibió / gPot) * 100 : 0;
+
+          grupoStats.push({
+            grupo: gName, sede: gSede, total: gStus.length,
+            recibieron: gRecibió, ausentes: gRecs.filter(r => r.estado === 'ausente').length,
+            porcentaje: gPerc.toFixed(1),
+            estado: gPerc >= 90 ? 'Excelente' : gPerc >= 70 ? 'Bueno' : gPerc >= 50 ? 'Regular' : 'Crítico'
+          });
         });
         grupoStats.sort((a,b) => a.sede.localeCompare(b.sede) || a.grupo.localeCompare(b.grupo));
       }
 
-      // 3. Importar Generador y Ejecutar
+      // 5. Generar PDF
       const { generateDetailedReportPDF } = await import('@/lib/pdf-generator');
-      
       generateDetailedReportPDF({
-        allPeriodRecords,
-        allStudents: grupoFilter !== 'todos' ? allStudents.filter(s => s.grupo === grupoFilter) : allStudents,
-        stats,
+        allPeriodRecords: records,
+        allStudents: students,
+        stats: statsToPass,
         filters: {
           periodo,
           sede: sedeFilter,
