@@ -105,7 +105,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                 .from('schedules')
                 .select('items')
                 .eq('date', dateStr)
-                .single();
+                .maybeSingle();
 
             if (data?.items) {
                 const rawItems = data.items;
@@ -243,10 +243,10 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
         );
 
         // Filas de la tabla agrupadas por hora
+        // Fila de NO ASISTEN al final
         const excelData: any[] = sortedTimes.map(time => ({
             'Bloque / Hora': time.split(' - ')[0],
             'Grupos': groupedByTime[time].map(i => i.group.replace('-2026', '')).join(', '),
-            'Menú / Observaciones': groupedByTime[time].map(i => i.notes).filter(Boolean).join(' | ') || '-',
         }));
 
         // Fila de NO ASISTEN al final
@@ -257,7 +257,6 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
             excelData.push({
                 'Bloque / Hora': 'NO ASISTEN',
                 'Grupos': noAsisten.join(', '),
-                'Menú / Observaciones': '-',
             });
         }
 
@@ -266,9 +265,8 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Horario PAE');
         ws['!cols'] = [
-            { wch: 16 },
-            { wch: 35 },
-            { wch: 40 },
+            { wch: 25 },
+            { wch: 60 },
         ];
 
         XLSX.writeFile(wb, `Horario-PAE-${date}.xlsx`);
@@ -323,24 +321,21 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
         const bodyRows = sortedTimes.map(time => {
             const data = groupedByTime[time];
             const grupos = data.groups.join(', ');
-            const notes = data.notes.length > 0 ? data.notes.join(' | ') : '-';
             return `<tr>
-                <td style="padding:10px;border:1px solid #ddd;text-align:center;font-size:11px;color:#1e293b;">${time.split(' - ')[0]}</td>
-                <td style="padding:10px;border:1px solid #ddd;text-align:center;font-weight:700;font-size:12px;color:#0f172a;">${grupos}</td>
-                <td style="padding:10px;border:1px solid #ddd;text-align:left;font-size:11px;color:#334155;">${notes}</td>
+                <td style="padding:6px 10px;border:1px solid #ddd;text-align:center;font-size:14px;color:#1e293b;">${time.split(' - ')[0]}</td>
+                <td style="padding:6px 10px;border:1px solid #ddd;text-align:center;font-weight:700;font-size:16px;color:#0f172a;">${grupos}</td>
             </tr>`;
         }).join('');
 
         const noAsistenRow = noAsisten.length > 0
             ? `<tr style="background:#fee2e2;">
-                <td style="padding:10px;border:1px solid #ddd;text-align:center;font-weight:700;font-size:11px;color:#991b1b;">NO ASISTEN</td>
-                <td style="padding:10px;border:1px solid #ddd;text-align:center;font-weight:700;font-size:12px;color:#991b1b;">${noAsisten.join(', ')}</td>
-                <td style="padding:10px;border:1px solid #ddd;font-size:11px;color:#991b1b;">-</td>
+                <td style="padding:6px 10px;border:1px solid #ddd;text-align:center;font-weight:700;font-size:14px;color:#991b1b;">NO ASISTEN</td>
+                <td style="padding:6px 10px;border:1px solid #ddd;text-align:center;font-weight:700;font-size:16px;color:#991b1b;">${noAsisten.join(', ')}</td>
             </tr>` : '';
 
         // Crear elemento HTML temporal fuera del viewport
         const el = document.createElement('div');
-        el.style.cssText = 'position:absolute;left:-9999px;top:0;width:900px;background:#fff;padding:40px;font-family:helvetica,arial,sans-serif;color:#000;';
+        el.style.cssText = 'position:absolute;left:-9999px;top:0;width:550px;background:#fff;padding:40px;font-family:helvetica,arial,sans-serif;color:#000;';
         el.innerHTML = `
             <div style="text-align:center;margin-bottom:20px;">
                 <h1 style="font-size:18px;color:#164e63;margin:0 0 6px;">Institución Educativa Barroblanco</h1>
@@ -350,9 +345,8 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
             <table style="width:100%;border-collapse:collapse;">
                 <thead>
                     <tr style="background:#06b6d4;color:#fff;">
-                        <th style="padding:8px 10px;border:1px solid #ddd;font-size:12px;width:120px;">Bloque / Hora</th>
-                        <th style="padding:8px 10px;border:1px solid #ddd;font-size:12px;">Grupos</th>
-                        <th style="padding:8px 10px;border:1px solid #ddd;font-size:12px;text-align:left;">Menú / Observaciones</th>
+                        <th style="padding:6px 10px;border:1px solid #ddd;font-size:14px;width:120px;">Bloque / Hora</th>
+                        <th style="padding:6px 10px;border:1px solid #ddd;font-size:15px;">Grupos</th>
                     </tr>
                 </thead>
                 <tbody>${bodyRows}${noAsistenRow}</tbody>

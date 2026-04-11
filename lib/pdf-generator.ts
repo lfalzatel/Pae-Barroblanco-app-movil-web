@@ -25,7 +25,6 @@ export const generateSchedulePDF = (scheduleData: any[], date: string, sede: str
     const columns = [
         { header: 'Bloque / Hora', dataKey: 'time' },
         { header: 'Grupos', dataKey: 'groups' },
-        { header: 'Menú / Observaciones', dataKey: 'notes' },
     ];
 
     // Separar los que no asisten
@@ -71,9 +70,6 @@ export const generateSchedulePDF = (scheduleData: any[], date: string, sede: str
     const rows = sortedTimes.map(time => ({
         time: time.split(' - ')[0], // Solo la hora de inicio
         groups: groupedByTime[time].groups.join(', '),
-        notes: groupedByTime[time].notes.length > 0
-            ? groupedByTime[time].notes.join(' | ')
-            : '-'
     }));
 
     // Agregar fila de NO ASISTEN al final si hay grupos
@@ -81,7 +77,6 @@ export const generateSchedulePDF = (scheduleData: any[], date: string, sede: str
         rows.push({
             time: 'NO ASISTEN',
             groups: noAsistenGroups.join(', '),
-            notes: '-'
         });
     }
 
@@ -104,9 +99,8 @@ export const generateSchedulePDF = (scheduleData: any[], date: string, sede: str
             halign: 'center'
         },
         columnStyles: {
-            0: { halign: 'center', cellWidth: 32 },
-            1: { halign: 'center', fontStyle: 'bold' },
-            2: { halign: 'left' }
+            0: { halign: 'center', cellWidth: 45 },
+            1: { halign: 'center', fontStyle: 'bold' }
         },
         alternateRowStyles: {
             fillColor: [240, 253, 250] // Cyan-50
