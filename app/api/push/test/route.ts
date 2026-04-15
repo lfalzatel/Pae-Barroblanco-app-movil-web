@@ -45,7 +45,6 @@ export async function GET(req: NextRequest) {
       privateKey
     );
 
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
     const { data: subscriptions, error: dbError } = await supabaseAdmin.from('push_subscriptions').select('*');
 
     if (dbError) throw dbError;
