@@ -36,6 +36,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
     const [groupSedeMap, setGroupSedeMap] = useState<Record<string, string>>({});
     const [previewUrl, setPreviewUrl] = useState<URL | string | null>(null);
     const [jpgPreviewUrl, setJpgPreviewUrl] = useState<string | null>(null);
+    const [excelBlob, setExcelBlob] = useState<Blob | null>(null);
     const [showExportMenu, setShowExportMenu] = useState(false);
     const scheduleContentRef = useRef<HTMLDivElement>(null);
 
@@ -275,7 +276,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
             });
         }
 
-        // Crear workbook
+        // Crear workbook y generar blob en lugar de descargar directamente
         const ws = XLSX.utils.json_to_sheet(excelData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Horario PAE');
@@ -284,8 +285,41 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
             { wch: 60 },
         ];
 
-        XLSX.writeFile(wb, `Horario-PAE-${date}.xlsx`);
+        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        setExcelBlob(blob);
         setShowExportMenu(false);
+    };
+
+    const handleExcelDownload = () => {
+        if (!excelBlob) return;
+        const url = URL.createObjectURL(excelBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Horario-PAE-${date}.xlsx`;
+        link.click();
+        URL.revokeObjectURL(url);
+        setExcelBlob(null);
+    };
+
+    const handleExcelShare = async () => {
+        if (!excelBlob) return;
+        try {
+            const file = new File([excelBlob], `Horario-PAE-${date}.xlsx`, {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: 'Horario PAE - I.E. Barroblanco',
+                    text: `Horario del restaurante escolar para el ${date}`,
+                    files: [file],
+                });
+            } else {
+                handleExcelDownload();
+            }
+        } catch (err: any) {
+            if (err.name !== 'AbortError') handleExcelDownload();
+        }
     };
 
     const handleJpgExport = async () => {
@@ -805,6 +839,61 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                     </div>
                 </div>
             </div>
+            {/* Excel Preview Modal */}
+            {excelBlob && (
+                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-sm flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+                        {/* Header */}
+                        <div className="p-4 bg-gray-900 dark:bg-black text-white flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-white/10 p-2 rounded-xl">
+                                    <FileText className="w-5 h-5 text-green-400" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-base">Vista Previa</h3>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">Horario en Excel (.xlsx)</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setExcelBlob(null)}
+                                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Placeholder visual */}
+                        <div className="flex flex-col items-center justify-center gap-4 py-10 px-6 bg-gray-50 dark:bg-gray-800">
+                            <div className="w-16 h-16 bg-green-50 dark:bg-green-900/20 rounded-2xl flex items-center justify-center">
+                                <FileText className="w-8 h-8 text-green-600 dark:text-green-400" />
+                            </div>
+                            <div className="text-center">
+                                <p className="font-black text-gray-900 dark:text-white text-base">Excel listo</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Horario-PAE-{date}.xlsx</p>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 flex gap-3 shrink-0">
+                            <button
+                                onClick={handleExcelShare}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition-all active:scale-95"
+                            >
+                                <Share2 className="w-4 h-4" />
+                                Compartir
+                            </button>
+                            <button
+                                onClick={handleExcelDownload}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 dark:bg-gray-700 text-white rounded-2xl font-black text-sm hover:bg-gray-800 transition-all active:scale-95"
+                            >
+                                <Download className="w-4 h-4" />
+                                Descargar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* JPG Preview Modal Overlay */}
             {jpgPreviewUrl && (
                 <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
