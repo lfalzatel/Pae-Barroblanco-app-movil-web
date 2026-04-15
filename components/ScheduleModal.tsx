@@ -191,22 +191,36 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
     const handleDownload = () => {
         const filteredSchedule = schedule.filter(s => selectedSede === 'Todas' || s.sede === selectedSede);
-
-        // Detect mobile (simple width check or user agent) - Mobile browsers don't support iframe PDF preview well
-        const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024; // iPad/Tablets often struggle too with iframes, safer to download directly on smaller screens
-
-        if (isMobile) {
-            generateSchedulePDF(filteredSchedule, date, selectedSede, false);
-        } else {
-            const url = generateSchedulePDF(filteredSchedule, date, selectedSede, true);
-            if (url) setPreviewUrl(url);
-        }
+        // Siempre generar URL de previsualización (funciona en móvil y escritorio)
+        const url = generateSchedulePDF(filteredSchedule, date, selectedSede, true);
+        if (url) setPreviewUrl(url);
     };
 
     const confirmDownload = () => {
         const filteredSchedule = schedule.filter(s => selectedSede === 'Todas' || s.sede === selectedSede);
-        generateSchedulePDF(filteredSchedule, date, selectedSede, false); // False triggers save
+        generateSchedulePDF(filteredSchedule, date, selectedSede, false);
         setPreviewUrl(null);
+    };
+
+    const handlePdfShare = async () => {
+        if (!previewUrl) return;
+        try {
+            const res = await fetch(previewUrl as string);
+            const blob = await res.blob();
+            const file = new File([blob], `Horario-PAE-${date}.pdf`, { type: 'application/pdf' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: 'Horario PAE - I.E. Barroblanco',
+                    text: `Horario del restaurante escolar para el ${date}`,
+                    files: [file],
+                });
+            } else {
+                // Fallback: descargar directamente
+                confirmDownload();
+            }
+        } catch (err: any) {
+            if (err.name !== 'AbortError') confirmDownload();
+        }
     };
 
     const closePreview = () => {
@@ -846,8 +860,9 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
             {/* PDF Preview Modal Overlay */}
             {previewUrl && (
-                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-2xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-2xl flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden"
+                        style={{ height: window.innerWidth >= 1024 ? '85vh' : 'auto' }}>
                         {/* Preview Header */}
                         <div className="p-4 bg-gray-900 dark:bg-black text-white flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-3">
@@ -855,8 +870,8 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                                     <FileText className="w-5 h-5 text-cyan-400" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-base">Vista Previa del Documento</h3>
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">Verificar antes de descargar</p>
+                                    <h3 className="font-bold text-base">Vista Previa del PDF</h3>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">Selecciona una acción</p>
                                 </div>
                             </div>
                             <button
@@ -867,8 +882,8 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                             </button>
                         </div>
 
-                        {/* PDF Viewer - Iframe */}
-                        <div className="flex-1 bg-gray-100 dark:bg-gray-800 relative">
+                        {/* PDF Viewer - solo en escritorio */}
+                        <div className="hidden md:flex flex-1 bg-gray-100 dark:bg-gray-800 relative">
                             <iframe
                                 src={previewUrl as string}
                                 className="w-full h-full border-none"
@@ -876,20 +891,38 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                             />
                         </div>
 
-                        {/* Preview Footer Actions */}
-                        <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 flex justify-end gap-3 shrink-0">
+                        {/* Móvil: placeholder visual */}
+                        <div className="flex md:hidden flex-col items-center justify-center gap-4 py-10 px-6 bg-gray-50 dark:bg-gray-800">
+                            <div className="w-16 h-16 bg-cyan-50 dark:bg-cyan-900/20 rounded-2xl flex items-center justify-center">
+                                <FileText className="w-8 h-8 text-cyan-600 dark:text-cyan-400" />
+                            </div>
+                            <div className="text-center">
+                                <p className="font-black text-gray-900 dark:text-white text-base">PDF listo</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Horario-PAE-{date}.pdf</p>
+                            </div>
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 flex gap-3 shrink-0">
                             <button
                                 onClick={closePreview}
-                                className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 font-bold text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                className="px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-600 font-bold text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                             >
                                 Cancelar
                             </button>
                             <button
+                                onClick={handlePdfShare}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition-all active:scale-95"
+                            >
+                                <Share2 className="w-4 h-4" />
+                                Compartir
+                            </button>
+                            <button
                                 onClick={confirmDownload}
-                                className="px-5 py-2.5 rounded-xl bg-cyan-600 text-white font-bold text-sm hover:bg-cyan-700 shadow-lg shadow-cyan-200 transition-all flex items-center gap-2 active:scale-95"
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 dark:bg-gray-700 text-white rounded-2xl font-black text-sm hover:bg-gray-800 transition-all active:scale-95"
                             >
                                 <Download className="w-4 h-4" />
-                                Descargar Archivo
+                                Descargar
                             </button>
                         </div>
                     </div>
