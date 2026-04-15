@@ -4,10 +4,36 @@ import webpush from 'web-push';
 
 export async function GET(req: NextRequest) {
   try {
-    const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    const privateKey = process.env.VAPID_PRIVATE_KEY;
+    // Verificar autenticación: solo admin o coordinador_pae pueden ejecutar esto
+    const authHeader = req.headers.get('Authorization');
+    const token = authHeader?.replace('Bearer ', '');
+
+    if (!token) {
+      return NextResponse.json({ error: 'No autorizado: token requerido' }, { status: 401 });
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return NextResponse.json({ error: 'Faltan variables de entorno' }, { status: 500 });
+    }
+
+    // Verificar el token y obtener el usuario
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'No autorizado: sesión inválida' }, { status: 401 });
+    }
+
+    const userRole = user.user_metadata?.rol;
+    if (userRole !== 'admin' && userRole !== 'coordinador_pae') {
+      return NextResponse.json({ error: 'No autorizado: se requiere rol admin o coordinador_pae' }, { status: 403 });
+    }
+
+    const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const privateKey = process.env.VAPID_PRIVATE_KEY;
 
     if (!publicKey || !privateKey || !supabaseUrl || !serviceRoleKey) {
       return NextResponse.json({ error: 'Faltan variables de entorno' }, { status: 500 });

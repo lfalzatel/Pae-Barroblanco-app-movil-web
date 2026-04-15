@@ -80,7 +80,17 @@ export default function DashboardLayout({
     const handleTestPush = async () => {
         setIsTestLoading(true);
         try {
-            const res = await fetch('/api/push/test');
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                alert('Error: no hay sesión activa.');
+                return;
+            }
+
+            const res = await fetch('/api/push/test', {
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            });
             const data = await res.json();
             
             if (data.error) {
