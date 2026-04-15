@@ -841,8 +841,10 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
             </div>
             {/* Excel Preview Modal */}
             {excelBlob && (
-                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-sm flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setExcelBlob(null)}>
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-sm flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}>
                         {/* Header */}
                         <div className="p-4 bg-gray-900 dark:bg-black text-white flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-3">
@@ -896,8 +898,10 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
             {/* JPG Preview Modal Overlay */}
             {jpgPreviewUrl && (
-                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-sm flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setJpgPreviewUrl(null)}>
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-sm flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}>
                         {/* Header */}
                         <div className="p-4 bg-gray-900 dark:bg-black text-white flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-3">
@@ -949,9 +953,11 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
 
             {/* PDF Preview Modal Overlay */}
             {previewUrl && (
-                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={closePreview}>
                     <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-2xl flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden"
-                        style={{ height: window.innerWidth >= 1024 ? '85vh' : 'auto' }}>
+                        style={{ height: window.innerWidth >= 1024 ? '85vh' : 'auto' }}
+                        onClick={(e) => e.stopPropagation()}>
                         {/* Preview Header */}
                         <div className="p-4 bg-gray-900 dark:bg-black text-white flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-3">
