@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Calendar, Download, Clock, Users, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Calendar, Download, Clock, Users, FileText, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
 import { generateSchedulePDF } from '../lib/pdf-generator';
 import { supabase } from '@/lib/supabase';
 import { getAcademicBlock } from '@/lib/schedule-utils';
@@ -35,6 +35,7 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
     const [selectedSede, setSelectedSede] = useState('Principal');
     const [groupSedeMap, setGroupSedeMap] = useState<Record<string, string>>({});
     const [previewUrl, setPreviewUrl] = useState<URL | string | null>(null);
+    const [jpgPreviewUrl, setJpgPreviewUrl] = useState<string | null>(null);
     const [showExportMenu, setShowExportMenu] = useState(false);
     const scheduleContentRef = useRef<HTMLDivElement>(null);
 
@@ -366,10 +367,8 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                 width: el.offsetWidth,
             });
 
-            const link = document.createElement('a');
-            link.href = canvas.toDataURL('image/jpeg', 0.96);
-            link.download = `Horario-PAE-${date}.jpg`;
-            link.click();
+            // Mostrar previsualización en lugar de descargar directamente
+            setJpgPreviewUrl(canvas.toDataURL('image/jpeg', 0.96));
             setShowExportMenu(false);
         } catch (error) {
             console.error('Error generating JPG:', error);
@@ -381,6 +380,41 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
     const handleDownloadPdf = () => {
         handleDownload();
         setShowExportMenu(false);
+    };
+
+    const handleJpgDownload = () => {
+        if (!jpgPreviewUrl) return;
+        const link = document.createElement('a');
+        link.href = jpgPreviewUrl;
+        link.download = `Horario-PAE-${date}.jpg`;
+        link.click();
+        setJpgPreviewUrl(null);
+    };
+
+    const handleJpgShare = async () => {
+        if (!jpgPreviewUrl) return;
+        try {
+            // Convertir dataURL a Blob para compartir
+            const res = await fetch(jpgPreviewUrl);
+            const blob = await res.blob();
+            const file = new File([blob], `Horario-PAE-${date}.jpg`, { type: 'image/jpeg' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: 'Horario PAE - I.E. Barroblanco',
+                    text: `Horario del restaurante escolar para el ${date}`,
+                    files: [file],
+                });
+            } else {
+                // Fallback: descargar si el dispositivo no soporta compartir archivos
+                handleJpgDownload();
+            }
+        } catch (err: any) {
+            if (err.name !== 'AbortError') {
+                console.error('Error al compartir JPG:', err);
+                handleJpgDownload();
+            }
+        }
     };
 
     if (!isOpen) return null;
@@ -757,6 +791,59 @@ export default function ScheduleModal({ isOpen, onClose }: ScheduleModalProps) {
                     </div>
                 </div>
             </div>
+            {/* JPG Preview Modal Overlay */}
+            {jpgPreviewUrl && (
+                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-sm flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+                        {/* Header */}
+                        <div className="p-4 bg-gray-900 dark:bg-black text-white flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-white/10 p-2 rounded-xl">
+                                    <FileText className="w-5 h-5 text-amber-400" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-base">Vista Previa</h3>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">Horario en imagen JPG</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setJpgPreviewUrl(null)}
+                                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Image Preview */}
+                        <div className="bg-gray-100 dark:bg-gray-800 overflow-auto max-h-[55vh] flex items-start justify-center p-3">
+                            <img
+                                src={jpgPreviewUrl}
+                                alt="Vista previa del horario"
+                                className="w-full rounded-xl shadow-lg object-contain"
+                            />
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 flex gap-3 shrink-0">
+                            <button
+                                onClick={handleJpgShare}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition-all active:scale-95"
+                            >
+                                <Share2 className="w-4 h-4" />
+                                Compartir
+                            </button>
+                            <button
+                                onClick={handleJpgDownload}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 dark:bg-gray-700 text-white rounded-2xl font-black text-sm hover:bg-gray-800 transition-all active:scale-95"
+                            >
+                                <Download className="w-4 h-4" />
+                                Descargar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* PDF Preview Modal Overlay */}
             {previewUrl && (
                 <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-200">
