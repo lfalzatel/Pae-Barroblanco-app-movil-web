@@ -113,7 +113,7 @@ export default function GestionPage() {
 
   const handleCreateStudent = async () => {
     setCreateError(null);
-    if (!newStudent.nombre || !newStudent.matricula || !newStudent.grado || !newStudent.grupo) {
+    if (!newStudent.nombre || !newStudent.matricula || !newStudent.grupo) {
       setCreateError('Todos los campos son obligatorios');
       return;
     }
@@ -163,7 +163,7 @@ export default function GestionPage() {
   const handleUpdateStudent = async () => {
     setUpdateError(null);
     if (!editingStudent) return;
-    if (!editFormData.nombre || !editFormData.matricula || !editFormData.grado || !editFormData.grupo) {
+    if (!editFormData.nombre || !editFormData.matricula || !editFormData.grupo) {
       setUpdateError('Todos los campos son obligatorios');
       return;
     }
@@ -1053,7 +1053,7 @@ export default function GestionPage() {
                             <div className="font-black text-gray-900 text-base truncate uppercase tracking-tight dark:text-white">{estudiante.nombre}</div>
                             <div className="text-[10px] font-bold text-gray-400 mt-0.5 flex items-center gap-2 dark:text-gray-500">
                               <span className="bg-gray-100 px-2 py-0.5 rounded-lg text-gray-500 dark:bg-gray-700 dark:text-gray-300">{estudiante.matricula}</span>
-                              <span className="text-cyan-600 font-extrabold dark:text-cyan-400">{estudiante.grado}-{estudiante.grupo}</span>
+                              <span className="text-cyan-600 font-extrabold dark:text-cyan-400">{estudiante.grupo}</span>
                             </div>
                           </div>
 
@@ -1284,16 +1284,6 @@ export default function GestionPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Grado</label>
-                        <input
-                          type="text"
-                          placeholder="Ej: 10"
-                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
-                          value={newStudent.grado}
-                          onChange={e => setNewStudent({ ...newStudent, grado: e.target.value })}
-                        />
-                      </div>
-                      <div>
                         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Grupo</label>
                         {!isNewGroup ? (
                           <div className="relative">
@@ -1340,22 +1330,22 @@ export default function GestionPage() {
                           </div>
                         )}
                       </div>
-                    </div>
 
-                    <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Sede</label>
-                      <div className="relative">
-                        <select
-                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-black text-cyan-700 uppercase text-[10px] tracking-widest appearance-none cursor-pointer shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-cyan-400"
-                          value={newStudent.sede}
-                          onChange={e => setNewStudent({ ...newStudent, sede: e.target.value })}
-                        >
-                          {sedes.filter(s => s.id !== 'todas').map(s => (
-                            <option key={s.id} value={s.nombre}>{s.nombre.toUpperCase()}</option>
-                          ))}
-                        </select>
-                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                          <ChevronDown className="h-4 w-4 text-cyan-500" />
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Sede</label>
+                        <div className="relative">
+                          <select
+                            className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-black text-cyan-700 uppercase text-[10px] tracking-widest appearance-none cursor-pointer shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-cyan-400"
+                            value={newStudent.sede}
+                            onChange={e => setNewStudent({ ...newStudent, sede: e.target.value })}
+                          >
+                            {sedes.filter(s => s.id !== 'todas').map(s => (
+                              <option key={s.id} value={s.id}>{s.nombre.toUpperCase()}</option>
+                            ))}
+                          </select>
+                          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                            <ChevronDown className="h-4 w-4 text-cyan-500" />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1449,16 +1439,6 @@ export default function GestionPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Grado</label>
-                        <input
-                          type="text"
-                          placeholder="Ej: 10"
-                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
-                          value={editFormData.grado}
-                          onChange={e => setEditFormData({ ...editFormData, grado: e.target.value })}
-                        />
-                      </div>
-                      <div>
                         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Grupo</label>
                         {!isNewGroup ? (
                           <div className="relative">
@@ -1507,22 +1487,22 @@ export default function GestionPage() {
                           </div>
                         )}
                       </div>
-                    </div>
 
-                    <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Sede</label>
-                      <div className="relative">
-                        <select
-                          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/30 transition-all font-black text-amber-700 uppercase text-[10px] tracking-widest appearance-none cursor-pointer shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-amber-400"
-                          value={editFormData.sede}
-                          onChange={e => setEditFormData({ ...editFormData, sede: e.target.value })}
-                        >
-                          {sedes.filter(s => s.id !== 'todas').map(s => (
-                            <option key={s.id} value={s.nombre}>{s.nombre.toUpperCase()}</option>
-                          ))}
-                        </select>
-                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                          <ChevronDown className="h-4 w-4 text-amber-500" />
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2 dark:text-gray-500">Sede</label>
+                        <div className="relative">
+                          <select
+                            className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/30 transition-all font-black text-amber-700 uppercase text-[10px] tracking-widest appearance-none cursor-pointer shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-amber-400"
+                            value={editFormData.sede}
+                            onChange={e => setEditFormData({ ...editFormData, sede: e.target.value })}
+                          >
+                            {sedes.filter(s => s.id !== 'todas').map(s => (
+                              <option key={s.id} value={s.id}>{s.nombre.toUpperCase()}</option>
+                            ))}
+                          </select>
+                          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                            <ChevronDown className="h-4 w-4 text-amber-500" />
+                          </div>
                         </div>
                       </div>
                     </div>
