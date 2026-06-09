@@ -142,16 +142,16 @@ export default function StatsDetailModal({
                             {summaryStats && (
                                 <div className="grid grid-cols-3 gap-2 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
                                     <div className="bg-white/60 dark:bg-gray-800/50 rounded-2xl p-3 border border-gray-100/80 dark:border-white/10 text-center flex flex-col items-center justify-center shadow-sm">
-                                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Días Reg.</div>
-                                        <div className="text-xl font-black text-gray-900 dark:text-white">{summaryStats.diasRegistrados}</div>
+                                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-tight">Días<br/>Registrados</div>
+                                        <div className="text-xl font-black text-gray-900 dark:text-white mt-1">{summaryStats.diasRegistrados}</div>
                                     </div>
                                     <div className="bg-white/60 dark:bg-gray-800/50 rounded-2xl p-3 border border-gray-100/80 dark:border-white/10 text-center flex flex-col items-center justify-center shadow-sm">
-                                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Est. Activos</div>
-                                        <div className="text-xl font-black text-gray-900 dark:text-white">{summaryStats.estudiantesActivos}</div>
+                                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-tight">Estudiantes<br/>Activos</div>
+                                        <div className="text-xl font-black text-gray-900 dark:text-white mt-1">{summaryStats.estudiantesActivos}</div>
                                     </div>
                                     <div className="bg-white/60 dark:bg-gray-800/50 rounded-2xl p-3 border border-gray-100/80 dark:border-white/10 text-center flex flex-col items-center justify-center shadow-sm">
-                                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Rac. Esp.</div>
-                                        <div className="text-xl font-black text-gray-900 dark:text-white">{summaryStats.racionesEsperadas}</div>
+                                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-tight">Raciones<br/>Esperadas</div>
+                                        <div className="text-xl font-black text-gray-900 dark:text-white mt-1">{summaryStats.racionesEsperadas}</div>
                                     </div>
                                 </div>
                             )}

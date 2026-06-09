@@ -1110,7 +1110,7 @@ export default function ReportesPage() {
 
     // Calcular potential sumando por grupo para ser exactos como en la UI
     let totalPotential = 0;
-    if (filters.grupo !== 'todos') {
+    if (grupoFilter !== 'todos') {
        totalPotential = totalActiveEst * diasRegistrados;
     } else {
        const activeStudentsByGroup: Record<string, number> = {};
