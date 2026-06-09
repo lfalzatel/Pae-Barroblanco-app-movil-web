@@ -308,6 +308,10 @@ export default function ReportesPage() {
           queryEstudiantes = queryEstudiantes.eq('sede', sedeMap[sedeFilter] || 'Principal');
         }
 
+        if (grupoFilter !== 'todos') {
+          queryEstudiantes = queryEstudiantes.eq('grupo', grupoFilter);
+        }
+
         const { count: totalCount, error: errorEst } = await queryEstudiantes;
         if (errorEst) throw errorEst;
 
@@ -326,12 +330,8 @@ export default function ReportesPage() {
             )
           `)
           .gte('fecha', startDate)
+          .lte('fecha', endDate)
           .order('created_at', { ascending: false });
-
-        if (isSpecificDate) {
-          // Si es fecha específica (hoy o seleccionada), filtrar también con lte para que sea SOLO ese día
-          queryAsistencia = queryAsistencia.lte('fecha', startDate);
-        }
 
         if (sedeFilter === 'primaria-principal') {
           queryAsistencia = queryAsistencia.in('estudiantes.sede', ['Principal', 'Sede Primaria']);
@@ -353,6 +353,11 @@ export default function ReportesPage() {
         } else if (sedeFilter !== 'todas') {
           queryEst = queryEst.eq('sede', sedeMap[sedeFilter] || 'Principal');
         }
+
+        if (grupoFilter !== 'todos') {
+          queryEst = queryEst.eq('grupo', grupoFilter);
+        }
+
         const { data: todosEst } = await queryEst;
         const ests = todosEst || [];
 
