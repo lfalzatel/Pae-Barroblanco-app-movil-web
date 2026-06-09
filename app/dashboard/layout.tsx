@@ -662,8 +662,20 @@ export default function DashboardLayout({
             {/* Desktop Sidebar */}
             <aside className="hidden md:flex w-64 flex-col fixed inset-y-0 bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700 transition-colors">
                 <div className="p-6 pb-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-start gap-3 bg-blue-50/50 dark:bg-gray-800">
-                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none">
-                        <Users className="w-6 h-6 text-white" />
+                    <div 
+                        className="relative w-11 h-11 flex-shrink-0 cursor-pointer transition-transform active:scale-95"
+                        onClick={() => setIsLogoExpanded(true)}
+                    >
+                        {/* Spinning Ring */}
+                        <div className="absolute -inset-1 border-t-2 border-r-2 border-transparent border-t-green-500 border-r-emerald-500/30 rounded-full animate-spin-slow"></div>
+                        <div className="absolute -inset-1 border-b-2 border-l-2 border-transparent border-b-green-700 border-l-green-600/20 rounded-full animate-spin-reverse"></div>
+
+                        {/* Circular Logo Wrapper */}
+                        <div className="relative w-full h-full rounded-full p-[1px] bg-gradient-to-tr from-green-600/50 to-emerald-400/50 shadow-[0_0_10px_rgba(64,168,81,0.2)]">
+                            <div className="w-full h-full rounded-full bg-transparent overflow-hidden flex items-center justify-center shadow-inner">
+                                <img src="/icon-512x512.png" alt="Logo" className="w-full h-full object-cover scale-110 drop-shadow-md pointer-events-none" />
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <h1 className="text-lg font-black text-gray-900 dark:text-white leading-tight">Sistema PAE</h1>
