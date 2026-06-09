@@ -115,6 +115,7 @@ function RegistroContent() {
   // Estados para Novedades
   const [novedades, setNovedades] = useState<Record<string, { tipo: string; descripcion: string }>>({});
   const [modalNovedad, setModalNovedad] = useState<{ open: boolean; estudianteId: string; nombre: string } | null>(null);
+  const [conflictModalOpen, setConflictModalOpen] = useState(false);
   const [tempNovedad, setTempNovedad] = useState({ tipo: '', descripcion: '' });
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
@@ -715,7 +716,13 @@ function RegistroContent() {
         .from('asistencia_pae')
         .upsert(allUpdates, { onConflict: 'estudiante_id,fecha' });
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42501' || (error.message && error.message.toLowerCase().includes('row-level security'))) {
+          setConflictModalOpen(true);
+          return;
+        }
+        throw error;
+      }
 
       OfflineService.clearPending();
       showToast(`Asistencia guardada para el ${selectedDate}`, 'success');
@@ -770,11 +777,40 @@ function RegistroContent() {
     .toLowerCase();
 
   const dateTitle = fullDateStr.split(',').map(part => part.trim().charAt(0).toUpperCase() + part.trim().slice(1)).join(', ');
-
   if (!usuario) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+      {/* Modal de Advertencia de Permisos */}
+      {conflictModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-400 to-orange-500"></div>
+            
+            <div className="flex flex-col items-center text-center mt-4">
+              <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4 shadow-inner border border-amber-200 dark:border-amber-800">
+                <AlertCircle className="w-8 h-8 text-amber-500 dark:text-amber-400" />
+              </div>
+              
+              <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2 leading-tight">Acción Denegada</h3>
+              
+              <p className="text-sm text-gray-600 dark:text-gray-300 font-medium mb-8 leading-relaxed">
+                Estás intentando guardar cambios que incluyen a estudiantes cuya asistencia ya fue registrada hoy por otro docente.
+                <br /><br />
+                <span className="text-xs text-gray-400 dark:text-gray-500 block">Solo el autor original o un administrador puede sobrescribir estos registros.</span>
+              </p>
+              
+              <button
+                onClick={() => setConflictModalOpen(false)}
+                className="w-full py-3.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-2xl font-black uppercase tracking-widest text-sm transition-colors active:scale-95 border border-gray-200 dark:border-gray-600"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Novedad */}
       {modalNovedad && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setModalNovedad(null)}>
