@@ -1543,6 +1543,13 @@ export default function ReportesPage() {
         deepDetailData={deepDetailData}
         onGroupSelect={openDeepDetail}
         onBackToSummary={() => setDeepDetailOpen(false)}
+        summaryStats={
+          modalCategory?.id === 'recibieron' ? {
+            diasRegistrados: stats.diasRegistrados || 0,
+            estudiantesActivos: stats.totalEstudiantes || 0, // Wait, it's called totalEstudiantes in stats state still
+            racionesEsperadas: stats.racionesEsperadas || 0
+          } : undefined
+        }
       />
 
       {/* Header Premium (Synced with Gestion) */}

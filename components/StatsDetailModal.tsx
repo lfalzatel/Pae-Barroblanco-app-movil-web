@@ -55,6 +55,11 @@ interface StatsDetailModalProps {
     }[];
     onGroupSelect: (grupo: string) => void;
     onBackToSummary: () => void;
+    summaryStats?: {
+        diasRegistrados: number;
+        estudiantesActivos: number;
+        racionesEsperadas: number;
+    };
 }
 
 export default function StatsDetailModal({
@@ -66,7 +71,8 @@ export default function StatsDetailModal({
     deepDetailTitle,
     deepDetailData,
     onGroupSelect,
-    onBackToSummary
+    onBackToSummary,
+    summaryStats
 }: StatsDetailModalProps) {
     useModalBack(isOpen, onClose, 'stats-detail-modal');
     useModalBack(deepDetailOpen, onBackToSummary, 'deep-detail-modal');
@@ -133,6 +139,23 @@ export default function StatsDetailModal({
                     {!deepDetailOpen ? (
                         // Level 1: Group List
                         <div className="p-6 space-y-3 pb-20">
+                            {summaryStats && (
+                                <div className="grid grid-cols-3 gap-2 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <div className="bg-white/60 dark:bg-gray-800/50 rounded-2xl p-3 border border-gray-100/80 dark:border-white/10 text-center flex flex-col items-center justify-center shadow-sm">
+                                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Días Reg.</div>
+                                        <div className="text-xl font-black text-gray-900 dark:text-white">{summaryStats.diasRegistrados}</div>
+                                    </div>
+                                    <div className="bg-white/60 dark:bg-gray-800/50 rounded-2xl p-3 border border-gray-100/80 dark:border-white/10 text-center flex flex-col items-center justify-center shadow-sm">
+                                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Est. Activos</div>
+                                        <div className="text-xl font-black text-gray-900 dark:text-white">{summaryStats.estudiantesActivos}</div>
+                                    </div>
+                                    <div className="bg-white/60 dark:bg-gray-800/50 rounded-2xl p-3 border border-gray-100/80 dark:border-white/10 text-center flex flex-col items-center justify-center shadow-sm">
+                                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Rac. Esp.</div>
+                                        <div className="text-xl font-black text-gray-900 dark:text-white">{summaryStats.racionesEsperadas}</div>
+                                    </div>
+                                </div>
+                            )}
+
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 px-1 flex items-center gap-2">
                                 <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
                                 Distribución Acumulada
