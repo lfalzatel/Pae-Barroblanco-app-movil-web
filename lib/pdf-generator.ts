@@ -355,11 +355,15 @@ export const generateDetailedReportPDF = (params: {
         startY: currentY + 5,
         head: [['Métrica', 'Valor']],
         body: [
-            ['Total Estudiantes (Activos)', stats.totalEstudiantes.toString()],
+            ['Total Estudiantes (Activos)', stats.totalActivos?.toString() || stats.totalEstudiantes?.toString()],
+            ['Estudiantes Inactivos', stats.inactivos?.toString() || '0'],
             ['Total Raciones Entregadas', stats.recibieron.toString()],
             ['No Recibieron Ración', stats.noRecibieron.toString()],
             ['Estudiantes Ausentes', stats.ausentes.toString()],
-            ['Tasa de Asistencia', `${stats.porcentajeAsistencia}%`]
+            ['Días Registrados', stats.diasRegistrados?.toString() || '0'],
+            ['Raciones Esperadas', stats.racionesEsperadas?.toString() || '0'],
+            ['Tasa de Asistencia', `${stats.porcentajeAsistencia}%`],
+            ['Estado', stats.estado || '-']
         ],
         theme: 'striped',
         headStyles: { fillColor: [22, 101, 52] },
@@ -483,32 +487,6 @@ export const generateDetailedReportPDF = (params: {
                 theme: 'grid',
                 headStyles: { fillColor: [15, 118, 110] },
                 styles: { fontSize: 8 }
-            });
-            currentY = (doc as any).lastAutoTable.finalY + 15;
-        }
-
-        if (grupoStats && grupoStats.length > 0) {
-            if (currentY > 250) { doc.addPage(); currentY = 20; }
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Rendimiento por Grupos', 14, currentY);
-
-            autoTable(doc, {
-                startY: currentY + 5,
-                head: [['Grupo', 'Sede', 'Total(Act)', 'Inactivos', 'Recibieron', 'Ausentes', 'Días Reg.', 'Rac. Esp.', '% Asist.', 'Estado']],
-                body: grupoStats.map(g => [
-                    g.grupo, g.sede, g.total.toString(), g.inactivos.toString(), g.recibieron.toString(), g.ausentes.toString(), g.diasRegistrados?.toString() || '0', g.racionesEsperadas?.toString() || '0', `${g.porcentaje}%`, g.estado
-                ]),
-                theme: 'striped',
-                headStyles: { fillColor: [71, 85, 105] },
-                styles: { fontSize: 7 },
-                didParseCell: (data) => {
-                    if (data.column.index === 8) {
-                        const val = data.cell.text[0];
-                        if (val === 'Excelente') data.cell.styles.textColor = [22, 101, 52];
-                        if (val === 'Crítico') data.cell.styles.textColor = [220, 38, 38];
-                    }
-                }
             });
             currentY = (doc as any).lastAutoTable.finalY + 15;
         }

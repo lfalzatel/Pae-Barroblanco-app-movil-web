@@ -1103,11 +1103,25 @@ export default function ReportesPage() {
     const totalPotential = totalActiveEst * businessDays;
     const asistenciaPerc = totalPotential > 0 ? ((recibieronCount / totalPotential) * 100).toFixed(1) : '0.0';
 
+    const inactivosCount = students.filter(s => s.estado === 'inactivo' || s.estado === 'inactive').length;
+    const diasRegistrados = new Set(records.map(r => r.fecha)).size || 1;
+    const racionesEsperadas = totalPotential;
+    
+    let estado = 'Crítico';
+    const perc = parseFloat(asistenciaPerc);
+    if (perc >= 90) estado = 'Excelente';
+    else if (perc >= 70) estado = 'Bueno';
+    else if (perc >= 50) estado = 'Regular';
+
     const statsToPass = {
-      totalEstudiantes: students.length,
+      totalActivos: totalActiveEst,
+      inactivos: inactivosCount,
       recibieron: recibieronCount,
       noRecibieron: noRecibieronCount,
       ausentes: ausentesCount,
+      diasRegistrados,
+      racionesEsperadas,
+      estado,
       porcentajeAsistencia: asistenciaPerc
     };
 
