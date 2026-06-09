@@ -389,17 +389,43 @@ export default function ReportesPage() {
           }
         });
 
-        // Calcular totales por grupo para porcentajes (considerando solo activos para ausentes/recibieron?)
-        // Para "recibieron", idealmente es sobre el total de activos del grupo.
+        // Calculate unique registered days per group
+        const registeredDaysByGroup: Record<string, Set<string>> = {};
+        const overallRegisteredDaysSet = new Set<string>();
+
+        asistenciaData?.forEach((a: any) => {
+          const g = a.estudiantes.grupo;
+          if (g) {
+            if (!registeredDaysByGroup[g]) {
+              registeredDaysByGroup[g] = new Set<string>();
+            }
+            registeredDaysByGroup[g].add(a.fecha);
+          }
+          overallRegisteredDaysSet.add(a.fecha);
+        });
+
+        // Calculate totales por grupo para porcentajes
         const totalByGroup: Record<string, number> = {};
-        // Usamos los estudiantes filtrados (ests) que ya están cargados
         ests.filter(e => e.estado === 'activo').forEach(e => {
           if (e.grupo) totalByGroup[e.grupo] = (totalByGroup[e.grupo] || 0) + 1;
         });
 
+        // Calculate Business Days in Range (Fallback)
+        let businessDays = 0;
+        let d = new Date(startDate);
+        const dEnd = new Date(endDate);
+        while (d <= dEnd) {
+          const day = d.getDay();
+          if (day !== 0 && day !== 6) businessDays++;
+          d.setDate(d.getDate() + 1);
+        }
+        if (businessDays === 0) businessDays = 1;
+
         const mapDetails = (agg: Record<string, number>) => {
           return Object.entries(agg).map(([grupo, count]) => {
-            const total = (totalByGroup[grupo] || 0) * businessDays;
+            const registeredDays = registeredDaysByGroup[grupo]?.size || 0;
+            const daysToUse = registeredDays > 0 ? registeredDays : businessDays;
+            const total = (totalByGroup[grupo] || 0) * daysToUse;
 
             const percentage = total > 0 ? ((count / total) * 100).toFixed(0) : '0';
             return { grupo, count, total, percentage };
@@ -422,24 +448,22 @@ export default function ReportesPage() {
           .filter(g => !uniqueReportedGroups.has(g))
           .map(g => {
             const count = ests.filter(e => e.grupo === g && (e.estado === 'activo' || e.estado === 'active')).length;
-            // Filter out empty groups if needed, but keeping them for visibility is better
             return { grupo: g, count, total: count, percentage: '0' };
           })
           .sort((a, b) => a.grupo.localeCompare(b.grupo));
 
-        // Calculate Business Days in Range
-        let businessDays = 0;
-        let d = new Date(startDate);
-        const dEnd = new Date(endDate);
-        while (d <= dEnd) {
-          const day = d.getDay();
-          if (day !== 0 && day !== 6) businessDays++;
-          d.setDate(d.getDate() + 1);
+        // Formula: Sum of (Activos en grupo * Dias Registrados en ese grupo)
+        let totalPotentialRations = 0;
+        if (grupoFilter !== 'todos') {
+           const days = registeredDaysByGroup[grupoFilter]?.size || businessDays;
+           totalPotentialRations = (totalCount || 0) * days;
+        } else {
+           for (const g of uniqueActiveGroups) {
+              const actives = totalByGroup[g] || 0;
+              const days = registeredDaysByGroup[g]?.size || (overallRegisteredDaysSet.size > 0 ? overallRegisteredDaysSet.size : businessDays);
+              totalPotentialRations += actives * days;
+           }
         }
-        if (businessDays === 0) businessDays = 1; // Fallback
-
-        // Formula: Recibieron / (Total Activos * Business Days)
-        const totalPotentialRations = (totalCount || 0) * businessDays;
 
         setStats({
           totalEstudiantes: totalCount || 0,
