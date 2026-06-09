@@ -472,6 +472,8 @@ export default function ReportesPage() {
           noRecibieron: noRecibieronCount,
           ausentes: ausentesCount,
           inactivos: inactivosCount,
+          diasRegistrados: overallRegisteredDaysSet.size > 0 ? overallRegisteredDaysSet.size : businessDays,
+          racionesEsperadas: totalPotentialRations,
           porcentajeAsistencia: totalPotentialRations > 0 ? ((recibieronCount / totalPotentialRations) * 100).toFixed(1) : '0',
           groupDetails: {
             recibieron: mapDetails(groupAgg.recibieron),
@@ -1100,11 +1102,33 @@ export default function ReportesPage() {
     if (businessDays === 0) businessDays = 1;
 
     const totalActiveEst = students.filter(s => s.estado === 'activo' || s.estado === 'active').length;
-    const totalPotential = totalActiveEst * businessDays;
-    const asistenciaPerc = totalPotential > 0 ? ((recibieronCount / totalPotential) * 100).toFixed(1) : '0.0';
-
     const inactivosCount = students.filter(s => s.estado === 'inactivo' || s.estado === 'inactive').length;
-    const diasRegistrados = new Set(records.map(r => r.fecha)).size || 1;
+    
+    // Calcular diasRegistrados globalmente para este export
+    const registeredDaysSet = new Set(records.map(r => r.fecha));
+    const diasRegistrados = registeredDaysSet.size > 0 ? registeredDaysSet.size : businessDays;
+
+    // Calcular potential sumando por grupo para ser exactos como en la UI
+    let totalPotential = 0;
+    if (filters.grupo !== 'todos') {
+       totalPotential = totalActiveEst * diasRegistrados;
+    } else {
+       const activeStudentsByGroup: Record<string, number> = {};
+       students.filter(s => s.estado === 'activo' || s.estado === 'active').forEach(s => {
+          activeStudentsByGroup[s.grupo] = (activeStudentsByGroup[s.grupo] || 0) + 1;
+       });
+       
+       for (const g of Object.keys(activeStudentsByGroup)) {
+           const groupRecords = records.filter(r => {
+               const e = Array.isArray(r.estudiantes) ? r.estudiantes[0] : r.estudiantes;
+               return e?.grupo === g;
+           });
+           const groupDays = new Set(groupRecords.map(r => r.fecha)).size || diasRegistrados;
+           totalPotential += activeStudentsByGroup[g] * groupDays;
+       }
+    }
+
+    const asistenciaPerc = totalPotential > 0 ? ((recibieronCount / totalPotential) * 100).toFixed(1) : '0.0';
     const racionesEsperadas = totalPotential;
     
     let estado = 'Crítico';
