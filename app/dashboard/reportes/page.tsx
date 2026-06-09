@@ -300,7 +300,8 @@ export default function ReportesPage() {
         let queryEstudiantes = supabase
           .from('estudiantes')
           .select('*', { count: 'exact', head: true })
-          .not('grupo', 'ilike', '%2025%');
+          .not('grupo', 'ilike', '%2025%')
+          .in('estado', ['activo', 'active']);
 
         if (sedeFilter === 'primaria-principal') {
           queryEstudiantes = queryEstudiantes.in('sede', ['Principal', 'Sede Primaria']);
