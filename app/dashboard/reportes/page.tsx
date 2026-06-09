@@ -1117,18 +1117,22 @@ export default function ReportesPage() {
     const allSedes = ['Principal', 'Primaria', 'Sede Primaria', 'Maria Inmaculada'];
     for (const sName of allSedes) {
       const sStus = students.filter(s => s.sede === sName);
+      const sActivos = sStus.filter(s => s.estado === 'activo' || s.estado === 'active').length;
+      const sInactivos = sStus.filter(s => s.estado === 'inactivo' || s.estado === 'inactive').length;
+      
       const sRecs = records.filter(r => {
         const e = Array.isArray(r.estudiantes) ? r.estudiantes[0] : r.estudiantes;
         return e?.sede === sName;
       });
       const sRegDays = new Set(sRecs.map(r => r.fecha)).size || 1;
       const sRecibió = sRecs.filter(r => r.estado === 'recibio').length;
-      const sPot = sStus.length * sRegDays;
+      const sPot = sActivos * sRegDays;
       
       if (sStus.length > 0) {
         sedeStats.push({
           sede: sName,
-          total: sStus.length,
+          total: sActivos,
+          inactivos: sInactivos,
           recibieron: sRecibió,
           noRecibieron: sRecs.filter(r => r.estado === 'no_recibio').length,
           ausentes: sRecs.filter(r => r.estado === 'ausente').length,
@@ -1141,17 +1145,20 @@ export default function ReportesPage() {
     groups.forEach(gKey => {
       const [gName, gSede] = gKey.split('|');
       const gStus = students.filter(s => s.grupo === gName && s.sede === gSede);
+      const gActivos = gStus.filter(s => s.estado === 'activo' || s.estado === 'active').length;
+      const gInactivos = gStus.filter(s => s.estado === 'inactivo' || s.estado === 'inactive').length;
+
       const gRecs = records.filter(r => {
         const e = Array.isArray(r.estudiantes) ? r.estudiantes[0] : r.estudiantes;
         return e?.grupo === gName && e?.sede === gSede;
       });
       const gRegDays = new Set(gRecs.map(r => r.fecha)).size || 1;
       const gRecibió = gRecs.filter(r => r.estado === 'recibio').length;
-      const gPot = gStus.length * gRegDays;
+      const gPot = gActivos * gRegDays;
       const gPerc = gPot > 0 ? (gRecibió / gPot) * 100 : 0;
 
       grupoStats.push({
-        grupo: gName, sede: gSede, total: gStus.length,
+        grupo: gName, sede: gSede, total: gActivos, inactivos: gInactivos,
         recibieron: gRecibió, ausentes: gRecs.filter(r => r.estado === 'ausente').length,
         diasRegistrados: gRegDays, racionesEsperadas: gPot,
         porcentaje: gPerc.toFixed(1),
