@@ -470,10 +470,11 @@ export const generateDetailedReportPDF = (params: {
             
             autoTable(doc, {
                 startY: currentY + 5,
-                head: [['Sede', 'Total Est.', 'Recibieron', 'No Recibieron', 'Ausentes', '% Asist.']],
+                head: [['Sede', 'Total Est. (Act)', 'Est. Inactivos', 'Recibieron', 'No Recibieron', 'Ausentes', '% Asist.']],
                 body: sedeStats.map(s => [
                     s.sede, 
                     s.total.toString(), 
+                    s.inactivos.toString(),
                     s.recibieron.toString(), 
                     s.noRecibieron.toString(), 
                     s.ausentes.toString(), 
@@ -494,9 +495,9 @@ export const generateDetailedReportPDF = (params: {
 
             autoTable(doc, {
                 startY: currentY + 5,
-                head: [['Grupo', 'Sede', 'Total', 'Recibieron', 'Ausentes', 'Días Reg.', 'Rac. Esp.', '% Asist.', 'Estado']],
+                head: [['Grupo', 'Sede', 'Total(Act)', 'Inactivos', 'Recibieron', 'Ausentes', 'Días Reg.', 'Rac. Esp.', '% Asist.', 'Estado']],
                 body: grupoStats.map(g => [
-                    g.grupo, g.sede, g.total.toString(), g.recibieron.toString(), g.ausentes.toString(), g.diasRegistrados?.toString() || '0', g.racionesEsperadas?.toString() || '0', `${g.porcentaje}%`, g.estado
+                    g.grupo, g.sede, g.total.toString(), g.inactivos.toString(), g.recibieron.toString(), g.ausentes.toString(), g.diasRegistrados?.toString() || '0', g.racionesEsperadas?.toString() || '0', `${g.porcentaje}%`, g.estado
                 ]),
                 theme: 'striped',
                 headStyles: { fillColor: [71, 85, 105] },

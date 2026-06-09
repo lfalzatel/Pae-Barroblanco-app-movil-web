@@ -642,7 +642,7 @@ export default function ReportesPage() {
       // All possible sedes
       const allSedes = ['Principal', 'Primaria', 'Maria Inmaculada'];
 
-      let queryAllStudents = supabase.from('estudiantes').select('id, nombre, grupo, sede');
+      let queryAllStudents = supabase.from('estudiantes').select('id, nombre, grupo, sede, estado');
 
       if (sedeFilter === 'primaria-principal') {
         queryAllStudents = queryAllStudents.in('sede', ['Principal', 'Primaria', 'Sede Primaria']);
@@ -689,6 +689,9 @@ export default function ReportesPage() {
         let ausentes = 0;
         const registeredDaysSet = new Set<string>();
 
+        const activos = students.filter(s => s.estado === 'activo' || s.estado === 'active').length;
+        const inactivos = students.filter(s => s.estado === 'inactivo' || s.estado === 'inactive').length;
+
         if (students.length > 0) {
           // FIX: Use join filtering instead of large .in() to avoid URL length error 400
           let query = supabase
@@ -713,12 +716,13 @@ export default function ReportesPage() {
         }
 
         const totalRegisteredDays = registeredDaysSet.size;
-        const totalExpected = students.length * totalRegisteredDays;
+        const totalExpected = activos * totalRegisteredDays;
         const porcentaje = totalExpected > 0 ? ((recibieron / totalExpected) * 100).toFixed(1) : '0.0';
 
         sedeStats.push({
           sede,
-          total: students.length,
+          total: activos, // Now representing active students
+          inactivos,
           recibieron,
           noRecibieron,
           ausentes,
@@ -730,7 +734,8 @@ export default function ReportesPage() {
       const grupoStats: any[] = [];
       for (const [grupoKey, students] of Object.entries(studentsByGrupo)) {
         const [grupo, sede] = grupoKey.split('-');
-        const studentIds = students.map(s => s.id);
+        const activos = students.filter(s => s.estado === 'activo' || s.estado === 'active').length;
+        const inactivos = students.filter(s => s.estado === 'inactivo' || s.estado === 'inactive').length;
 
         // FIX: Use join filtering instead of .in() to avoid 400 Bad Request
         const { data: attendanceData } = await supabase
@@ -754,7 +759,7 @@ export default function ReportesPage() {
         });
 
         const totalRegisteredDays = registeredDaysSet.size;
-        const totalExpected = students.length * totalRegisteredDays;
+        const totalExpected = activos * totalRegisteredDays;
         const porcentaje = totalExpected > 0 ? ((recibieron / totalExpected) * 100) : 0;
 
         // Determine estado based on percentage
@@ -770,7 +775,8 @@ export default function ReportesPage() {
         grupoStats.push({
           grupo,
           sede,
-          total: students.length,
+          total: activos,
+          inactivos,
           recibieron,
           noRecibieron,
           ausentes,
@@ -803,7 +809,7 @@ export default function ReportesPage() {
         }), '← Cuándo se descargó', '', '⚪ Ausente'],
         ['', '', '', '', '- Sin registro'],
         ['RESUMEN POR SEDE (Consolidado Período)'],
-        ['Sede', 'Estudiantes Únicos', 'Total Raciones Recibidas', 'Total No Recibieron', 'Total Ausentes', '% Asistencia']
+        ['Sede', 'Total Estudiantes (Activos)', 'Estudiantes Inactivos', 'Total Raciones Recibidas', 'Total No Recibieron', 'Total Ausentes', '% Asistencia']
       ];
 
       // Add sede statistics (always show all 3 sedes)
@@ -811,6 +817,7 @@ export default function ReportesPage() {
         excelData.push([
           `Sede ${stat.sede}`,
           stat.total.toString(),
+          stat.inactivos.toString(),
           stat.recibieron.toString(),
           stat.noRecibieron.toString(),
           stat.ausentes.toString(),
@@ -821,7 +828,7 @@ export default function ReportesPage() {
       excelData.push(
         [''],
         ['DETALLE POR GRUPO (Consolidado Período)'],
-        ['Grupo', 'Sede', 'Total Estudiantes', 'Recibieron (Total)', 'No Recibieron', 'No Asistieron', 'Días Registrados', 'Raciones Esperadas', '% Asistencia', 'Estado']
+        ['Grupo', 'Sede', 'Total Estudiantes', 'Estudiantes Inactivos', 'Recibieron (Total)', 'No Recibieron', 'No Asistieron', 'Días Registrados', 'Raciones Esperadas', '% Asistencia', 'Estado']
       );
 
       // Add grupo statistics
@@ -830,6 +837,7 @@ export default function ReportesPage() {
           stat.grupo,
           stat.sede,
           stat.total.toString(),
+          stat.inactivos.toString(),
           stat.recibieron.toString(),
           stat.noRecibieron.toString(),
           stat.ausentes.toString(),
@@ -1248,6 +1256,7 @@ export default function ReportesPage() {
                 <th style="padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Grupo</th>
                 <th style="padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Sede</th>
                 <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Total Est.</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Est. Inactivos</th>
                 <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Recibieron</th>
                 <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Ausentes</th>
                 <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Días Reg.</th>
@@ -1261,6 +1270,7 @@ export default function ReportesPage() {
                 <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;color:#0f172a;">${g.grupo}</td>
                 <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#475569;">${g.sede}</td>
                 <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#475569;text-align:center;">${g.total}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#ef4444;text-align:center;">${g.inactivos}</td>
                 <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#059669;text-align:center;font-weight:600;">${g.recibieron}</td>
                 <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#ca8a04;text-align:center;">${g.ausentes}</td>
                 <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#475569;text-align:center;">${g.diasRegistrados}</td>
