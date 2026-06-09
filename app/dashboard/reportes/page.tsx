@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
-import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X, ChevronLeft, School, Clock } from 'lucide-react';
+import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X, ChevronLeft, School, Clock, FileText, Download } from 'lucide-react';
 import Link from 'next/link';
 import { DateSelectionModal } from '@/components/ui/DateSelectionModal';
 import {
@@ -14,6 +14,7 @@ import {
 import { Skeleton } from '@/components/ui/Skeleton';
 import StatsDetailModal from '@/components/StatsDetailModal';
 import AnimatedNumber from '@/components/AnimatedNumber';
+import html2canvas from 'html2canvas';
 
 export default function ReportesPage() {
   const router = useRouter();
@@ -48,6 +49,13 @@ export default function ReportesPage() {
 
   // Estado para menú de exportar (Restored)
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [exportPreviewOpen, setExportPreviewOpen] = useState(false);
+  const [selectedExportFormat, setSelectedExportFormat] = useState<'excel' | 'pdf' | 'image' | null>(null);
+  const [isGeneratingExport, setIsGeneratingExport] = useState(false);
+  const [exportPreviewUrl, setExportPreviewUrl] = useState<string | null>(null);
+  const [exportPreviewFilename, setExportPreviewFilename] = useState<string | null>(null);
+  const [exportBlob, setExportBlob] = useState<Blob | null>(null);
+  const reportContainerRef = useRef<HTMLDivElement>(null);
 
   const [registros, setRegistros] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({
@@ -543,7 +551,8 @@ export default function ReportesPage() {
     return d.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase();
   };
 
-  const handleExportExcel = async () => {
+  const handlePrepareExcel = async () => {
+    setIsGeneratingExport(true);
     try {
       // Dynamic import for XLSX
       const XLSX = await import('xlsx');
@@ -736,6 +745,8 @@ export default function ReportesPage() {
           recibieron,
           noRecibieron,
           ausentes,
+          diasRegistrados: totalRegisteredDays,
+          racionesEsperadas: totalExpected,
           porcentaje: porcentaje.toFixed(1),
           estado
         });
@@ -781,7 +792,7 @@ export default function ReportesPage() {
       excelData.push(
         [''],
         ['DETALLE POR GRUPO (Consolidado Período)'],
-        ['Grupo', 'Sede', 'Total Estudiantes', 'Recibieron (Total)', 'No Recibieron', 'No Asistieron', '% Asistencia', 'Estado']
+        ['Grupo', 'Sede', 'Total Estudiantes', 'Recibieron (Total)', 'No Recibieron', 'No Asistieron', 'Días Registrados', 'Raciones Esperadas', '% Asistencia', 'Estado']
       );
 
       // Add grupo statistics
@@ -793,6 +804,8 @@ export default function ReportesPage() {
           stat.recibieron.toString(),
           stat.noRecibieron.toString(),
           stat.ausentes.toString(),
+          stat.diasRegistrados.toString(),
+          stat.racionesEsperadas.toString(),
           `${stat.porcentaje}%`,
           stat.estado
         ]);
@@ -953,168 +966,204 @@ export default function ReportesPage() {
       const periodoFilename = periodo === 'fecha' ? selectedDate : periodo;
       const filename = `Reporte_Asistencia_${sedeFilename}_${periodoFilename}_${reportDate}.xlsx`;
 
-      // Download file
-      XLSX.writeFile(wb, filename);
-
-      // Close export menu
-      setShowExportMenu(false);
+      // Prepare Blob and trigger preview
+      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      setExportBlob(blob);
+      setExportPreviewFilename(filename);
+      setExportPreviewUrl(null); // No visual preview for excel
+      
+      setExportPreviewOpen(true);
     } catch (error) {
       console.error('Error generating Excel report:', error);
       alert('Error al generar el reporte Excel. Por favor, intenta de nuevo.');
+    } finally {
+      setIsGeneratingExport(false);
     }
   };
 
-  const handleExportPDF = async () => {
-    try {
-      // 1. Cálculo de fechas idéntico al Excel (con ajuste de zona horaria)
-      let reportDate = selectedDate;
-      const today = new Date();
-      if (periodo === 'hoy') {
-        const offset = today.getTimezoneOffset() * 60000;
-        reportDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
-      }
+  const getExportData = async () => {
+    let reportDate = selectedDate;
+    const today = new Date();
+    if (periodo === 'hoy') {
+      const offset = today.getTimezoneOffset() * 60000;
+      reportDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
+    }
 
-      const [pYear, pMonth, pDay] = reportDate.split('-').map(Number);
-      const analysisDate = new Date(pYear, pMonth - 1, pDay);
+    const [pYear, pMonth, pDay] = reportDate.split('-').map(Number);
+    const analysisDate = new Date(pYear, pMonth - 1, pDay);
 
-      let startDate = reportDate;
-      let endDate = reportDate;
+    let startDate = reportDate;
+    let endDate = reportDate;
 
-      if (periodo === 'semana') {
-        const d = new Date(analysisDate);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        const start = new Date(d.getFullYear(), d.getMonth(), diff);
-        const end = new Date(d.getFullYear(), d.getMonth(), diff + 6);
-        startDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-        endDate = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-      } else if (periodo === 'mes') {
-        const start = new Date(analysisDate.getFullYear(), analysisDate.getMonth(), 1);
-        const end = new Date(analysisDate.getFullYear(), analysisDate.getMonth() + 1, 0);
-        startDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-        endDate = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-      }
+    if (periodo === 'semana') {
+      const d = new Date(analysisDate);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const start = new Date(d.getFullYear(), d.getMonth(), diff);
+      const end = new Date(d.getFullYear(), d.getMonth(), diff + 6);
+      startDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      endDate = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    } else if (periodo === 'mes') {
+      const start = new Date(analysisDate.getFullYear(), analysisDate.getMonth(), 1);
+      const end = new Date(analysisDate.getFullYear(), analysisDate.getMonth() + 1, 0);
+      startDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      endDate = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    }
 
-      // 2. Fetch de Datos Frescos (Fuente de Verdad de Supabase)
-      const sedeMap: Record<string, string> = {
-        'principal': 'Principal',
-        'primaria': 'Sede Primaria',
-        'maria-inmaculada': 'Maria Inmaculada'
-      };
+    const sedeMap: Record<string, string> = {
+      'principal': 'Principal',
+      'primaria': 'Sede Primaria',
+      'maria-inmaculada': 'Maria Inmaculada'
+    };
 
-      // Consultar estudiantes
-      let queryEst = supabase.from('estudiantes').select('id, nombre, grupo, sede, estado').not('grupo', 'ilike', '%2025%');
-      if (sedeFilter === 'primaria-principal') {
-        queryEst = queryEst.in('sede', ['Principal', 'Primaria', 'Sede Primaria']);
-      } else if (sedeFilter !== 'todas') {
-        queryEst = queryEst.eq('sede', sedeMap[sedeFilter] || 'Principal');
-      }
-      if (grupoFilter !== 'todos') {
-        queryEst = queryEst.eq('grupo', grupoFilter);
-      }
-      const { data: allStudentsData } = await queryEst;
-      const students = allStudentsData || [];
+    let queryEst = supabase.from('estudiantes').select('id, nombre, grupo, sede, estado').not('grupo', 'ilike', '%2025%');
+    if (sedeFilter === 'primaria-principal') {
+      queryEst = queryEst.in('sede', ['Principal', 'Primaria', 'Sede Primaria']);
+    } else if (sedeFilter !== 'todas') {
+      queryEst = queryEst.eq('sede', sedeMap[sedeFilter] || 'Principal');
+    }
+    if (grupoFilter !== 'todos') {
+      queryEst = queryEst.eq('grupo', grupoFilter);
+    }
+    const { data: allStudentsData } = await queryEst;
+    const students = allStudentsData || [];
 
-      // Consultar asistencia del periodo completo
-      let queryAsist = supabase.from('asistencia_pae').select(`
-        id, estado, fecha, created_at,
-        estudiantes!inner (id, nombre, grupo, sede)
-      `)
-      .gte('fecha', startDate)
-      .lte('fecha', endDate);
+    let queryAsist = supabase.from('asistencia_pae').select(`
+      id, estado, fecha, created_at,
+      estudiantes!inner (id, nombre, grupo, sede)
+    `)
+    .gte('fecha', startDate)
+    .lte('fecha', endDate);
 
-      if (sedeFilter === 'primaria-principal') {
-        queryAsist = queryAsist.in('estudiantes.sede', ['Principal', 'Primaria', 'Sede Primaria']);
-      } else if (sedeFilter !== 'todas') {
-        queryAsist = queryAsist.eq('estudiantes.sede', sedeMap[sedeFilter] || 'Principal');
-      }
-      if (grupoFilter !== 'todos') {
-        queryAsist = queryAsist.eq('estudiantes.grupo', grupoFilter);
-      }
+    if (sedeFilter === 'primaria-principal') {
+      queryAsist = queryAsist.in('estudiantes.sede', ['Principal', 'Primaria', 'Sede Primaria']);
+    } else if (sedeFilter !== 'todas') {
+      queryAsist = queryAsist.eq('estudiantes.sede', sedeMap[sedeFilter] || 'Principal');
+    }
+    if (grupoFilter !== 'todos') {
+      queryAsist = queryAsist.eq('estudiantes.grupo', grupoFilter);
+    }
 
-      const { data: attendanceData } = await queryAsist;
-      const records = (attendanceData || []) as any[];
+    const { data: attendanceData } = await queryAsist;
+    const records = (attendanceData || []) as any[];
 
-      // 3. Re-calcular estadísticas globales (idéntico a la lógica de la UI pero con datos frescos)
-      const recibieronCount = records.filter(r => r.estado === 'recibio').length;
-      const noRecibieronCount = records.filter(r => r.estado === 'no_recibio').length;
-      const ausentesCount = records.filter(r => r.estado === 'ausente').length;
+    const recibieronCount = records.filter(r => r.estado === 'recibio').length;
+    const noRecibieronCount = records.filter(r => r.estado === 'no_recibio').length;
+    const ausentesCount = records.filter(r => r.estado === 'ausente').length;
+    
+    let businessDays = 0;
+    let dTrack = new Date(startDate + 'T00:00:00');
+    const dEnd = new Date(endDate + 'T00:00:00');
+    while (dTrack <= dEnd) {
+      if (dTrack.getDay() !== 0 && dTrack.getDay() !== 6) businessDays++;
+      dTrack.setDate(dTrack.getDate() + 1);
+    }
+    if (businessDays === 0) businessDays = 1;
+
+    const totalActiveEst = students.filter(s => s.estado === 'activo' || s.estado === 'active').length;
+    const totalPotential = totalActiveEst * businessDays;
+    const asistenciaPerc = totalPotential > 0 ? ((recibieronCount / totalPotential) * 100).toFixed(1) : '0.0';
+
+    const statsToPass = {
+      totalEstudiantes: students.length,
+      recibieron: recibieronCount,
+      noRecibieron: noRecibieronCount,
+      ausentes: ausentesCount,
+      porcentajeAsistencia: asistenciaPerc
+    };
+
+    let sedeStats: any[] = [];
+    let grupoStats: any[] = [];
+
+    const allSedes = ['Principal', 'Primaria', 'Sede Primaria', 'Maria Inmaculada'];
+    for (const sName of allSedes) {
+      const sStus = students.filter(s => s.sede === sName);
+      const sRecs = records.filter(r => {
+        const e = Array.isArray(r.estudiantes) ? r.estudiantes[0] : r.estudiantes;
+        return e?.sede === sName;
+      });
+      const sRegDays = new Set(sRecs.map(r => r.fecha)).size || 1;
+      const sRecibió = sRecs.filter(r => r.estado === 'recibio').length;
+      const sPot = sStus.length * sRegDays;
       
-      let businessDays = 0;
-      let dTrack = new Date(startDate + 'T00:00:00');
-      const dEnd = new Date(endDate + 'T00:00:00');
-      while (dTrack <= dEnd) {
-        if (dTrack.getDay() !== 0 && dTrack.getDay() !== 6) businessDays++;
-        dTrack.setDate(dTrack.getDate() + 1);
-      }
-      if (businessDays === 0) businessDays = 1;
-
-      const totalActiveEst = students.filter(s => s.estado === 'activo' || s.estado === 'active').length;
-      const totalPotential = totalActiveEst * businessDays;
-      const asistenciaPerc = totalPotential > 0 ? ((recibieronCount / totalPotential) * 100).toFixed(1) : '0.0';
-
-      const statsToPass = {
-        totalEstudiantes: students.length,
-        recibieron: recibieronCount,
-        noRecibieron: noRecibieronCount,
-        ausentes: ausentesCount,
-        porcentajeAsistencia: asistenciaPerc
-      };
-
-      // 4. Estadísticas Detalladas (si grupo === 'todos')
-      let sedeStats: any[] = [];
-      let grupoStats: any[] = [];
-
-      if (grupoFilter === 'todos') {
-        const allSedes = ['Principal', 'Primaria', 'Sede Primaria', 'Maria Inmaculada'];
-        for (const sName of allSedes) {
-          const sStus = students.filter(s => s.sede === sName);
-          const sRecs = records.filter(r => {
-            const e = Array.isArray(r.estudiantes) ? r.estudiantes[0] : r.estudiantes;
-            return e?.sede === sName;
-          });
-          const sRegDays = new Set(sRecs.map(r => r.fecha)).size || 1;
-          const sRecibió = sRecs.filter(r => r.estado === 'recibio').length;
-          const sPot = sStus.length * sRegDays;
-          
-          if (sStus.length > 0) {
-            sedeStats.push({
-              sede: sName,
-              total: sStus.length,
-              recibieron: sRecibió,
-              noRecibieron: sRecs.filter(r => r.estado === 'no_recibio').length,
-              ausentes: sRecs.filter(r => r.estado === 'ausente').length,
-              porcentaje: sPot > 0 ? ((sRecibió / sPot) * 100).toFixed(1) : '0.0'
-            });
-          }
-        }
-
-        const groups = Array.from(new Set(students.map(s => `${s.grupo}|${s.sede}`)));
-        groups.forEach(gKey => {
-          const [gName, gSede] = gKey.split('|');
-          const gStus = students.filter(s => s.grupo === gName && s.sede === gSede);
-          const gRecs = records.filter(r => {
-            const e = Array.isArray(r.estudiantes) ? r.estudiantes[0] : r.estudiantes;
-            return e?.grupo === gName && e?.sede === gSede;
-          });
-          const gRegDays = new Set(gRecs.map(r => r.fecha)).size || 1;
-          const gRecibió = gRecs.filter(r => r.estado === 'recibio').length;
-          const gPot = gStus.length * gRegDays;
-          const gPerc = gPot > 0 ? (gRecibió / gPot) * 100 : 0;
-
-          grupoStats.push({
-            grupo: gName, sede: gSede, total: gStus.length,
-            recibieron: gRecibió, ausentes: gRecs.filter(r => r.estado === 'ausente').length,
-            porcentaje: gPerc.toFixed(1),
-            estado: gPerc >= 90 ? 'Excelente' : gPerc >= 70 ? 'Bueno' : gPerc >= 50 ? 'Regular' : 'Crítico'
-          });
+      if (sStus.length > 0) {
+        sedeStats.push({
+          sede: sName,
+          total: sStus.length,
+          recibieron: sRecibió,
+          noRecibieron: sRecs.filter(r => r.estado === 'no_recibio').length,
+          ausentes: sRecs.filter(r => r.estado === 'ausente').length,
+          porcentaje: sPot > 0 ? ((sRecibió / sPot) * 100).toFixed(1) : '0.0'
         });
-        grupoStats.sort((a,b) => a.sede.localeCompare(b.sede) || a.grupo.localeCompare(b.grupo));
       }
+    }
 
-      // 5. Generar PDF
+    const groups = Array.from(new Set(students.map(s => `${s.grupo}|${s.sede}`)));
+    groups.forEach(gKey => {
+      const [gName, gSede] = gKey.split('|');
+      const gStus = students.filter(s => s.grupo === gName && s.sede === gSede);
+      const gRecs = records.filter(r => {
+        const e = Array.isArray(r.estudiantes) ? r.estudiantes[0] : r.estudiantes;
+        return e?.grupo === gName && e?.sede === gSede;
+      });
+      const gRegDays = new Set(gRecs.map(r => r.fecha)).size || 1;
+      const gRecibió = gRecs.filter(r => r.estado === 'recibio').length;
+      const gPot = gStus.length * gRegDays;
+      const gPerc = gPot > 0 ? (gRecibió / gPot) * 100 : 0;
+
+      grupoStats.push({
+        grupo: gName, sede: gSede, total: gStus.length,
+        recibieron: gRecibió, ausentes: gRecs.filter(r => r.estado === 'ausente').length,
+        diasRegistrados: gRegDays, racionesEsperadas: gPot,
+        porcentaje: gPerc.toFixed(1),
+        estado: gPerc >= 90 ? 'Excelente' : gPerc >= 70 ? 'Bueno' : gPerc >= 50 ? 'Regular' : 'Crítico'
+      });
+    });
+    grupoStats.sort((a,b) => a.sede.localeCompare(b.sede) || a.grupo.localeCompare(b.grupo));
+
+    let studentStats: any[] = [];
+    if (grupoFilter !== 'todos') {
+      const gRegDays = new Set(records.map(r => r.fecha)).size || 1;
+      
+      students.forEach(student => {
+        const sRecs = records.filter(r => {
+          const e = Array.isArray(r.estudiantes) ? r.estudiantes[0] : r.estudiantes;
+          return e?.id === student.id;
+        });
+        const recibio = sRecs.filter(r => r.estado === 'recibio').length;
+        const ausentes = sRecs.filter(r => r.estado === 'ausente').length;
+        const sPot = gRegDays;
+        const porcentaje = sPot > 0 ? (recibio / sPot) * 100 : 0;
+        
+        let estado = 'Crítico';
+        if (porcentaje >= 90) estado = 'Excelente';
+        else if (porcentaje >= 70) estado = 'Bueno';
+        else if (porcentaje >= 50) estado = 'Regular';
+
+        studentStats.push({
+          nombre: student.nombre,
+          recibio,
+          ausentes,
+          diasRegistrados: gRegDays,
+          porcentaje: porcentaje.toFixed(1),
+          estado
+        });
+      });
+      studentStats.sort((a,b) => a.nombre.localeCompare(b.nombre));
+    }
+
+    return { records, students, statsToPass, sedeStats, grupoStats, studentStats, startDate, endDate };
+  };
+
+  const handlePreparePDF = async () => {
+    setIsGeneratingExport(true);
+    try {
+      const data = await getExportData();
+      const { records, students, statsToPass, sedeStats, grupoStats, studentStats, startDate, endDate } = data;
+
       const { generateDetailedReportPDF } = await import('@/lib/pdf-generator');
-      generateDetailedReportPDF({
+      const result = generateDetailedReportPDF({
         allPeriodRecords: records,
         allStudents: students,
         stats: statsToPass,
@@ -1126,14 +1175,211 @@ export default function ReportesPage() {
           endDate
         },
         sedeStats,
-        grupoStats
+        grupoStats,
+        studentStats,
+        returnBlob: true
       });
-
-      setShowExportMenu(false);
+      if (result && result.blob) {
+        const url = URL.createObjectURL(result.blob);
+        setExportPreviewUrl(url);
+        setExportPreviewFilename(result.filename);
+        setExportBlob(result.blob);
+        setExportPreviewOpen(true);
+      }
     } catch (error: any) {
       console.error('Error exporting PDF:', error);
       alert('Error al generar el archivo PDF.');
+    } finally {
+      setIsGeneratingExport(false);
     }
+  };
+
+  const handlePrepareImage = async () => {
+    setIsGeneratingExport(true);
+    try {
+      const data = await getExportData();
+      const { grupoStats, studentStats, startDate, endDate } = data;
+      
+      const el = document.createElement('div');
+      el.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#ffffff;padding:40px;font-family:system-ui, -apple-system, sans-serif;color:#000;border-radius:16px;';
+      
+      const dateLabel = periodo === 'fecha' ? selectedDate : periodo === 'hoy' ? 'Hoy' : periodo === 'semana' ? 'Esta Semana' : 'Este Mes';
+      const sedeLabel = sedeFilter === 'todas' ? 'Todas las sedes' : `Sede ${sedeFilter}`;
+      const grupoLabel = grupoFilter === 'todos' ? 'Todos los grupos' : `Grupo ${grupoFilter}`;
+
+      let tableHTML = '';
+
+      if (grupoFilter !== 'todos' && studentStats.length > 0) {
+        const g = grupoStats[0];
+        const summaryTableHTML = g ? `
+          <h3 style="font-size:16px;color:#334155;margin:0 0 12px;font-weight:700;text-transform:uppercase;">Resumen del Grupo</h3>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:32px;background:#f8fafc;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;">
+            <thead>
+              <tr style="background:#0f172a;color:#ffffff;">
+                <th style="padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Grupo</th>
+                <th style="padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Sede</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Total Est.</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Recibieron</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Ausentes</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Días Reg.</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Rac. Esp.</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">% Asist.</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;color:#0f172a;">${g.grupo}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#475569;">${g.sede}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#475569;text-align:center;">${g.total}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#059669;text-align:center;font-weight:600;">${g.recibieron}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#ca8a04;text-align:center;">${g.ausentes}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#475569;text-align:center;">${g.diasRegistrados}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#475569;text-align:center;">${g.racionesEsperadas}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#0f172a;text-align:center;font-weight:700;">${g.porcentaje}%</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:700;text-align:center;color:${g.estado === 'Excelente' ? '#16a34a' : g.estado === 'Bueno' ? '#2563eb' : g.estado === 'Regular' ? '#d97706' : '#dc2626'};">${g.estado}</td>
+              </tr>
+            </tbody>
+          </table>
+        ` : '';
+
+        const rows = studentStats.map(s => `
+          <tr>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;color:#0f172a;">${s.nombre}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#059669;text-align:center;font-weight:600;">${s.recibio}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#ca8a04;text-align:center;">${s.ausentes}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#475569;text-align:center;">${s.diasRegistrados}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#0f172a;text-align:center;font-weight:700;">${s.porcentaje}%</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:700;text-align:center;color:${s.estado === 'Excelente' ? '#16a34a' : s.estado === 'Bueno' ? '#2563eb' : s.estado === 'Regular' ? '#d97706' : '#dc2626'};">${s.estado}</td>
+          </tr>
+        `).join('');
+
+        tableHTML = `
+          ${summaryTableHTML}
+          <h3 style="font-size:16px;color:#334155;margin:0 0 12px;font-weight:700;text-transform:uppercase;">Detalle de Estudiantes</h3>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:24px;background:#f8fafc;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;">
+            <thead>
+              <tr style="background:#0891b2;color:#ffffff;">
+                <th style="padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Estudiante</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Recibió</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Ausente</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Días Reg.</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">% Asist.</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Estado</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+      } else {
+        const rows = grupoStats.map(g => `
+          <tr>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;color:#0f172a;">${g.grupo}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#475569;">${g.sede}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#475569;text-align:center;">${g.total}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#059669;text-align:center;font-weight:600;">${g.recibieron}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#ca8a04;text-align:center;">${g.ausentes}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#475569;text-align:center;">${g.diasRegistrados}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#475569;text-align:center;">${g.racionesEsperadas}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#0f172a;text-align:center;font-weight:700;">${g.porcentaje}%</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:700;text-align:center;color:${g.estado === 'Excelente' ? '#16a34a' : g.estado === 'Bueno' ? '#2563eb' : g.estado === 'Regular' ? '#d97706' : '#dc2626'};">${g.estado}</td>
+          </tr>
+        `).join('');
+
+        tableHTML = `
+          <table style="width:100%;border-collapse:collapse;margin-bottom:24px;background:#f8fafc;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;">
+            <thead>
+              <tr style="background:#0891b2;color:#ffffff;">
+                <th style="padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Grupo</th>
+                <th style="padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Sede</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Total Est.</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Recibieron</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Ausentes</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Días Reg.</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Rac. Esp.</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">% Asist.</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Estado</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+      }
+
+      el.innerHTML = `
+        <div style="text-align:center;margin-bottom:24px;border-bottom:2px solid #e5e7eb;padding-bottom:16px;">
+            <h1 style="font-size:24px;color:#0891b2;margin:0 0 6px;font-weight:900;text-transform:uppercase;">Institución Educativa Barroblanco</h1>
+            <h2 style="font-size:18px;color:#334155;margin:0 0 6px;font-weight:700;">Consolidado de Asistencia PAE</h2>
+            <p style="font-size:14px;color:#64748b;margin:0;">${sedeLabel} | ${grupoLabel}</p>
+            <p style="font-size:14px;color:#64748b;margin:4px 0 0;font-weight:600;">Período: ${startDate} al ${endDate}</p>
+        </div>
+        
+        ${tableHTML}
+        
+        <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9;">
+            <p style="font-size:12px;color:#94a3b8;margin:0;">Generado por el Sistema PAE - ${new Date().toLocaleString()}</p>
+        </div>
+      `;
+      
+      document.body.appendChild(el);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 800 });
+      const filename = `Consolidado_PAE_${sedeFilter}_${grupoFilter}_${selectedDate}.png`;
+      
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        setExportPreviewUrl(url);
+        setExportPreviewFilename(filename);
+        setExportBlob(blob);
+        setExportPreviewOpen(true);
+      }, 'image/png');
+      
+      document.body.removeChild(el);
+    } catch (error) {
+      console.error('Error generating image:', error);
+      alert('Error al generar la imagen del reporte.');
+    } finally {
+      setIsGeneratingExport(false);
+    }
+  };
+
+  const handleExecuteExport = async (action: 'download' | 'share') => {
+    if (!exportBlob || !exportPreviewFilename) return;
+    
+    if (action === 'download') {
+      const url = URL.createObjectURL(exportBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = exportPreviewFilename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else if (action === 'share') {
+      const file = new File([exportBlob], exportPreviewFilename, { type: exportBlob.type });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: `Reporte PAE - ${exportPreviewFilename}`, text: 'Adjunto el reporte generado.' });
+        } catch (error) {
+          console.error("Error al compartir:", error);
+          // Opcional: Fallback a descargar si falla o el usuario cancela (puede ser molesto si cancelan)
+        }
+      } else {
+        alert('Compartir no está soportado en este dispositivo o navegador. Se procederá a descargar automáticamente.');
+        const url = URL.createObjectURL(exportBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = exportPreviewFilename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    }
+    
+    // Clean up
+    if (exportPreviewUrl) URL.revokeObjectURL(exportPreviewUrl);
+    setExportPreviewOpen(false);
+    setExportPreviewUrl(null);
+    setExportBlob(null);
   };
 
   const openGroupModal = (category: string) => {
@@ -1210,7 +1456,7 @@ export default function ReportesPage() {
   if (!usuario) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 dark:bg-gray-900 transition-colors">
+    <div ref={reportContainerRef} className="min-h-screen bg-gray-50 pb-24 dark:bg-gray-900 transition-colors">
       <DateSelectionModal
         isOpen={showCalendar}
         onClose={() => setShowCalendar(false)}
@@ -1282,22 +1528,31 @@ export default function ReportesPage() {
                     <div className="absolute right-0 mt-3 w-56 bg-white/95 dark:bg-gray-800 backdrop-blur-md rounded-3xl shadow-2xl border border-cyan-100 dark:border-gray-700 z-[70] py-3 p-2 animate-in fade-in zoom-in-95 duration-200">
                       <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest px-4 mb-2">Formato de salida</p>
                       <button
-                        onClick={handleExportExcel}
+                        onClick={() => { setSelectedExportFormat('excel'); setShowExportMenu(false); handlePrepareExcel(); }}
                         className="w-full text-left px-4 py-3 hover:bg-cyan-50 rounded-2xl flex items-center gap-3 transition-colors group/item"
                       >
                         <div className="bg-emerald-100 p-2 rounded-xl group-hover/item:bg-emerald-500 group-hover/item:text-white transition-colors">
                           <span className="font-black text-[10px]">XLS</span>
                         </div>
-                        <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Descargar Excel</span>
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Exportar Excel</span>
                       </button>
                       <button
-                        onClick={handleExportPDF}
+                        onClick={() => { setSelectedExportFormat('pdf'); setShowExportMenu(false); handlePreparePDF(); }}
                         className="w-full text-left px-4 py-3 hover:bg-cyan-50 rounded-2xl flex items-center gap-3 transition-colors border-t border-gray-50 mt-2 group/item"
                       >
                         <div className="bg-rose-100 p-2 rounded-xl group-hover/item:bg-rose-500 group-hover/item:text-white transition-colors">
                           <span className="font-black text-[10px]">PDF</span>
                         </div>
-                        <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Descargar PDF</span>
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Exportar PDF</span>
+                      </button>
+                      <button
+                        onClick={() => { setSelectedExportFormat('image'); setShowExportMenu(false); handlePrepareImage(); }}
+                        className="w-full text-left px-4 py-3 hover:bg-cyan-50 rounded-2xl flex items-center gap-3 transition-colors border-t border-gray-50 mt-2 group/item"
+                      >
+                        <div className="bg-purple-100 p-2 rounded-xl group-hover/item:bg-purple-500 group-hover/item:text-white transition-colors">
+                          <span className="font-black text-[10px]">IMG</span>
+                        </div>
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Exportar Imagen</span>
                       </button>
                     </div>
                   </>
@@ -2291,6 +2546,67 @@ export default function ReportesPage() {
           </div>
         )}
       </div>
+
+      {exportPreviewOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setExportPreviewOpen(false)}></div>
+          <div className="relative bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-2xl p-6 overflow-hidden flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-200 max-h-[90vh]">
+             <button onClick={() => setExportPreviewOpen(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 bg-gray-50 dark:bg-gray-700 rounded-full transition-colors z-10">
+               <X className="w-5 h-5" />
+             </button>
+             
+             {isGeneratingExport ? (
+               <div className="py-20 flex flex-col items-center justify-center gap-4">
+                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-600/20 border-t-cyan-600"></div>
+                 <p className="font-bold text-sm text-gray-500 dark:text-gray-400 animate-pulse">Generando vista previa...</p>
+               </div>
+             ) : (
+               <>
+                 <div className="flex items-center gap-3 w-full mb-4 px-2">
+                   <div className={`p-3 rounded-2xl shadow-inner ${selectedExportFormat === 'excel' ? 'bg-emerald-100 text-emerald-600' : selectedExportFormat === 'pdf' ? 'bg-rose-100 text-rose-600' : 'bg-purple-100 text-purple-600'}`}>
+                     <FileDown className="w-6 h-6" />
+                   </div>
+                   <div className="text-left flex-1">
+                     <h3 className="text-lg font-black text-gray-800 dark:text-white leading-tight">Vista Previa</h3>
+                     <p className="text-[10px] text-gray-400 uppercase tracking-wider">{exportPreviewFilename || `Reporte en ${selectedExportFormat}`}</p>
+                   </div>
+                 </div>
+
+                 <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-2xl mb-6 overflow-hidden relative flex-1 min-h-[200px] flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                   {selectedExportFormat === 'excel' ? (
+                     <div className="text-center p-8">
+                       <FileText className="w-16 h-16 text-emerald-400 mx-auto mb-4 opacity-50" />
+                       <p className="text-sm font-bold text-gray-500 dark:text-gray-400">El formato Excel no permite vista previa visual aquí.</p>
+                     </div>
+                   ) : selectedExportFormat === 'pdf' && exportPreviewUrl ? (
+                     <iframe src={`${exportPreviewUrl}#toolbar=0`} className="w-full h-[50vh] border-0" title="PDF Preview" />
+                   ) : selectedExportFormat === 'image' && exportPreviewUrl ? (
+                     <div className="overflow-auto max-h-[50vh] p-2">
+                       <img src={exportPreviewUrl} alt="Vista Previa" className="max-w-full h-auto object-contain rounded-xl shadow-sm" />
+                     </div>
+                   ) : null}
+                 </div>
+
+                 <div className="flex gap-3 w-full shrink-0">
+                    <button
+                      onClick={() => handleExecuteExport('share')}
+                      className="flex-1 py-3.5 bg-white dark:bg-gray-800 text-cyan-700 dark:text-cyan-400 border border-cyan-100 dark:border-gray-600 hover:border-cyan-300 hover:bg-cyan-50 dark:hover:bg-gray-700 font-black text-[11px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm"
+                    >
+                      Compartir
+                    </button>
+                    <button
+                      onClick={() => handleExecuteExport('download')}
+                      className="flex-1 py-3.5 bg-cyan-600 hover:bg-cyan-700 text-white font-black text-[11px] uppercase tracking-widest rounded-xl shadow-lg shadow-cyan-200 transition-all flex items-center justify-center gap-2 active:scale-95"
+                    >
+                      <Download className="w-4 h-4" />
+                      Descargar
+                    </button>
+                 </div>
+               </>
+             )}
+          </div>
+        </div>
+      )}
     </div >
   );
 }

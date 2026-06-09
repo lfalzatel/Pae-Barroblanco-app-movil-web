@@ -302,9 +302,11 @@ export const generateDetailedReportPDF = (params: {
     stats: any,
     filters: { periodo: string, sede: string, grupo: string, startDate: string, endDate: string },
     sedeStats?: any[],
-    grupoStats?: any[]
+    grupoStats?: any[],
+    studentStats?: any[],
+    returnBlob?: boolean
 }) => {
-    const { allPeriodRecords, allStudents, stats, filters, sedeStats, grupoStats } = params;
+    const { allPeriodRecords, allStudents, stats, filters, sedeStats, grupoStats, studentStats } = params;
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     const todayStr = new Date().toLocaleDateString('es-CO');
@@ -458,9 +460,9 @@ export const generateDetailedReportPDF = (params: {
 
             currentY = (doc as any).lastAutoTable.finalY + 12;
         });
+    }
 
-    } else {
-        // Reporte Consolidado (Sin matriz, listado agrupado o estadísticas por sede)
+    // Reporte Consolidado (Siempre visible, con o sin matriz)
         if (sedeStats && sedeStats.length > 0) {
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
@@ -492,23 +494,54 @@ export const generateDetailedReportPDF = (params: {
 
             autoTable(doc, {
                 startY: currentY + 5,
-                head: [['Grupo', 'Sede', 'Total', 'Recibieron', 'Ausentes', '% Asist.', 'Estado']],
+                head: [['Grupo', 'Sede', 'Total', 'Recibieron', 'Ausentes', 'Días Reg.', 'Rac. Esp.', '% Asist.', 'Estado']],
                 body: grupoStats.map(g => [
-                    g.grupo, g.sede, g.total.toString(), g.recibieron.toString(), g.ausentes.toString(), `${g.porcentaje}%`, g.estado
+                    g.grupo, g.sede, g.total.toString(), g.recibieron.toString(), g.ausentes.toString(), g.diasRegistrados?.toString() || '0', g.racionesEsperadas?.toString() || '0', `${g.porcentaje}%`, g.estado
                 ]),
                 theme: 'striped',
                 headStyles: { fillColor: [71, 85, 105] },
                 styles: { fontSize: 7 },
                 didParseCell: (data) => {
-                    if (data.column.index === 6) {
+                    if (data.column.index === 8) {
                         const val = data.cell.text[0];
                         if (val === 'Excelente') data.cell.styles.textColor = [22, 101, 52];
                         if (val === 'Crítico') data.cell.styles.textColor = [220, 38, 38];
                     }
                 }
             });
+            currentY = (doc as any).lastAutoTable.finalY + 15;
         }
-    }
+
+        if (filters.grupo !== 'todos' && studentStats && studentStats.length > 0) {
+            if (currentY > 250) { doc.addPage(); currentY = 20; }
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Detalle de Estudiantes', 14, currentY);
+
+            autoTable(doc, {
+                startY: currentY + 5,
+                head: [['Estudiante', 'Recibió', 'Ausente', 'Días Reg.', '% Asist.', 'Estado']],
+                body: studentStats.map(s => [
+                    s.nombre,
+                    s.recibio.toString(),
+                    s.ausentes.toString(),
+                    s.diasRegistrados.toString(),
+                    `${s.porcentaje}%`,
+                    s.estado
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [8, 145, 178] },
+                styles: { fontSize: 8 },
+                didParseCell: (data) => {
+                    if (data.column.index === 5) {
+                        const val = data.cell.text[0];
+                        if (val === 'Excelente') data.cell.styles.textColor = [22, 101, 52];
+                        if (val === 'Crítico') data.cell.styles.textColor = [220, 38, 38];
+                    }
+                }
+            });
+            currentY = (doc as any).lastAutoTable.finalY + 15;
+        }
 
     // Pie de Página
     const pageCount = (doc as any).internal.getNumberOfPages();
@@ -525,5 +558,10 @@ export const generateDetailedReportPDF = (params: {
     }
 
     const filename = `Reporte_PAE_${filters.sede}_${filters.grupo}_${filters.startDate}.pdf`;
-    doc.save(filename);
+    
+    if (params.returnBlob) {
+        return { blob: doc.output('blob'), filename };
+    } else {
+        doc.save(filename);
+    }
 };
