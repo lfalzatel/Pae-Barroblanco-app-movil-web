@@ -975,13 +975,13 @@ export default function DashboardLayout({
                 <div className="relative flex items-center gap-2">
                     <div className="relative w-10 h-10 ml-1">
                         {/* Spinning Ring */}
-                        <div className="absolute -inset-1 border-t-2 border-r-2 border-transparent border-t-white border-r-white/30 rounded-full animate-[spin-slow_3s_linear_infinite]"></div>
-                        <div className="absolute -inset-1 border-b-2 border-l-2 border-transparent border-b-white border-l-white/20 rounded-full animate-[spin-reverse_5s_linear_infinite]"></div>
+                        <div className="absolute -inset-1 border-t-2 border-r-2 border-transparent border-t-white border-r-white/30 rounded-full animate-spin-slow"></div>
+                        <div className="absolute -inset-1 border-b-2 border-l-2 border-transparent border-b-white border-l-white/20 rounded-full animate-spin-reverse"></div>
 
                         {/* Circular Logo Wrapper */}
-                        <div className="relative w-full h-full rounded-full p-[2px] bg-gradient-to-tr from-white/30 to-white/10 shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-                            <div className="w-full h-full rounded-full bg-white p-1 overflow-hidden flex items-center justify-center shadow-inner">
-                                <img src="/icon-512x512.png" alt="Logo" className="w-full h-full object-contain drop-shadow-md" />
+                        <div className="relative w-full h-full rounded-full p-[1px] bg-gradient-to-tr from-white/30 to-white/10 shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                            <div className="w-full h-full rounded-full bg-transparent overflow-hidden flex items-center justify-center shadow-inner">
+                                <img src="/icon-512x512.png" alt="Logo" className="w-full h-full object-cover scale-110 drop-shadow-md" />
                             </div>
                         </div>
                     </div>
