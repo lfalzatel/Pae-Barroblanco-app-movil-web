@@ -143,6 +143,7 @@ export default function DashboardLayout({
     const [notifEvents, setNotifEvents] = useState<any[]>([]);
     const [isWeeklySearching, setIsWeeklySearching] = useState(false);
     const [weekStart, setWeekStart] = useState<Date>(new Date());
+    const [isLogoExpanded, setIsLogoExpanded] = useState(false);
     
     // Force Service Worker Update
     useEffect(() => {
@@ -973,7 +974,10 @@ export default function DashboardLayout({
             {/* Mobile Top Header */}
             <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#00A3E0] flex items-center justify-between px-4 z-[100] shadow-md">
                 <div className="relative flex items-center gap-2">
-                    <div className="relative w-10 h-10 ml-1">
+                    <div 
+                        className="relative w-10 h-10 ml-1 cursor-pointer transition-transform active:scale-95"
+                        onClick={() => setIsLogoExpanded(true)}
+                    >
                         {/* Spinning Ring */}
                         <div className="absolute -inset-1 border-t-2 border-r-2 border-transparent border-t-white border-r-white/30 rounded-full animate-spin-slow"></div>
                         <div className="absolute -inset-1 border-b-2 border-l-2 border-transparent border-b-white border-l-white/20 rounded-full animate-spin-reverse"></div>
@@ -981,11 +985,35 @@ export default function DashboardLayout({
                         {/* Circular Logo Wrapper */}
                         <div className="relative w-full h-full rounded-full p-[1px] bg-gradient-to-tr from-white/30 to-white/10 shadow-[0_0_10px_rgba(255,255,255,0.2)]">
                             <div className="w-full h-full rounded-full bg-transparent overflow-hidden flex items-center justify-center shadow-inner">
-                                <img src="/icon-512x512.png" alt="Logo" className="w-full h-full object-cover scale-110 drop-shadow-md" />
+                                <img src="/icon-512x512.png" alt="Logo" className="w-full h-full object-cover scale-110 drop-shadow-md pointer-events-none" />
                             </div>
                         </div>
                     </div>
                 </div>
+
+                {/* Expanded Logo Modal */}
+                {isLogoExpanded && (
+                    <div 
+                        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 cursor-pointer"
+                        onClick={() => setIsLogoExpanded(false)}
+                    >
+                        <div className="relative w-64 h-64 animate-in zoom-in-95 duration-300">
+                            {/* Outer Glow */}
+                            <div className="absolute inset-0 bg-green-500/10 rounded-full blur-3xl animate-pulse"></div>
+                            
+                            {/* Spinning Ring Large */}
+                            <div className="absolute -inset-4 border-t-4 border-r-4 border-transparent border-t-green-500 border-r-emerald-500/30 rounded-full animate-spin-slow"></div>
+                            <div className="absolute -inset-4 border-b-4 border-l-4 border-transparent border-b-green-700 border-l-green-600/20 rounded-full animate-spin-reverse"></div>
+
+                            {/* Circular Logo Wrapper Large */}
+                            <div className="relative w-full h-full rounded-full p-1 bg-gradient-to-tr from-green-600/50 to-emerald-400/50 shadow-[0_0_60px_rgba(64,168,81,0.4)]">
+                                <div className="w-full h-full rounded-full bg-[#40a851] p-2 overflow-hidden flex items-center justify-center border-2 border-white/20 shadow-inner">
+                                    <img src="/icon-512x512.png" alt="Sistema PAE Logo" className="w-full h-full object-cover scale-110 drop-shadow-md pointer-events-none" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => {
