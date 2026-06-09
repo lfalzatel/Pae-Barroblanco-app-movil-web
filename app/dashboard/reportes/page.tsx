@@ -459,7 +459,7 @@ export default function ReportesPage() {
            const days = registeredDaysByGroup[grupoFilter]?.size || businessDays;
            totalPotentialRations = (totalCount || 0) * days;
         } else {
-           for (const g of uniqueActiveGroups) {
+            for (const g of Array.from(uniqueActiveGroups)) {
               const actives = totalByGroup[g] || 0;
               const days = registeredDaysByGroup[g]?.size || (overallRegisteredDaysSet.size > 0 ? overallRegisteredDaysSet.size : businessDays);
               totalPotentialRations += actives * days;
