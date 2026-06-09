@@ -13,6 +13,7 @@
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
     "@supabase/supabase-js": "^2.90.1",
+    "canvas-confetti": "^1.9.4",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "googleapis": "^171.4.0",
@@ -28,6 +29,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

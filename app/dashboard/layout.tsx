@@ -972,7 +972,20 @@ export default function DashboardLayout({
 
             {/* Mobile Top Header */}
             <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#00A3E0] flex items-center justify-between px-4 z-[100] shadow-md">
-                <h1 className="text-xl font-black text-white tracking-tight">Sistema PAE</h1>
+                <div className="relative flex items-center gap-2">
+                    <div className="relative w-10 h-10 ml-1">
+                        {/* Spinning Ring */}
+                        <div className="absolute -inset-1 border-t-2 border-r-2 border-transparent border-t-white border-r-white/30 rounded-full animate-[spin-slow_3s_linear_infinite]"></div>
+                        <div className="absolute -inset-1 border-b-2 border-l-2 border-transparent border-b-white border-l-white/20 rounded-full animate-[spin-reverse_5s_linear_infinite]"></div>
+
+                        {/* Circular Logo Wrapper */}
+                        <div className="relative w-full h-full rounded-full p-[2px] bg-gradient-to-tr from-white/30 to-white/10 shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                            <div className="w-full h-full rounded-full bg-white p-1 overflow-hidden flex items-center justify-center shadow-inner">
+                                <img src="/icon-512x512.png" alt="Logo" className="w-full h-full object-contain drop-shadow-md" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => {
