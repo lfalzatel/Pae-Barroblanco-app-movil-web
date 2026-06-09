@@ -73,6 +73,7 @@ export default function DashboardLayout({
     const { finishManualSplash, startManualSplash } = useSplash();
     const { subscribe, unsubscribe, isSubscribed, dismiss, shouldShowBanner, isLoading } = usePushNotifications();
     const [usuario, setUsuario] = useState<any | null>(null);
+    const [savedAccounts, setSavedAccounts] = useState<any[]>([]);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
     const [isTestLoading, setIsTestLoading] = useState(false);
@@ -541,6 +542,28 @@ export default function DashboardLayout({
                 });
             }
 
+            // --- MULTI-ACCOUNT LOGIC ---
+            const savedStr = localStorage.getItem('pae_saved_accounts');
+            let saved = savedStr ? JSON.parse(savedStr) : [];
+            const accountIndex = saved.findIndex((a: any) => a.id === session.user.id);
+            const accountData = {
+                id: session.user.id,
+                email: session.user.email,
+                nombre: session.user.user_metadata?.nombre || profile?.nombre || 'Usuario',
+                rol: session.user.user_metadata?.rol || profile?.rol || 'estudiante',
+                foto: session.user.user_metadata?.foto || profile?.foto || null,
+                access_token: session.access_token,
+                refresh_token: session.refresh_token,
+            };
+            
+            if (accountIndex >= 0) {
+                saved[accountIndex] = accountData;
+            } else {
+                saved.push(accountData);
+            }
+            localStorage.setItem('pae_saved_accounts', JSON.stringify(saved));
+            setSavedAccounts(saved);
+
             // Notificar al Splash que el Dashboard está listo
             finishManualSplash();
         };
@@ -574,19 +597,48 @@ export default function DashboardLayout({
             // 2. Pequeña espera para que el Splash se monte visualmente
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            // 3. Cerrar sesión en Supabase
+            // 3. Remover solo la cuenta actual de savedAccounts
+            const savedStr = localStorage.getItem('pae_saved_accounts');
+            if (savedStr && usuario?.id) {
+                let saved = JSON.parse(savedStr);
+                saved = saved.filter((a: any) => a.id !== usuario.id);
+                localStorage.setItem('pae_saved_accounts', JSON.stringify(saved));
+            }
+
+            // 4. Cerrar sesión en Supabase (revoca el token de la cuenta actual)
             await supabase.auth.signOut();
             
-            // 4. Limpiar almacenamiento
-            localStorage.clear();
+            // NO limpiamos todo el localStorage porque borraríamos las otras cuentas
             sessionStorage.clear();
             
             // 5. Redirección suave vía router (mantiene el Splash vivo)
             router.replace('/');
         } catch (error) {
             console.error('Error signing out:', error);
-            // Fallback en caso de error crítico
             window.location.href = '/';
+        }
+    };
+
+    const handleAddAccount = () => {
+        // Remove supabase auth token from local storage without revoking it on the server
+        Object.keys(localStorage).filter(k => k.startsWith('sb-') && k.endsWith('-auth-token')).forEach(k => localStorage.removeItem(k));
+        window.location.href = '/';
+    };
+
+    const switchAccount = async (account: any) => {
+        setIsProfileMenuOpen(false);
+        startManualSplash(['Cambiando cuenta', `Bienvenido, ${account.nombre}`]);
+        
+        const { error } = await supabase.auth.setSession({
+            access_token: account.access_token,
+            refresh_token: account.refresh_token
+        });
+
+        if (error) {
+            alert('La sesión expiró. Por favor, ingresa de nuevo.');
+            window.location.href = '/';
+        } else {
+            window.location.reload();
         }
     };
 
@@ -898,6 +950,39 @@ export default function DashboardLayout({
                                         </button>
                                     </div>
                                 </div>
+                                {/* Otras Cuentas Guardadas */}
+                                {savedAccounts.filter(acc => acc.id !== usuario?.id).length > 0 && (
+                                    <div className="border-t border-gray-50 dark:border-gray-700 py-1">
+                                        <p className="px-4 py-1 text-[10px] text-gray-400 uppercase tracking-wider font-bold">Cambiar a</p>
+                                        {savedAccounts.filter(acc => acc.id !== usuario?.id).map((acc) => (
+                                            <button
+                                                key={acc.id}
+                                                onClick={() => switchAccount(acc)}
+                                                className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+                                            >
+                                                <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center flex-shrink-0 text-cyan-600 dark:text-cyan-400 font-bold text-xs">
+                                                    {acc.nombre.charAt(0)}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs text-gray-700 dark:text-gray-200 font-medium truncate">{acc.nombre}</p>
+                                                    <p className="text-[10px] text-gray-400 truncate">{acc.email}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Botón Añadir Cuenta */}
+                                <button
+                                    onClick={handleAddAccount}
+                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 w-full transition-colors text-left border-t border-gray-50 dark:border-gray-700"
+                                >
+                                    <div className="w-4 h-4 flex items-center justify-center rounded-full border-2 border-gray-400 flex-shrink-0">
+                                       <span className="text-xs font-bold leading-none">+</span>
+                                    </div>
+                                    Añadir otra cuenta
+                                </button>
+
                                 <button
                                     onClick={handleLogout}
                                     className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors text-left border-t border-gray-50 dark:border-gray-700 dark:hover:bg-red-900/20 dark:text-red-400"
@@ -1063,7 +1148,7 @@ export default function DashboardLayout({
                         {isProfileMenuOpen && (
                             <>
                                 <div className="fixed inset-0 z-[99] bg-black/20 backdrop-blur-sm" onClick={() => setIsProfileMenuOpen(false)}></div>
-                                <div className="absolute top-full mt-2 right-0 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-[101] animate-in slide-in-from-top-2 fade-in duration-200">
+                                <div className="absolute top-full mt-2 right-0 w-max bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-[101] animate-in slide-in-from-top-2 fade-in duration-200">
                                     <Link
                                         href="/dashboard/perfil"
                                         className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors bg-gray-50/50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
@@ -1203,10 +1288,48 @@ export default function DashboardLayout({
                                         </div>
                                     </div>
                                     <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800">
-                                        <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-1">Cuenta</p>
-                                        <p className="text-xs text-gray-600 truncate font-medium dark:text-gray-300">{usuario.nombre}</p>
-                                        <p className="text-[10px] text-gray-400 truncate">{usuario.email}</p>
+                                        <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-1">Cuenta Actual</p>
+                                        <div className="flex items-center gap-2">
+                                           <div className="flex-1 min-w-0">
+                                              <p className="text-xs text-gray-600 truncate font-black dark:text-gray-300">{usuario.nombre}</p>
+                                              <p className="text-[10px] text-gray-400 truncate">{usuario.email}</p>
+                                           </div>
+                                        </div>
                                     </div>
+
+                                    {/* Otras Cuentas Guardadas */}
+                                    {savedAccounts.filter(acc => acc.id !== usuario?.id).length > 0 && (
+                                        <div className="border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800 py-1">
+                                            <p className="px-4 py-1 text-[10px] text-gray-400 uppercase tracking-wider font-bold">Cambiar a</p>
+                                            {savedAccounts.filter(acc => acc.id !== usuario?.id).map((acc) => (
+                                                <button
+                                                    key={acc.id}
+                                                    onClick={() => switchAccount(acc)}
+                                                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+                                                >
+                                                    <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center flex-shrink-0 text-cyan-600 dark:text-cyan-400 font-bold text-xs">
+                                                        {acc.nombre.charAt(0)}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs text-gray-700 dark:text-gray-200 font-medium truncate">{acc.nombre}</p>
+                                                        <p className="text-[10px] text-gray-400 truncate">{acc.email}</p>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Botón Añadir Cuenta */}
+                                    <button
+                                        onClick={handleAddAccount}
+                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 w-full transition-colors text-left border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800"
+                                    >
+                                        <div className="w-4 h-4 flex items-center justify-center rounded-full border-2 border-gray-400 flex-shrink-0">
+                                           <span className="text-xs font-bold leading-none">+</span>
+                                        </div>
+                                        Añadir otra cuenta
+                                    </button>
+
                                     <button
                                         onClick={handleLogout}
                                         className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors text-left border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20"

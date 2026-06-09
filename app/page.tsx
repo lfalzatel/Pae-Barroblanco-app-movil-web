@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLoginSuccess, setIsLoginSuccess] = useState(false);
+  const [showCredentials, setShowCredentials] = useState(false);
 
   useEffect(() => {
     // Forzar limpieza inmediata
@@ -157,87 +158,96 @@ export default function LoginPage() {
             </svg>
             Ingresar con Google
           </button>
-
-          {/* Separador */}
+                  {/* Separador y Toggle de Credenciales */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-gray-100" />
             </div>
-            <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest leading-none">
-              <span className="bg-white px-4 text-gray-400">O credenciales directas</span>
+            <div className="relative flex justify-center">
+              <button 
+                type="button"
+                onClick={() => setShowCredentials(!showCredentials)}
+                className="bg-white px-4 text-[10px] uppercase font-black tracking-widest text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-2"
+              >
+                {showCredentials ? 'Ocultar credenciales directas' : 'Usar credenciales directas'}
+                <svg className={`w-3 h-3 transition-transform duration-300 ${showCredentials ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
             </div>
           </div>
 
-          {/* Formulario */}
-          <form onSubmit={handleLogin} className="space-y-4">
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">
-                Correo Institucional
-              </label>
-              <div className="relative">
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-5 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner"
-                  placeholder="ejemplo@paebarroblanco.edu.co"
-                  required
-                  autoComplete="username"
-                />
+          {/* Formulario (Oculto por defecto) */}
+          <div className={`overflow-hidden transition-all duration-500 ease-in-out ${showCredentials ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            <form onSubmit={handleLogin} className="space-y-4 pt-2">
+              {/* Email */}
+              <div>
+                <label htmlFor="email" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">
+                  Correo Institucional
+                </label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner"
+                    placeholder="ejemplo@paebarroblanco.edu.co"
+                    required={showCredentials}
+                    autoComplete="username"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">
-                Contraseña Administrativa
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-5 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner pr-14"
-                  placeholder="••••••••"
-                  required
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-300 hover:text-green-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
+              {/* Password */}
+              <div>
+                <label htmlFor="password" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">
+                  Contraseña Administrativa
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 pr-12 shadow-inner"
+                    placeholder="••••••••"
+                    required={showCredentials}
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Error */}
-            {error && (
-              <div className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-in fade-in duration-300 ${error.includes('pronto') ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                {error}
-              </div>
-            )}
-
-            {/* Botón Login */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#40a851] hover:bg-[#388e3c] text-white font-black py-4 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center gap-3 shadow-xl shadow-green-100 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-[10px] uppercase tracking-[0.2em]"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              ) : (
-                <>
-                  <LogIn className="w-4 h-4" />
-                  Iniciar Sesión
-                </>
+              {error && (
+                <div className="p-4 bg-red-50/50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 animate-in shake">
+                  <AlertCircle size={18} className="flex-shrink-0" />
+                  <p className="text-xs font-bold leading-tight">{error}</p>
+                </div>
               )}
-            </button>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-[#2e7d32] to-[#40a851] text-white font-black py-4 px-4 rounded-2xl transition-all flex justify-center items-center gap-2 shadow-xl shadow-green-900/20 hover:shadow-green-900/40 active:scale-95 disabled:opacity-50 text-[11px] uppercase tracking-widest"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <LogIn size={18} />
+                    Ingresar al Sistema
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
 
             {/* Botón Huella */}
             <button
