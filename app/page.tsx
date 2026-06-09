@@ -277,7 +277,6 @@ export default function LoginPage() {
             </button>
 
             <InstallPrompt />
-          </form>
         </div>
       </div>
     </>
