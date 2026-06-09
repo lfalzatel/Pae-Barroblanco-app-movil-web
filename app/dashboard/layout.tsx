@@ -627,7 +627,7 @@ export default function DashboardLayout({
 
     const switchAccount = async (account: any) => {
         setIsProfileMenuOpen(false);
-        startManualSplash(['Cambiando cuenta', `Bienvenido, ${account.nombre}`]);
+        startManualSplash(['Cambiando cuenta', `Bienvenido, ${account.nombre}`, 'Cargando perfil...']);
         
         const { error } = await supabase.auth.setSession({
             access_token: account.access_token,
