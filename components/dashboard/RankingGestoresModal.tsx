@@ -71,7 +71,7 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                                         <div className="flex items-center gap-3">
                                             <Medal className={`w-5 h-5 ${medalColor(i)}`} />
                                             <span className="font-bold text-sm text-gray-800 dark:text-gray-100">
-                                                Grupo {g.grupo}{g.grado ? ` · ${g.grado}` : ''}
+                                                Grupo {g.grupo}
                                             </span>
                                         </div>
                                         <span className="flex items-center gap-1 text-amber-500 font-black text-sm">
