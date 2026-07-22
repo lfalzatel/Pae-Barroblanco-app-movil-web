@@ -1169,10 +1169,10 @@ export default function DashboardLayout({
                             <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#00A3E0] animate-pulse" />
                         )}
                     </button>
-                    <div className="relative max-w-[40vw] sm:max-w-[200px]" data-points-capsule>
+                    <div className="relative max-w-[48vw] sm:max-w-[200px]" data-points-capsule>
                         <button
                             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                            className="flex items-center bg-white/20 backdrop-blur-md rounded-full pl-1.5 pr-3.5 py-1.5 gap-2 border border-white/20 w-full"
+                            className="flex items-center bg-white/20 backdrop-blur-md rounded-full pl-1 pr-2 py-1 gap-1.5 border border-white/20 w-full"
                         >
                             <div className="w-8 h-8 shrink-0 bg-white rounded-full flex items-center justify-center overflow-hidden border border-white/40 shadow-sm">
                                 {usuario.foto ? (
@@ -1187,13 +1187,15 @@ export default function DashboardLayout({
                                 </span>
                                 <span className="text-white font-bold text-xs leading-none w-full text-left truncate">{usuario.nombre.split(' ')[0]}</span>
                             </div>
-                            {typeof usuario.puntos_gestor_pae === 'number' && usuario.puntos_gestor_pae > 0 && (
-                                <span className="flex items-center gap-0.5 bg-amber-400/90 text-amber-950 text-[10px] font-black px-1.5 py-0.5 rounded-full ml-0.5">
-                                    <Star className="w-3 h-3" fill="currentColor" />
-                                    {usuario.puntos_gestor_pae}
-                                </span>
-                            )}
-                            <ChevronDown className={`w-3 h-3 text-white ml-1 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+                            <div className="flex flex-col items-center justify-center shrink-0 ml-0.5 gap-0.5">
+                                {typeof usuario.puntos_gestor_pae === 'number' && usuario.puntos_gestor_pae > 0 && (
+                                    <span className="flex items-center justify-center gap-0.5 bg-amber-400/90 text-amber-950 text-[9px] font-black px-1.5 py-[2px] rounded-full leading-none">
+                                        <Star className="w-2.5 h-2.5" fill="currentColor" />
+                                        {usuario.puntos_gestor_pae}
+                                    </span>
+                                )}
+                                <ChevronDown className={`w-3 h-3 text-white transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+                            </div>
                         </button>
 
                         {isProfileMenuOpen && (
