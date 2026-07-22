@@ -23,8 +23,22 @@ export default function PointsBurstAnimation({
         if (ranRef.current) return;
         ranRef.current = true;
 
-        const targetEl = document.querySelector(targetSelector);
-        const originEl = originSelector ? document.querySelector(originSelector) : null;
+        // Puede haber varias cápsulas en el DOM (una para escritorio, otra para
+        // móvil) que se muestran/ocultan con clases responsive (hidden md:flex).
+        // querySelector siempre devuelve la primera en el DOM, esté visible o no,
+        // así que buscamos explícitamente la que tenga tamaño real (> 0px).
+        const pickVisible = (selector: string): Element | null => {
+            const candidates = Array.from(document.querySelectorAll(selector));
+            return (
+                candidates.find((el) => {
+                    const r = el.getBoundingClientRect();
+                    return r.width > 0 && r.height > 0;
+                }) || candidates[0] || null
+            );
+        };
+
+        const targetEl = pickVisible(targetSelector);
+        const originEl = originSelector ? pickVisible(originSelector) : null;
 
         const targetRect = targetEl?.getBoundingClientRect();
         const originRect = originEl?.getBoundingClientRect();

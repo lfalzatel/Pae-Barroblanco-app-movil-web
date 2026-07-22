@@ -752,7 +752,8 @@ function RegistroContent() {
 
       // NUEVO: disparar animación de estrellas solo si hubo registros NUEVOS
       if (nuevosRegistros > 0) {
-        setPointsBurst(nuevosRegistros);
+        // Mostramos +1 para coincidir con la regla de negocio SQL: "1 punto por grupo al día"
+        setPointsBurst(1);
       } else {
         handleBack();
       }
