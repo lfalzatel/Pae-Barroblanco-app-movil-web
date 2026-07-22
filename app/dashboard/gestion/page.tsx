@@ -1848,18 +1848,18 @@ export default function GestionPage() {
             <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-[200] animate-in fade-in duration-300" onClick={() => setSelectedDocente(null)}>
               <div className="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-gray-800" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 md:p-8 bg-gradient-to-br from-cyan-600 to-cyan-700 text-white relative shrink-0">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-4">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex items-start gap-4 flex-1">
                       {selectedDocente.avatar_url ? (
-                        <img src={selectedDocente.avatar_url} className="w-16 h-16 rounded-2xl border-2 border-white/30 shadow-xl object-cover" />
+                        <img src={selectedDocente.avatar_url} referrerPolicy="no-referrer" className="w-16 h-16 rounded-2xl border-2 border-white/30 shadow-xl object-cover shrink-0" />
                       ) : (
-                        <div className="bg-white/20 p-4 rounded-2xl border border-white/10 shadow-inner">
+                        <div className="bg-white/20 p-4 rounded-2xl border border-white/10 shadow-inner flex items-center justify-center min-w-[64px] min-h-[64px] shrink-0">
                           <User className="w-8 h-8" />
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-black text-xl md:text-2xl tracking-tight leading-none uppercase truncate">{selectedDocente.nombre}</h3>
+                      <div className="flex-1 flex flex-col justify-center min-h-[64px]">
+                        <div className="flex items-start gap-3 flex-wrap">
+                          <h3 className="font-black text-xl md:text-2xl tracking-tight leading-none uppercase break-words">{selectedDocente.nombre}</h3>
                           {typeof selectedDocente.puntos_gestor_pae === 'number' && selectedDocente.puntos_gestor_pae > 0 && (
                             <span className="flex items-center gap-1 bg-amber-400 text-amber-950 text-xs font-black px-2 py-0.5 rounded-full shadow-sm shrink-0">
                               <Star className="w-3 h-3" fill="currentColor" />
