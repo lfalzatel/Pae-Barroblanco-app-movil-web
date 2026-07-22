@@ -1160,23 +1160,23 @@ export default function DashboardLayout({
                             <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#00A3E0] animate-pulse" />
                         )}
                     </button>
-                    <div className="relative" data-points-capsule>
+                    <div className="relative max-w-[40vw] sm:max-w-[200px]" data-points-capsule>
                         <button
                             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                            className="flex items-center bg-white/20 backdrop-blur-md rounded-full pl-1.5 pr-3.5 py-1.5 gap-2 border border-white/20"
+                            className="flex items-center bg-white/20 backdrop-blur-md rounded-full pl-1.5 pr-3.5 py-1.5 gap-2 border border-white/20 w-full"
                         >
-                            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center overflow-hidden border border-white/40 shadow-sm">
+                            <div className="w-8 h-8 shrink-0 bg-white rounded-full flex items-center justify-center overflow-hidden border border-white/40 shadow-sm">
                                 {usuario.foto ? (
                                     <img src={usuario.foto} alt={usuario.nombre} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                 ) : (
                                     <span className="text-[#00A3E0] font-bold text-xs">{usuario.nombre.charAt(0)}</span>
                                 )}
                             </div>
-                            <div className="flex flex-col items-start">
-                                <span className="text-[8px] font-extrabold text-blue-100 uppercase tracking-widest leading-none mb-0.5">
+                            <div className="flex flex-col items-start min-w-0 flex-1">
+                                <span className="text-[8px] font-extrabold text-blue-100 uppercase tracking-widest leading-none mb-0.5 truncate w-full text-left">
                                     {['admin', 'coordinador_pae', 'estudiante', 'estudiante_pae', 'acudiente', 'secretaria_educacion', 'operador', 'docente'].includes(usuario.rol) ? (usuario.rol === 'coordinador_pae' ? 'Coordinador PAE' : usuario.rol.replace('_', ' ')) : (usuario.rol || 'Usuario')}
                                 </span>
-                                <span className="text-white font-bold text-xs leading-none max-w-[80px] truncate">{usuario.nombre.split(' ')[0]}</span>
+                                <span className="text-white font-bold text-xs leading-none w-full text-left truncate">{usuario.nombre.split(' ')[0]}</span>
                             </div>
                             {typeof usuario.puntos_gestor_pae === 'number' && usuario.puntos_gestor_pae > 0 && (
                                 <span className="flex items-center gap-0.5 bg-amber-400/90 text-amber-950 text-[10px] font-black px-1.5 py-0.5 rounded-full ml-0.5">

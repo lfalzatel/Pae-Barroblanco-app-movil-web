@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useModalBack } from '@/hooks/useModalBack';
-import { ArrowLeft, Search, Eye, FileDown, Users, User, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2, School, ChevronDown, Info, Shield, FileText, Truck, Edit2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Search, Eye, FileDown, Users, User, X, AlertCircle, UserPlus, UserMinus, Calendar, Clock, CheckCircle2, School, ChevronDown, Info, Shield, FileText, Truck, Edit2, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -27,6 +27,7 @@ interface Docente {
   email: string;
   avatar_url: string;
   rol: string;
+  puntos_gestor_pae?: number;
 }
 
 export default function GestionPage() {
@@ -1189,9 +1190,15 @@ export default function GestionPage() {
                           {docente.nombre.charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-black text-gray-900 truncate uppercase text-sm tracking-tight leading-none mb-1 dark:text-white">{docente.nombre}</div>
-                        <div className="text-[10px] font-bold text-gray-400 truncate dark:text-gray-500">{docente.email}</div>
+                      <div className="flex-1 min-w-0 relative">
+                        {typeof docente.puntos_gestor_pae === 'number' && docente.puntos_gestor_pae > 0 && (
+                          <div className="absolute top-0 right-0 flex items-center gap-0.5 bg-amber-400/20 text-amber-600 dark:bg-amber-400/10 dark:text-amber-500 text-[10px] font-black px-2 py-1 rounded-full shrink-0">
+                            <Star className="w-3 h-3" fill="currentColor" />
+                            {docente.puntos_gestor_pae}
+                          </div>
+                        )}
+                        <div className="font-black text-gray-900 truncate uppercase text-sm tracking-tight leading-none mb-1 pr-14 dark:text-white">{docente.nombre}</div>
+                        <div className="text-[10px] font-bold text-gray-400 truncate pr-14 dark:text-gray-500">{docente.email}</div>
                         <div className="flex gap-2 mt-4">
                           <button
                             onClick={() => setSelectedDocente(docente)}
@@ -1850,8 +1857,16 @@ export default function GestionPage() {
                           <User className="w-8 h-8" />
                         </div>
                       )}
-                      <div>
-                        <h3 className="font-black text-xl md:text-2xl tracking-tight leading-none uppercase">{selectedDocente.nombre}</h3>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-black text-xl md:text-2xl tracking-tight leading-none uppercase truncate">{selectedDocente.nombre}</h3>
+                          {typeof selectedDocente.puntos_gestor_pae === 'number' && selectedDocente.puntos_gestor_pae > 0 && (
+                            <span className="flex items-center gap-1 bg-amber-400 text-amber-950 text-xs font-black px-2 py-0.5 rounded-full shadow-sm shrink-0">
+                              <Star className="w-3 h-3" fill="currentColor" />
+                              {selectedDocente.puntos_gestor_pae}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] opacity-80 mt-1.5 text-cyan-50">Registro de Actividad Administrativa</p>
                       </div>
                     </div>
