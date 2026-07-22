@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
@@ -16,7 +16,7 @@ import StatsDetailModal from '@/components/StatsDetailModal';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import html2canvas from 'html2canvas';
 
-export default function ReportesPage() {
+function ReportesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -2700,5 +2700,13 @@ export default function ReportesPage() {
         </div>
       )}
     </div >
+  );
+}
+
+export default function ReportesPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-gray-500">Cargando reportes...</div>}>
+      <ReportesContent />
+    </Suspense>
   );
 }
