@@ -1277,6 +1277,7 @@ function RegistroContent() {
             originSelector="#btn-guardar-asistencia"
             onComplete={() => {
                 setPointsBurst(null);
+                window.dispatchEvent(new CustomEvent('puntosActualizados', { detail: { points: 1 } }));
                 handleBack();
             }}
         />

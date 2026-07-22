@@ -598,6 +598,15 @@ export default function DashboardLayout({
         };
     }, [router]);
 
+    // Local event listener for real-time PAE points update
+    useEffect(() => {
+        const handlePuntos = (e: any) => {
+            setUsuario(prev => prev ? { ...prev, puntos_gestor_pae: (prev.puntos_gestor_pae || 0) + e.detail.points } : prev);
+        };
+        window.addEventListener('puntosActualizados', handlePuntos);
+        return () => window.removeEventListener('puntosActualizados', handlePuntos);
+    }, []);
+
     const handleLogout = async () => {
         try {
             // 1. Activar Splash inmediatamente

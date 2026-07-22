@@ -18,6 +18,11 @@ export default function PointsBurstAnimation({
     onComplete,
 }: PointsBurstAnimationProps) {
     const ranRef = useRef(false);
+    const onCompleteRef = useRef(onComplete);
+
+    useEffect(() => {
+        onCompleteRef.current = onComplete;
+    }, [onComplete]);
 
     useEffect(() => {
         if (ranRef.current) return;
@@ -193,14 +198,16 @@ export default function PointsBurstAnimation({
         }, 1150));
 
         // Fin de la secuencia -> se avisa al componente padre
-        const doneTimer = setTimeout(onComplete, 1350);
+        const doneTimer = setTimeout(() => {
+            if (onCompleteRef.current) onCompleteRef.current();
+        }, 1350);
         timers.push(doneTimer);
 
         return () => {
             timers.forEach(clearTimeout);
             nodes.forEach((n) => n.remove());
         };
-    }, [points, targetSelector, originSelector, onComplete]);
+    }, [points, targetSelector, originSelector]); // Remove onComplete from deps
 
     return null; // este componente no renderiza JSX: solo orquesta nodos DOM temporales
 }
