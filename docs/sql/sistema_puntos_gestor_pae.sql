@@ -85,3 +85,16 @@ RETURNS TABLE (usuario_id UUID, nombre TEXT, avatar_url TEXT, puntos BIGINT) AS 
     GROUP BY h.usuario_id, p.nombre, p.avatar_url
     ORDER BY puntos DESC;
 $$ LANGUAGE sql STABLE;
+
+-- 8. Backfill opcional: puntos retroactivos SOLO DEL MES ACTUAL
+-- (ejecútalo UNA sola vez; comenta/borra si no lo quieres)
+-- INSERT INTO public.puntos_pae_historial (usuario_id, asistencia_id, estudiante_id, grupo, grado, puntos, fecha)
+-- SELECT a.registrado_por, a.id, a.estudiante_id, e.grupo, e.grado, 1, a.fecha
+-- FROM public.asistencia_pae a
+-- JOIN public.estudiantes e ON e.id = a.estudiante_id
+-- WHERE a.registrado_por IS NOT NULL 
+--   AND a.fecha >= date_trunc('month', current_date);
+
+-- UPDATE public.perfiles_publicos p SET puntos_gestor_pae = sub.total
+-- FROM (SELECT usuario_id, COUNT(*) total FROM public.puntos_pae_historial GROUP BY usuario_id) sub
+-- WHERE p.id = sub.usuario_id;

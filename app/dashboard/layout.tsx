@@ -75,7 +75,6 @@ export default function DashboardLayout({
     const { theme, setTheme } = useTheme();
     const { finishManualSplash, startManualSplash } = useSplash();
     const { subscribe, unsubscribe, isSubscribed, dismiss, shouldShowBanner, isLoading } = usePushNotifications();
-    const { isSplashFinished } = useSplash();
 
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [rankingModalOpen, setRankingModalOpen] = useState(false);
