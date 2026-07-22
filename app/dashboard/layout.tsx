@@ -546,10 +546,12 @@ export default function DashboardLayout({
                 }
 
                 setUsuario({
+                    id: session.user.id,
                     nombre: session.user.user_metadata?.nombre || 'Usuario',
                     email: userEmail,
                     rol: userRole,
-                    foto: session.user.user_metadata?.foto || null
+                    foto: session.user.user_metadata?.foto || null,
+                    puntos_gestor_pae: 0
                 });
             }
 
