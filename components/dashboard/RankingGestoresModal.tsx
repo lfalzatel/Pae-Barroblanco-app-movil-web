@@ -14,31 +14,65 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
     const [gestores, setGestores] = useState<GestorRanking[]>([]);
     const [loadingGestores, setLoadingGestores] = useState(false);
     const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes'>('mes');
+    const [fechaRef, setFechaRef] = useState<Date>(new Date());
 
     useEffect(() => {
         const fetchRanking = async () => {
             setLoading(true);
-            const { data, error } = await supabase.rpc('ranking_grupos_pae', { p_periodo: periodo });
+            const { data, error } = await supabase.rpc('ranking_grupos_pae', { 
+                p_periodo: periodo, 
+                p_fecha_ref: fechaRef.toISOString().split('T')[0] 
+            });
             if (!error && data) setGrupos(data as GrupoRanking[]);
             setLoading(false);
         };
         fetchRanking();
-    }, [periodo]);
+    }, [periodo, fechaRef]);
 
     const abrirGrupo = async (grupo: string) => {
         setGrupoSeleccionado(grupo);
         setLoadingGestores(true);
-        const { data, error } = await supabase.rpc('ranking_gestores_por_grupo', { p_grupo: grupo, p_periodo: periodo });
+        const { data, error } = await supabase.rpc('ranking_gestores_por_grupo', { 
+            p_grupo: grupo, 
+            p_periodo: periodo,
+            p_fecha_ref: fechaRef.toISOString().split('T')[0] 
+        });
         if (!error && data) setGestores(data as GestorRanking[]);
         setLoadingGestores(false);
+    };
+
+    const handleMoveWeek = (direction: number) => {
+        const newDate = new Date(fechaRef);
+        newDate.setDate(newDate.getDate() + (direction * 7));
+        setFechaRef(newDate);
+    };
+
+    const handleMoveMonth = (direction: number) => {
+        const newDate = new Date(fechaRef);
+        newDate.setMonth(newDate.getMonth() + direction);
+        setFechaRef(newDate);
+    };
+
+    const getSemanaLabel = (d: Date) => {
+        const start = new Date(d);
+        start.setDate(start.getDate() - start.getDay() + 1); // Lunes
+        const end = new Date(start);
+        end.setDate(end.getDate() + 4); // Viernes
+        return `${start.getDate()} DE ${start.toLocaleString('es-CO', { month: 'short' }).toUpperCase()} - ${end.getDate()} DE ${end.toLocaleString('es-CO', { month: 'short' }).toUpperCase()}`;
     };
 
     const medalColor = (i: number) =>
         i === 0 ? 'text-amber-400' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-orange-600' : 'text-gray-300';
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-[2rem] shadow-2xl relative overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 max-h-[85vh] flex flex-col">
+        <div 
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={onClose}
+        >
+            <div 
+                className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-[2rem] shadow-2xl relative overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 max-h-[85vh] flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <div className="bg-gradient-to-r from-amber-400 to-orange-500 p-5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         {grupoSeleccionado && (
@@ -77,6 +111,37 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                                     'left-[calc(66.66%+1px)] w-[calc(33.33%-5px)]'
                                 }`}
                             />
+                        </div>
+                    )}
+
+                    {/* Navegación por fechas */}
+                    {!grupoSeleccionado && (periodo === 'semana' || periodo === 'mes') && (
+                        <div className="flex justify-center mb-4 transition-all animate-in slide-in-from-top-2">
+                            <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-0.5 rounded-[2rem] flex items-center shadow-lg shadow-orange-100 border border-orange-500/30">
+                                <button
+                                    onClick={() => periodo === 'semana' ? handleMoveWeek(-1) : handleMoveMonth(-1)}
+                                    className="p-2 hover:bg-white/10 rounded-full text-white transition-colors active:scale-90"
+                                >
+                                    <ChevronLeft className="w-5 h-5" />
+                                </button>
+                                <div className="px-4 text-center min-w-[140px]">
+                                    <div className="text-[10px] font-black text-orange-100 uppercase tracking-wider">
+                                        Viendo {periodo}
+                                    </div>
+                                    <div className="text-white font-bold text-sm">
+                                        {periodo === 'semana' 
+                                            ? getSemanaLabel(fechaRef)
+                                            : `${fechaRef.toLocaleString('es-CO', { month: 'long' }).toUpperCase()} DE ${fechaRef.getFullYear()}`
+                                        }
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => periodo === 'semana' ? handleMoveWeek(1) : handleMoveMonth(1)}
+                                    className="p-2 hover:bg-white/10 rounded-full text-white transition-colors active:scale-90"
+                                >
+                                    <ChevronLeft className="w-5 h-5 rotate-180" />
+                                </button>
+                            </div>
                         </div>
                     )}
 
