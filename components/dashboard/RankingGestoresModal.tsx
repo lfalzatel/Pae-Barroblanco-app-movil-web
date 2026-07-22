@@ -13,20 +13,22 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
     const [grupoSeleccionado, setGrupoSeleccionado] = useState<string | null>(null);
     const [gestores, setGestores] = useState<GestorRanking[]>([]);
     const [loadingGestores, setLoadingGestores] = useState(false);
+    const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes'>('mes');
 
     useEffect(() => {
         const fetchRanking = async () => {
-            const { data, error } = await supabase.rpc('ranking_grupos_pae');
+            setLoading(true);
+            const { data, error } = await supabase.rpc('ranking_grupos_pae', { p_periodo: periodo });
             if (!error && data) setGrupos(data as GrupoRanking[]);
             setLoading(false);
         };
         fetchRanking();
-    }, []);
+    }, [periodo]);
 
     const abrirGrupo = async (grupo: string) => {
         setGrupoSeleccionado(grupo);
         setLoadingGestores(true);
-        const { data, error } = await supabase.rpc('ranking_gestores_por_grupo', { p_grupo: grupo });
+        const { data, error } = await supabase.rpc('ranking_gestores_por_grupo', { p_grupo: grupo, p_periodo: periodo });
         if (!error && data) setGestores(data as GestorRanking[]);
         setLoadingGestores(false);
     };
@@ -55,11 +57,34 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                 </div>
 
                 <div className="p-4 overflow-y-auto">
+                    {/* Filtros de período */}
+                    {!grupoSeleccionado && (
+                        <div className="bg-gray-100/80 dark:bg-gray-700/50 p-1 rounded-2xl flex items-center shrink-0 relative w-full mb-4">
+                            {(['hoy', 'semana', 'mes'] as const).map((p) => (
+                                <button
+                                    key={p}
+                                    onClick={() => setPeriodo(p)}
+                                    className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${periodo === p ? 'text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                            {/* Sliding Indicator */}
+                            <div
+                                className={`absolute inset-y-1 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-gradient-to-r from-amber-400 to-orange-500 rounded-xl shadow-md shadow-orange-500/20 ${
+                                    periodo === 'hoy' ? 'left-1 w-[calc(33.33%-4px)]' :
+                                    periodo === 'semana' ? 'left-[calc(33.33%+1px)] w-[calc(33.33%-4px)]' :
+                                    'left-[calc(66.66%+1px)] w-[calc(33.33%-5px)]'
+                                }`}
+                            />
+                        </div>
+                    )}
+
                     {!grupoSeleccionado ? (
                         loading ? (
                             <p className="text-center text-sm text-gray-500 py-8">Cargando ranking...</p>
                         ) : grupos.length === 0 ? (
-                            <p className="text-center text-sm text-gray-500 py-8">Aún no hay puntos registrados.</p>
+                            <p className="text-center text-sm text-gray-500 py-8">Aún no hay puntos registrados para este período.</p>
                         ) : (
                             <div className="space-y-2">
                                 {grupos.map((g, i) => (
