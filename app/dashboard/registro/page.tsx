@@ -55,6 +55,7 @@ const formatDateSpanish = (dateStr: string) => {
 };
 
 import { useModalBack } from '@/hooks/useModalBack';
+import PointsBurstAnimation from '@/components/PointsBurstAnimation';
 
 // ... (existing imports)
 
@@ -111,6 +112,9 @@ function RegistroContent() {
 
   // Estado para toast personalizado
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | null } | null>(null);
+  
+  // Estado para animación de puntos
+  const [pointsBurst, setPointsBurst] = useState<number | null>(null);
 
   // Estados para Novedades
   const [novedades, setNovedades] = useState<Record<string, { tipo: string; descripcion: string }>>({});
@@ -712,6 +716,17 @@ function RegistroContent() {
       const pending = OfflineService.getPending();
       const allUpdates = [...pending, ...updates];
 
+      // NUEVO: averiguar cuáles ya existían ANTES del upsert (para no contar ediciones)
+      const estudianteIds = allUpdates.map(u => u.estudiante_id);
+      const { data: existentes } = await supabase
+        .from('asistencia_pae')
+        .select('estudiante_id')
+        .eq('fecha', selectedDate)
+        .in('estudiante_id', estudianteIds);
+
+      const yaExistian = new Set((existentes || []).map(e => e.estudiante_id));
+      const nuevosRegistros = allUpdates.filter(u => !yaExistian.has(u.estudiante_id)).length;
+
       const { error } = await supabase
         .from('asistencia_pae')
         .upsert(allUpdates, { onConflict: 'estudiante_id,fecha' });
@@ -735,7 +750,12 @@ function RegistroContent() {
         colors: ['#10b981', '#40a851', '#f59e0b', '#00A3E0']
       });
 
-      handleBack();
+      // NUEVO: disparar animación de estrellas solo si hubo registros NUEVOS
+      if (nuevosRegistros > 0) {
+        setPointsBurst(nuevosRegistros);
+      } else {
+        handleBack();
+      }
     } catch (error: any) {
       console.error('Error guardando:', error);
       showToast(`Error: ${error.message || 'Desconocido'}`, 'error');
@@ -951,6 +971,7 @@ function RegistroContent() {
                   <span>TODOS RECIBIERON</span>
                 </button>
                 <button
+                  id="btn-guardar-asistencia"
                   onClick={handleGuardar}
                   disabled={saving}
                   className="flex-1 md:flex-none justify-center bg-[#0E7490] hover:bg-cyan-800 text-white rounded-xl md:rounded-2xl py-2.5 md:py-3 px-4 md:px-8 font-black uppercase text-[9px] md:text-[10px] tracking-widest flex items-center gap-2 shadow-xl shadow-cyan-900/20 disabled:opacity-50 transition-all active:scale-95"
@@ -1246,6 +1267,18 @@ function RegistroContent() {
             </div>
           </div>
         </div>
+      )}
+
+      {pointsBurst !== null && (
+        <PointsBurstAnimation
+            points={pointsBurst}
+            targetSelector="[data-points-capsule]"
+            originSelector="#btn-guardar-asistencia"
+            onComplete={() => {
+                setPointsBurst(null);
+                handleBack();
+            }}
+        />
       )}
     </div>
   );

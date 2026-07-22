@@ -35,12 +35,15 @@ import {
     Fingerprint,
     AlertTriangle,
     Share2,
-    Globe
+    Globe,
+    Star,
+    Trophy
 } from 'lucide-react';
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
 import { useTheme } from '@/components/ThemeProvider';
 import { getAcademicBlock } from '@/lib/schedule-utils';
 import GlobalNotificationsModal from '@/components/dashboard/GlobalNotificationsModal';
+import RankingGestoresModal from '@/components/dashboard/RankingGestoresModal';
 import { useSplash } from '@/components/SplashScreenProvider';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
@@ -72,9 +75,18 @@ export default function DashboardLayout({
     const { theme, setTheme } = useTheme();
     const { finishManualSplash, startManualSplash } = useSplash();
     const { subscribe, unsubscribe, isSubscribed, dismiss, shouldShowBanner, isLoading } = usePushNotifications();
-    const [usuario, setUsuario] = useState<any | null>(null);
-    const [savedAccounts, setSavedAccounts] = useState<any[]>([]);
+    const { isSplashFinished } = useSplash();
+
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const [rankingModalOpen, setRankingModalOpen] = useState(false);
+    const [usuario, setUsuario] = useState<{ id: string, nombre: string, email: string, rol: string, foto?: string, puntos_gestor_pae?: number }>({
+        id: '',
+        nombre: 'Usuario',
+        email: '',
+        rol: '',
+        puntos_gestor_pae: 0
+    });
+    const [savedAccounts, setSavedAccounts] = useState<any[]>([]);
     const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
     const [isTestLoading, setIsTestLoading] = useState(false);
 
@@ -818,7 +830,17 @@ export default function DashboardLayout({
                 </nav>
 
                 <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-                    <div className="relative">
+                    <div className="flex gap-2 mb-3 px-2">
+                        <button
+                            onClick={() => setRankingModalOpen(true)}
+                            className="flex-1 p-2 bg-white rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors flex justify-center items-center gap-2 text-xs font-bold text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
+                            aria-label="Ranking Gestor PAE"
+                        >
+                            <Trophy className="w-4 h-4 text-amber-500" />
+                            Ranking
+                        </button>
+                    </div>
+                    <div className="relative" data-points-capsule>
                         <button
                             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                             className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200 shadow-sm w-full hover:bg-gray-50 transition-colors text-left dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600"
@@ -836,6 +858,12 @@ export default function DashboardLayout({
                                 <span className="text-xs font-bold text-gray-900 truncate dark:text-white">{usuario.nombre}</span>
                                 <span className="text-[10px] font-medium text-gray-500 uppercase dark:text-gray-400">{usuario.rol === 'coordinador_pae' ? 'Coordinador' : usuario.rol}</span>
                             </div>
+                            {typeof usuario.puntos_gestor_pae === 'number' && usuario.puntos_gestor_pae > 0 && (
+                                <span className="flex items-center gap-0.5 bg-amber-400/90 text-amber-950 text-[10px] font-black px-1.5 py-0.5 rounded-full ml-0.5 shrink-0">
+                                    <Star className="w-3 h-3" fill="currentColor" />
+                                    {usuario.puntos_gestor_pae}
+                                </span>
+                            )}
                             <ChevronUp className={`w-4 h-4 text-gray-400 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
                         </button>
 
@@ -1113,6 +1141,13 @@ export default function DashboardLayout({
                 )}
                 <div className="flex items-center gap-3">
                     <button
+                        onClick={() => setRankingModalOpen(true)}
+                        className="relative p-2 bg-white/10 rounded-full border border-white/20"
+                        aria-label="Ranking Gestor PAE"
+                    >
+                        <Trophy className="w-6 h-6 text-amber-300" />
+                    </button>
+                    <button
                         onClick={() => {
                             setNotifModalOpen(true);
                             setHasNotification(false);
@@ -1124,7 +1159,7 @@ export default function DashboardLayout({
                             <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#00A3E0] animate-pulse" />
                         )}
                     </button>
-                    <div className="relative">
+                    <div className="relative" data-points-capsule>
                         <button
                             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                             className="flex items-center bg-white/20 backdrop-blur-md rounded-full pl-1.5 pr-3.5 py-1.5 gap-2 border border-white/20"
@@ -1142,6 +1177,12 @@ export default function DashboardLayout({
                                 </span>
                                 <span className="text-white font-bold text-xs leading-none max-w-[80px] truncate">{usuario.nombre.split(' ')[0]}</span>
                             </div>
+                            {typeof usuario.puntos_gestor_pae === 'number' && usuario.puntos_gestor_pae > 0 && (
+                                <span className="flex items-center gap-0.5 bg-amber-400/90 text-amber-950 text-[10px] font-black px-1.5 py-0.5 rounded-full ml-0.5">
+                                    <Star className="w-3 h-3" fill="currentColor" />
+                                    {usuario.puntos_gestor_pae}
+                                </span>
+                            )}
                             <ChevronDown className={`w-3 h-3 text-white ml-1 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
                         </button>
 
@@ -1574,6 +1615,8 @@ export default function DashboardLayout({
 
             {/* Spacer for Mobile */}
             <div className="md:hidden h-16"></div>
+
+            {rankingModalOpen && <RankingGestoresModal onClose={() => setRankingModalOpen(false)} />}
         </div>
     );
 }

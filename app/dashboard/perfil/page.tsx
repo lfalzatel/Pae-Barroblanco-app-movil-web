@@ -380,7 +380,12 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div className="bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl p-6 text-white shadow-lg flex flex-col items-center text-center hover:scale-[1.02] transition-transform">
+                        <Award className="w-10 h-10 mb-3 opacity-90 drop-shadow-md" />
+                        <span className="text-3xl font-black drop-shadow-sm">{usuario?.puntos_gestor_pae || 0}</span>
+                        <span className="text-xs font-bold opacity-90 uppercase tracking-wide mt-1">Puntos Gestor PAE</span>
+                    </div>
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center text-center hover:border-blue-200 dark:hover:border-blue-700 transition-colors">
                         <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-3">
                             <CheckCircle2 className="w-5 h-5" />

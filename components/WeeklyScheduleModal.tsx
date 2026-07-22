@@ -7,6 +7,7 @@ import {
     Calendar,
     ChevronLeft,
     ChevronRight,
+    ChevronDown,
     FileText,
     Download,
     Info,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import { generateWeeklySchedulePDF } from '../lib/pdf-generator';
 import { useModalBack } from '@/hooks/useModalBack';
+import html2canvas from 'html2canvas';
 
 interface WeeklyScheduleModalProps {
     isOpen: boolean;
@@ -27,6 +29,8 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
     const [selectedDay, setSelectedDay] = useState(0);
     const [weekStart, setWeekStart] = useState<Date>(new Date());
     const [previewUrl, setPreviewUrl] = useState<URL | string | null>(null);
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const [jpgPreviewUrl, setJpgPreviewUrl] = useState<string | null>(null);
 
     useModalBack(isOpen, onClose, 'weekly-schedule-modal');
 
@@ -176,6 +180,111 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
         }
     };
 
+    const handleJpgExport = async () => {
+        const weekRange = `${weekStart.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} - ${new Date(new Date(weekStart).setDate(weekStart.getDate() + 4)).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}`;
+
+        let daysHtml = '';
+        weeklyData.forEach(day => {
+            daysHtml += `<div style="background:#f5f5f5;padding:6px;font-weight:bold;color:#164e63;font-size:12px;margin-top:10px;">${day.label.toUpperCase()}</div>`;
+            
+            if (day.instEvents && day.instEvents.length > 0) {
+                let rows = '';
+                day.instEvents.forEach((e: any) => {
+                    const detalles = `${e.afectados || ''} ${e.descripcion ? `(${e.descripcion})` : ''}`.trim() || '-';
+                    rows += `<tr>
+                        <td style="padding:6px 10px;border:1px solid #ddd;font-size:11px;text-align:center;width:60px;">${e.hora || 'S/H'}</td>
+                        <td style="padding:6px 10px;border:1px solid #ddd;font-size:12px;font-weight:bold;text-align:center;">${e.titulo}</td>
+                        <td style="padding:6px 10px;border:1px solid #ddd;font-size:11px;text-align:left;">${detalles}</td>
+                    </tr>`;
+                });
+                daysHtml += `
+                    <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+                        <thead>
+                            <tr style="background:#06b6d4;color:#fff;">
+                                <th style="padding:4px 10px;border:1px solid #ddd;font-size:11px;">Hora</th>
+                                <th style="padding:4px 10px;border:1px solid #ddd;font-size:11px;">Actividad</th>
+                                <th style="padding:4px 10px;border:1px solid #ddd;font-size:11px;">Dirigido a / Detalles</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                `;
+            } else {
+                daysHtml += `<p style="font-size:11px;color:#666;font-style:italic;margin:6px 10px;">Sin actividades registradas para este día.</p>`;
+            }
+        });
+
+        const el = document.createElement('div');
+        el.style.cssText = 'position:absolute;left:-9999px;top:0;width:600px;background:#fff;padding:40px;font-family:helvetica,arial,sans-serif;color:#000;';
+        el.innerHTML = `
+            <div style="text-align:center;margin-bottom:20px;">
+                <h1 style="font-size:20px;color:#164e63;margin:0 0 6px;">Institución Educativa Barroblanco</h1>
+                <h2 style="font-size:14px;color:#475569;margin:0 0 4px;font-weight:600;">Consolidado Semanal - Agenda Institucional</h2>
+                <p style="font-size:12px;color:#666;margin:0;">Semana: ${weekRange}</p>
+            </div>
+            ${daysHtml}
+            <div style="margin-top:20px;border-top:1px solid #ccc;padding-top:10px;">
+                <p style="font-size:11px;font-weight:bold;margin:0 0 4px;">RECUERDA: Puntualidad y uso adecuado del uniforme.</p>
+                <p style="font-size:11px;margin:0;">Equipo directivo - I.E Barro Blanco</p>
+            </div>
+        `;
+        document.body.appendChild(el);
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        try {
+            const canvas = await html2canvas(el, {
+                backgroundColor: '#ffffff',
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                width: el.offsetWidth,
+            });
+
+            setJpgPreviewUrl(canvas.toDataURL('image/jpeg', 0.96));
+            setShowExportMenu(false);
+        } catch (error) {
+            console.error('Error generating JPG:', error);
+        } finally {
+            document.body.removeChild(el);
+        }
+    };
+
+    const handleJpgDownload = () => {
+        if (!jpgPreviewUrl) return;
+        const weekRange = `${weekStart.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}-${new Date(new Date(weekStart).setDate(weekStart.getDate() + 4)).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}`;
+        const link = document.createElement('a');
+        link.href = jpgPreviewUrl;
+        link.download = `Horario-Semanal-${weekRange.replace(/ /g, '')}.jpg`;
+        link.click();
+        setJpgPreviewUrl(null);
+    };
+
+    const handleJpgShare = async () => {
+        if (!jpgPreviewUrl) return;
+        try {
+            const res = await fetch(jpgPreviewUrl);
+            const blob = await res.blob();
+            const weekRange = `${weekStart.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}-${new Date(new Date(weekStart).setDate(weekStart.getDate() + 4)).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}`;
+            const file = new File([blob], `Horario-Semanal-${weekRange.replace(/ /g, '')}.jpg`, { type: 'image/jpeg' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: 'Horario Semanal - I.E. Barroblanco',
+                    text: `Consolidado semanal de la agenda institucional`,
+                    files: [file],
+                });
+            } else {
+                handleJpgDownload();
+            }
+        } catch (err: any) {
+            if (err.name !== 'AbortError') {
+                console.error('Error al compartir JPG:', err);
+                handleJpgDownload();
+            }
+        }
+    };
+
     const confirmDownload = () => {
         generateWeeklySchedulePDF(weeklyData, weekStart, false);
         setPreviewUrl(null);
@@ -298,17 +407,42 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                 {/* Footer Actions - Compact */}
                 <div className="p-4 md:p-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 shrink-0">
                     <div className="flex gap-3">
-                        <button
-                            onClick={handleDownloadPDF}
-                            disabled={loading || weeklyData.length === 0}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition-all active:scale-95 disabled:opacity-50"
-                        >
-                            <Download className="w-4 h-4" />
-                            <span>PDF Semanal</span>
-                        </button>
+                        <div className="flex-1 relative">
+                            <button
+                                onClick={() => setShowExportMenu(!showExportMenu)}
+                                disabled={loading || weeklyData.length === 0}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                <Download className="w-4 h-4" />
+                                <span>Descargar</span>
+                                <ChevronDown className={`w-4 h-4 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {showExportMenu && (
+                                <>
+                                    <div className="fixed inset-0 z-[80]" onClick={() => setShowExportMenu(false)}></div>
+                                    <div className="absolute bottom-full left-0 mb-2 w-full bg-white dark:bg-gray-700 rounded-2xl shadow-lg overflow-hidden z-[90] animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-600">
+                                        <button
+                                            onClick={() => { handleDownloadPDF(); setShowExportMenu(false); }}
+                                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-600 flex items-center gap-2"
+                                        >
+                                            <Download className="w-4 h-4 text-cyan-600" />
+                                            Descargar en PDF
+                                        </button>
+                                        <button
+                                            onClick={handleJpgExport}
+                                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2"
+                                        >
+                                            <FileText className="w-4 h-4 text-amber-600" />
+                                            Descargar en JPG
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                         <button
                             onClick={onClose}
-                            className="flex-1 px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-2xl font-black text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all shadow-sm active:scale-95"
+                            className="flex-1 px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-2xl font-black text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all shadow-sm active:scale-95 min-h-[44px]"
                         >
                             Cerrar
                         </button>
@@ -361,6 +495,59 @@ export default function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleM
                             >
                                 <Download className="w-4 h-4" />
                                 Descargar Archivo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* JPG Preview Modal Overlay */}
+            {jpgPreviewUrl && (
+                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-sm flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+                        {/* Preview Header */}
+                        <div className="p-4 bg-gray-900 dark:bg-black text-white flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-white/10 p-2 rounded-xl">
+                                    <FileText className="w-5 h-5 text-amber-400" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-base">Vista Previa</h3>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">Horario en imagen JPG</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setJpgPreviewUrl(null)}
+                                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Image Viewer */}
+                        <div className="flex-1 bg-gray-100 dark:bg-gray-800 relative overflow-hidden flex items-center justify-center p-4">
+                            <div className="w-full h-full max-h-[50vh] overflow-auto rounded-xl border border-gray-200 dark:border-gray-700 shadow-inner bg-white dark:bg-gray-900 p-2 custom-scrollbar">
+                                <img
+                                    src={jpgPreviewUrl}
+                                    alt="Vista previa horario JPG"
+                                    className="w-full h-auto object-contain"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Preview Footer Actions */}
+                        <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 flex justify-end gap-3 shrink-0">
+                            <button
+                                onClick={handleJpgShare}
+                                className="px-5 py-2.5 rounded-xl border border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-400 font-bold text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                            >
+                                Compartir
+                            </button>
+                            <button
+                                onClick={handleJpgDownload}
+                                className="px-5 py-2.5 rounded-xl bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 shadow-lg shadow-amber-200 transition-all flex items-center gap-2 active:scale-95"
+                            >
+                                <Download className="w-4 h-4" />
+                                Descargar
                             </button>
                         </div>
                     </div>
