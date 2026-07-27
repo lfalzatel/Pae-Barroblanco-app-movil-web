@@ -41,6 +41,23 @@ export default function ProfilePage() {
     const [selectedDate, setSelectedDate] = useState<DayDetail | null>(null);
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
+    // Sync points update in real-time when custom event is dispatched
+    useEffect(() => {
+        const handlePuntos = (e: any) => {
+            setUsuario((prev: any) => {
+                if (!prev) return prev;
+                if (typeof e.detail.total === 'number') {
+                    return { ...prev, puntos_gestor_pae: e.detail.total };
+                } else if (typeof e.detail.points === 'number') {
+                    return { ...prev, puntos_gestor_pae: (prev.puntos_gestor_pae || 0) + e.detail.points };
+                }
+                return prev;
+            });
+        };
+        window.addEventListener('puntosActualizados', handlePuntos);
+        return () => window.removeEventListener('puntosActualizados', handlePuntos);
+    }, []);
+
     useEffect(() => {
         const fetchProfileData = async () => {
             const { data: { session } } = await supabase.auth.getSession();

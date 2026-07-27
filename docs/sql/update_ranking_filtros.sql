@@ -52,10 +52,12 @@ WHERE p.id = sub.usuario_id;
 
 /* 4. Borrar las funciones viejas para evitar conflictos de firmas */
 DROP FUNCTION IF EXISTS public.ranking_grupos_pae();
+DROP FUNCTION IF EXISTS public.ranking_grupos_pae(TEXT);
 DROP FUNCTION IF EXISTS public.ranking_gestores_por_grupo(TEXT);
+DROP FUNCTION IF EXISTS public.ranking_gestores_por_grupo(TEXT, TEXT);
 
-/* 5. Actualizar RPC para soportar filtros de periodo en Ranking Grupos */
-CREATE OR REPLACE FUNCTION public.ranking_grupos_pae(p_periodo TEXT DEFAULT 'mes')
+/* 5. Actualizar RPC para soportar filtros de periodo y fecha de referencia en Ranking Grupos */
+CREATE OR REPLACE FUNCTION public.ranking_grupos_pae(p_periodo TEXT DEFAULT 'mes', p_fecha_ref DATE DEFAULT current_date)
 RETURNS TABLE (grupo TEXT, grado TEXT, total_puntos BIGINT) 
 LANGUAGE plpgsql STABLE
 AS $$
@@ -64,21 +66,21 @@ DECLARE
     v_end DATE;
 BEGIN
     IF p_periodo = 'hoy' THEN
-        v_start := current_date;
-        v_end := current_date;
+        v_start := p_fecha_ref;
+        v_end := p_fecha_ref;
     ELSIF p_periodo = 'semana' THEN
-        v_start := date_trunc('week', current_date)::DATE;
-        v_end := (date_trunc('week', current_date) + interval '6 days')::DATE;
+        v_start := date_trunc('week', p_fecha_ref)::DATE;
+        v_end := (date_trunc('week', p_fecha_ref) + interval '6 days')::DATE;
     ELSIF p_periodo = 'mes' THEN
-        v_start := date_trunc('month', current_date)::DATE;
-        v_end := (date_trunc('month', current_date) + interval '1 month - 1 day')::DATE;
+        v_start := date_trunc('month', p_fecha_ref)::DATE;
+        v_end := (date_trunc('month', p_fecha_ref) + interval '1 month - 1 day')::DATE;
     ELSE
         v_start := '2000-01-01'::DATE;
         v_end := '2100-01-01'::DATE;
     END IF;
 
     RETURN QUERY
-    SELECT h.grupo, MAX(h.grado) AS grado, COUNT(*) AS total_puntos
+    SELECT h.grupo, MAX(h.grado) AS grado, SUM(h.puntos)::BIGINT AS total_puntos
     FROM public.puntos_pae_historial h
     WHERE h.fecha >= v_start AND h.fecha <= v_end
     GROUP BY h.grupo
@@ -86,8 +88,8 @@ BEGIN
 END;
 $$;
 
-/* 6. Actualizar RPC para soportar filtros de periodo en Ranking Gestores */
-CREATE OR REPLACE FUNCTION public.ranking_gestores_por_grupo(p_grupo TEXT, p_periodo TEXT DEFAULT 'mes')
+/* 6. Actualizar RPC para soportar filtros de periodo y fecha de referencia en Ranking Gestores */
+CREATE OR REPLACE FUNCTION public.ranking_gestores_por_grupo(p_grupo TEXT, p_periodo TEXT DEFAULT 'mes', p_fecha_ref DATE DEFAULT current_date)
 RETURNS TABLE (usuario_id UUID, nombre TEXT, avatar_url TEXT, puntos BIGINT) 
 LANGUAGE plpgsql STABLE
 AS $$
@@ -96,21 +98,21 @@ DECLARE
     v_end DATE;
 BEGIN
     IF p_periodo = 'hoy' THEN
-        v_start := current_date;
-        v_end := current_date;
+        v_start := p_fecha_ref;
+        v_end := p_fecha_ref;
     ELSIF p_periodo = 'semana' THEN
-        v_start := date_trunc('week', current_date)::DATE;
-        v_end := (date_trunc('week', current_date) + interval '6 days')::DATE;
+        v_start := date_trunc('week', p_fecha_ref)::DATE;
+        v_end := (date_trunc('week', p_fecha_ref) + interval '6 days')::DATE;
     ELSIF p_periodo = 'mes' THEN
-        v_start := date_trunc('month', current_date)::DATE;
-        v_end := (date_trunc('month', current_date) + interval '1 month - 1 day')::DATE;
+        v_start := date_trunc('month', p_fecha_ref)::DATE;
+        v_end := (date_trunc('month', p_fecha_ref) + interval '1 month - 1 day')::DATE;
     ELSE
         v_start := '2000-01-01'::DATE;
         v_end := '2100-01-01'::DATE;
     END IF;
 
     RETURN QUERY
-    SELECT h.usuario_id, p.nombre, p.avatar_url, COUNT(*) AS puntos
+    SELECT h.usuario_id, p.nombre, p.avatar_url, SUM(h.puntos)::BIGINT AS puntos
     FROM public.puntos_pae_historial h
     JOIN public.perfiles_publicos p ON p.id = h.usuario_id
     WHERE h.grupo = p_grupo
