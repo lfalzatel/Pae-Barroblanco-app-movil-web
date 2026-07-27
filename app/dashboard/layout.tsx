@@ -601,7 +601,15 @@ export default function DashboardLayout({
     // Local event listener for real-time PAE points update
     useEffect(() => {
         const handlePuntos = (e: any) => {
-            setUsuario(prev => prev ? { ...prev, puntos_gestor_pae: (prev.puntos_gestor_pae || 0) + e.detail.points } : prev);
+            setUsuario(prev => {
+                if (!prev) return prev;
+                if (typeof e.detail.total === 'number') {
+                    return { ...prev, puntos_gestor_pae: e.detail.total };
+                } else if (typeof e.detail.points === 'number') {
+                    return { ...prev, puntos_gestor_pae: (prev.puntos_gestor_pae || 0) + e.detail.points };
+                }
+                return prev;
+            });
         };
         window.addEventListener('puntosActualizados', handlePuntos);
         return () => window.removeEventListener('puntosActualizados', handlePuntos);

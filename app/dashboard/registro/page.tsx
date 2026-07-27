@@ -115,6 +115,7 @@ function RegistroContent() {
   
   // Estado para animación de puntos
   const [pointsBurst, setPointsBurst] = useState<number | null>(null);
+  const [nuevoTotalPuntos, setNuevoTotalPuntos] = useState<number | null>(null);
 
   // Estados para Novedades
   const [novedades, setNovedades] = useState<Record<string, { tipo: string; descripcion: string }>>({});
@@ -172,12 +173,28 @@ function RegistroContent() {
           });
       }
 
+      // Cargar puntos de gestor desde perfiles_publicos
+      let puntosActuales = 0;
+      try {
+        const { data: profile } = await supabase
+          .from('perfiles_publicos')
+          .select('puntos_gestor_pae')
+          .eq('id', session.user.id)
+          .single();
+        if (profile) {
+          puntosActuales = profile.puntos_gestor_pae || 0;
+        }
+      } catch (err) {
+        console.error('Error al cargar puntos iniciales:', err);
+      }
+
       setUsuario({
         email: userEmail,
         nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
         rol: userRole,
         id: session.user.id,
-        foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
+        foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null,
+        puntos_gestor_pae: puntosActuales
       });
     };
     checkUser();
@@ -750,10 +767,31 @@ function RegistroContent() {
         colors: ['#10b981', '#40a851', '#f59e0b', '#00A3E0']
       });
 
-      // NUEVO: disparar animación de estrellas solo si hubo registros NUEVOS
-      if (nuevosRegistros > 0) {
-        // Mostramos +1 para coincidir con la regla de negocio SQL: "1 punto por grupo al día"
-        setPointsBurst(1);
+      // NUEVO: Consultar en base de datos los puntos reales del perfil del usuario para la animación
+      let puntosGanados = 0;
+      let nuevoTotal = usuario?.puntos_gestor_pae || 0;
+
+      if (nuevosRegistros > 0 && usuario?.id) {
+        try {
+          const { data: profile } = await supabase
+            .from('perfiles_publicos')
+            .select('puntos_gestor_pae')
+            .eq('id', usuario.id)
+            .single();
+
+          if (profile) {
+            nuevoTotal = profile.puntos_gestor_pae || 0;
+            const actualLocal = usuario.puntos_gestor_pae || 0;
+            puntosGanados = nuevoTotal - actualLocal;
+          }
+        } catch (err) {
+          console.error('Error al consultar puntos ganados:', err);
+        }
+      }
+
+      if (puntosGanados > 0) {
+        setNuevoTotalPuntos(nuevoTotal);
+        setPointsBurst(puntosGanados);
       } else {
         handleBack();
       }
@@ -1277,7 +1315,10 @@ function RegistroContent() {
             originSelector="#btn-guardar-asistencia"
             onComplete={() => {
                 setPointsBurst(null);
-                window.dispatchEvent(new CustomEvent('puntosActualizados', { detail: { points: 1 } }));
+                if (nuevoTotalPuntos !== null) {
+                    window.dispatchEvent(new CustomEvent('puntosActualizados', { detail: { total: nuevoTotalPuntos } }));
+                    setNuevoTotalPuntos(null);
+                }
                 handleBack();
             }}
         />
