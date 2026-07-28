@@ -21,6 +21,32 @@ interface UsePushNotificationsReturn {
   shouldShowBanner: boolean;
 }
 
+async function syncSubscriptionWithServer(sub: PushSubscription, token: string) {
+  try {
+    const p256dhRaw = sub.getKey('p256dh');
+    const authRaw = sub.getKey('auth');
+
+    if (!p256dhRaw || !authRaw) return;
+
+    const p256dh = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(p256dhRaw))));
+    const auth = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(authRaw))));
+
+    await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        endpoint: sub.endpoint,
+        keys: { p256dh, auth }
+      }),
+    });
+  } catch (err) {
+    console.error('Error al sincronizar suscripción con el servidor:', err);
+  }
+}
+
 export function usePushNotifications(): UsePushNotificationsReturn {
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('unsupported');
@@ -54,13 +80,39 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         setTimeout(() => setShouldShowBanner(true), 3000);
       }
     }
-  }, []);
+
+    // Escuchar cambios de autenticación para asegurar la sincronización de la suscripción
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session && Notification.permission === 'granted') {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          const sub = await reg.pushManager.getSubscription();
+          if (sub) {
+            await syncSubscriptionWithServer(sub, session.access_token);
+          }
+        } catch (e) {
+          // Silencioso
+        }
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [isSupported]);
 
   const checkExistingSubscription = async () => {
     try {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       setIsSubscribed(!!sub);
+
+      if (sub) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await syncSubscriptionWithServer(sub, session.access_token);
+        }
+      }
     } catch (e) {
       // Silencioso
     }
@@ -100,21 +152,9 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
       // 4. Enviar suscripción al servidor
       const { data: { session } } = await supabase.auth.getSession();
-      
-      await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
-        body: JSON.stringify({
-          endpoint: subscription.endpoint,
-          keys: {
-            p256dh: btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(subscription.getKey('p256dh') as any)))),
-            auth: btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(subscription.getKey('auth') as any))))
-          }
-        }),
-      });
+      if (session) {
+        await syncSubscriptionWithServer(subscription, session.access_token);
+      }
 
       setIsSubscribed(true);
     } catch (e) {

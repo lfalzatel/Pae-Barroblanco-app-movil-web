@@ -93,7 +93,8 @@ export default function HorarioPage() {
     const [editingEvent, setEditingEvent] = useState<any | null>(null);
     const [eventForm, setEventForm] = useState({
         titulo: '',
-        hora: '',
+        horaInicio: '',
+        horaFin: '',
         afectados: '',
         descripcion: '',
         prioridad: 'normal'
@@ -474,7 +475,7 @@ export default function HorarioPage() {
 
     const handleAddEvent = (date?: string) => {
         setEditingEvent(null);
-        setEventForm({ titulo: '', hora: '', afectados: '', descripcion: '', prioridad: 'normal' });
+        setEventForm({ titulo: '', horaInicio: '', horaFin: '', afectados: '', descripcion: '', prioridad: 'normal' });
         setEventDate(date || selectedDate);
         setShowEventModal(true);
     };
@@ -482,19 +483,53 @@ export default function HorarioPage() {
     const handleEditEvent = (event: any) => {
         setEditingEvent(event);
         setEventDate(event.fecha);
-        setEventForm({ titulo: event.titulo, hora: event.hora || '', afectados: event.afectados || '', descripcion: event.descripcion || '', prioridad: event.prioridad || 'normal' });
+        
+        let horaInicio = '';
+        let horaFin = '';
+        if (event.hora) {
+            const parts = event.hora.split(' - ');
+            horaInicio = parts[0] || '';
+            horaFin = parts[1] || '';
+        }
+
+        setEventForm({ 
+            titulo: event.titulo, 
+            horaInicio, 
+            horaFin, 
+            afectados: event.afectados || '', 
+            descripcion: event.descripcion || '', 
+            prioridad: event.prioridad || 'normal' 
+        });
         setShowEventModal(true);
     };
 
     const handleSaveInstitutionalEvent = async () => {
         if (!eventForm.titulo) return;
         setSaving(true);
+
+        let hora = '';
+        if (eventForm.horaInicio && eventForm.horaFin) {
+            hora = `${eventForm.horaInicio} - ${eventForm.horaFin}`;
+        } else if (eventForm.horaInicio) {
+            hora = eventForm.horaInicio;
+        } else if (eventForm.horaFin) {
+            hora = eventForm.horaFin;
+        }
+
         const data = {
-            ...eventForm,
+            titulo: eventForm.titulo,
+            hora,
+            afectados: eventForm.afectados,
+            descripcion: eventForm.descripcion,
+            prioridad: eventForm.prioridad,
             fecha: eventDate,
             sede: selectedSede === 'Todas' ? 'Principal' : selectedSede
         };
-        const { error } = editingEvent ? await supabase.from('novedades_institucionales').update(data).eq('id', editingEvent.id) : await supabase.from('novedades_institucionales').insert([data]);
+
+        const { error } = editingEvent 
+            ? await supabase.from('novedades_institucionales').update(data).eq('id', editingEvent.id) 
+            : await supabase.from('novedades_institucionales').insert([data]);
+
         if (!error) {
             setNotif({ type: 'success', msg: 'Evento actualizado' });
             setShowEventModal(false);
@@ -1210,45 +1245,60 @@ export default function HorarioPage() {
 
                                 <div className="grid grid-cols-2 gap-3 md:gap-4">
                                     <div className="space-y-1.5 md:space-y-2">
-                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hora (Opcional)</label>
+                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hora de inicio (opcional)</label>
                                         <input
-                                            value={eventForm.hora}
-                                            onChange={e => setEventForm({ ...eventForm, hora: e.target.value })}
+                                            type="time"
+                                            value={eventForm.horaInicio}
+                                            onChange={e => setEventForm({ ...eventForm, horaInicio: e.target.value })}
                                             className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner text-xs lg:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
                                         />
                                     </div>
                                     <div className="space-y-1.5 md:space-y-2">
-                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Prioridad</label>
-                                        <select
-                                            value={eventForm.prioridad}
-                                            onChange={e => setEventForm({ ...eventForm, prioridad: e.target.value })}
-                                            className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 appearance-none text-xs lg:text-sm shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                        >
-                                            <option value="normal">Normal 😊</option>
-                                            <option value="alta">Urgente ⚠️</option>
-                                        </select>
+                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hora de finalización (opcional)</label>
+                                        <input
+                                            type="time"
+                                            value={eventForm.horaFin}
+                                            onChange={e => setEventForm({ ...eventForm, horaFin: e.target.value })}
+                                            className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner text-xs lg:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
+                                        />
                                     </div>
                                 </div>
 
-                                <div className="space-y-1.5 md:space-y-2">
-                                    <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Dirigido a / Participantes</label>
-                                    <div className="relative">
-                                        <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                                        <select
-                                            value={eventForm.afectados}
-                                            onChange={e => setEventForm({ ...eventForm, afectados: e.target.value })}
-                                            className="w-full pl-12 pr-10 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 appearance-none text-xs lg:text-sm shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                        >
-                                            <option value="">Seleccionar destinatarios...</option>
-                                            <option value="Estudiantes">Estudiantes 🎓</option>
-                                            <option value="Docentes">Docentes 👨‍🏫</option>
-                                            <option value="Padres de Familia">Padres de Familia 👪</option>
-                                            <option value="Toda la Comunidad">Toda la Comunidad 🏫</option>
-                                            <option value="Grupos Primaria">Grupos Primaria 🧒</option>
-                                            <option value="Grupos Bachillerato">Grupos Bachillerato 👱</option>
-                                            <option value="Personal Administrativo">Personal Administrativo 💼</option>
-                                        </select>
-                                        <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <div className="grid grid-cols-2 gap-3 md:gap-4">
+                                    <div className="space-y-1.5 md:space-y-2">
+                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Dirigido a / Participantes</label>
+                                        <div className="relative">
+                                            <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                            <select
+                                                value={eventForm.afectados}
+                                                onChange={e => setEventForm({ ...eventForm, afectados: e.target.value })}
+                                                className="w-full pl-12 pr-10 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 appearance-none text-xs lg:text-sm shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                            >
+                                                <option value="">Seleccionar destinatarios...</option>
+                                                <option value="Estudiantes">Estudiantes 🎓</option>
+                                                <option value="Docentes">Docentes 👨‍🏫</option>
+                                                <option value="Padres de Familia">Padres de Familia 👪</option>
+                                                <option value="Toda la Comunidad">Toda la Comunidad 🏫</option>
+                                                <option value="Grupos Primaria">Grupos Primaria 🧒</option>
+                                                <option value="Grupos Bachillerato">Grupos Bachillerato 👱</option>
+                                                <option value="Personal Administrativo">Personal Administrativo 💼</option>
+                                            </select>
+                                            <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5 md:space-y-2">
+                                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Prioridad</label>
+                                        <div className="relative">
+                                            <select
+                                                value={eventForm.prioridad}
+                                                onChange={e => setEventForm({ ...eventForm, prioridad: e.target.value })}
+                                                className="w-full px-5 pr-10 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 appearance-none text-xs lg:text-sm shadow-inner dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                            >
+                                                <option value="normal">Normal 😊</option>
+                                                <option value="alta">Urgente ⚠️</option>
+                                            </select>
+                                            <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        </div>
                                     </div>
                                 </div>
 

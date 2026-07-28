@@ -108,13 +108,13 @@ export default function DashboardLayout({
             if (data.error) {
                 alert(`Error del servidor: ${data.error}`);
             } else if (data.message === 'No hay nadie suscrito en la base de datos.') {
-                alert('No hay suscriptores. Ve a tu perfil y activa la campana azul.');
+                alert('No hay suscriptores en la base de datos. Asegúrate de tener las notificaciones activas en tu perfil.');
             } else if (data.results) {
                 const resultsMsg = data.results.map((r: any) => 
                     `${r.browser}: ${r.status === 'fulfilled' ? '✅ ENVIADO' : '❌ FALLÓ (' + r.statusCode + ')'}`
                 ).join('\n');
                 
-                alert(`Resultado del envío:\n\n${resultsMsg}\n\nSi tu móvil sale con ✅ pero no suena, revisa los ajustes de Notificaciones de tu celular.`);
+                alert(`Resultado del envío:\n\n${resultsMsg}\n\nSi tu móvil sale con ✅ pero no llega la notificación cuando la app está cerrada:\n\n1. Abre los Ajustes de tu celular.\n2. Ve a Aplicaciones > Sistema PAE.\n3. Asegúrate de permitir "Actividad en segundo plano" y configurar el uso de batería como "Sin restricciones" u "Optimización desactivada".\n\nLos celulares suelen suspender las apps cerradas para ahorrar batería, bloqueando el push.`);
             }
         } catch (err) {
             console.error('Error testing push:', err);
