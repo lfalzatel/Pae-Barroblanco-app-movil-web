@@ -99,6 +99,7 @@ export default function HorarioPage() {
         descripcion: '',
         prioridad: 'normal'
     });
+    const [timePickerTarget, setTimePickerTarget] = useState<'inicio' | 'fin' | null>(null);
 
     // --- Modal Back Hook Integrations ---
     useModalBack(!!editingSlot, () => setEditingSlot(null), 'editing-slot-modal');
@@ -107,6 +108,7 @@ export default function HorarioPage() {
     useModalBack(showEventDateSelector, () => setShowEventDateSelector(false), 'event-date-modal');
     useModalBack(showConfirmSave, () => setShowConfirmSave(false), 'confirm-save-modal');
     useModalBack(showInstructions, () => setShowInstructions(false), 'instructions-modal');
+    useModalBack(!!timePickerTarget, () => setTimePickerTarget(null), 'time-picker-modal');
     // For selectedGroup, we only want to deselect if we are in mobile view effectively, 
     // but the hook handles history so it's fine to have it generally.
     useModalBack(!!selectedGroup, () => setSelectedGroup(null), 'selected-group-state');
@@ -1246,21 +1248,29 @@ export default function HorarioPage() {
                                 <div className="grid grid-cols-2 gap-3 md:gap-4">
                                     <div className="space-y-1.5 md:space-y-2">
                                         <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hora de inicio (opcional)</label>
-                                        <input
-                                            type="time"
-                                            value={eventForm.horaInicio}
-                                            onChange={e => setEventForm({ ...eventForm, horaInicio: e.target.value })}
-                                            className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner text-xs lg:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
-                                        />
+                                        <div className="relative cursor-pointer" onClick={() => setTimePickerTarget('inicio')}>
+                                            <input
+                                                type="text"
+                                                readOnly
+                                                value={formatTime12h(eventForm.horaInicio)}
+                                                placeholder="--:--"
+                                                className="w-full pl-5 pr-10 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner text-xs lg:text-sm cursor-pointer dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
+                                            />
+                                            <Clock className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        </div>
                                     </div>
                                     <div className="space-y-1.5 md:space-y-2">
                                         <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hora de finalización (opcional)</label>
-                                        <input
-                                            type="time"
-                                            value={eventForm.horaFin}
-                                            onChange={e => setEventForm({ ...eventForm, horaFin: e.target.value })}
-                                            className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner text-xs lg:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
-                                        />
+                                        <div className="relative cursor-pointer" onClick={() => setTimePickerTarget('fin')}>
+                                            <input
+                                                type="text"
+                                                readOnly
+                                                value={formatTime12h(eventForm.horaFin)}
+                                                placeholder="--:--"
+                                                className="w-full pl-5 pr-10 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500/30 transition-all font-bold text-gray-700 placeholder:text-gray-300 shadow-inner text-xs lg:text-sm cursor-pointer dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-500"
+                                            />
+                                            <Clock className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1481,6 +1491,235 @@ export default function HorarioPage() {
                     </div>
                 )
             }
+
+            {timePickerTarget && (
+                <CircularTimePicker
+                    value={timePickerTarget === 'inicio' ? eventForm.horaInicio : eventForm.horaFin}
+                    onClose={() => setTimePickerTarget(null)}
+                    onSelect={(val) => {
+                        if (timePickerTarget === 'inicio') {
+                            setEventForm(prev => ({ ...prev, horaInicio: val }));
+                        } else {
+                            setEventForm(prev => ({ ...prev, horaFin: val }));
+                        }
+                        setTimePickerTarget(null);
+                    }}
+                />
+            )}
         </>
+    );
+}
+
+const formatTime12h = (time24: string) => {
+    if (!time24) return '';
+    const parts = time24.split(':');
+    const h24 = parseInt(parts[0]);
+    const min = parseInt(parts[1]);
+    if (isNaN(h24) || isNaN(min)) return time24;
+    const ampm = h24 >= 12 ? 'PM' : 'AM';
+    const h12 = h24 % 12 || 12;
+    return `${h12.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')} ${ampm}`;
+};
+
+interface CircularTimePickerProps {
+    value: string;
+    onClose: () => void;
+    onSelect: (value: string) => void;
+}
+
+function CircularTimePicker({ value, onClose, onSelect }: CircularTimePickerProps) {
+    const [mode, setMode] = useState<'hours' | 'minutes'>('hours');
+
+    const parseInitial = () => {
+        let h = 8;
+        let m = 0;
+        let ap = 'AM';
+        if (value) {
+            const parts = value.split(':');
+            const h24 = parseInt(parts[0]) || 8;
+            m = parseInt(parts[1]) || 0;
+            if (h24 >= 12) {
+                ap = 'PM';
+                h = h24 === 12 ? 12 : h24 - 12;
+            } else {
+                ap = 'AM';
+                h = h24 === 0 ? 12 : h24;
+            }
+        }
+        return { h, m, ap };
+    };
+
+    const initial = parseInitial();
+    const [selectedHour, setSelectedHour] = useState(initial.h);
+    const [selectedMinute, setSelectedMinute] = useState(initial.m);
+    const [ampm, setAmpm] = useState(initial.ap);
+
+    const hours = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    const minutes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+
+    const handleHourSelect = (h: number) => {
+        setSelectedHour(h);
+        setTimeout(() => setMode('minutes'), 300);
+    };
+
+    const handleMinuteSelect = (m: number) => {
+        setSelectedMinute(m);
+    };
+
+    const handleSave = () => {
+        let h24 = selectedHour;
+        if (ampm === 'PM' && selectedHour !== 12) h24 += 12;
+        if (ampm === 'AM' && selectedHour === 12) h24 = 0;
+
+        const hourStr = h24.toString().padStart(2, '0');
+        const minStr = selectedMinute.toString().padStart(2, '0');
+        onSelect(`${hourStr}:${minStr}`);
+    };
+
+    const getHandAngle = () => {
+        if (mode === 'hours') {
+            const index = hours.indexOf(selectedHour);
+            return index * 30;
+        } else {
+            return selectedMinute * 6;
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 w-full max-w-[320px] relative z-10 shadow-2xl border border-gray-100 dark:border-gray-700 select-none animate-in zoom-in-95 duration-200">
+                
+                {/* Cabecera / Previsualizador digital */}
+                <div className="flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900/50 py-4 px-6 rounded-[2rem] mb-6">
+                    <div className="flex items-center gap-2 text-3xl font-black text-gray-800 dark:text-white">
+                        <button 
+                            type="button" 
+                            onClick={() => setMode('hours')}
+                            className={`transition-colors ${mode === 'hours' ? 'text-cyan-600' : 'text-gray-400 dark:text-gray-500'}`}
+                        >
+                            {selectedHour.toString().padStart(2, '0')}
+                        </button>
+                        <span className="text-gray-400 dark:text-gray-600">:</span>
+                        <button 
+                            type="button" 
+                            onClick={() => setMode('minutes')}
+                            className={`transition-colors ${mode === 'minutes' ? 'text-cyan-600' : 'text-gray-400 dark:text-gray-500'}`}
+                        >
+                            {selectedMinute.toString().padStart(2, '0')}
+                        </button>
+                        
+                        <div className="flex flex-col ml-3 text-[10px] gap-1">
+                            <button 
+                                type="button" 
+                                onClick={() => setAmpm('AM')}
+                                className={`px-2 py-0.5 rounded-md font-black transition-all ${ampm === 'AM' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300' : 'text-gray-400'}`}
+                            >
+                                AM
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={() => setAmpm('PM')}
+                                className={`px-2 py-0.5 rounded-md font-black transition-all ${ampm === 'PM' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300' : 'text-gray-400'}`}
+                            >
+                                PM
+                            </button>
+                        </div>
+                    </div>
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-2">
+                        {mode === 'hours' ? 'Selecciona la Hora' : 'Selecciona los Minutos'}
+                    </span>
+                </div>
+
+                {/* Dial circular */}
+                <div className="relative w-[220px] h-[220px] bg-gray-50 dark:bg-gray-900 rounded-full mx-auto flex items-center justify-center mb-6 border border-gray-100 dark:border-gray-800">
+                    <div className="absolute w-2 h-2 rounded-full bg-cyan-600 z-30"></div>
+
+                    {/* Aguja del reloj */}
+                    <div 
+                        className="absolute bottom-1/2 left-1/2 w-0.5 bg-cyan-500 origin-bottom transition-all duration-300 z-20"
+                        style={{ 
+                            height: '70px', 
+                            transform: `rotate(${getHandAngle()}deg)`, 
+                            transformOrigin: 'bottom center', 
+                            left: 'calc(50% - 1px)',
+                            bottom: '50%'
+                        }}
+                    >
+                        <div className="absolute -top-3.5 -left-3.5 w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-500 flex items-center justify-center">
+                            <div className="w-1.5 h-1.5 rounded-full bg-cyan-600"></div>
+                        </div>
+                    </div>
+
+                    {/* Números */}
+                    {mode === 'hours' ? (
+                        hours.map((h, index) => {
+                            const angle = (index * 30 * Math.PI) / 180;
+                            const x = Math.sin(angle) * 75;
+                            const y = -Math.cos(angle) * 75;
+                            const isSelected = selectedHour === h;
+                            return (
+                                <button
+                                    key={h}
+                                    type="button"
+                                    onClick={() => handleHourSelect(h)}
+                                    style={{ 
+                                        left: 'calc(50% - 16px)', 
+                                        top: 'calc(50% - 16px)',
+                                        transform: `translate(${x}px, ${y}px)` 
+                                    }}
+                                    className={`absolute w-8 h-8 rounded-full flex items-center justify-center font-black text-xs transition-all z-20
+                                        ${isSelected ? 'bg-cyan-600 text-white scale-110 shadow-md shadow-cyan-200 dark:shadow-none' : 'hover:bg-cyan-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                                >
+                                    {h}
+                                </button>
+                            );
+                        })
+                    ) : (
+                        minutes.map((m, index) => {
+                            const angle = (index * 30 * Math.PI) / 180;
+                            const x = Math.sin(angle) * 75;
+                            const y = -Math.cos(angle) * 75;
+                            const isSelected = selectedMinute === m;
+                            return (
+                                <button
+                                    key={m}
+                                    type="button"
+                                    onClick={() => handleMinuteSelect(m)}
+                                    style={{ 
+                                        left: 'calc(50% - 16px)', 
+                                        top: 'calc(50% - 16px)',
+                                        transform: `translate(${x}px, ${y}px)` 
+                                    }}
+                                    className={`absolute w-8 h-8 rounded-full flex items-center justify-center font-black text-[10px] transition-all z-20
+                                        ${isSelected ? 'bg-cyan-600 text-white scale-110 shadow-md shadow-cyan-200 dark:shadow-none' : 'hover:bg-cyan-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                                >
+                                    {m.toString().padStart(2, '0')}
+                                </button>
+                            );
+                        })
+                    )}
+                </div>
+
+                {/* Acciones */}
+                <div className="flex gap-3">
+                    <button 
+                        type="button" 
+                        onClick={onClose}
+                        className="flex-1 py-3 text-[10px] font-black text-gray-400 hover:text-gray-650 transition-colors uppercase tracking-widest bg-gray-50 dark:bg-gray-900 rounded-2xl"
+                    >
+                        Cancelar
+                    </button>
+                    <button 
+                        type="button" 
+                        onClick={handleSave}
+                        className="flex-1 py-3 text-[10px] font-black text-white bg-cyan-600 hover:bg-cyan-700 transition-colors rounded-2xl uppercase tracking-widest shadow-lg shadow-cyan-100 dark:shadow-none"
+                    >
+                        Aceptar
+                    </button>
+                </div>
+
+            </div>
+        </div>
     );
 }
