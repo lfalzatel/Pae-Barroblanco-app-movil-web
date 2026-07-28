@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { X, Trophy, Star, ChevronLeft, Medal } from 'lucide-react';
+import { X, Trophy, Star, ChevronLeft, Medal, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface GrupoRanking { grupo: string; grado: string | null; total_puntos: number; }
 interface GestorRanking { usuario_id: string; nombre: string; avatar_url: string | null; puntos: number; }
@@ -15,6 +16,105 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
     const [loadingGestores, setLoadingGestores] = useState(false);
     const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes'>('mes');
     const [fechaRef, setFechaRef] = useState<Date>(new Date());
+    const [exporting, setExporting] = useState(false);
+
+    const exportToExcel = async () => {
+        setExporting(true);
+        try {
+            const formattedDate = new Date().toISOString().split('T')[0];
+            
+            if (grupoSeleccionado) {
+                const filename = `Ranking_Gestores_Grupo_${grupoSeleccionado}_${periodo}_${formattedDate}.xlsx`;
+                
+                const rows = gestores.map((g, idx) => ({
+                    'Posición': idx + 1,
+                    'Nombre Gestor': g.nombre,
+                    'Puntos': g.puntos,
+                    'Grupo': grupoSeleccionado,
+                    'Período': periodo.toUpperCase()
+                }));
+                
+                const worksheet = XLSX.utils.json_to_sheet(rows);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, `Grupo ${grupoSeleccionado}`);
+                
+                worksheet['!cols'] = [
+                    { wch: 10 },
+                    { wch: 30 },
+                    { wch: 10 },
+                    { wch: 10 },
+                    { wch: 12 }
+                ];
+                
+                XLSX.writeFile(workbook, filename);
+            } else {
+                const filename = `Ranking_Consolidado_PAE_${periodo}_${formattedDate}.xlsx`;
+                
+                const rowsGrupos = grupos.map((g, idx) => ({
+                    'Posición': idx + 1,
+                    'Grupo': g.grupo,
+                    'Total Puntos': g.total_puntos,
+                    'Período': periodo.toUpperCase()
+                }));
+                
+                const wsGrupos = XLSX.utils.json_to_sheet(rowsGrupos);
+                wsGrupos['!cols'] = [
+                    { wch: 10 },
+                    { wch: 12 },
+                    { wch: 15 },
+                    { wch: 12 }
+                ];
+                
+                // Obtener desglose de todos los gestores de todos los grupos de forma concurrente
+                const fetchAllGestores = grupos.map(async (g) => {
+                    const { data, error } = await supabase.rpc('ranking_gestores_por_grupo', { 
+                        p_grupo: g.grupo, 
+                        p_periodo: periodo,
+                        p_fecha_ref: fechaRef.toISOString().split('T')[0] 
+                    });
+                    if (!error && data) {
+                        return (data as GestorRanking[]).map(u => ({
+                            'Grupo': g.grupo,
+                            'Nombre Gestor': u.nombre,
+                            'Puntos': u.puntos,
+                            'Período': periodo.toUpperCase()
+                        }));
+                    }
+                    return [];
+                });
+                
+                const resolvedGestoresLists = await Promise.all(fetchAllGestores);
+                const allGestoresRows = resolvedGestoresLists.flat();
+                
+                allGestoresRows.sort((a, b) => b.Puntos - a.Puntos);
+                
+                const rowsGestoresConPos = allGestoresRows.map((r, idx) => ({
+                    'Posición General': idx + 1,
+                    ...r
+                }));
+                
+                const wsGestores = XLSX.utils.json_to_sheet(rowsGestoresConPos);
+                wsGestores['!cols'] = [
+                    { wch: 18 },
+                    { wch: 12 },
+                    { wch: 30 },
+                    { wch: 10 },
+                    { wch: 12 }
+                ];
+                
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, wsGrupos, 'Resumen por Grupos');
+                XLSX.utils.book_append_sheet(workbook, wsGestores, 'Detalle por Gestores');
+                
+                XLSX.writeFile(workbook, filename);
+            }
+        } catch (err) {
+            console.error('Error al exportar ranking a Excel:', err);
+            alert('Ocurrió un error al generar el reporte de Excel.');
+        } finally {
+            setExporting(false);
+        }
+    };
 
     useEffect(() => {
         const fetchRanking = async () => {
@@ -73,10 +173,10 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                 className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-[2rem] shadow-2xl relative overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 max-h-[85vh] flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="bg-gradient-to-r from-amber-400 to-orange-500 p-5 flex items-center justify-between">
+                <div className="bg-gradient-to-r from-amber-400 to-orange-500 p-5 flex items-center justify-between text-white shrink-0">
                     <div className="flex items-center gap-2">
                         {grupoSeleccionado && (
-                            <button onClick={() => setGrupoSeleccionado(null)} className="p-1 -ml-1">
+                            <button onClick={() => setGrupoSeleccionado(null)} className="p-1 -ml-1 hover:bg-white/10 rounded-full transition-colors">
                                 <ChevronLeft className="w-5 h-5 text-white" />
                             </button>
                         )}
@@ -85,9 +185,20 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                             {grupoSeleccionado ? `Grupo ${grupoSeleccionado}` : 'Ranking Gestor PAE'}
                         </h3>
                     </div>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-white/20">
-                        <X className="w-5 h-5 text-white" />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                        <button 
+                            type="button"
+                            onClick={exportToExcel} 
+                            disabled={exporting}
+                            title="Descargar Reporte Excel"
+                            className="p-1.5 rounded-full hover:bg-white/25 text-white transition-all disabled:opacity-50 disabled:pointer-events-none active:scale-90"
+                        >
+                            <Download className="w-4.5 h-4.5" />
+                        </button>
+                        <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/25 text-white transition-all active:scale-90">
+                            <X className="w-4.5 h-4.5" />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="p-4 overflow-y-auto">
