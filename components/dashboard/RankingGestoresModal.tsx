@@ -249,7 +249,6 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                 matrixRows
             );
 
-            // Anchos de columnas para la matriz
             wsMatriz['!cols'] = [{ wch: 32 }, ...Array.from({ length: daysInMonth }, () => ({ wch: 5 })), { wch: 14 }, { wch: 16 }];
             XLSX.utils.book_append_sheet(workbook, wsMatriz, 'Matriz Asistencia Mensual');
 
