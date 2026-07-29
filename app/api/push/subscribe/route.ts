@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Cliente de Supabase con Service Role para escritura segura
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const dynamic = 'force-dynamic';
+
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceRole) {
+    throw new Error('Variables de entorno de Supabase no configuradas');
+  }
+  return createClient(url, serviceRole);
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     // Verificar autenticación del usuario
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
@@ -61,6 +67,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     // Verificar autenticación
     const authHeader = req.headers.get('authorization');
     if (!authHeader) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
