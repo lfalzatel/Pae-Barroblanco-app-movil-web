@@ -102,98 +102,159 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
     const medalColor = (i: number) =>
         i === 0 ? 'text-amber-400' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-orange-600' : 'text-gray-300';
 
+    // Función Helper para construir hojas con membrete institucional formal
+    const buildSheetWithHeader = (
+        title: string,
+        periodoLabel: string,
+        convenciones: string,
+        tableHeaders: string[],
+        dataRows: any[][]
+    ) => {
+        const nowStr = new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+        
+        const aoa = [
+            ['SISTEMA PAE — INSTITUCIÓN EDUCATIVA BARROBLANCO'],
+            [title.toUpperCase()],
+            [`Período del Reporte: ${periodoLabel.toUpperCase()}`, '', `Fecha de Generación: ${nowStr}`],
+            [`Convenciones / Descripción: ${convenciones}`],
+            [], // Fila de separación
+            tableHeaders,
+            ...dataRows
+        ];
+
+        return XLSX.utils.aoa_to_sheet(aoa);
+    };
+
     const exportToExcel = async () => {
         setExporting(true);
         try {
             const formattedDate = new Date().toISOString().split('T')[0];
             const workbook = XLSX.utils.book_new();
+            
+            const periodoLabel = periodo === 'semana' 
+                ? getSemanaLabel(fechaRef)
+                : periodo === 'mes'
+                ? `${fechaRef.toLocaleString('es-CO', { month: 'long' })} de ${fechaRef.getFullYear()}`
+                : `Día ${fechaRef.toLocaleDateString('es-CO')}`;
 
-            if (grupoSeleccionado) {
-                const filename = `Ranking_Gestores_Grupo_${grupoSeleccionado}_${periodo}_${formattedDate}.xlsx`;
-                
-                const rows = gestores.map((g, idx) => ({
-                    'Posición': idx + 1,
-                    'Nombre Gestor': g.nombre,
-                    'Puntos / Estrellas': g.puntos,
-                    'Grupo': grupoSeleccionado,
-                    'Período': periodo.toUpperCase()
-                }));
-                
-                const worksheet = XLSX.utils.json_to_sheet(rows);
-                worksheet['!cols'] = [{ wch: 10 }, { wch: 30 }, { wch: 18 }, { wch: 10 }, { wch: 12 }];
-                XLSX.utils.book_append_sheet(workbook, worksheet, `Grupo ${grupoSeleccionado}`);
+            // 1. HOJA 1: RESUMEN POR GRUPOS
+            const rowsGrupos = grupos.map((g, idx) => [
+                idx + 1,
+                g.grupo,
+                g.total_puntos,
+                periodo.toUpperCase()
+            ]);
+            const wsGrupos = buildSheetWithHeader(
+                'Reporte Consolidado por Grupos — PAE',
+                periodoLabel,
+                'Total de estrellas/puntos acumulados por cada grupo atendido en el período.',
+                ['Posición', 'Grupo', 'Total Estrellas / Puntos', 'Período'],
+                rowsGrupos
+            );
+            wsGrupos['!cols'] = [{ wch: 10 }, { wch: 16 }, { wch: 25 }, { wch: 12 }];
+            XLSX.utils.book_append_sheet(workbook, wsGrupos, 'Resumen por Grupos');
 
-                XLSX.writeFile(workbook, filename);
-            } else {
-                const filename = `Ranking_Consolidado_PAE_${periodo}_${formattedDate}.xlsx`;
-                
-                // 1. Hoja Resumen por Grupos
-                const rowsGrupos = grupos.map((g, idx) => ({
-                    'Posición': idx + 1,
-                    'Grupo': g.grupo,
-                    'Total Puntos/Estrellas': g.total_puntos,
-                    'Período': periodo.toUpperCase()
-                }));
-                const wsGrupos = XLSX.utils.json_to_sheet(rowsGrupos);
-                wsGrupos['!cols'] = [{ wch: 10 }, { wch: 12 }, { wch: 22 }, { wch: 12 }];
-                XLSX.utils.book_append_sheet(workbook, wsGrupos, 'Resumen por Grupos');
+            // 2. HOJA 2: ESTRELLAS PAE POR USUARIO
+            const rowsEstrellas = usuariosEstrellas.map((u, idx) => [
+                idx + 1,
+                u.nombre,
+                (u.grupos || []).join(', '),
+                u.puntos,
+                periodo.toUpperCase()
+            ]);
+            const wsEstrellas = buildSheetWithHeader(
+                'Reporte de Estrellas PAE por Gestor / Usuario',
+                periodoLabel,
+                'Ranking individual de gestores PAE según las estrellas (puntos) ganadas en el período.',
+                ['Posición General', 'Nombre del Gestor', 'Grupos Atendidos', 'Total Estrellas PAE', 'Período'],
+                rowsEstrellas
+            );
+            wsEstrellas['!cols'] = [{ wch: 18 }, { wch: 32 }, { wch: 22 }, { wch: 22 }, { wch: 12 }];
+            XLSX.utils.book_append_sheet(workbook, wsEstrellas, 'Estrellas PAE por Usuario');
 
-                // 2. Hoja Estrellas PAE por Gestor
-                const rowsEstrellas = usuariosEstrellas.map((u, idx) => ({
-                    'Posición General': idx + 1,
-                    'Nombre Gestor': u.nombre,
-                    'Grupos Atendidos': (u.grupos || []).join(', '),
-                    'Total Estrellas PAE': u.puntos,
-                    'Período': periodo.toUpperCase()
-                }));
-                const wsEstrellas = XLSX.utils.json_to_sheet(rowsEstrellas);
-                wsEstrellas['!cols'] = [{ wch: 18 }, { wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 12 }];
-                XLSX.utils.book_append_sheet(workbook, wsEstrellas, 'Estrellas PAE por Usuario');
+            // 3. HOJA 3: MATRIZ DE ASISTENCIA MENSUAL POR FECHAS (CALENDARIO POR USUARIO)
+            const year = fechaRef.getFullYear();
+            const month = fechaRef.getMonth();
+            const firstDayStr = new Date(year, month, 1).toISOString().split('T')[0];
+            const lastDayStr = new Date(year, month + 1, 0).toISOString().split('T')[0];
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-                // 3. Hoja con Actividad Detallada por Fechas
-                let startStr = fechaRef.toISOString().split('T')[0];
-                let endStr = startStr;
-                if (periodo === 'semana') {
-                    const start = new Date(fechaRef);
-                    start.setDate(start.getDate() - start.getDay() + 1);
-                    const end = new Date(start);
-                    end.setDate(end.getDate() + 6);
-                    startStr = start.toISOString().split('T')[0];
-                    endStr = end.toISOString().split('T')[0];
-                } else if (periodo === 'mes') {
-                    const start = new Date(fechaRef.getFullYear(), fechaRef.getMonth(), 1);
-                    const end = new Date(fechaRef.getFullYear(), fechaRef.getMonth() + 1, 0);
-                    startStr = start.toISOString().split('T')[0];
-                    endStr = end.toISOString().split('T')[0];
+            const { data: historialData } = await supabase
+                .from('puntos_pae_historial')
+                .select(`
+                    fecha,
+                    usuario_id,
+                    puntos,
+                    grupo,
+                    perfiles_publicos (nombre)
+                `)
+                .gte('fecha', firstDayStr)
+                .lte('fecha', lastDayStr);
+
+            const userActivityMap = new Map<string, {
+                nombre: string,
+                diasSet: Set<number>,
+                totalRegistros: number
+            }>();
+
+            (historialData || []).forEach((h: any) => {
+                const uId = h.usuario_id;
+                const profileObj = Array.isArray(h.perfiles_publicos) ? h.perfiles_publicos[0] : h.perfiles_publicos;
+                const uNombre = profileObj?.nombre || 'Gestor PAE';
+                const dayNum = parseInt(h.fecha.split('-')[2], 10);
+
+                if (!userActivityMap.has(uId)) {
+                    userActivityMap.set(uId, {
+                        nombre: uNombre,
+                        diasSet: new Set(),
+                        totalRegistros: 0
+                    });
                 }
 
-                const { data: historialData } = await supabase
-                    .from('puntos_pae_historial')
-                    .select(`
-                        fecha,
-                        puntos,
-                        grupo,
-                        motivo,
-                        perfiles_publicos (nombre)
-                    `)
-                    .gte('fecha', startStr)
-                    .lte('fecha', endStr)
-                    .order('fecha', { ascending: false });
+                const userEntry = userActivityMap.get(uId)!;
+                userEntry.diasSet.add(dayNum);
+                userEntry.totalRegistros += (h.puntos || 1);
+            });
 
-                const rowsHistorial = (historialData || []).map((h: any) => ({
-                    'Fecha de Registro': h.fecha,
-                    'Nombre Gestor': h.perfiles_publicos?.nombre || 'Gestor',
-                    'Grupo Atendido': h.grupo,
-                    'Estrellas Sumadas': h.puntos,
-                    'Motivo': h.motivo || 'Registro de Asistencia PAE'
-                }));
+            // Encabezados de columnas de días (01, 02, ..., 31)
+            const dayHeaders = Array.from({ length: daysInMonth }, (_, i) => {
+                const d = (i + 1).toString().padStart(2, '0');
+                return `${d}`;
+            });
 
-                const wsHistorial = XLSX.utils.json_to_sheet(rowsHistorial);
-                wsHistorial['!cols'] = [{ wch: 18 }, { wch: 30 }, { wch: 15 }, { wch: 18 }, { wch: 35 }];
-                XLSX.utils.book_append_sheet(workbook, wsHistorial, 'Actividad por Fechas');
+            const matrixHeaders = ['Nombre Gestor / Usuario', ...dayHeaders, 'Días Activos', 'Total Registros'];
 
-                XLSX.writeFile(workbook, filename);
-            }
+            const matrixRows = Array.from(userActivityMap.values())
+                .sort((a, b) => a.nombre.localeCompare(b.nombre))
+                .map(u => {
+                    const rowDays = Array.from({ length: daysInMonth }, (_, i) => {
+                        const dayNum = i + 1;
+                        return u.diasSet.has(dayNum) ? '✓' : '';
+                    });
+                    return [
+                        u.nombre,
+                        ...rowDays,
+                        u.diasSet.size,
+                        u.totalRegistros
+                    ];
+                });
+
+            const wsMatriz = buildSheetWithHeader(
+                'Matriz de Asistencia Mensual por Días — Gestores PAE',
+                `${fechaRef.toLocaleString('es-CO', { month: 'long' })} de ${year}`,
+                '✓ = Marca de asistencia registrada por el usuario en esa fecha. Celdas vacías indican días sin registro.',
+                matrixHeaders,
+                matrixRows
+            );
+
+            // Anchos de columnas para la matriz
+            wsMatriz['!cols'] = [{ wch: 32 }, ...Array.from({ length: daysInMonth }, () => ({ wch: 5 })), { wch: 14 }, { wch: 16 }];
+            XLSX.utils.book_append_sheet(workbook, wsMatriz, 'Matriz Asistencia Mensual');
+
+            // Guardar archivo
+            const filename = `Reporte_PAE_Consolidado_${fechaRef.toLocaleString('es-CO', { month: 'short' })}_${year}_${formattedDate}.xlsx`;
+            XLSX.writeFile(workbook, filename);
+
         } catch (err) {
             console.error('Error al exportar ranking a Excel:', err);
             alert('Ocurrió un error al generar el reporte de Excel.');
