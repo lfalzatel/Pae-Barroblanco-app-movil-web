@@ -177,19 +177,36 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
             // 3. HOJA 3: MATRIZ DE ASISTENCIA MENSUAL POR FECHAS (CALENDARIO POR USUARIO)
             const year = fechaRef.getFullYear();
             const month = fechaRef.getMonth();
-            const firstDayStr = new Date(year, month, 1).toISOString().split('T')[0];
-            const lastDayStr = new Date(year, month + 1, 0).toISOString().split('T')[0];
+            const firstDayStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
             const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const lastDayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
 
+            // Consultar perfiles_publicos para mapear id -> nombre de forma 100% segura sin JOIN
+            const { data: perfilesData } = await supabase
+                .from('perfiles_publicos')
+                .select('id, nombre');
+
+            const nombresMap = new Map<string, string>();
+            (perfilesData || []).forEach(p => nombresMap.set(p.id, p.nombre));
+            
+            // También poblar mapa con nombres de la RPC listaUsuariosEstrellas
+            usuariosEstrellas.forEach(u => {
+                if (u.usuario_id && u.nombre) {
+                    nombresMap.set(u.usuario_id, u.nombre);
+                }
+            });
+
+            // Consultar la tabla principal de asistencias (asistencia_pae)
+            const { data: asistenciaData } = await supabase
+                .from('asistencia_pae')
+                .select('fecha, registrado_por')
+                .gte('fecha', firstDayStr)
+                .lte('fecha', lastDayStr);
+
+            // Consultar puntos_pae_historial (respaldo)
             const { data: historialData } = await supabase
                 .from('puntos_pae_historial')
-                .select(`
-                    fecha,
-                    usuario_id,
-                    puntos,
-                    grupo,
-                    perfiles_publicos (nombre)
-                `)
+                .select('fecha, usuario_id, puntos')
                 .gte('fecha', firstDayStr)
                 .lte('fecha', lastDayStr);
 
@@ -199,10 +216,42 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                 totalRegistros: number
             }>();
 
+            // Llenar primero con gestores conocidos para asegurar presencia
+            usuariosEstrellas.forEach(u => {
+                if (u.usuario_id) {
+                    userActivityMap.set(u.usuario_id, {
+                        nombre: u.nombre,
+                        diasSet: new Set<number>(),
+                        totalRegistros: 0
+                    });
+                }
+            });
+
+            // Procesar registros de asistencia_pae (fuente primaria)
+            (asistenciaData || []).forEach((a: any) => {
+                const uId = a.registrado_por;
+                if (!uId) return;
+                const uNombre = nombresMap.get(uId) || 'Gestor PAE';
+                const dayNum = parseInt(a.fecha.split('-')[2], 10);
+
+                if (!userActivityMap.has(uId)) {
+                    userActivityMap.set(uId, {
+                        nombre: uNombre,
+                        diasSet: new Set(),
+                        totalRegistros: 0
+                    });
+                }
+
+                const userEntry = userActivityMap.get(uId)!;
+                userEntry.diasSet.add(dayNum);
+                userEntry.totalRegistros += 1;
+            });
+
+            // Procesar puntos_pae_historial (respaldo)
             (historialData || []).forEach((h: any) => {
                 const uId = h.usuario_id;
-                const profileObj = Array.isArray(h.perfiles_publicos) ? h.perfiles_publicos[0] : h.perfiles_publicos;
-                const uNombre = profileObj?.nombre || 'Gestor PAE';
+                if (!uId) return;
+                const uNombre = nombresMap.get(uId) || 'Gestor PAE';
                 const dayNum = parseInt(h.fecha.split('-')[2], 10);
 
                 if (!userActivityMap.has(uId)) {
@@ -215,7 +264,9 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
 
                 const userEntry = userActivityMap.get(uId)!;
                 userEntry.diasSet.add(dayNum);
-                userEntry.totalRegistros += (h.puntos || 1);
+                if (userEntry.totalRegistros === 0) {
+                    userEntry.totalRegistros += (h.puntos || 1);
+                }
             });
 
             // Encabezados de columnas de días (01, 02, ..., 31)
@@ -227,6 +278,7 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
             const matrixHeaders = ['Nombre Gestor / Usuario', ...dayHeaders, 'Días Activos', 'Total Registros'];
 
             const matrixRows = Array.from(userActivityMap.values())
+                .filter(u => u.diasSet.size > 0 || u.totalRegistros > 0)
                 .sort((a, b) => a.nombre.localeCompare(b.nombre))
                 .map(u => {
                     const rowDays = Array.from({ length: daysInMonth }, (_, i) => {
