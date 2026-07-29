@@ -6,124 +6,62 @@ import { X, Trophy, Star, ChevronLeft, Medal, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface GrupoRanking { grupo: string; grado: string | null; total_puntos: number; }
-interface GestorRanking { usuario_id: string; nombre: string; avatar_url: string | null; puntos: number; }
+interface GestorRanking { usuario_id: string; nombre: string; avatar_url: string | null; puntos: number; grupos?: string[]; }
 
 export default function RankingGestoresModal({ onClose }: { onClose: () => void }) {
     const [loading, setLoading] = useState(true);
+    const [tabPrincipal, setTabPrincipal] = useState<'grupos' | 'estrellas'>('grupos');
     const [grupos, setGrupos] = useState<GrupoRanking[]>([]);
     const [grupoSeleccionado, setGrupoSeleccionado] = useState<string | null>(null);
     const [gestores, setGestores] = useState<GestorRanking[]>([]);
+    const [usuariosEstrellas, setUsuariosEstrellas] = useState<GestorRanking[]>([]);
     const [loadingGestores, setLoadingGestores] = useState(false);
     const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes'>('mes');
     const [fechaRef, setFechaRef] = useState<Date>(new Date());
     const [exporting, setExporting] = useState(false);
 
-    const exportToExcel = async () => {
-        setExporting(true);
-        try {
-            const formattedDate = new Date().toISOString().split('T')[0];
-            
-            if (grupoSeleccionado) {
-                const filename = `Ranking_Gestores_Grupo_${grupoSeleccionado}_${periodo}_${formattedDate}.xlsx`;
-                
-                const rows = gestores.map((g, idx) => ({
-                    'Posición': idx + 1,
-                    'Nombre Gestor': g.nombre,
-                    'Puntos': g.puntos,
-                    'Grupo': grupoSeleccionado,
-                    'Período': periodo.toUpperCase()
-                }));
-                
-                const worksheet = XLSX.utils.json_to_sheet(rows);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, `Grupo ${grupoSeleccionado}`);
-                
-                worksheet['!cols'] = [
-                    { wch: 10 },
-                    { wch: 30 },
-                    { wch: 10 },
-                    { wch: 10 },
-                    { wch: 12 }
-                ];
-                
-                XLSX.writeFile(workbook, filename);
-            } else {
-                const filename = `Ranking_Consolidado_PAE_${periodo}_${formattedDate}.xlsx`;
-                
-                const rowsGrupos = grupos.map((g, idx) => ({
-                    'Posición': idx + 1,
-                    'Grupo': g.grupo,
-                    'Total Puntos': g.total_puntos,
-                    'Período': periodo.toUpperCase()
-                }));
-                
-                const wsGrupos = XLSX.utils.json_to_sheet(rowsGrupos);
-                wsGrupos['!cols'] = [
-                    { wch: 10 },
-                    { wch: 12 },
-                    { wch: 15 },
-                    { wch: 12 }
-                ];
-                
-                // Obtener desglose de todos los gestores de todos los grupos de forma concurrente
-                const fetchAllGestores = grupos.map(async (g) => {
-                    const { data, error } = await supabase.rpc('ranking_gestores_por_grupo', { 
-                        p_grupo: g.grupo, 
-                        p_periodo: periodo,
-                        p_fecha_ref: fechaRef.toISOString().split('T')[0] 
-                    });
-                    if (!error && data) {
-                        return (data as GestorRanking[]).map(u => ({
-                            'Grupo': g.grupo,
-                            'Nombre Gestor': u.nombre,
-                            'Puntos': u.puntos,
-                            'Período': periodo.toUpperCase()
-                        }));
-                    }
-                    return [];
-                });
-                
-                const resolvedGestoresLists = await Promise.all(fetchAllGestores);
-                const allGestoresRows = resolvedGestoresLists.flat();
-                
-                allGestoresRows.sort((a, b) => b.Puntos - a.Puntos);
-                
-                const rowsGestoresConPos = allGestoresRows.map((r, idx) => ({
-                    'Posición General': idx + 1,
-                    ...r
-                }));
-                
-                const wsGestores = XLSX.utils.json_to_sheet(rowsGestoresConPos);
-                wsGestores['!cols'] = [
-                    { wch: 18 },
-                    { wch: 12 },
-                    { wch: 30 },
-                    { wch: 10 },
-                    { wch: 12 }
-                ];
-                
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, wsGrupos, 'Resumen por Grupos');
-                XLSX.utils.book_append_sheet(workbook, wsGestores, 'Detalle por Gestores');
-                
-                XLSX.writeFile(workbook, filename);
-            }
-        } catch (err) {
-            console.error('Error al exportar ranking a Excel:', err);
-            alert('Ocurrió un error al generar el reporte de Excel.');
-        } finally {
-            setExporting(false);
-        }
-    };
-
     useEffect(() => {
         const fetchRanking = async () => {
             setLoading(true);
-            const { data, error } = await supabase.rpc('ranking_grupos_pae', { 
+            const { data: dataGrupos, error: errGrupos } = await supabase.rpc('ranking_grupos_pae', { 
                 p_periodo: periodo, 
                 p_fecha_ref: fechaRef.toISOString().split('T')[0] 
             });
-            if (!error && data) setGrupos(data as GrupoRanking[]);
+            
+            if (!errGrupos && dataGrupos) {
+                const listaGrupos = dataGrupos as GrupoRanking[];
+                setGrupos(listaGrupos);
+
+                // Obtener desglose de todos los gestores para la pestaña de Estrellas PAE
+                const fetchPromises = listaGrupos.map((g) => 
+                    supabase.rpc('ranking_gestores_por_grupo', { 
+                        p_grupo: g.grupo, 
+                        p_periodo: periodo,
+                        p_fecha_ref: fechaRef.toISOString().split('T')[0] 
+                    })
+                );
+                
+                const results = await Promise.all(fetchPromises);
+                const userMap = new Map<string, GestorRanking & { grupos: string[] }>();
+
+                results.forEach((res, idx) => {
+                    const gName = listaGrupos[idx].grupo;
+                    if (!res.error && res.data) {
+                        (res.data as GestorRanking[]).forEach(u => {
+                            if (!userMap.has(u.usuario_id)) {
+                                userMap.set(u.usuario_id, { ...u, puntos: Number(u.puntos), grupos: [gName] });
+                            } else {
+                                const existing = userMap.get(u.usuario_id)!;
+                                existing.puntos += Number(u.puntos);
+                                if (!existing.grupos.includes(gName)) existing.grupos.push(gName);
+                            }
+                        });
+                    }
+                });
+
+                const sortedUsers = Array.from(userMap.values()).sort((a, b) => b.puntos - a.puntos);
+                setUsuariosEstrellas(sortedUsers);
+            }
             setLoading(false);
         };
         fetchRanking();
@@ -164,6 +102,106 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
     const medalColor = (i: number) =>
         i === 0 ? 'text-amber-400' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-orange-600' : 'text-gray-300';
 
+    const exportToExcel = async () => {
+        setExporting(true);
+        try {
+            const formattedDate = new Date().toISOString().split('T')[0];
+            const workbook = XLSX.utils.book_new();
+
+            if (grupoSeleccionado) {
+                const filename = `Ranking_Gestores_Grupo_${grupoSeleccionado}_${periodo}_${formattedDate}.xlsx`;
+                
+                const rows = gestores.map((g, idx) => ({
+                    'Posición': idx + 1,
+                    'Nombre Gestor': g.nombre,
+                    'Puntos / Estrellas': g.puntos,
+                    'Grupo': grupoSeleccionado,
+                    'Período': periodo.toUpperCase()
+                }));
+                
+                const worksheet = XLSX.utils.json_to_sheet(rows);
+                worksheet['!cols'] = [{ wch: 10 }, { wch: 30 }, { wch: 18 }, { wch: 10 }, { wch: 12 }];
+                XLSX.utils.book_append_sheet(workbook, worksheet, `Grupo ${grupoSeleccionado}`);
+
+                XLSX.writeFile(workbook, filename);
+            } else {
+                const filename = `Ranking_Consolidado_PAE_${periodo}_${formattedDate}.xlsx`;
+                
+                // 1. Hoja Resumen por Grupos
+                const rowsGrupos = grupos.map((g, idx) => ({
+                    'Posición': idx + 1,
+                    'Grupo': g.grupo,
+                    'Total Puntos/Estrellas': g.total_puntos,
+                    'Período': periodo.toUpperCase()
+                }));
+                const wsGrupos = XLSX.utils.json_to_sheet(rowsGrupos);
+                wsGrupos['!cols'] = [{ wch: 10 }, { wch: 12 }, { wch: 22 }, { wch: 12 }];
+                XLSX.utils.book_append_sheet(workbook, wsGrupos, 'Resumen por Grupos');
+
+                // 2. Hoja Estrellas PAE por Gestor
+                const rowsEstrellas = usuariosEstrellas.map((u, idx) => ({
+                    'Posición General': idx + 1,
+                    'Nombre Gestor': u.nombre,
+                    'Grupos Atendidos': (u.grupos || []).join(', '),
+                    'Total Estrellas PAE': u.puntos,
+                    'Período': periodo.toUpperCase()
+                }));
+                const wsEstrellas = XLSX.utils.json_to_sheet(rowsEstrellas);
+                wsEstrellas['!cols'] = [{ wch: 18 }, { wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 12 }];
+                XLSX.utils.book_append_sheet(workbook, wsEstrellas, 'Estrellas PAE por Usuario');
+
+                // 3. Hoja con Actividad Detallada por Fechas
+                let startStr = fechaRef.toISOString().split('T')[0];
+                let endStr = startStr;
+                if (periodo === 'semana') {
+                    const start = new Date(fechaRef);
+                    start.setDate(start.getDate() - start.getDay() + 1);
+                    const end = new Date(start);
+                    end.setDate(end.getDate() + 6);
+                    startStr = start.toISOString().split('T')[0];
+                    endStr = end.toISOString().split('T')[0];
+                } else if (periodo === 'mes') {
+                    const start = new Date(fechaRef.getFullYear(), fechaRef.getMonth(), 1);
+                    const end = new Date(fechaRef.getFullYear(), fechaRef.getMonth() + 1, 0);
+                    startStr = start.toISOString().split('T')[0];
+                    endStr = end.toISOString().split('T')[0];
+                }
+
+                const { data: historialData } = await supabase
+                    .from('puntos_pae_historial')
+                    .select(`
+                        fecha,
+                        puntos,
+                        grupo,
+                        motivo,
+                        perfiles_publicos (nombre)
+                    `)
+                    .gte('fecha', startStr)
+                    .lte('fecha', endStr)
+                    .order('fecha', { ascending: false });
+
+                const rowsHistorial = (historialData || []).map((h: any) => ({
+                    'Fecha de Registro': h.fecha,
+                    'Nombre Gestor': h.perfiles_publicos?.nombre || 'Gestor',
+                    'Grupo Atendido': h.grupo,
+                    'Estrellas Sumadas': h.puntos,
+                    'Motivo': h.motivo || 'Registro de Asistencia PAE'
+                }));
+
+                const wsHistorial = XLSX.utils.json_to_sheet(rowsHistorial);
+                wsHistorial['!cols'] = [{ wch: 18 }, { wch: 30 }, { wch: 15 }, { wch: 18 }, { wch: 35 }];
+                XLSX.utils.book_append_sheet(workbook, wsHistorial, 'Actividad por Fechas');
+
+                XLSX.writeFile(workbook, filename);
+            }
+        } catch (err) {
+            console.error('Error al exportar ranking a Excel:', err);
+            alert('Ocurrió un error al generar el reporte de Excel.');
+        } finally {
+            setExporting(false);
+        }
+    };
+
     return (
         <div 
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
@@ -173,6 +211,7 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                 className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-[2rem] shadow-2xl relative overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 max-h-[85vh] flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
+                {/* Encabezado */}
                 <div className="bg-gradient-to-r from-amber-400 to-orange-500 p-5 flex items-center justify-between text-white shrink-0">
                     <div className="flex items-center gap-2">
                         {grupoSeleccionado && (
@@ -190,7 +229,7 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                             type="button"
                             onClick={exportToExcel} 
                             disabled={exporting}
-                            title="Descargar Reporte Excel"
+                            title="Descargar Reporte Excel Completo"
                             className="p-1.5 rounded-full hover:bg-white/25 text-white transition-all disabled:opacity-50 disabled:pointer-events-none active:scale-90"
                         >
                             <Download className="w-4.5 h-4.5" />
@@ -200,6 +239,34 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                         </button>
                     </div>
                 </div>
+
+                {/* Selector de Pestañas Principales: Grupos | Estrellas PAE */}
+                {!grupoSeleccionado && (
+                    <div className="flex border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 shrink-0">
+                        <button
+                            onClick={() => setTabPrincipal('grupos')}
+                            className={`flex-1 py-3 text-xs font-black flex items-center justify-center gap-2 transition-all border-b-2 ${
+                                tabPrincipal === 'grupos'
+                                    ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-white dark:bg-gray-800 shadow-xs'
+                                    : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                            }`}
+                        >
+                            <Trophy className="w-4 h-4" />
+                            Grupos
+                        </button>
+                        <button
+                            onClick={() => setTabPrincipal('estrellas')}
+                            className={`flex-1 py-3 text-xs font-black flex items-center justify-center gap-2 transition-all border-b-2 ${
+                                tabPrincipal === 'estrellas'
+                                    ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-white dark:bg-gray-800 shadow-xs'
+                                    : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                            }`}
+                        >
+                            <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+                            Estrellas PAE
+                        </button>
+                    </div>
+                )}
 
                 <div className="p-4 overflow-y-auto">
                     {/* Filtros de período */}
@@ -257,31 +324,69 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                     )}
 
                     {!grupoSeleccionado ? (
-                        loading ? (
-                            <p className="text-center text-sm text-gray-500 py-8">Cargando ranking...</p>
-                        ) : grupos.length === 0 ? (
-                            <p className="text-center text-sm text-gray-500 py-8">Aún no hay puntos registrados para este período.</p>
+                        tabPrincipal === 'grupos' ? (
+                            loading ? (
+                                <p className="text-center text-sm text-gray-500 py-8">Cargando ranking...</p>
+                            ) : grupos.length === 0 ? (
+                                <p className="text-center text-sm text-gray-500 py-8">Aún no hay puntos registrados para este período.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {grupos.map((g, i) => (
+                                        <button
+                                            key={g.grupo}
+                                            onClick={() => abrirGrupo(g.grupo)}
+                                            className="w-full flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Medal className={`w-5 h-5 ${medalColor(i)}`} />
+                                                <span className="font-bold text-sm text-gray-800 dark:text-gray-100">
+                                                    Grupo {g.grupo}
+                                                </span>
+                                            </div>
+                                            <span className="flex items-center gap-1 text-amber-500 font-black text-sm">
+                                                <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+                                                {g.total_puntos}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )
                         ) : (
-                            <div className="space-y-2">
-                                {grupos.map((g, i) => (
-                                    <button
-                                        key={g.grupo}
-                                        onClick={() => abrirGrupo(g.grupo)}
-                                        className="w-full flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Medal className={`w-5 h-5 ${medalColor(i)}`} />
-                                            <span className="font-bold text-sm text-gray-800 dark:text-gray-100">
-                                                Grupo {g.grupo}
+                            /* Pestaña Estrellas PAE */
+                            loading ? (
+                                <p className="text-center text-sm text-gray-500 py-8">Cargando usuarios con estrellas...</p>
+                            ) : usuariosEstrellas.length === 0 ? (
+                                <p className="text-center text-sm text-gray-500 py-8">Aún no hay usuarios con estrellas en este período.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {usuariosEstrellas.map((u, i) => (
+                                        <div key={u.usuario_id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-gray-700/40 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <Medal className={`w-5 h-5 shrink-0 ${medalColor(i)}`} />
+                                                <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center overflow-hidden shrink-0">
+                                                    {u.avatar_url ? (
+                                                        <img src={u.avatar_url} className="w-full h-full object-cover" alt={u.nombre} />
+                                                    ) : (
+                                                        <span className="text-amber-700 dark:text-amber-400 font-bold text-xs">{u.nombre?.charAt(0)}</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col text-left">
+                                                    <span className="font-bold text-sm text-gray-800 dark:text-gray-100 leading-tight">{u.nombre}</span>
+                                                    {u.grupos && u.grupos.length > 0 && (
+                                                        <span className="text-[10px] text-gray-400 dark:text-gray-400 font-semibold">
+                                                            {u.grupos.join(', ')}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <span className="flex items-center gap-1 text-amber-500 font-black text-sm shrink-0">
+                                                <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+                                                {u.puntos}
                                             </span>
                                         </div>
-                                        <span className="flex items-center gap-1 text-amber-500 font-black text-sm">
-                                            <Star className="w-4 h-4" fill="currentColor" />
-                                            {g.total_puntos}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )
                         )
                     ) : loadingGestores ? (
                         <p className="text-center text-sm text-gray-500 py-8">Cargando gestores...</p>
@@ -301,7 +406,7 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                                         <span className="font-semibold text-sm text-gray-800 dark:text-gray-100">{u.nombre}</span>
                                     </div>
                                     <span className="flex items-center gap-1 text-amber-500 font-black text-sm">
-                                        <Star className="w-4 h-4" fill="currentColor" />
+                                        <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
                                         {u.puntos}
                                     </span>
                                 </div>
