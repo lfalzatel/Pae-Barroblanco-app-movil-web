@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Trophy, Star, ChevronLeft, Medal, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import DocenteActivityModal from '@/components/dashboard/DocenteActivityModal';
 
 interface GrupoRanking { grupo: string; grado: string | null; total_puntos: number; }
 interface GestorRanking { usuario_id: string; nombre: string; avatar_url: string | null; puntos: number; grupos?: string[]; }
@@ -19,6 +20,7 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
     const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes'>('mes');
     const [fechaRef, setFechaRef] = useState<Date>(new Date());
     const [exporting, setExporting] = useState(false);
+    const [selectedDocenteForActivity, setSelectedDocenteForActivity] = useState<any | null>(null);
 
     useEffect(() => {
         const fetchRanking = async () => {
@@ -425,30 +427,35 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                             ) : (
                                 <div className="space-y-2">
                                     {usuariosEstrellas.map((u, i) => (
-                                        <div key={u.usuario_id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-gray-700/40 transition-colors">
-                                            <div className="flex items-center gap-3">
+                                        <button
+                                            key={u.usuario_id}
+                                            type="button"
+                                            onClick={() => setSelectedDocenteForActivity({ id: u.usuario_id, nombre: u.nombre, avatar_url: u.avatar_url, puntos_gestor_pae: u.puntos })}
+                                            className="w-full flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-cyan-50/60 dark:hover:bg-cyan-900/30 hover:border-cyan-200 dark:hover:border-cyan-700 transition-all text-left group cursor-pointer active:scale-98"
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0">
                                                 <Medal className={`w-5 h-5 shrink-0 ${medalColor(i)}`} />
-                                                <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center overflow-hidden shrink-0">
+                                                <div className="w-8.5 h-8.5 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center overflow-hidden shrink-0 group-hover:ring-2 group-hover:ring-cyan-500 transition-all">
                                                     {u.avatar_url ? (
                                                         <img src={u.avatar_url} className="w-full h-full object-cover" alt={u.nombre} />
                                                     ) : (
                                                         <span className="text-amber-700 dark:text-amber-400 font-bold text-xs">{u.nombre?.charAt(0)}</span>
                                                     )}
                                                 </div>
-                                                <div className="flex flex-col text-left">
-                                                    <span className="font-bold text-sm text-gray-800 dark:text-gray-100 leading-tight">{u.nombre}</span>
+                                                <div className="flex flex-col text-left truncate">
+                                                    <span className="font-bold text-sm text-gray-800 dark:text-gray-100 leading-tight truncate group-hover:text-cyan-700 dark:group-hover:text-cyan-400 transition-colors">{u.nombre}</span>
                                                     {u.grupos && u.grupos.length > 0 && (
-                                                        <span className="text-[10px] text-gray-400 dark:text-gray-400 font-semibold">
+                                                        <span className="text-[10px] text-gray-400 dark:text-gray-400 font-semibold truncate">
                                                             {u.grupos.join(', ')}
                                                         </span>
                                                     )}
                                                 </div>
                                             </div>
-                                            <span className="flex items-center gap-1 text-amber-500 font-black text-sm shrink-0">
+                                            <span className="flex items-center gap-1 text-amber-500 font-black text-sm shrink-0 ml-2">
                                                 <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
                                                 {u.puntos}
                                             </span>
-                                        </div>
+                                        </button>
                                     ))}
                                 </div>
                             )
@@ -458,28 +465,41 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                     ) : (
                         <div className="space-y-2">
                             {gestores.map((u, i) => (
-                                <div key={u.usuario_id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-700">
-                                    <div className="flex items-center gap-3">
-                                        <Medal className={`w-5 h-5 ${medalColor(i)}`} />
-                                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center overflow-hidden">
+                                <button
+                                    key={u.usuario_id}
+                                    type="button"
+                                    onClick={() => setSelectedDocenteForActivity({ id: u.usuario_id, nombre: u.nombre, avatar_url: u.avatar_url, puntos_gestor_pae: u.puntos })}
+                                    className="w-full flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-cyan-50/60 dark:hover:bg-cyan-900/30 hover:border-cyan-200 dark:hover:border-cyan-700 transition-all text-left group cursor-pointer active:scale-98"
+                                >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <Medal className={`w-5 h-5 shrink-0 ${medalColor(i)}`} />
+                                        <div className="w-8.5 h-8.5 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center overflow-hidden shrink-0 group-hover:ring-2 group-hover:ring-cyan-500 transition-all">
                                             {u.avatar_url ? (
                                                 <img src={u.avatar_url} className="w-full h-full object-cover" alt={u.nombre} />
                                             ) : (
                                                 <span className="text-blue-600 dark:text-blue-400 font-bold text-xs">{u.nombre?.charAt(0)}</span>
                                             )}
                                         </div>
-                                        <span className="font-semibold text-sm text-gray-800 dark:text-gray-100">{u.nombre}</span>
+                                        <span className="font-semibold text-sm text-gray-800 dark:text-gray-100 truncate group-hover:text-cyan-700 dark:group-hover:text-cyan-400 transition-colors">{u.nombre}</span>
                                     </div>
-                                    <span className="flex items-center gap-1 text-amber-500 font-black text-sm">
+                                    <span className="flex items-center gap-1 text-amber-500 font-black text-sm shrink-0 ml-2">
                                         <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
                                         {u.puntos}
                                     </span>
-                                </div>
+                                </button>
                             ))}
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* Modal de Actividad del Gestor Seleccionado */}
+            {selectedDocenteForActivity && (
+                <DocenteActivityModal 
+                    docente={selectedDocenteForActivity} 
+                    onClose={() => setSelectedDocenteForActivity(null)} 
+                />
+            )}
         </div>
     );
 }
