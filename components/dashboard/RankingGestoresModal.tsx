@@ -242,29 +242,33 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
 
                 {/* Selector de Pestañas Principales: Grupos | Estrellas PAE */}
                 {!grupoSeleccionado && (
-                    <div className="flex border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 shrink-0">
-                        <button
-                            onClick={() => setTabPrincipal('grupos')}
-                            className={`flex-1 py-3 text-xs font-black flex items-center justify-center gap-2 transition-all border-b-2 ${
-                                tabPrincipal === 'grupos'
-                                    ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-white dark:bg-gray-800 shadow-xs'
-                                    : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-                            }`}
-                        >
-                            <Trophy className="w-4 h-4" />
-                            Grupos
-                        </button>
-                        <button
-                            onClick={() => setTabPrincipal('estrellas')}
-                            className={`flex-1 py-3 text-xs font-black flex items-center justify-center gap-2 transition-all border-b-2 ${
-                                tabPrincipal === 'estrellas'
-                                    ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-white dark:bg-gray-800 shadow-xs'
-                                    : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-                            }`}
-                        >
-                            <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
-                            Estrellas PAE
-                        </button>
+                    <div className="px-4 pt-3.5 pb-1 shrink-0 bg-white dark:bg-gray-800">
+                        <div className="bg-amber-500/10 dark:bg-amber-500/20 p-1 rounded-2xl flex items-center shrink-0 relative w-full border border-amber-500/20">
+                            <button
+                                type="button"
+                                onClick={() => setTabPrincipal('grupos')}
+                                className={`flex-1 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all relative z-10 ${
+                                    tabPrincipal === 'grupos'
+                                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/20 active:scale-95'
+                                        : 'text-amber-800 dark:text-amber-300 hover:text-amber-950 font-bold'
+                                }`}
+                            >
+                                <Trophy className="w-4 h-4" />
+                                Ranking Grupos
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setTabPrincipal('estrellas')}
+                                className={`flex-1 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all relative z-10 ${
+                                    tabPrincipal === 'estrellas'
+                                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/20 active:scale-95'
+                                        : 'text-amber-800 dark:text-amber-300 hover:text-amber-950 font-bold'
+                                }`}
+                            >
+                                <Star className="w-4 h-4 fill-current" />
+                                Estrellas PAE
+                            </button>
+                        </div>
                     </div>
                 )}
 
