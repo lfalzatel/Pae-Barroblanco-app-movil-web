@@ -4,13 +4,20 @@ import { createClient } from '@supabase/supabase-js';
 // This route uses the SERVICE ROLE key (server-side only) to delete auth users.
 // It must be called from an authenticated admin session.
 
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const dynamic = 'force-dynamic';
+
+function getSupabaseAdmin() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !serviceRole) {
+        throw new Error('Variables de entorno de Supabase no configuradas');
+    }
+    return createClient(url, serviceRole);
+}
 
 export async function DELETE(req: NextRequest) {
     try {
+        const supabaseAdmin = getSupabaseAdmin();
         const body = await req.json();
         const { userId } = body;
 
