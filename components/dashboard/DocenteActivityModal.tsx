@@ -42,7 +42,7 @@ export default function DocenteActivityModal({ docente, onClose }: DocenteActivi
         if (error) throw error;
 
         const dailyActivity: Record<string, {
-          grupos: Map<string, { count: number, timestamp: string }>,
+          grupos: Map<string, { name: string, badge: string, count: number, timestamp: string }>,
           total: number
         }> = {};
 
@@ -53,12 +53,25 @@ export default function DocenteActivityModal({ docente, onClose }: DocenteActivi
               total: 0
             };
           }
-          const groupKey = `${a.estudiantes.grado}-${a.estudiantes.grupo}`;
-          const currentData = dailyActivity[a.fecha].grupos.get(groupKey) || { count: 0, timestamp: a.created_at };
+          
+          const rawGrupo = (a.estudiantes?.grupo || 'Sin grupo').trim().toUpperCase();
+          const gradoBadge = (a.estudiantes?.grado && a.estudiantes.grado.length <= 3) 
+            ? a.estudiantes.grado 
+            : rawGrupo.replace(/[^0-9]/g, '') || rawGrupo.slice(0, 2);
+
+          const groupKey = rawGrupo;
+          const currentData = dailyActivity[a.fecha].grupos.get(groupKey) || { 
+            name: rawGrupo,
+            badge: gradoBadge,
+            count: 0, 
+            timestamp: a.created_at 
+          };
 
           const olderTimestamp = new Date(currentData.timestamp) < new Date(a.created_at) ? currentData.timestamp : a.created_at;
 
           dailyActivity[a.fecha].grupos.set(groupKey, {
+            name: rawGrupo,
+            badge: gradoBadge,
             count: currentData.count + 1,
             timestamp: olderTimestamp
           });
@@ -68,8 +81,7 @@ export default function DocenteActivityModal({ docente, onClose }: DocenteActivi
         const historyArray = Object.entries(dailyActivity).map(([fecha, activity]) => {
           return {
             fecha,
-            grupos: Array.from(activity.grupos.entries())
-              .map(([name, data]) => ({ name, count: data.count, timestamp: data.timestamp }))
+            grupos: Array.from(activity.grupos.values())
               .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()),
             total: activity.total
           };
@@ -283,10 +295,10 @@ export default function DocenteActivityModal({ docente, onClose }: DocenteActivi
                       <div key={idx} className="flex items-center justify-between p-4 bg-gray-50/50 border border-gray-100 rounded-2xl group transition-all duration-300 hover:bg-white hover:border-cyan-100 dark:bg-gray-700/30 dark:border-gray-600/30 dark:hover:bg-gray-700">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center font-black text-cyan-600 text-xs text-transform uppercase border border-cyan-50 group-hover:bg-cyan-600 group-hover:text-white transition-colors duration-300 dark:bg-gray-700 dark:border-gray-600 dark:text-cyan-400">
-                            {g.name.split('-')[0]}
+                            {g.badge || g.name}
                           </div>
                           <div className="flex flex-col">
-                            <span className="font-black text-gray-700 text-sm leading-none mb-1.5 uppercase tracking-tighter dark:text-gray-200">Grupo {g.name.split('-')[1] || g.name}</span>
+                            <span className="font-black text-gray-700 text-sm leading-none mb-1.5 uppercase tracking-tighter dark:text-gray-200">Grupo {g.name}</span>
                             <span className="text-[10px] text-gray-400 font-bold flex items-center gap-1.5 uppercase">
                               <Clock className="w-3 h-3 text-cyan-400" />
                               {new Date(g.timestamp).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
