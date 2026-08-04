@@ -8,6 +8,7 @@ DECLARE
     v_fecha_check DATE := p_fecha;
     v_prev_day DATE;
     v_existe BOOLEAN;
+    v_inicio_mes DATE := date_trunc('month', p_fecha)::DATE;
 BEGIN
     LOOP
         -- Calcular el día escolar previo
@@ -21,6 +22,11 @@ BEGIN
         WHILE EXTRACT(ISODOW FROM v_prev_day) IN (6, 7) LOOP
             v_prev_day := v_prev_day - 1;
         END LOOP;
+
+        -- Si el día escolar anterior fue en el mes anterior, la racha del mes actual finaliza y se reinicia en 1
+        IF v_prev_day < v_inicio_mes THEN
+            EXIT;
+        END IF;
 
         -- Verificar si el usuario registró asistencia en v_prev_day
         SELECT EXISTS (

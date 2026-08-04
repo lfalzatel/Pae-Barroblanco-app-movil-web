@@ -19,9 +19,44 @@ export default function DocenteActivityModal({ docente, onClose }: DocenteActivi
   const [docenteHistory, setDocenteHistory] = useState<any[]>([]);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedDateActivity, setSelectedDateActivity] = useState<any | null>(null);
+  const [monthlyStars, setMonthlyStars] = useState<number | null>(null);
 
   useModalBack(!!docente, onClose, 'teacher-activity-modal');
   useModalBack(!!selectedDateActivity, () => setSelectedDateActivity(null), 'teacher-activity-detail-modal');
+
+  // Cargar puntos de estrellas dinámicamente según el mes seleccionado en el calendario
+  useEffect(() => {
+    const fetchMonthlyStars = async () => {
+      if (!docente) return;
+
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+
+      const startOfMonth = new Date(Date.UTC(year, month, 1)).toISOString().split('T')[0];
+      const endOfMonth = new Date(Date.UTC(year, month + 1, 0)).toISOString().split('T')[0];
+
+      try {
+        const { data, error } = await supabase
+          .from('puntos_pae_historial')
+          .select('puntos')
+          .eq('usuario_id', docente.id)
+          .gte('fecha', startOfMonth)
+          .lte('fecha', endOfMonth);
+
+        if (!error && data) {
+          const total = data.reduce((sum, p) => sum + (p.puntos || 0), 0);
+          setMonthlyStars(total);
+        } else {
+          setMonthlyStars(docente.puntos_gestor_pae || 0);
+        }
+      } catch (err) {
+        console.error('Error fetching monthly stars:', err);
+        setMonthlyStars(docente.puntos_gestor_pae || 0);
+      }
+    };
+
+    fetchMonthlyStars();
+  }, [docente, currentMonth]);
 
   useEffect(() => {
     const fetchDocenteHistory = async () => {
@@ -99,6 +134,8 @@ export default function DocenteActivityModal({ docente, onClose }: DocenteActivi
 
   if (!docente) return null;
 
+  const currentStarsDisplay = monthlyStars !== null ? monthlyStars : (docente.puntos_gestor_pae || 0);
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-[10000] animate-in fade-in duration-300" onClick={onClose}>
       <div className="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-gray-800" onClick={(e) => e.stopPropagation()}>
@@ -116,12 +153,10 @@ export default function DocenteActivityModal({ docente, onClose }: DocenteActivi
               <div className="flex-1 flex flex-col justify-center min-h-[64px]">
                 <div className="flex items-start gap-3 flex-wrap">
                   <h3 className="font-black text-xl md:text-2xl tracking-tight leading-none uppercase break-words">{docente.nombre}</h3>
-                  {typeof docente.puntos_gestor_pae === 'number' && docente.puntos_gestor_pae > 0 && (
-                    <span className="flex items-center gap-1 bg-amber-400 text-amber-950 text-xs font-black px-2.5 py-1 rounded-full shadow-sm shrink-0">
-                      <Star className="w-3.5 h-3.5 fill-current" />
-                      {docente.puntos_gestor_pae}
-                    </span>
-                  )}
+                  <span className="flex items-center gap-1 bg-amber-400 text-amber-950 text-xs font-black px-2.5 py-1 rounded-full shadow-sm shrink-0">
+                    <Star className="w-3.5 h-3.5 fill-current" />
+                    {currentStarsDisplay}
+                  </span>
                 </div>
                 <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] opacity-80 mt-1.5 text-cyan-50">Registro de Actividad Administrativa</p>
               </div>
