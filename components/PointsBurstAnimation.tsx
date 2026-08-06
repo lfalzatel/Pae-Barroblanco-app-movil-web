@@ -188,11 +188,12 @@ export default function PointsBurstAnimation({
         timers.push(setTimeout(() => {
             if (targetEl instanceof HTMLElement) {
                 targetEl.style.transition = 'transform 300ms cubic-bezier(.22,1.6,.4,1), box-shadow 300ms ease';
-                targetEl.style.transform = 'scale(1.35)';
+                targetEl.style.transform = 'scale(1.2)';
                 targetEl.style.boxShadow = '0 0 0 8px rgba(251,191,36,0.55)';
                 timers.push(setTimeout(() => {
-                    targetEl.style.transform = 'scale(1)';
-                    targetEl.style.boxShadow = 'none';
+                    targetEl.style.transform = '';
+                    targetEl.style.boxShadow = '';
+                    targetEl.style.transition = '';
                 }, 300));
             }
         }, 1150));
@@ -206,6 +207,11 @@ export default function PointsBurstAnimation({
         return () => {
             timers.forEach(clearTimeout);
             nodes.forEach((n) => n.remove());
+            if (targetEl instanceof HTMLElement) {
+                targetEl.style.transform = '';
+                targetEl.style.boxShadow = '';
+                targetEl.style.transition = '';
+            }
         };
     }, [points, targetSelector, originSelector]); // Remove onComplete from deps
 

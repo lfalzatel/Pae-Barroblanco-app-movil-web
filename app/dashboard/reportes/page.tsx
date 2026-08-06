@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
-import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X, ChevronLeft, School, Clock, FileText, Download } from 'lucide-react';
+import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X, ChevronLeft, School, Clock, FileText, Download, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { DateSelectionModal } from '@/components/ui/DateSelectionModal';
 import {
@@ -14,6 +14,7 @@ import {
 import { Skeleton } from '@/components/ui/Skeleton';
 import StatsDetailModal from '@/components/StatsDetailModal';
 import AnimatedNumber from '@/components/AnimatedNumber';
+import PointsBurstAnimation from '@/components/PointsBurstAnimation';
 import html2canvas from 'html2canvas';
 
 function ReportesContent() {
@@ -37,6 +38,7 @@ function ReportesContent() {
 
   // Proyecciones
   const [viewMode, setViewMode] = useState<'historico' | 'proyeccion'>('historico');
+  const [showTestAnimation, setShowTestAnimation] = useState(false);
   const [projectionData, setProjectionData] = useState<any[]>([]);
   const [manualAdjustments, setManualAdjustments] = useState<any[]>([]);
   const [projectionLoading, setProjectionLoading] = useState(false);
@@ -1745,6 +1747,18 @@ function ReportesContent() {
               <span>Sincronizar <span className="hidden md:inline">Reporte</span></span>
             </button>
           )}
+
+          {usuario?.rol === 'admin' && (
+            <button
+              id="test-anim-btn"
+              onClick={() => setShowTestAnimation(true)}
+              className="flex items-center gap-2 px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-amber-200 dark:shadow-none active:scale-95 text-[10px] md:text-xs uppercase tracking-wide"
+              title="Probar animación de estrellas sin modificar puntos"
+            >
+              <Sparkles className="w-4 h-4 fill-current text-amber-200" />
+              <span>Probar <span className="hidden md:inline">Animación</span></span>
+            </button>
+          )}
         </div>
 
         {viewMode === 'proyeccion' ? (
@@ -2699,7 +2713,16 @@ function ReportesContent() {
           </div>
         </div>
       )}
-    </div >
+
+      {showTestAnimation && (
+        <PointsBurstAnimation
+          points={5}
+          targetSelector="[data-points-capsule]"
+          originSelector="#test-anim-btn"
+          onComplete={() => setShowTestAnimation(false)}
+        />
+      )}
+    </div>
   );
 }
 

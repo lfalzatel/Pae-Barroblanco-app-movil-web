@@ -160,7 +160,7 @@ export default function ProfilePage() {
                     // Admin or Docente - see their registered history
                     const { data, error } = await supabase
                         .from('asistencia_pae')
-                        .select('fecha, created_at, estado, estudiantes(grupo, grado)')
+                        .select('fecha, created_at, estado, estudiantes!inner(grupo, grado)')
                         .eq('registrado_por', session.user.id);
 
                     if (!error && data) {
@@ -171,7 +171,7 @@ export default function ProfilePage() {
                 if (historyData.length > 0) {
                     setHistory(historyData);
 
-                    const uniqueDays = new Set(historyData.map(d => d.fecha));
+                    const uniqueDays = new Set(historyData.map(d => (d.fecha || '').slice(0, 10)));
                     const uniqueGroups = new Set();
                     let receivedCount = 0;
 
@@ -187,7 +187,7 @@ export default function ProfilePage() {
                     });
 
                     // Sort by date to find latest
-                    const dates = historyData.map(d => d.fecha).sort();
+                    const dates = historyData.map(d => (d.fecha || '').slice(0, 10)).sort();
                     const lastDate = dates.length > 0 ? dates[dates.length - 1] : 'N/A';
                 }
             } catch (err) {
@@ -218,10 +218,10 @@ export default function ProfilePage() {
     const currentMonthHistory = history.filter(h => {
         const year = currentDate.getFullYear();
         const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-        return h.fecha.startsWith(`${year}-${month}`);
+        return (h.fecha || '').slice(0, 10).startsWith(`${year}-${month}`);
     });
 
-    const uniqueDays = new Set(currentMonthHistory.map(d => d.fecha));
+    const uniqueDays = new Set(currentMonthHistory.map(d => (d.fecha || '').slice(0, 10)));
     const uniqueGroups = new Set();
     let receivedCount = 0;
 
@@ -234,7 +234,7 @@ export default function ProfilePage() {
         }
     });
 
-    const dates = currentMonthHistory.map(d => d.fecha).sort();
+    const dates = currentMonthHistory.map(d => (d.fecha || '').slice(0, 10)).sort();
     const lastDate = dates.length > 0 ? dates[dates.length - 1] : 'N/A';
 
     const displayStats = {
@@ -354,7 +354,7 @@ export default function ProfilePage() {
                                 const todayStr = new Date().toISOString().split('T')[0];
 
                                 // Find records for this date
-                                const records = history.filter(h => h.fecha === dateStr);
+                                const records = history.filter(h => (h.fecha || '').slice(0, 10) === dateStr);
                                 const hasActivity = records.length > 0;
                                 const isWeekend = d.getDay() === 0 || d.getDay() === 6;
                                 const isFuture = dateStr > todayStr;
