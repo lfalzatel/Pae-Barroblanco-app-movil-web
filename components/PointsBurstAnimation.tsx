@@ -167,31 +167,92 @@ export default function PointsBurstAnimation({
             timers.push(setTimeout(() => star.remove(), 1350 + i * 90));
         }
 
-        // 5. Insignia/Texto "+N GESTOR PAE ✨" perfectamente centrado en pantalla
-        const label = document.createElement('div');
-        label.textContent = `+${points} GESTOR PAE ✨`;
-        Object.assign(label.style, {
+        // 5. Insignia de Estrella de Cristal Blur "+N PUNTOS PAE" centrada en pantalla
+        const starContainer = document.createElement('div');
+        Object.assign(starContainer.style, {
             position: 'fixed', left: '50%', top: '42%',
-            zIndex: '100000', transform: 'translate(-50%,-50%) scale(0.3)', opacity: '0',
-            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-            color: '#ffffff', fontWeight: '900', fontSize: '20px', letterSpacing: '1px',
-            padding: '10px 24px', borderRadius: '9999px',
-            boxShadow: '0 10px 30px rgba(245, 158, 11, 0.5), 0 0 25px rgba(251, 191, 36, 0.8)',
-            border: '2px solid rgba(255, 255, 255, 0.4)',
-            textShadow: '0 2px 4px rgba(0,0,0,0.3)', pointerEvents: 'none',
+            width: '210px', height: '210px',
+            zIndex: '100000', transform: 'translate(-50%,-50%) scale(0.2)', opacity: '0',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            pointerEvents: 'none',
             transition: 'transform 600ms cubic-bezier(.22,1.6,.4,1), opacity 400ms ease',
         });
-        document.body.appendChild(label);
-        nodes.push(label);
-        requestAnimationFrame(() => {
-            label.style.transform = 'translate(-50%,-50%) scale(1.15)';
-            label.style.opacity = '1';
+
+        // Fondo de Estrella en Cristal Blur Semitransparente
+        const starBg = document.createElement('div');
+        Object.assign(starBg.style, {
+            position: 'absolute', inset: '0',
+            clipPath: 'polygon(50% 0%, 63% 33%, 98% 35%, 70% 58%, 81% 92%, 50% 72%, 19% 92%, 30% 58%, 2% 35%, 37% 33%)',
+            background: 'radial-gradient(circle, rgba(251,191,36,0.65) 0%, rgba(245,158,11,0.5) 100%)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '2px solid rgba(255, 255, 255, 0.5)',
+            filter: 'drop-shadow(0 0 25px rgba(251,191,36,0.9))',
+            transition: 'transform 500ms cubic-bezier(.22,1.6,.4,1), opacity 400ms ease',
         });
+        starContainer.appendChild(starBg);
+
+        // Texto interno en negrita brillante
+        const labelText = document.createElement('div');
+        labelText.innerHTML = `<span style="font-size: 20px; font-weight: 900; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 12px rgba(251,191,36,1); font-family: system-ui, -apple-system, sans-serif;">+${points} PUNTOS PAE</span>`;
+        Object.assign(labelText.style, {
+            position: 'relative', zIndex: '2', textCenter: 'center', textAlign: 'center',
+            transition: 'transform 400ms ease, opacity 400ms ease',
+        });
+        starContainer.appendChild(labelText);
+
+        document.body.appendChild(starContainer);
+        nodes.push(starContainer);
+
+        requestAnimationFrame(() => {
+            starContainer.style.transform = 'translate(-50%,-50%) scale(1.15)';
+            starContainer.style.opacity = '1';
+        });
+
         timers.push(setTimeout(() => {
-            label.style.transform = 'translate(-50%,-70%) scale(1)';
+            starContainer.style.transform = 'translate(-50%,-50%) scale(1)';
         }, 500));
-        timers.push(setTimeout(() => { label.style.opacity = '0'; }, 1500));
-        timers.push(setTimeout(() => label.remove(), 1900));
+
+        // DESPRENDIMIENTO Y DESINTEGRACIÓN DE LAS 5 PUNTAS AL DESAPARECER (Fase 2)
+        timers.push(setTimeout(() => {
+            // El núcleo central de cristal se encoge girando hacia adentro
+            starBg.style.transition = 'transform 500ms ease-in, opacity 500ms ease-in';
+            starBg.style.transform = 'scale(0) rotate(180deg)';
+            starBg.style.opacity = '0';
+            labelText.style.transition = 'opacity 300ms ease-in';
+            labelText.style.opacity = '0';
+
+            // Desprendimiento de 5 puntas doradas volando hacia afuera en 5 direcciones (0°, 72°, 144°, 216°, 288°)
+            for (let p = 0; p < 5; p++) {
+                const tipAngle = ((p * 72) - 90) * (Math.PI / 180);
+                const startX = window.innerWidth / 2 + Math.cos(tipAngle) * 35;
+                const startY = window.innerHeight * 0.42 + Math.sin(tipAngle) * 35;
+
+                const tip = document.createElement('div');
+                tip.innerHTML = '★';
+                Object.assign(tip.style, {
+                    position: 'fixed', left: `${startX}px`, top: `${startY}px`,
+                    zIndex: '100001', color: '#fbbf24', fontSize: '26px', lineHeight: '1',
+                    filter: 'drop-shadow(0 0 14px rgba(251,191,36,1)) drop-shadow(0 0 24px rgba(251,146,60,0.9))',
+                    transform: 'translate(-50%,-50%) scale(1.2) rotate(0deg)', opacity: '1',
+                    transition: 'transform 600ms cubic-bezier(.17,.89,.32,1.28), opacity 600ms ease-out',
+                });
+                document.body.appendChild(tip);
+                nodes.push(tip);
+
+                const destX = Math.cos(tipAngle) * 110;
+                const destY = Math.sin(tipAngle) * 110;
+
+                requestAnimationFrame(() => {
+                    tip.style.transform = `translate(calc(-50% + ${destX}px), calc(-50% + ${destY}px)) scale(0.1) rotate(${180 + p * 60}deg)`;
+                    tip.style.opacity = '0';
+                });
+
+                timers.push(setTimeout(() => tip.remove(), 650));
+            }
+        }, 1450));
+
+        timers.push(setTimeout(() => starContainer.remove(), 1950));
 
         // 6. Crecimiento Progresivo y Halo Redondeado de la Cápsula
         if (targetEl) {
