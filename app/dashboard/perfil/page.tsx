@@ -58,6 +58,35 @@ export default function ProfilePage() {
         return () => window.removeEventListener('puntosActualizados', handlePuntos);
     }, []);
 
+    // Cargar puntos de estrellas del mes seleccionado en el perfil
+    useEffect(() => {
+        const fetchMonthlyPoints = async () => {
+            if (!usuario?.id) return;
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const startOfMonth = new Date(Date.UTC(year, month, 1)).toISOString().split('T')[0];
+            const endOfMonth = new Date(Date.UTC(year, month + 1, 0)).toISOString().split('T')[0];
+
+            try {
+                const { data } = await supabase
+                    .from('puntos_pae_historial')
+                    .select('puntos')
+                    .eq('usuario_id', usuario.id)
+                    .gte('fecha', startOfMonth)
+                    .lte('fecha', endOfMonth);
+
+                if (data) {
+                    const total = data.reduce((sum, p) => sum + (p.puntos || 0), 0);
+                    setUsuario((prev: any) => prev ? { ...prev, puntos_gestor_pae: total } : prev);
+                }
+            } catch (err) {
+                console.error('Error fetching monthly points:', err);
+            }
+        };
+
+        fetchMonthlyPoints();
+    }, [currentDate, usuario?.id]);
+
     useEffect(() => {
         const fetchProfileData = async () => {
             const { data: { session } } = await supabase.auth.getSession();
@@ -289,110 +318,112 @@ export default function ProfilePage() {
                                 </p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700/50 p-1.5 rounded-xl border border-gray-100 dark:border-gray-600">
+                        <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700/70 p-1.5 rounded-xl border border-gray-200 dark:border-gray-600">
                             <button 
                                 onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }}
-                                className="p-1.5 hover:bg-white dark:hover:bg-gray-600 rounded-lg transition-colors"
+                                className="p-1.5 hover:bg-white dark:hover:bg-gray-600 rounded-lg transition-colors text-gray-700 dark:text-gray-200"
                             >
                                 <ChevronLeft className="w-4 h-4" />
                             </button>
-                            <span className="text-sm font-bold w-24 text-center capitalize">
-                                {currentDate.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' }).replace('.', '')}
+                            <span className="text-xs font-black min-w-[110px] text-center capitalize text-gray-800 dark:text-gray-100">
+                                {currentDate.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
                             </span>
                             <button 
                                 onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }}
-                                className="p-1.5 hover:bg-white dark:hover:bg-gray-600 rounded-lg transition-colors"
+                                className="p-1.5 hover:bg-white dark:hover:bg-gray-600 rounded-lg transition-colors text-gray-700 dark:text-gray-200"
                             >
                                 <ChevronRight className="w-4 h-4" />
                             </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-7 gap-2 md:gap-4 mb-2">
-                        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
-                            <div key={day} className="text-center text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider py-2">
-                                {day}
-                            </div>
-                        ))}
-                    </div>
+                    <div className="bg-gray-50/50 p-4 md:p-6 rounded-[2rem] border border-gray-100/50 shadow-inner dark:bg-gray-900/50 dark:border-gray-700/50">
+                        <div className="grid grid-cols-7 gap-2 md:gap-3 mb-3">
+                            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
+                                <div key={day} className="text-center text-[10px] md:text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider py-1">
+                                    {day}
+                                </div>
+                            ))}
+                        </div>
 
-                    <div className="grid grid-cols-7 gap-2 md:gap-4">
-                        {getDaysInMonth().map((d, i) => {
-                            if (!d) return <div key={`empty-${i}`} className="aspect-square"></div>;
+                        <div className="grid grid-cols-7 gap-2 md:gap-3">
+                            {getDaysInMonth().map((d, i) => {
+                                if (!d) return <div key={`empty-${i}`} className="aspect-square"></div>;
 
-                            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                            const todayStr = new Date().toISOString().split('T')[0];
+                                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                const todayStr = new Date().toISOString().split('T')[0];
 
-                            // Find records for this date
-                            const records = history.filter(h => h.fecha === dateStr);
-                            const hasActivity = records.length > 0;
-                            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                            const isFuture = dateStr > todayStr;
+                                // Find records for this date
+                                const records = history.filter(h => h.fecha === dateStr);
+                                const hasActivity = records.length > 0;
+                                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                                const isFuture = dateStr > todayStr;
 
-                            return (
-                                <button
-                                    key={i}
-                                    onClick={() => {
-                                        if (hasActivity) {
-                                            // Group counts with timestamps
-                                            const groupsMap = new Map<string, GroupDetail>();
-                                            records.forEach(r => {
-                                                const est = r.estudiantes as any;
-                                                const g = Array.isArray(est) ? est[0] : est;
-                                                const key = `${g.grado}-${g.grupo}`;
+                                return (
+                                    <button
+                                        key={i}
+                                        onClick={() => {
+                                            if (hasActivity) {
+                                                // Group counts with timestamps
+                                                const groupsMap = new Map<string, GroupDetail>();
+                                                records.forEach(r => {
+                                                    const est = r.estudiantes as any;
+                                                    const g = Array.isArray(est) ? est[0] : est;
+                                                    const key = `${g?.grado || ''}-${g?.grupo || ''}`;
 
-                                                if (!groupsMap.has(key)) {
-                                                    groupsMap.set(key, {
-                                                        grado: g.grado,
-                                                        grupo: g.grupo,
-                                                        count: 0,
-                                                        timestamp: r.created_at
-                                                    });
-                                                }
+                                                    if (!groupsMap.has(key)) {
+                                                        groupsMap.set(key, {
+                                                            grado: g?.grado || 'S/N',
+                                                            grupo: g?.grupo || 'S/N',
+                                                            count: 0,
+                                                            timestamp: r.created_at
+                                                        });
+                                                    }
 
-                                                const group = groupsMap.get(key)!;
-                                                group.count++;
-                                                // Keep earliest timestamp
-                                                if (new Date(r.created_at) < new Date(group.timestamp)) {
-                                                    group.timestamp = r.created_at;
-                                                }
-                                            });
+                                                    const group = groupsMap.get(key)!;
+                                                    group.count++;
+                                                    // Keep earliest timestamp
+                                                    if (new Date(r.created_at) < new Date(group.timestamp)) {
+                                                        group.timestamp = r.created_at;
+                                                    }
+                                                });
 
-                                            // Sort groups by timestamp
-                                            const sortedGroups = Array.from(groupsMap.values())
-                                                .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                                                // Sort groups by timestamp
+                                                const sortedGroups = Array.from(groupsMap.values())
+                                                    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-                                            setSelectedDate({
-                                                date: d.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-                                                groups: sortedGroups,
-                                                total: records.length
-                                            });
-                                        }
-                                    }}
-                                    disabled={!hasActivity}
-                                    className={`
-                                        aspect-square rounded-2xl flex flex-col items-center justify-center border transition-all duration-200
-                                        ${isFuture
-                                            ? 'opacity-25 bg-gray-50 dark:bg-gray-800 border-transparent text-gray-300 dark:text-gray-600 cursor-default'
-                                            : hasActivity
-                                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/30 hover:scale-110 cursor-pointer'
-                                                : isWeekend
-                                                    ? 'bg-gray-50 dark:bg-gray-900/50 border-transparent text-gray-300 dark:text-gray-600'
-                                                    : 'bg-white dark:bg-gray-700/50 border-gray-100 dark:border-gray-600 text-gray-300 dark:text-gray-500'
-                                        }
-                                    `}
-                                >
-                                    <span className={`text-sm md:text-lg font-bold ${hasActivity ? 'text-white' : ''}`}>
-                                        {d.getDate()}
-                                    </span>
-                                    {hasActivity && (
-                                        <span className="text-[10px] md:text-xs font-medium opacity-80 mt-1">
-                                            {records.length}
+                                                setSelectedDate({
+                                                    date: d.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+                                                    groups: sortedGroups,
+                                                    total: records.length
+                                                });
+                                            }
+                                        }}
+                                        disabled={!hasActivity}
+                                        className={`
+                                            aspect-square rounded-2xl flex flex-col items-center justify-center border transition-all duration-300
+                                            ${isFuture
+                                                ? 'opacity-20 bg-gray-100 dark:bg-gray-800 border-transparent text-gray-400 dark:text-gray-600 cursor-default'
+                                                : hasActivity
+                                                    ? 'bg-cyan-600 border-cyan-500 text-white shadow-md shadow-cyan-100 dark:shadow-cyan-900/30 hover:scale-105 active:scale-95 cursor-pointer'
+                                                    : isWeekend
+                                                        ? 'bg-gray-100/70 dark:bg-gray-900/40 border-transparent text-gray-400 dark:text-gray-500'
+                                                        : 'bg-white dark:bg-gray-700/60 border-gray-100 dark:border-gray-600 text-gray-400 dark:text-gray-400'
+                                            }
+                                        `}
+                                    >
+                                        <span className={`text-xs md:text-base font-black ${hasActivity ? 'text-white' : ''}`}>
+                                            {d.getDate()}
                                         </span>
-                                    )}
-                                </button>
-                            );
-                        })}
+                                        {hasActivity && (
+                                            <span className="text-[9px] md:text-[10px] font-black opacity-90 mt-0.5 leading-none">
+                                                {records.length}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 

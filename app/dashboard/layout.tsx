@@ -528,32 +528,43 @@ export default function DashboardLayout({
                 .eq('id', session.user.id)
                 .single();
 
-            if (profile) {
-                setUsuario(profile);
-            } else {
-                // Determine if we need to auto-assign a role for new users
-                let userRole = session.user.user_metadata?.rol;
-                const userEmail = session.user.email || '';
-                
-                if (!userRole) {
-                    // Logic: institutional email -> estudiante, otherwise -> acudiente
-                    userRole = userEmail.endsWith('@barroblanco.edu.co') ? 'estudiante' : 'acudiente';
-                    
-                    // Persist this default role back to Auth metadata so it survives re-logins
-                    await supabase.auth.updateUser({
-                        data: { rol: userRole }
-                    });
-                }
+            let baseUsuario = profile ? profile : {
+                id: session.user.id,
+                nombre: session.user.user_metadata?.nombre || 'Usuario',
+                email: session.user.email || '',
+                rol: session.user.user_metadata?.rol || (session.user.email?.endsWith('@barroblanco.edu.co') ? 'estudiante' : 'acudiente'),
+                foto: session.user.user_metadata?.foto || null,
+                puntos_gestor_pae: 0
+            };
 
-                setUsuario({
-                    id: session.user.id,
-                    nombre: session.user.user_metadata?.nombre || 'Usuario',
-                    email: userEmail,
-                    rol: userRole,
-                    foto: session.user.user_metadata?.foto || null,
-                    puntos_gestor_pae: 0
+            if (!profile && !session.user.user_metadata?.rol) {
+                await supabase.auth.updateUser({
+                    data: { rol: baseUsuario.rol }
                 });
             }
+
+            // Consultar puntos del mes actual para la cápsula de perfil
+            try {
+                const now = new Date();
+                const startOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1)).toISOString().split('T')[0];
+                const endOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0)).toISOString().split('T')[0];
+
+                const { data: puntosMesData } = await supabase
+                    .from('puntos_pae_historial')
+                    .select('puntos')
+                    .eq('usuario_id', session.user.id)
+                    .gte('fecha', startOfMonth)
+                    .lte('fecha', endOfMonth);
+
+                if (puntosMesData) {
+                    const totalMes = puntosMesData.reduce((sum, p) => sum + (p.puntos || 0), 0);
+                    baseUsuario = { ...baseUsuario, puntos_gestor_pae: totalMes };
+                }
+            } catch (err) {
+                console.error('Error fetching monthly points for header capsule:', err);
+            }
+
+            setUsuario(baseUsuario);
 
             // --- MULTI-ACCOUNT LOGIC ---
             const savedStr = localStorage.getItem('pae_saved_accounts');
