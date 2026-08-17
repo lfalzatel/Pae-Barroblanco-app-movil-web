@@ -57,6 +57,67 @@ export default function PointsBurstAnimation({
         const nodes: HTMLElement[] = [];
         const timers: ReturnType<typeof setTimeout>[] = [];
 
+        // Helper de síntesis de sonido con Web Audio API (cero dependencias externas)
+        let audioCtx: AudioContext | null = null;
+        try {
+            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioContextClass) {
+                audioCtx = new AudioContextClass();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            }
+        } catch (e) {
+            audioCtx = null;
+        }
+
+        const playTone = (freq: number, type: OscillatorType, durationMs: number, delayMs: number = 0, gainLevel: number = 0.12) => {
+            if (!audioCtx) return;
+            timers.push(setTimeout(() => {
+                try {
+                    if (!audioCtx || audioCtx.state === 'closed') return;
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+                    gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(gainLevel, audioCtx.currentTime + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + (durationMs / 1000));
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.start(audioCtx.currentTime);
+                    osc.stop(audioCtx.currentTime + (durationMs / 1000));
+                } catch (err) {
+                    // Silencioso si se bloquea por política de autoplay
+                }
+            }, delayMs));
+        };
+
+        // 🎵 EFECTOS DE SONIDO SINTETIZADOS
+
+        // A) Arpegio celestial ascendente al despegar estrellas (0ms - 500ms)
+        const arpeggioNotes = [523.25, 659.25, 783.99, 987.77, 1046.50]; // Do5, Mi5, Sol5, Si5, Do6
+        arpeggioNotes.forEach((freq, idx) => {
+            playTone(freq, 'sine', 280, 80 + idx * 80, 0.12);
+        });
+
+        // B) Campanada brillante de cristal al aparecer la estrella central (600ms)
+        playTone(1318.51, 'sine', 600, 600, 0.15); // Mi6
+        playTone(1567.98, 'sine', 700, 650, 0.12); // Sol6
+
+        // C) Fanfarria y explosión estelar al desprenderse las 5 puntas (2550ms)
+        const fireworksNotes = [1567.98, 1760.00, 1975.53, 2093.00, 2637.02]; // Sol6, La6, Si6, Do7, Mi7
+        fireworksNotes.forEach((freq, idx) => {
+            playTone(freq, 'triangle', 450, 2550 + idx * 60, 0.18);
+            playTone(freq * 1.5, 'sine', 350, 2580 + idx * 60, 0.08); // armónico de brillo
+        });
+
         // 1. Flash blanco suave de pantalla
         const flash = document.createElement('div');
         Object.assign(flash.style, {
@@ -347,6 +408,9 @@ export default function PointsBurstAnimation({
             clearInterval(spinInterval);
             timers.forEach(clearTimeout);
             nodes.forEach((n) => n.remove());
+            if (audioCtx && audioCtx.state !== 'closed') {
+                try { audioCtx.close(); } catch(e) {}
+            }
             if (targetEl) {
                 targetEl.style.transform = '';
                 targetEl.style.boxShadow = '';
