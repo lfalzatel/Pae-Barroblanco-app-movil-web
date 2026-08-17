@@ -57,26 +57,39 @@ export default function PointsBurstAnimation({
         const nodes: HTMLElement[] = [];
         const timers: ReturnType<typeof setTimeout>[] = [];
 
-        // Helper de síntesis de sonido con Web Audio API (cero dependencias externas)
+        // Helper de síntesis de sonido con Web Audio API (Desbloqueo síncrono para móvil iOS/Android)
         let audioCtx: AudioContext | null = null;
-        try {
-            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-            if (AudioContextClass) {
-                audioCtx = new AudioContextClass();
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
+        const unlockAudio = () => {
+            try {
+                const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+                if (AudioContextClass) {
+                    if (!audioCtx) {
+                        audioCtx = new AudioContextClass();
+                    }
+                    if (audioCtx.state === 'suspended') {
+                        audioCtx.resume();
+                    }
                 }
+            } catch (e) {
+                audioCtx = null;
             }
-        } catch (e) {
-            audioCtx = null;
-        }
+        };
 
-        const playTone = (freq: number, type: OscillatorType, durationMs: number, delayMs: number = 0, gainLevel: number = 0.12) => {
-            if (!audioCtx) return;
+        // Desbloquear audio inmediatamente y al primer contacto táctil
+        unlockAudio();
+        const unlockHandler = () => {
+            unlockAudio();
+            window.removeEventListener('pointerdown', unlockHandler);
+            window.removeEventListener('touchstart', unlockHandler);
+        };
+        window.addEventListener('pointerdown', unlockHandler, { passive: true });
+        window.addEventListener('touchstart', unlockHandler, { passive: true });
+
+        const playTone = (freq: number, type: OscillatorType, durationMs: number, delayMs: number = 0, gainLevel: number = 0.15) => {
             timers.push(setTimeout(() => {
                 try {
+                    unlockAudio();
                     if (!audioCtx || audioCtx.state === 'closed') return;
-                    if (audioCtx.state === 'suspended') audioCtx.resume();
 
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
@@ -104,18 +117,18 @@ export default function PointsBurstAnimation({
         // A) Arpegio celestial ascendente al despegar estrellas (0ms - 500ms)
         const arpeggioNotes = [523.25, 659.25, 783.99, 987.77, 1046.50]; // Do5, Mi5, Sol5, Si5, Do6
         arpeggioNotes.forEach((freq, idx) => {
-            playTone(freq, 'sine', 280, 80 + idx * 80, 0.12);
+            playTone(freq, 'sine', 280, 100 + idx * 90, 0.14);
         });
 
         // B) Campanada brillante de cristal al aparecer la estrella central (600ms)
-        playTone(1318.51, 'sine', 600, 600, 0.15); // Mi6
-        playTone(1567.98, 'sine', 700, 650, 0.12); // Sol6
+        playTone(1318.51, 'sine', 600, 600, 0.18); // Mi6
+        playTone(1567.98, 'sine', 700, 650, 0.15); // Sol6
 
         // C) Fanfarria y explosión estelar al desprenderse las 5 puntas (2550ms)
         const fireworksNotes = [1567.98, 1760.00, 1975.53, 2093.00, 2637.02]; // Sol6, La6, Si6, Do7, Mi7
         fireworksNotes.forEach((freq, idx) => {
-            playTone(freq, 'triangle', 450, 2550 + idx * 60, 0.18);
-            playTone(freq * 1.5, 'sine', 350, 2580 + idx * 60, 0.08); // armónico de brillo
+            playTone(freq, 'triangle', 450, 2550 + idx * 60, 0.20);
+            playTone(freq * 1.5, 'sine', 350, 2580 + idx * 60, 0.10); // armónico de brillo
         });
 
         // Inyectar animación CSS para rotación GPU fluida a 60fps en móviles
@@ -175,24 +188,26 @@ export default function PointsBurstAnimation({
         [0, 1].forEach((r) => {
             const ring = document.createElement('div');
             Object.assign(ring.style, {
-                position: 'fixed', left: `${originX}px`, top: `${originY}px`,
+                position: 'fixed', left: '0px', top: '0px',
                 width: '14px', height: '14px', borderRadius: '50%',
                 border: `3px solid ${r === 0 ? '#fbbf24' : '#fb923c'}`,
-                zIndex: '9998', transform: 'translate3d(-50%,-50%,0) scale(1)', opacity: '0.9',
+                zIndex: '9998',
+                transform: `translate3d(${originX}px, ${originY}px, 0) translate(-50%, -50%) scale(1)`,
+                opacity: '0.9',
                 willChange: 'transform, opacity',
                 transition: 'transform 750ms ease-out, opacity 750ms ease-out',
             });
             document.body.appendChild(ring);
             nodes.push(ring);
             timers.push(setTimeout(() => requestAnimationFrame(() => {
-                ring.style.transform = `translate3d(-50%,-50%,0) scale(${12 + r * 5})`;
+                ring.style.transform = `translate3d(${originX}px, ${originY}px, 0) translate(-50%, -50%) scale(${12 + r * 5})`;
                 ring.style.opacity = '0';
             }), r * 100));
             timers.push(setTimeout(() => ring.remove(), 900 + r * 100));
         });
 
-        // 4. Estrellas en abanico -> convergen a la cápsula
-        const starsN = Math.max(points * 2, 8); // Optimizado para 60fps móvil
+        // 4. Estrellas en abanico -> convergen a la cápsula (100% GPU translate3d)
+        const starsN = Math.max(points * 2, 8);
         for (let i = 0; i < starsN; i++) {
             const angle = (Math.PI / (starsN + 1)) * (i + 1) + Math.PI;
             const spreadX = originX + Math.cos(angle) * 80;
@@ -201,21 +216,20 @@ export default function PointsBurstAnimation({
             const star = document.createElement('div');
             star.innerHTML = '★';
             Object.assign(star.style, {
-                position: 'fixed', left: `${originX}px`, top: `${originY}px`,
+                position: 'fixed', left: '0px', top: '0px',
                 zIndex: '9999', color: '#fbbf24', fontSize: '32px', lineHeight: '1',
                 textShadow: '0 0 12px rgba(251,191,36,0.9), 0 0 24px rgba(251,146,60,0.8)',
-                transform: 'translate3d(-50%,-50%,0) scale(0.2) rotate(0deg)', opacity: '0',
-                willChange: 'left, top, transform, opacity',
+                transform: `translate3d(${originX}px, ${originY}px, 0) translate(-50%, -50%) scale(0.2) rotate(0deg)`,
+                opacity: '0',
+                willChange: 'transform, opacity',
                 WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden',
-                transition: 'left 1200ms cubic-bezier(.22,1.6,.4,1), top 1200ms cubic-bezier(.22,1.6,.4,1), transform 1200ms cubic-bezier(.22,1.6,.4,1), opacity 1200ms ease',
+                transition: 'transform 1000ms cubic-bezier(.22,1.6,.4,1), opacity 1000ms ease',
             });
             document.body.appendChild(star);
             nodes.push(star);
 
             requestAnimationFrame(() => {
-                star.style.left = `${spreadX}px`;
-                star.style.top = `${spreadY}px`;
-                star.style.transform = 'translate3d(-50%,-50%,0) scale(2) rotate(45deg)';
+                star.style.transform = `translate3d(${spreadX}px, ${spreadY}px, 0) translate(-50%, -50%) scale(2) rotate(45deg)`;
                 star.style.opacity = '1';
             });
 
@@ -223,36 +237,35 @@ export default function PointsBurstAnimation({
             timers.push(setTimeout(() => {
                 for (let s = 0; s < 2; s++) {
                     const dot = document.createElement('div');
+                    const dx = spreadX + (Math.random() - 0.5) * 60;
+                    const dy = spreadY + (Math.random() - 0.5) * 60 - 10;
                     Object.assign(dot.style, {
-                        position: 'fixed', left: `${spreadX}px`, top: `${spreadY}px`,
+                        position: 'fixed', left: '0px', top: '0px',
                         width: '6px', height: '6px', borderRadius: '50%',
                         background: s % 2 === 0 ? '#fde68a' : '#fb923c',
                         zIndex: '9998', opacity: '1', boxShadow: '0 0 8px rgba(251,191,36,0.9)',
+                        transform: `translate3d(${spreadX}px, ${spreadY}px, 0) translate(-50%, -50%) scale(1)`,
                         willChange: 'transform, opacity',
                         transition: 'transform 700ms ease-out, opacity 700ms ease-out',
                     });
                     document.body.appendChild(dot);
                     nodes.push(dot);
-                    const dx = (Math.random() - 0.5) * 70;
-                    const dy = (Math.random() - 0.5) * 70 - 10;
                     requestAnimationFrame(() => {
-                        dot.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(0.2)`;
+                        dot.style.transform = `translate3d(${dx}px, ${dy}px, 0) translate(-50%, -50%) scale(0.2)`;
                         dot.style.opacity = '0';
                     });
                     timers.push(setTimeout(() => dot.remove(), 720));
                 }
             }, 300 + i * 110));
 
-            // Convergencia progresiva hacia la cápsula
+            // Convergencia progresiva hacia la cápsula (100% GPU)
             timers.push(setTimeout(() => {
-                star.style.left = `${targetX}px`;
-                star.style.top = `${targetY}px`;
-                star.style.transform = 'translate3d(-50%,-50%,0) scale(0.35) rotate(600deg)';
+                star.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) translate(-50%, -50%) scale(0.35) rotate(600deg)`;
                 star.style.opacity = '0.9';
             }, 800 + i * 110));
 
-            // D) Sonido cristalino individual al impactar/absorber cada estrella en la cápsula
-            playTone(1046.50 + i * 65, 'sine', 180, 1600 + i * 110, 0.10);
+            // D) Sonido cristalino individual al impactar/absorber cada estrella en la cápsula (llegada exacta a los ~1700ms)
+            playTone(1046.50 + i * 70, 'sine', 180, 1700 + i * 110, 0.16);
 
             timers.push(setTimeout(() => star.remove(), 2000 + i * 110));
         }
@@ -428,6 +441,8 @@ export default function PointsBurstAnimation({
         timers.push(doneTimer);
 
         return () => {
+            window.removeEventListener('pointerdown', unlockHandler);
+            window.removeEventListener('touchstart', unlockHandler);
             timers.forEach(clearTimeout);
             nodes.forEach((n) => n.remove());
             if (audioCtx && audioCtx.state !== 'closed') {
