@@ -251,6 +251,9 @@ export default function PointsBurstAnimation({
                 star.style.opacity = '0.9';
             }, 800 + i * 110));
 
+            // D) Sonido cristalino individual al impactar/absorber cada estrella en la cápsula
+            playTone(1046.50 + i * 65, 'sine', 180, 1600 + i * 110, 0.10);
+
             timers.push(setTimeout(() => star.remove(), 2000 + i * 110));
         }
 
