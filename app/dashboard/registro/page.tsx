@@ -1314,10 +1314,11 @@ function RegistroContent() {
             targetSelector="[data-points-capsule]"
             originSelector="#btn-guardar-asistencia"
             onComplete={() => {
+                const earned = pointsBurst;
                 setPointsBurst(null);
-                if (nuevoTotalPuntos !== null) {
-                    window.dispatchEvent(new CustomEvent('puntosActualizados', { detail: { total: nuevoTotalPuntos } }));
-                    setNuevoTotalPuntos(null);
+                setNuevoTotalPuntos(null);
+                if (earned && earned > 0) {
+                    window.dispatchEvent(new CustomEvent('puntosActualizados', { detail: { points: earned } }));
                 }
                 handleBack();
             }}

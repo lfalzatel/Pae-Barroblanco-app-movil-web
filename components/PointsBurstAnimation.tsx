@@ -61,67 +61,79 @@ export default function PointsBurstAnimation({
         const flash = document.createElement('div');
         Object.assign(flash.style, {
             position: 'fixed', inset: '0', background: '#fff', opacity: '0',
-            zIndex: '9996', pointerEvents: 'none', transition: 'opacity 120ms ease-out',
+            zIndex: '9996', pointerEvents: 'none', transition: 'opacity 150ms ease-out',
         });
         document.body.appendChild(flash);
         nodes.push(flash);
-        requestAnimationFrame(() => { flash.style.opacity = '0.3'; });
+        requestAnimationFrame(() => { flash.style.opacity = '0.35'; });
         timers.push(setTimeout(() => {
-            flash.style.transition = 'opacity 400ms ease-in';
+            flash.style.transition = 'opacity 500ms ease-in';
             flash.style.opacity = '0';
-        }, 120));
+        }, 150));
 
-        // 2. Doble onda expansiva inicial
+        // 2. Rayos Solares Giratorios en el centro (Sunburst Effect estilo Temu)
+        const sunburst = document.createElement('div');
+        Object.assign(sunburst.style, {
+            position: 'fixed', left: '50%', top: '42%',
+            width: '380px', height: '380px',
+            zIndex: '9997', pointerEvents: 'none',
+            transform: 'translate(-50%, -50%) scale(0.2)', opacity: '0',
+            borderRadius: '50%',
+            background: 'conic-gradient(from 0deg, rgba(251,191,36,0.35) 0deg 15deg, transparent 15deg 30deg, rgba(251,191,36,0.35) 30deg 45deg, transparent 45deg 60deg, rgba(251,191,36,0.35) 60deg 75deg, transparent 75deg 90deg, rgba(251,191,36,0.35) 90deg 105deg, transparent 105deg 120deg, rgba(251,191,36,0.35) 120deg 135deg, transparent 135deg 150deg, rgba(251,191,36,0.35) 150deg 165deg, transparent 165deg 180deg, rgba(251,191,36,0.35) 180deg 195deg, transparent 195deg 210deg, rgba(251,191,36,0.35) 210deg 225deg, transparent 225deg 240deg, rgba(251,191,36,0.35) 240deg 255deg, transparent 255deg 270deg, rgba(251,191,36,0.35) 270deg 285deg, transparent 285deg 300deg, rgba(251,191,36,0.35) 300deg 315deg, transparent 315deg 330deg, rgba(251,191,36,0.35) 330deg 345deg, transparent 345deg 360deg)',
+            maskImage: 'radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%)',
+            WebkitMaskImage: 'radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%)',
+            transition: 'transform 700ms cubic-bezier(.22,1.6,.4,1), opacity 500ms ease',
+        });
+        document.body.appendChild(sunburst);
+        nodes.push(sunburst);
+
+        requestAnimationFrame(() => {
+            sunburst.style.transform = 'translate(-50%, -50%) scale(1.2)';
+            sunburst.style.opacity = '1';
+        });
+
+        // Rotación continua del sunburst
+        let angleDeg = 0;
+        const spinInterval = setInterval(() => {
+            angleDeg += 1.5;
+            sunburst.style.transform = `translate(-50%, -50%) scale(1.2) rotate(${angleDeg}deg)`;
+        }, 16);
+        timers.push(setTimeout(() => clearInterval(spinInterval), 3500));
+
+        // 3. Doble onda expansiva inicial en el origen
         [0, 1].forEach((r) => {
             const ring = document.createElement('div');
             Object.assign(ring.style, {
                 position: 'fixed', left: `${originX}px`, top: `${originY}px`,
-                width: '12px', height: '12px', borderRadius: '50%',
+                width: '14px', height: '14px', borderRadius: '50%',
                 border: `3px solid ${r === 0 ? '#fbbf24' : '#fb923c'}`,
                 zIndex: '9998', transform: 'translate(-50%,-50%) scale(1)', opacity: '0.9',
-                transition: 'transform 650ms ease-out, opacity 650ms ease-out',
+                transition: 'transform 750ms ease-out, opacity 750ms ease-out',
             });
             document.body.appendChild(ring);
             nodes.push(ring);
             timers.push(setTimeout(() => requestAnimationFrame(() => {
-                ring.style.transform = `translate(-50%,-50%) scale(${10 + r * 4})`;
+                ring.style.transform = `translate(-50%,-50%) scale(${12 + r * 5})`;
                 ring.style.opacity = '0';
-            }), r * 90));
-            timers.push(setTimeout(() => ring.remove(), 800 + r * 90));
+            }), r * 100));
+            timers.push(setTimeout(() => ring.remove(), 900 + r * 100));
         });
-
-        // 3. Destello radial dorado en origen
-        const glow = document.createElement('div');
-        Object.assign(glow.style, {
-            position: 'fixed', left: `${originX}px`, top: `${originY}px`,
-            width: '100px', height: '100px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(255,237,180,0.95) 0%, rgba(251,191,36,0.6) 40%, rgba(251,191,36,0) 70%)',
-            zIndex: '9997', transform: 'translate(-50%,-50%) scale(0.3)', opacity: '1',
-            transition: 'transform 450ms ease-out, opacity 450ms ease-out',
-        });
-        document.body.appendChild(glow);
-        nodes.push(glow);
-        requestAnimationFrame(() => {
-            glow.style.transform = 'translate(-50%,-50%) scale(1.8)';
-            glow.style.opacity = '0';
-        });
-        timers.push(setTimeout(() => glow.remove(), 500));
 
         // 4. Estrellas en abanico -> convergen a la cápsula
-        const starsN = Math.max(points * 2, 8); // Abundantes estrellas brillantes
+        const starsN = Math.max(points * 2, 10); // Generosas estrellas brillantes
         for (let i = 0; i < starsN; i++) {
             const angle = (Math.PI / (starsN + 1)) * (i + 1) + Math.PI;
-            const spreadX = originX + Math.cos(angle) * 75;
-            const spreadY = originY + Math.sin(angle) * 45;
+            const spreadX = originX + Math.cos(angle) * 85;
+            const spreadY = originY + Math.sin(angle) * 55;
 
             const star = document.createElement('div');
             star.innerHTML = '★';
             Object.assign(star.style, {
                 position: 'fixed', left: `${originX}px`, top: `${originY}px`,
-                zIndex: '9999', color: '#fbbf24', fontSize: '32px', lineHeight: '1',
-                filter: 'drop-shadow(0 0 12px rgba(251,191,36,1)) drop-shadow(0 0 24px rgba(251,146,60,0.8))',
+                zIndex: '9999', color: '#fbbf24', fontSize: '34px', lineHeight: '1',
+                filter: 'drop-shadow(0 0 14px rgba(251,191,36,1)) drop-shadow(0 0 28px rgba(251,146,60,0.9))',
                 transform: 'translate(-50%,-50%) scale(0.2) rotate(0deg)', opacity: '0',
-                transition: 'left 1050ms cubic-bezier(.22,1.6,.4,1), top 1050ms cubic-bezier(.22,1.6,.4,1), transform 1050ms cubic-bezier(.22,1.6,.4,1), opacity 1050ms ease',
+                transition: 'left 1200ms cubic-bezier(.22,1.6,.4,1), top 1200ms cubic-bezier(.22,1.6,.4,1), transform 1200ms cubic-bezier(.22,1.6,.4,1), opacity 1200ms ease',
             });
             document.body.appendChild(star);
             nodes.push(star);
@@ -129,7 +141,7 @@ export default function PointsBurstAnimation({
             requestAnimationFrame(() => {
                 star.style.left = `${spreadX}px`;
                 star.style.top = `${spreadY}px`;
-                star.style.transform = 'translate(-50%,-50%) scale(1.9) rotate(45deg)';
+                star.style.transform = 'translate(-50%,-50%) scale(2) rotate(45deg)';
                 star.style.opacity = '1';
             });
 
@@ -139,62 +151,71 @@ export default function PointsBurstAnimation({
                     const dot = document.createElement('div');
                     Object.assign(dot.style, {
                         position: 'fixed', left: `${spreadX}px`, top: `${spreadY}px`,
-                        width: '6px', height: '6px', borderRadius: '50%',
+                        width: '7px', height: '7px', borderRadius: '50%',
                         background: s % 2 === 0 ? '#fde68a' : '#fb923c',
-                        zIndex: '9998', opacity: '1', boxShadow: '0 0 8px rgba(251,191,36,0.9)',
-                        transition: 'transform 600ms ease-out, opacity 600ms ease-out',
+                        zIndex: '9998', opacity: '1', boxShadow: '0 0 10px rgba(251,191,36,0.9)',
+                        transition: 'transform 700ms ease-out, opacity 700ms ease-out',
                     });
                     document.body.appendChild(dot);
                     nodes.push(dot);
-                    const dx = (Math.random() - 0.5) * 70;
-                    const dy = (Math.random() - 0.5) * 70 - 10;
+                    const dx = (Math.random() - 0.5) * 80;
+                    const dy = (Math.random() - 0.5) * 80 - 10;
                     requestAnimationFrame(() => {
-                        dot.style.transform = `translate(${dx}px, ${dy}px) scale(0.3)`;
+                        dot.style.transform = `translate(${dx}px, ${dy}px) scale(0.2)`;
                         dot.style.opacity = '0';
                     });
-                    timers.push(setTimeout(() => dot.remove(), 620));
+                    timers.push(setTimeout(() => dot.remove(), 720));
                 }
-            }, 250 + i * 90));
+            }, 300 + i * 110));
 
-            // Convergencia hacia la cápsula
+            // Convergencia progresiva hacia la cápsula
             timers.push(setTimeout(() => {
                 star.style.left = `${targetX}px`;
                 star.style.top = `${targetY}px`;
-                star.style.transform = 'translate(-50%,-50%) scale(0.35) rotate(540deg)';
+                star.style.transform = 'translate(-50%,-50%) scale(0.35) rotate(600deg)';
                 star.style.opacity = '0.9';
-            }, 300 + i * 90));
+            }, 800 + i * 110));
 
-            timers.push(setTimeout(() => star.remove(), 1350 + i * 90));
+            timers.push(setTimeout(() => star.remove(), 2000 + i * 110));
         }
 
-        // 5. Insignia de Estrella de Cristal Blur "+N PUNTOS PAE" centrada en pantalla
+        // 5. Gran Insignia de Estrella de Cristal Blur "+N PUNTOS PAE" centrada en pantalla
         const starContainer = document.createElement('div');
         Object.assign(starContainer.style, {
             position: 'fixed', left: '50%', top: '42%',
-            width: '210px', height: '210px',
+            width: '240px', height: '240px',
             zIndex: '100000', transform: 'translate(-50%,-50%) scale(0.2)', opacity: '0',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             pointerEvents: 'none',
-            transition: 'transform 600ms cubic-bezier(.22,1.6,.4,1), opacity 400ms ease',
+            transition: 'transform 700ms cubic-bezier(.22,1.6,.4,1), opacity 500ms ease',
         });
 
-        // Fondo de Estrella en Cristal Blur Semitransparente
+        // Fondo de Estrella en Cristal Blur Semitransparente con Borde Neón
         const starBg = document.createElement('div');
         Object.assign(starBg.style, {
             position: 'absolute', inset: '0',
             clipPath: 'polygon(50% 0%, 63% 33%, 98% 35%, 70% 58%, 81% 92%, 50% 72%, 19% 92%, 30% 58%, 2% 35%, 37% 33%)',
-            background: 'radial-gradient(circle, rgba(251,191,36,0.65) 0%, rgba(245,158,11,0.5) 100%)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '2px solid rgba(255, 255, 255, 0.5)',
-            filter: 'drop-shadow(0 0 25px rgba(251,191,36,0.9))',
-            transition: 'transform 500ms cubic-bezier(.22,1.6,.4,1), opacity 400ms ease',
+            background: 'radial-gradient(circle, rgba(251,191,36,0.75) 0%, rgba(245,158,11,0.55) 100%)',
+            backdropFilter: 'blur(18px)',
+            WebkitBackdropFilter: 'blur(18px)',
+            border: '2px solid rgba(255, 255, 255, 0.6)',
+            filter: 'drop-shadow(0 0 30px rgba(251,191,36,0.95)) drop-shadow(0 0 60px rgba(245,158,11,0.6))',
+            transition: 'transform 600ms cubic-bezier(.22,1.6,.4,1), opacity 500ms ease',
         });
         starContainer.appendChild(starBg);
 
-        // Texto interno en negrita brillante
+        // Texto interno en negrita brillante estilo Temu
         const labelText = document.createElement('div');
-        labelText.innerHTML = `<span style="font-size: 20px; font-weight: 900; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 12px rgba(251,191,36,1); font-family: system-ui, -apple-system, sans-serif;">+${points} PUNTOS PAE</span>`;
+        labelText.innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;">
+             <span style="font-size: 22px; font-weight: 900; color: #ffffff; text-shadow: 0 2px 10px rgba(0,0,0,0.9), 0 0 15px rgba(251,191,36,1); font-family: system-ui, -apple-system, sans-serif; letter-spacing: 0.5px;">
+               +${points} PUNTOS PAE
+             </span>
+             <span style="font-size: 11px; font-weight: 800; color: #fef3c7; background: rgba(0,0,0,0.25); padding: 2px 10px; borderRadius: 9999px; text-transform: uppercase; letter-spacing: 1px;">
+               ¡Excelente Registro!
+             </span>
+          </div>
+        `;
         Object.assign(labelText.style, {
             position: 'relative', zIndex: '2', textCenter: 'center', textAlign: 'center',
             transition: 'transform 400ms ease, opacity 400ms ease',
@@ -205,94 +226,125 @@ export default function PointsBurstAnimation({
         nodes.push(starContainer);
 
         requestAnimationFrame(() => {
-            starContainer.style.transform = 'translate(-50%,-50%) scale(1.15)';
+            starContainer.style.transform = 'translate(-50%,-50%) scale(1.2)';
             starContainer.style.opacity = '1';
         });
 
         timers.push(setTimeout(() => {
             starContainer.style.transform = 'translate(-50%,-50%) scale(1)';
-        }, 500));
+        }, 600));
 
-        // DESPRENDIMIENTO Y DESINTEGRACIÓN DE LAS 5 PUNTAS AL DESAPARECER (Fase 2)
+        // DESPRENDIMIENTO Y EXPLOSIÓN ÉPICA DE LAS 5 PUNTAS (Fase de Recompensa al segundo 2.5)
         timers.push(setTimeout(() => {
             // El núcleo central de cristal se encoge girando hacia adentro
-            starBg.style.transition = 'transform 500ms ease-in, opacity 500ms ease-in';
-            starBg.style.transform = 'scale(0) rotate(180deg)';
+            starBg.style.transition = 'transform 600ms ease-in, opacity 600ms ease-in';
+            starBg.style.transform = 'scale(0) rotate(240deg)';
             starBg.style.opacity = '0';
-            labelText.style.transition = 'opacity 300ms ease-in';
+            labelText.style.transition = 'opacity 350ms ease-in';
             labelText.style.opacity = '0';
 
-            // Desprendimiento de 5 puntas doradas volando hacia afuera en 5 direcciones (0°, 72°, 144°, 216°, 288°)
+            sunburst.style.transition = 'transform 600ms ease-in, opacity 600ms ease-in';
+            sunburst.style.transform = 'translate(-50%,-50%) scale(0.1) rotate(360deg)';
+            sunburst.style.opacity = '0';
+
+            // Desprendimiento de 5 grandes estrellas doradas volando hacia afuera en 5 direcciones (0°, 72°, 144°, 216°, 288°)
             for (let p = 0; p < 5; p++) {
                 const tipAngle = ((p * 72) - 90) * (Math.PI / 180);
-                const startX = window.innerWidth / 2 + Math.cos(tipAngle) * 35;
-                const startY = window.innerHeight * 0.42 + Math.sin(tipAngle) * 35;
+                const startX = window.innerWidth / 2 + Math.cos(tipAngle) * 45;
+                const startY = window.innerHeight * 0.42 + Math.sin(tipAngle) * 45;
 
                 const tip = document.createElement('div');
                 tip.innerHTML = '★';
                 Object.assign(tip.style, {
                     position: 'fixed', left: `${startX}px`, top: `${startY}px`,
-                    zIndex: '100001', color: '#fbbf24', fontSize: '26px', lineHeight: '1',
-                    filter: 'drop-shadow(0 0 14px rgba(251,191,36,1)) drop-shadow(0 0 24px rgba(251,146,60,0.9))',
-                    transform: 'translate(-50%,-50%) scale(1.2) rotate(0deg)', opacity: '1',
-                    transition: 'transform 600ms cubic-bezier(.17,.89,.32,1.28), opacity 600ms ease-out',
+                    zIndex: '100001', color: '#fbbf24', fontSize: '42px', lineHeight: '1',
+                    filter: 'drop-shadow(0 0 18px rgba(251,191,36,1)) drop-shadow(0 0 35px rgba(251,146,60,1))',
+                    transform: 'translate(-50%,-50%) scale(1.4) rotate(0deg)', opacity: '1',
+                    transition: 'transform 800ms cubic-bezier(.17,.89,.32,1.28), opacity 800ms ease-out',
                 });
                 document.body.appendChild(tip);
                 nodes.push(tip);
 
-                const destX = Math.cos(tipAngle) * 110;
-                const destY = Math.sin(tipAngle) * 110;
+                const destX = Math.cos(tipAngle) * 160;
+                const destY = Math.sin(tipAngle) * 160;
 
                 requestAnimationFrame(() => {
-                    tip.style.transform = `translate(calc(-50% + ${destX}px), calc(-50% + ${destY}px)) scale(0.1) rotate(${180 + p * 60}deg)`;
+                    tip.style.transform = `translate(calc(-50% + ${destX}px), calc(-50% + ${destY}px)) scale(0.1) rotate(${360 + p * 72}deg)`;
                     tip.style.opacity = '0';
                 });
 
-                timers.push(setTimeout(() => tip.remove(), 650));
-            }
-        }, 1450));
+                // Chispas de fuegos artificiales al desprenderse cada punta
+                for (let spark = 0; spark < 4; spark++) {
+                    const sparkEl = document.createElement('div');
+                    Object.assign(sparkEl.style, {
+                        position: 'fixed', left: `${startX}px`, top: `${startY}px`,
+                        width: '8px', height: '8px', borderRadius: '50%',
+                        background: spark % 2 === 0 ? '#ffffff' : '#fb923c',
+                        zIndex: '100002', opacity: '1',
+                        boxShadow: '0 0 12px rgba(251,191,36,1)',
+                        transition: 'transform 700ms ease-out, opacity 700ms ease-out',
+                    });
+                    document.body.appendChild(sparkEl);
+                    nodes.push(sparkEl);
 
-        timers.push(setTimeout(() => starContainer.remove(), 1950));
+                    const sparkAngle = tipAngle + (Math.random() - 0.5) * 1.2;
+                    const sparkDist = 80 + Math.random() * 80;
+                    const sdx = Math.cos(sparkAngle) * sparkDist;
+                    const sdy = Math.sin(sparkAngle) * sparkDist;
+
+                    requestAnimationFrame(() => {
+                        sparkEl.style.transform = `translate(${sdx}px, ${sdy}px) scale(0.1)`;
+                        sparkEl.style.opacity = '0';
+                    });
+                    timers.push(setTimeout(() => sparkEl.remove(), 750));
+                }
+
+                timers.push(setTimeout(() => tip.remove(), 850));
+            }
+        }, 2550));
+
+        timers.push(setTimeout(() => starContainer.remove(), 3200));
 
         // 6. Crecimiento Progresivo y Halo Redondeado de la Cápsula
         if (targetEl) {
             const computedRadius = window.getComputedStyle(targetEl).borderRadius || '9999px';
 
-            // Inicio suave al volar las primeras estrellas
+            // Inicio suave al despegar las estrellas
             timers.push(setTimeout(() => {
-                targetEl.style.transition = 'transform 350ms cubic-bezier(.22,1.6,.4,1), box-shadow 350ms ease';
+                targetEl.style.transition = 'transform 400ms cubic-bezier(.22,1.6,.4,1), box-shadow 400ms ease';
                 targetEl.style.borderRadius = computedRadius;
-                targetEl.style.transform = 'scale(1.08)';
-                targetEl.style.boxShadow = '0 0 15px 4px rgba(251,191,36,0.6)';
-            }, 450));
+                targetEl.style.transform = 'scale(1.1)';
+                targetEl.style.boxShadow = '0 0 18px 4px rgba(251,191,36,0.6)';
+            }, 800));
 
-            // Crecimiento intermedio al llegar el grueso de las estrellas
+            // Crecimiento intermedio al volar el grupo de estrellas
             timers.push(setTimeout(() => {
-                targetEl.style.transform = 'scale(1.18)';
-                targetEl.style.boxShadow = '0 0 25px 8px rgba(251,191,36,0.85)';
-            }, 1000));
+                targetEl.style.transform = 'scale(1.22)';
+                targetEl.style.boxShadow = '0 0 30px 10px rgba(251,191,36,0.85)';
+            }, 1800));
 
-            // Pulso máximo de asimilación
+            // Pulso máximo al estallar las 5 puntas y asimilar toda la energía
             timers.push(setTimeout(() => {
-                targetEl.style.transform = 'scale(1.24)';
-                targetEl.style.boxShadow = '0 0 35px 12px rgba(251,191,36,0.95)';
-            }, 1450));
+                targetEl.style.transform = 'scale(1.32)';
+                targetEl.style.boxShadow = '0 0 45px 16px rgba(251,191,36,1)';
+            }, 2600));
 
-            // Retorno suave a su tamaño original
+            // Retorno suave a su tamaño normal
             timers.push(setTimeout(() => {
                 targetEl.style.transform = '';
                 targetEl.style.boxShadow = '';
                 targetEl.style.transition = '';
-            }, 1900));
+            }, 3400));
         }
 
-        // Fin de la secuencia -> aviso al componente padre
+        // Fin de la secuencia -> aviso al componente padre tras 3.7s
         const doneTimer = setTimeout(() => {
             if (onCompleteRef.current) onCompleteRef.current();
-        }, 2050);
+        }, 3700);
         timers.push(doneTimer);
 
         return () => {
+            clearInterval(spinInterval);
             timers.forEach(clearTimeout);
             nodes.forEach((n) => n.remove());
             if (targetEl) {
