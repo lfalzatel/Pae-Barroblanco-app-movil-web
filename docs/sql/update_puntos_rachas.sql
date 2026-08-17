@@ -1,4 +1,70 @@
--- 1. Crear función para calcular la racha escolar de un usuario hasta una fecha dada
+-- 1. Crear tabla de Festivos Oficiales de Colombia
+CREATE TABLE IF NOT EXISTS public.festivos_colombia (
+    fecha DATE PRIMARY KEY,
+    nombre TEXT NOT NULL
+);
+
+-- Poblar festivos oficiales de Colombia para 2026 y 2027
+INSERT INTO public.festivos_colombia (fecha, nombre) VALUES
+('2026-01-01', 'Año Nuevo'),
+('2026-01-12', 'Día de los Reyes Magos'),
+('2026-03-23', 'Día de San José'),
+('2026-04-02', 'Jueves Santo'),
+('2026-04-03', 'Viernes Santo'),
+('2026-05-01', 'Día del Trabajo'),
+('2026-05-18', 'Día de la Ascensión'),
+('2026-06-08', 'Corpus Christi'),
+('2026-06-15', 'Sagrado Corazón de Jesús'),
+('2026-06-29', 'San Pedro y San Pablo'),
+('2026-07-20', 'Día de la Independencia'),
+('2026-08-07', 'Batalla de Boyacá'),
+('2026-08-17', 'La Asunción de la Virgen'),
+('2026-10-12', 'Día de la Raza'),
+('2026-11-02', 'Día de todos los Santos'),
+('2026-11-16', 'Independencia de Cartagena'),
+('2026-12-08', 'Día de la Inmaculada Concepción'),
+('2026-12-25', 'Navidad'),
+('2027-01-01', 'Año Nuevo'),
+('2027-01-11', 'Día de los Reyes Magos'),
+('2027-03-22', 'Día de San José'),
+('2027-03-25', 'Jueves Santo'),
+('2027-03-26', 'Viernes Santo'),
+('2027-05-01', 'Día del Trabajo'),
+('2027-05-10', 'Día de la Ascensión'),
+('2027-05-31', 'Corpus Christi'),
+('2027-06-07', 'Sagrado Corazón de Jesús'),
+('2027-07-05', 'San Pedro y San Pablo'),
+('2027-07-20', 'Día de la Independencia'),
+('2027-08-07', 'Batalla de Boyacá'),
+('2027-08-16', 'La Asunción de la Virgen'),
+('2027-10-18', 'Día de la Raza'),
+('2027-11-01', 'Día de todos los Santos'),
+('2027-11-15', 'Independencia de Cartagena'),
+('2027-12-08', 'Día de la Inmaculada Concepción'),
+('2027-12-25', 'Navidad')
+ON CONFLICT (fecha) DO NOTHING;
+
+-- 2. Función helper para validar si una fecha es día no lectivo (Fin de semana o Festivo Colombia)
+CREATE OR REPLACE FUNCTION public.es_dia_no_lectivo(p_fecha DATE)
+RETURNS BOOLEAN
+LANGUAGE plpgsql STABLE
+AS $$
+BEGIN
+    -- Fin de semana (Sábado = 6, Domingo = 7)
+    IF EXTRACT(ISODOW FROM p_fecha) IN (6, 7) THEN
+        RETURN TRUE;
+    END IF;
+
+    -- Festivo oficial en Colombia
+    IF EXISTS (SELECT 1 FROM public.festivos_colombia WHERE fecha = p_fecha) THEN
+        RETURN TRUE;
+    END IF;
+
+    RETURN FALSE;
+END;
+$$;
+
+-- 3. Crear o reemplazar función para calcular la racha escolar de un usuario omitiendo días no lectivos
 CREATE OR REPLACE FUNCTION public.calcular_racha_usuario_fecha(p_usuario_id UUID, p_fecha DATE)
 RETURNS INTEGER
 LANGUAGE plpgsql STABLE
@@ -11,24 +77,20 @@ DECLARE
     v_inicio_mes DATE := date_trunc('month', p_fecha)::DATE;
 BEGIN
     LOOP
-        -- Calcular el día escolar previo
-        IF EXTRACT(ISODOW FROM v_fecha_check) = 1 THEN -- Si es Lunes (1), el anterior es Viernes (v_fecha_check - 3)
-            v_prev_day := v_fecha_check - 3;
-        ELSE -- De Martes a Viernes (2 a 5) o fines de semana (por si acaso), restamos 1 día
-            v_prev_day := v_fecha_check - 1;
-        END IF;
+        -- Iniciar buscando desde el día inmediatamente anterior
+        v_prev_day := v_fecha_check - 1;
 
-        -- Ajuste de seguridad: si v_prev_day cae en fin de semana (sábado=6, domingo=7), retroceder hasta el viernes
-        WHILE EXTRACT(ISODOW FROM v_prev_day) IN (6, 7) LOOP
+        -- Retroceder omitiendo fines de semana y festivos oficiales de Colombia
+        WHILE public.es_dia_no_lectivo(v_prev_day) LOOP
             v_prev_day := v_prev_day - 1;
         END LOOP;
 
-        -- Si el día escolar anterior fue en el mes anterior, la racha del mes actual finaliza y se reinicia en 1
+        -- Si el día lectivo anterior cae fuera del mes actual, la racha del mes finaliza
         IF v_prev_day < v_inicio_mes THEN
             EXIT;
         END IF;
 
-        -- Verificar si el usuario registró asistencia en v_prev_day
+        -- Verificar si el usuario registró asistencia en ese día lectivo previo
         SELECT EXISTS (
             SELECT 1 FROM public.puntos_pae_historial
             WHERE usuario_id = p_usuario_id AND fecha = v_prev_day
