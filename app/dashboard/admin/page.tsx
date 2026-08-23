@@ -253,14 +253,40 @@ export default function AdminPage() {
                             const grado = String(findVal(['grado']) || '').trim();
                             // Usar nombre de hoja como grupo si no hay columna grupo, o viceversa
                             let grupo = String(findVal(['grupo']) || sheetName).trim();
-                            const sede = String(findVal(['sede']) || 'Principal').trim();
+                            
+                            // Normalización de grupos legados
+                            const groupAliasMap: Record<string, string> = {
+                                '1B': '010100', 'Preescolar': '010100', 'TRANSICIÓN': '010100',
+                                '2B': '020100', 'TRANSICIÓN 2': '020100',
+                                '3B': '030100',
+                                '4B': '040100', '4C': '040100',
+                                '5A': '050100', '5B': '050100', '5C': '050100',
+                                '604': '6A', '704': '7A', '804': '8A', '904': '9A', '1104': '11A'
+                            };
+                            if (groupAliasMap[grupo]) {
+                                grupo = groupAliasMap[grupo];
+                            }
+
+                            // Búsqueda ampliada de Sede
+                            let rawSede = String(findVal(['sede', 'establecimiento', 'institucion', 'lugar', 'centro', 'nom_sede', 'descripcion_sede']) || '').trim();
+                            
+                            // Inferencia automática de Sede si viene vacía
+                            if (!rawSede) {
+                                if (['010201', '020201', '030201', '040201', '050201', 'TS0201'].includes(grupo)) {
+                                    rawSede = 'Maria Inmaculada';
+                                } else if (['010100', '020100', '030100', '040100', '050100', '040300', '050300', 'Multinivel'].includes(grupo)) {
+                                    rawSede = 'Primaria';
+                                } else {
+                                    rawSede = 'Principal';
+                                }
+                            }
 
                             return {
                                 matricula,
                                 nombre: nombre.toUpperCase(),
                                 grado,
                                 grupo,
-                                sede: sede.charAt(0).toUpperCase() + sede.slice(1).toLowerCase(),
+                                sede: rawSede.charAt(0).toUpperCase() + rawSede.slice(1).toLowerCase(),
                                 estado: 'activo' // Reactivar si estaba inactivo
                             };
                         }).filter(Boolean); // Eliminar nulos
@@ -478,17 +504,39 @@ export default function AdminPage() {
 
                         const matricula = String(findVal(['matricula', 'codigo']) || '');
                         const grado = String(findVal(['grado']) || '');
-                        const grupo = String(findVal(['grupo']) || '').trim();
-                        let sede = String(findVal(['sede']) || '').trim();
+                        let grupo = String(findVal(['grupo']) || '').trim();
 
-                        if (!sede) sede = 'Principal'; // Default
+                        // Normalización de grupos legados
+                        const groupAliasMap: Record<string, string> = {
+                            '1B': '010100', 'Preescolar': '010100', 'TRANSICIÓN': '010100',
+                            '2B': '020100', 'TRANSICIÓN 2': '020100',
+                            '3B': '030100',
+                            '4B': '040100', '4C': '040100',
+                            '5A': '050100', '5B': '050100', '5C': '050100',
+                            '604': '6A', '704': '7A', '804': '8A', '904': '9A', '1104': '11A'
+                        };
+                        if (groupAliasMap[grupo]) {
+                            grupo = groupAliasMap[grupo];
+                        }
+
+                        let rawSede = String(findVal(['sede', 'establecimiento', 'institucion', 'lugar', 'centro', 'nom_sede', 'descripcion_sede']) || '').trim();
+
+                        if (!rawSede) {
+                            if (['010201', '020201', '030201', '040201', '050201', 'TS0201'].includes(grupo)) {
+                                rawSede = 'Maria Inmaculada';
+                            } else if (['010100', '020100', '030100', '040100', '050100', '040300', '050300', 'Multinivel'].includes(grupo)) {
+                                rawSede = 'Primaria';
+                            } else {
+                                rawSede = 'Principal';
+                            }
+                        }
 
                         return {
                             nombre: nombreCompleto.toUpperCase(),
                             matricula,
                             grado,
                             grupo,
-                            sede: sede.charAt(0).toUpperCase() + sede.slice(1).toLowerCase(),
+                            sede: rawSede.charAt(0).toUpperCase() + rawSede.slice(1).toLowerCase(),
                             estado: 'activo'
                         };
                     }).filter(s => s.matricula && s.nombre && s.matricula.length > 2);
