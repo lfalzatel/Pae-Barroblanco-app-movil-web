@@ -261,7 +261,7 @@ export default function AdminPage() {
                                 '3B': '030100',
                                 '4B': '040100', '4C': '040100',
                                 '5A': '050100', '5B': '050100', '5C': '050100',
-                                '604': '6A', '704': '7A', '804': '8A', '904': '9A', '1104': '11A'
+                                '604': '6B', '704': '7B', '804': '8B', '904': '9B', '1104': '11B'
                             };
                             if (groupAliasMap[grupo]) {
                                 grupo = groupAliasMap[grupo];
@@ -274,7 +274,7 @@ export default function AdminPage() {
                             if (!rawSede) {
                                 if (['010201', '020201', '030201', '040201', '050201', 'TS0201'].includes(grupo)) {
                                     rawSede = 'Maria Inmaculada';
-                                } else if (['010100', '020100', '030100', '040100', '050100', '040300', '050300', 'Multinivel'].includes(grupo)) {
+                                } else if (['010100', '020100', '030100', '040100', '050100', '040300', '050300'].includes(grupo)) {
                                     rawSede = 'Primaria';
                                 } else {
                                     rawSede = 'Principal';
@@ -513,7 +513,7 @@ export default function AdminPage() {
                             '3B': '030100',
                             '4B': '040100', '4C': '040100',
                             '5A': '050100', '5B': '050100', '5C': '050100',
-                            '604': '6A', '704': '7A', '804': '8A', '904': '9A', '1104': '11A'
+                            '604': '6B', '704': '7B', '804': '8B', '904': '9B', '1104': '11B'
                         };
                         if (groupAliasMap[grupo]) {
                             grupo = groupAliasMap[grupo];
@@ -524,7 +524,7 @@ export default function AdminPage() {
                         if (!rawSede) {
                             if (['010201', '020201', '030201', '040201', '050201', 'TS0201'].includes(grupo)) {
                                 rawSede = 'Maria Inmaculada';
-                            } else if (['010100', '020100', '030100', '040100', '050100', '040300', '050300', 'Multinivel'].includes(grupo)) {
+                            } else if (['010100', '020100', '030100', '040100', '050100', '040300', '050300'].includes(grupo)) {
                                 rawSede = 'Primaria';
                             } else {
                                 rawSede = 'Principal';
