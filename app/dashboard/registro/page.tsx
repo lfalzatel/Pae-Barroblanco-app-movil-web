@@ -56,13 +56,13 @@ const formatDateSpanish = (dateStr: string) => {
 
 import { useModalBack } from '@/hooks/useModalBack';
 import PointsBurstAnimation from '@/components/PointsBurstAnimation';
-
-// ... (existing imports)
+import StudentHistoryModal from '@/components/dashboard/StudentHistoryModal';
 
 function RegistroContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [usuario, setUsuario] = useState<any | null>(null);
+  const [selectedStudentForHistory, setSelectedStudentForHistory] = useState<Estudiante | null>(null);
 
   // Estados derivados de la URL o por defecto
   const [step, setStep] = useState<'sede' | 'grupo' | 'registro'>('sede');
@@ -1324,6 +1324,11 @@ function RegistroContent() {
             }}
         />
       )}
+
+      <StudentHistoryModal
+        student={selectedStudentForHistory}
+        onClose={() => setSelectedStudentForHistory(null)}
+      />
     </div>
   );
 }
