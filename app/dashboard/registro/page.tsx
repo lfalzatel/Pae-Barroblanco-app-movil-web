@@ -1172,19 +1172,24 @@ function RegistroContent() {
                           `}
                         >
                           <div className="flex justify-between items-start mb-4">
-                            <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedStudentForHistory(estudiante)}
+                              className="flex items-center gap-3 text-left cursor-pointer group/studentCard hover:opacity-80 transition-opacity focus:outline-none"
+                              title="Ver historial del estudiante"
+                            >
                               <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-inner border border-white/50 dark:border-white/10 transition-all duration-300
-                                ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500 text-white rotate-3 shadow-cyan-200 dark:shadow-none' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rotate-0'}
+                                ${estudiante.estado !== 'inactivo' ? 'bg-cyan-500 text-white rotate-3 shadow-cyan-200 dark:shadow-none group-hover/studentCard:scale-105' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rotate-0'}
                               `}>
                                 {estudiante.nombre.charAt(0)}
                               </div>
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
-                                  <div className="font-black text-gray-900 dark:text-white leading-tight tracking-tight text-[12px]">{estudiante.nombre}</div>
+                                  <div className="font-black text-gray-900 dark:text-white leading-tight tracking-tight text-[12px] group-hover/studentCard:text-cyan-600 transition-colors">{estudiante.nombre}</div>
                                 </div>
                                 <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{estudiante.matricula} • {formatGroupName(estudiante.grupo)}</div>
                               </div>
-                            </div>
+                            </button>
                             {(usuario?.rol === 'admin' || usuario?.rol === 'coordinador_pae') && (
                               <button
                                 onClick={() => handleToggleEstado(estudiante)}
