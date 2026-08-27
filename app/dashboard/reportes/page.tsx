@@ -1015,7 +1015,7 @@ function ReportesContent() {
               const dayName = dateObj.toLocaleDateString('es-CO', { weekday: 'short' });
               const isFestivo = festivosSet.has(d);
               return `${dayName} ${dateObj.getDate()}${isFestivo ? ' (Festivo)' : ''}`;
-            }), 'Registrados', '% Asistencia', 'Estado']
+            }), 'Días Registrados', 'Total Recibido', '% Asistencia', 'Estado']
           );
 
           const studentMatrix: Record<string, Record<string, string>> = {};
@@ -1026,6 +1026,10 @@ function ReportesContent() {
 
           // Sort students by name
           const sortedStudents = [...studentsInGroup].sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+          const totalGroupRegisteredDays = registeredDaysSetForGroup.size;
+          let groupSumRecibio = 0;
+          const dailySumsForGroup: Record<string, number> = {};
 
           sortedStudents.forEach(student => {
             const row: any[] = [student.nombre];
@@ -1039,6 +1043,7 @@ function ReportesContent() {
                 if (estado === 'recibio') {
                   row.push('✅');
                   totalRecibio++;
+                  dailySumsForGroup[d] = (dailySumsForGroup[d] || 0) + 1;
                 } else if (estado === 'no_recibio') {
                   row.push('❌');
                 } else if (estado === 'ausente') {
@@ -1049,10 +1054,12 @@ function ReportesContent() {
               }
             });
 
+            groupSumRecibio += totalRecibio;
+
+            row.push(totalGroupRegisteredDays);
             row.push(totalRecibio);
 
             // Calculate individual percentage based ONLY on registered days for the group
-            const totalGroupRegisteredDays = registeredDaysSetForGroup.size;
             const percentage = totalGroupRegisteredDays > 0 ? (totalRecibio / totalGroupRegisteredDays) * 100 : 0;
             row.push(`${percentage.toFixed(1)}%`);
 
@@ -1064,6 +1071,37 @@ function ReportesContent() {
 
             excelData.push(row);
           });
+
+          // Total row at bottom of student matrix
+          if (sortedStudents.length > 0) {
+            const totalMatrixRow: any[] = ['Total'];
+
+            dates.forEach(d => {
+              if (festivosSet.has(d)) {
+                totalMatrixRow.push('🌴');
+              } else {
+                const dayCount = dailySumsForGroup[d];
+                totalMatrixRow.push(dayCount && dayCount > 0 ? dayCount : '-');
+              }
+            });
+
+            totalMatrixRow.push(totalGroupRegisteredDays);
+            totalMatrixRow.push(groupSumRecibio);
+
+            const activeStudentsInGroup = sortedStudents.filter(s => s.estado === 'activo' || s.estado === 'active').length || sortedStudents.length;
+            const expectedGroupRaciones = activeStudentsInGroup * totalGroupRegisteredDays;
+            const groupOverallPct = expectedGroupRaciones > 0 ? (groupSumRecibio / expectedGroupRaciones) * 100 : 0;
+
+            totalMatrixRow.push(`${groupOverallPct.toFixed(1)}%`);
+
+            let groupOverallEstado = 'Crítico';
+            if (groupOverallPct >= 90) groupOverallEstado = 'Excelente';
+            else if (groupOverallPct >= 70) groupOverallEstado = 'Bueno';
+            else if (groupOverallPct >= 50) groupOverallEstado = 'Regular';
+            totalMatrixRow.push(groupOverallEstado);
+
+            excelData.push(totalMatrixRow);
+          }
         }
       } else if (grupoFilter !== 'todos') {
         // Single day detailed list
