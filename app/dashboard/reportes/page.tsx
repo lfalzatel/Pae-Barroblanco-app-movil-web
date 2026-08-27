@@ -683,66 +683,36 @@ function ReportesContent() {
         studentsByGrupo[grupoKey].push(student);
       });
 
-      // Calculate statistics per sede
-      const sedeStats: any[] = [];
-      for (const sede of allSedes) {
-        const students = studentsBySede[sede] || [];
-        const studentIds = students.map(s => s.id);
+      // Calculate business dates for period (Monday to Friday)
+      const businessDates: string[] = [];
+      const businessDateHeaders: string[] = [];
 
-        let recibieron = 0;
-        let noRecibieron = 0;
-        let ausentes = 0;
-        const registeredDaysSet = new Set<string>();
+      // Fetch holidays to mark (Festivo) in headers
+      const { data: festivosData } = await supabase.from('festivos_colombia').select('fecha');
+      const festivosSet = new Set((festivosData || []).map(f => f.fecha));
 
-        const activos = students.filter(s => s.estado === 'activo' || s.estado === 'active').length;
-        const inactivos = students.filter(s => s.estado === 'inactivo' || s.estado === 'inactive').length;
+      let curDate = new Date(startDate + 'T00:00:00');
+      const endDateObj = new Date(endDate + 'T00:00:00');
+      while (curDate <= endDateObj) {
+        const dayOfWeek = curDate.getDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          const dateStr = new Date(curDate.getTime() - curDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+          businessDates.push(dateStr);
 
-        if (students.length > 0) {
-          // FIX: Use join filtering instead of large .in() to avoid URL length error 400
-          let query = supabase
-            .from('asistencia_pae')
-            .select('estado, fecha, estudiantes!inner(sede)')
-            .eq('estudiantes.sede', sede)
-            .gte('fecha', startDate)
-            .lte('fecha', endDate);
-
-          if (grupoFilter !== 'todos') {
-            query = query.eq('estudiantes.grupo', grupoFilter);
-          }
-
-          const { data: attendanceData } = await query;
-
-          (attendanceData || []).forEach(a => {
-            if (a.estado === 'recibio') recibieron++;
-            else if (a.estado === 'no_recibio') noRecibieron++;
-            else if (a.estado === 'ausente') ausentes++;
-            registeredDaysSet.add(a.fecha);
-          });
+          const dayName = curDate.toLocaleDateString('es-CO', { weekday: 'short' });
+          const isFestivo = festivosSet.has(dateStr);
+          businessDateHeaders.push(`${dayName} ${curDate.getDate()}${isFestivo ? ' (Festivo)' : ''}`);
         }
-
-        const totalRegisteredDays = registeredDaysSet.size;
-        const totalExpected = activos * totalRegisteredDays;
-        const porcentaje = totalExpected > 0 ? ((recibieron / totalExpected) * 100).toFixed(1) : '0.0';
-
-        sedeStats.push({
-          sede,
-          total: activos, // Now representing active students
-          inactivos,
-          recibieron,
-          noRecibieron,
-          ausentes,
-          porcentaje
-        });
+        curDate.setDate(curDate.getDate() + 1);
       }
 
-      // Calculate statistics per grupo
+      // Calculate statistics per grupo with daily received counts
       const grupoStats: any[] = [];
       for (const [grupoKey, students] of Object.entries(studentsByGrupo)) {
         const [grupo, sede] = grupoKey.split('-');
         const activos = students.filter(s => s.estado === 'activo' || s.estado === 'active').length;
         const inactivos = students.filter(s => s.estado === 'inactivo' || s.estado === 'inactive').length;
 
-        // FIX: Use join filtering instead of .in() to avoid 400 Bad Request
         const { data: attendanceData } = await supabase
           .from('asistencia_pae')
           .select('estado, fecha, estudiantes!inner(grupo, sede)')
@@ -755,11 +725,17 @@ function ReportesContent() {
         let noRecibieron = 0;
         let ausentes = 0;
         const registeredDaysSet = new Set<string>();
+        const dailyRecibio: Record<string, number> = {};
 
         (attendanceData || []).forEach(a => {
-          if (a.estado === 'recibio') recibieron++;
-          else if (a.estado === 'no_recibio') noRecibieron++;
-          else if (a.estado === 'ausente') ausentes++;
+          if (a.estado === 'recibio') {
+            recibieron++;
+            dailyRecibio[a.fecha] = (dailyRecibio[a.fecha] || 0) + 1;
+          } else if (a.estado === 'no_recibio') {
+            noRecibieron++;
+          } else if (a.estado === 'ausente') {
+            ausentes++;
+          }
           registeredDaysSet.add(a.fecha);
         });
 
@@ -767,7 +743,6 @@ function ReportesContent() {
         const totalExpected = activos * totalRegisteredDays;
         const porcentaje = totalExpected > 0 ? ((recibieron / totalExpected) * 100) : 0;
 
-        // Determine estado based on percentage
         let estado = 'Crítico';
         if (porcentaje >= 90) {
           estado = 'Excelente';
@@ -788,7 +763,8 @@ function ReportesContent() {
           diasRegistrados: totalRegisteredDays,
           racionesEsperadas: totalExpected,
           porcentaje: porcentaje.toFixed(1),
-          estado
+          estado,
+          dailyRecibio
         });
       }
 
@@ -797,6 +773,30 @@ function ReportesContent() {
         if (a.sede !== b.sede) return a.sede.localeCompare(b.sede);
         return a.grupo.localeCompare(b.grupo);
       });
+
+      // Calculate statistics per sede by aggregating group stats (avoids Supabase 1000 row truncation)
+      const sedeStats: any[] = [];
+      for (const sede of allSedes) {
+        const groupsInSede = grupoStats.filter(g => g.sede === sede);
+        const activos = groupsInSede.reduce((acc, g) => acc + g.total, 0);
+        const inactivos = groupsInSede.reduce((acc, g) => acc + g.inactivos, 0);
+        const recibieron = groupsInSede.reduce((acc, g) => acc + g.recibieron, 0);
+        const noRecibieron = groupsInSede.reduce((acc, g) => acc + g.noRecibieron, 0);
+        const ausentes = groupsInSede.reduce((acc, g) => acc + g.ausentes, 0);
+        const racionesEsperadas = groupsInSede.reduce((acc, g) => acc + g.racionesEsperadas, 0);
+
+        const porcentaje = racionesEsperadas > 0 ? ((recibieron / racionesEsperadas) * 100).toFixed(1) : '0.0';
+
+        sedeStats.push({
+          sede,
+          total: activos,
+          inactivos,
+          recibieron,
+          noRecibieron,
+          ausentes,
+          porcentaje
+        });
+      }
 
       const excelData: any[][] = [
         ['REPORTE DE ASISTENCIA PAE BARROBLANCO', '', '', '', 'CONVENCIONES:'],
@@ -830,19 +830,46 @@ function ReportesContent() {
         ]);
       });
 
+      // Detalle Por Grupo with daily breakdown columns
+      const hasDailyCols = (periodo === 'semana' || periodo === 'mes') && grupoFilter === 'todos';
+      const groupHeaders = [
+        'Grupo',
+        'Sede',
+        'Total Estudiantes',
+        'Estudiantes Inactivos',
+        ...(hasDailyCols ? businessDateHeaders : []),
+        'Recibieron (Total)',
+        'No Recibieron',
+        'No Asistieron',
+        'Días Registrados',
+        'Raciones Esperadas',
+        '% Asistencia',
+        'Estado'
+      ];
+
       excelData.push(
         [''],
         ['DETALLE POR GRUPO (Consolidado Período)'],
-        ['Grupo', 'Sede', 'Total Estudiantes', 'Estudiantes Inactivos', 'Recibieron (Total)', 'No Recibieron', 'No Asistieron', 'Días Registrados', 'Raciones Esperadas', '% Asistencia', 'Estado']
+        groupHeaders
       );
 
       // Add grupo statistics
       grupoStats.forEach(stat => {
-        excelData.push([
+        const row: any[] = [
           stat.grupo,
           stat.sede,
           stat.total.toString(),
-          stat.inactivos.toString(),
+          stat.inactivos.toString()
+        ];
+
+        if (hasDailyCols) {
+          businessDates.forEach(d => {
+            const count = stat.dailyRecibio[d];
+            row.push(count ? count.toString() : '');
+          });
+        }
+
+        row.push(
           stat.recibieron.toString(),
           stat.noRecibieron.toString(),
           stat.ausentes.toString(),
@@ -850,8 +877,54 @@ function ReportesContent() {
           stat.racionesEsperadas.toString(),
           `${stat.porcentaje}%`,
           stat.estado
-        ]);
+        );
+
+        excelData.push(row);
       });
+
+      // Total row at bottom of group table
+      if (grupoStats.length > 0) {
+        const totalActivos = grupoStats.reduce((acc, g) => acc + g.total, 0);
+        const totalInactivos = grupoStats.reduce((acc, g) => acc + g.inactivos, 0);
+        const totalRecibieron = grupoStats.reduce((acc, g) => acc + g.recibieron, 0);
+        const totalNoRecibieron = grupoStats.reduce((acc, g) => acc + g.noRecibieron, 0);
+        const totalAusentes = grupoStats.reduce((acc, g) => acc + g.ausentes, 0);
+        const maxDiasRegistrados = Math.max(...grupoStats.map(g => g.diasRegistrados), 0);
+        const totalRacionesEsperadas = grupoStats.reduce((acc, g) => acc + g.racionesEsperadas, 0);
+        const totalPorcentaje = totalRacionesEsperadas > 0 ? ((totalRecibieron / totalRacionesEsperadas) * 100).toFixed(1) : '0.0';
+
+        let totalEstado = 'Crítico';
+        const pctNum = parseFloat(totalPorcentaje);
+        if (pctNum >= 90) totalEstado = 'Excelente';
+        else if (pctNum >= 70) totalEstado = 'Bueno';
+        else if (pctNum >= 50) totalEstado = 'Regular';
+
+        const totalRow: any[] = [
+          'Total',
+          '',
+          totalActivos.toString(),
+          totalInactivos.toString()
+        ];
+
+        if (hasDailyCols) {
+          businessDates.forEach(d => {
+            const daySum = grupoStats.reduce((acc, g) => acc + (g.dailyRecibio[d] || 0), 0);
+            totalRow.push(daySum > 0 ? daySum.toString() : '');
+          });
+        }
+
+        totalRow.push(
+          totalRecibieron.toString(),
+          totalNoRecibieron.toString(),
+          totalAusentes.toString(),
+          maxDiasRegistrados.toString(),
+          totalRacionesEsperadas.toString(),
+          `${totalPorcentaje}%`,
+          totalEstado
+        );
+
+        excelData.push(totalRow);
+      }
 
       // NEW: If a specific group is selected, add MATRIX for week/month OR detailed list for day
       if (grupoFilter !== 'todos' && (periodo === 'semana' || periodo === 'mes')) {
