@@ -687,7 +687,7 @@ function ReportesContent() {
       const businessDates: string[] = [];
       const businessDateHeaders: string[] = [];
 
-      // Fetch holidays to mark (Festivo) in headers
+      // Fetch holidays to mark (Festivo) in headers and cells
       const { data: festivosData } = await supabase.from('festivos_colombia').select('fecha');
       const festivosSet = new Set((festivosData || []).map(f => f.fecha));
 
@@ -705,6 +705,9 @@ function ReportesContent() {
         }
         curDate.setDate(curDate.getDate() + 1);
       }
+
+      // Total school business days in period (excluding holidays)
+      const totalSchoolBusinessDays = businessDates.filter(d => !festivosSet.has(d)).length;
 
       // Calculate statistics per grupo with daily received counts
       const grupoStats: any[] = [];
@@ -740,15 +743,21 @@ function ReportesContent() {
         });
 
         const totalRegisteredDays = registeredDaysSet.size;
-        const totalExpected = activos * totalRegisteredDays;
-        const porcentaje = totalExpected > 0 ? ((recibieron / totalExpected) * 100) : 0;
+
+        // 1. Teórico (Oficial / Calendario)
+        const racionesProgramadas = activos * totalSchoolBusinessDays;
+        const porcentajeCobertura = racionesProgramadas > 0 ? ((recibieron / racionesProgramadas) * 100) : 0;
+
+        // 2. Operativo (Real en App)
+        const racionesEsperadas = activos * totalRegisteredDays;
+        const porcentajeEfectivo = racionesEsperadas > 0 ? ((recibieron / racionesEsperadas) * 100) : 0;
 
         let estado = 'Crítico';
-        if (porcentaje >= 90) {
+        if (porcentajeEfectivo >= 90) {
           estado = 'Excelente';
-        } else if (porcentaje >= 70) {
+        } else if (porcentajeEfectivo >= 70) {
           estado = 'Bueno';
-        } else if (porcentaje >= 50) {
+        } else if (porcentajeEfectivo >= 50) {
           estado = 'Regular';
         }
 
@@ -761,8 +770,10 @@ function ReportesContent() {
           noRecibieron,
           ausentes,
           diasRegistrados: totalRegisteredDays,
-          racionesEsperadas: totalExpected,
-          porcentaje: porcentaje.toFixed(1),
+          racionesProgramadas,
+          porcentajeCobertura: porcentajeCobertura.toFixed(1),
+          racionesEsperadas,
+          porcentajeEfectivo: porcentajeEfectivo.toFixed(1),
           estado,
           dailyRecibio
         });
@@ -783,9 +794,11 @@ function ReportesContent() {
         const recibieron = groupsInSede.reduce((acc, g) => acc + g.recibieron, 0);
         const noRecibieron = groupsInSede.reduce((acc, g) => acc + g.noRecibieron, 0);
         const ausentes = groupsInSede.reduce((acc, g) => acc + g.ausentes, 0);
+        const racionesProgramadas = groupsInSede.reduce((acc, g) => acc + g.racionesProgramadas, 0);
         const racionesEsperadas = groupsInSede.reduce((acc, g) => acc + g.racionesEsperadas, 0);
 
-        const porcentaje = racionesEsperadas > 0 ? ((recibieron / racionesEsperadas) * 100).toFixed(1) : '0.0';
+        const porcentajeCobertura = racionesProgramadas > 0 ? ((recibieron / racionesProgramadas) * 100).toFixed(1) : '0.0';
+        const porcentajeEfectivo = racionesEsperadas > 0 ? ((recibieron / racionesEsperadas) * 100).toFixed(1) : '0.0';
 
         sedeStats.push({
           sede,
@@ -794,7 +807,8 @@ function ReportesContent() {
           recibieron,
           noRecibieron,
           ausentes,
-          porcentaje
+          porcentajeCobertura,
+          porcentajeEfectivo
         });
       }
 
@@ -812,9 +826,17 @@ function ReportesContent() {
           month: '2-digit',
           day: '2-digit'
         }), '← Cuándo se descargó', '', '⚪ Ausente'],
+        ['', '', '', '', '🌴 Festivo'],
         ['', '', '', '', '- Sin registro'],
+        ['GLOSARIO DE MÉTRICAS Y FÓRMULAS DEL REPORTE:'],
+        ['📌 Raciones Programadas (Teóricas):', 'Estudiantes Activos × Días Hábiles Lectivos del Mes (Mide la cobertura según calendario oficial).'],
+        ['📌 % Cobertura PAE (Teórica):', '(Total Recibidas / Raciones Programadas) × 100 (Porcentaje de aprovechamiento frente al contrato mensual).'],
+        ['📌 Raciones Operativas (Reales):', 'Estudiantes Activos × Días con Registro Real en App (Capacidad esperada en días que operó el comedor).'],
+        ['📌 % Asistencia Efectiva:', '(Total Recibidas / Raciones Operativas) × 100 (Porcentaje de asistencia en días efectivamente prestados).'],
+        ['📌 Estado del Grupo:', 'Excelente (≥90%) | Bueno (≥70%) | Regular (≥50%) | Crítico (<50%).'],
+        [''],
         ['RESUMEN POR SEDE (Consolidado Período)'],
-        ['Sede', 'Total Estudiantes (Activos)', 'Estudiantes Inactivos', 'Total Raciones Recibidas', 'Total No Recibieron', 'Total Ausentes', '% Asistencia']
+        ['Sede', 'Total Estudiantes (Activos)', 'Estudiantes Inactivos', 'Total Raciones Recibidas', 'Total No Recibieron', 'Total Ausentes', '% Cobertura PAE (Teórica)', '% Asistencia Efectiva']
       ];
 
       // Add sede statistics (always show all 3 sedes)
@@ -826,7 +848,8 @@ function ReportesContent() {
           stat.recibieron.toString(),
           stat.noRecibieron.toString(),
           stat.ausentes.toString(),
-          `${stat.porcentaje}%`
+          `${stat.porcentajeCobertura}%`,
+          `${stat.porcentajeEfectivo}%`
         ]);
       });
 
@@ -835,15 +858,18 @@ function ReportesContent() {
       const groupHeaders = [
         'Grupo',
         'Sede',
-        'Total Estudiantes',
+        'Estudiantes Activos',
         'Estudiantes Inactivos',
+        'Días Hábiles Mes',
+        'Raciones Programadas (Teóricas)',
+        '% Cobertura PAE (Teórica)',
         ...(hasDailyCols ? businessDateHeaders : []),
         'Recibieron (Total)',
         'No Recibieron',
         'No Asistieron',
         'Días Registrados',
-        'Raciones Esperadas',
-        '% Asistencia',
+        'Raciones Operativas (Reales)',
+        '% Asistencia Efectiva',
         'Estado'
       ];
 
@@ -859,13 +885,20 @@ function ReportesContent() {
           stat.grupo,
           stat.sede,
           stat.total.toString(),
-          stat.inactivos.toString()
+          stat.inactivos.toString(),
+          totalSchoolBusinessDays.toString(),
+          stat.racionesProgramadas.toString(),
+          `${stat.porcentajeCobertura}%`
         ];
 
         if (hasDailyCols) {
           businessDates.forEach(d => {
-            const count = stat.dailyRecibio[d];
-            row.push(count ? count.toString() : '');
+            if (festivosSet.has(d)) {
+              row.push('Festivo');
+            } else {
+              const count = stat.dailyRecibio[d];
+              row.push(count ? count.toString() : '');
+            }
           });
         }
 
@@ -875,7 +908,7 @@ function ReportesContent() {
           stat.ausentes.toString(),
           stat.diasRegistrados.toString(),
           stat.racionesEsperadas.toString(),
-          `${stat.porcentaje}%`,
+          `${stat.porcentajeEfectivo}%`,
           stat.estado
         );
 
@@ -890,11 +923,14 @@ function ReportesContent() {
         const totalNoRecibieron = grupoStats.reduce((acc, g) => acc + g.noRecibieron, 0);
         const totalAusentes = grupoStats.reduce((acc, g) => acc + g.ausentes, 0);
         const maxDiasRegistrados = Math.max(...grupoStats.map(g => g.diasRegistrados), 0);
+        const totalRacionesProgramadas = grupoStats.reduce((acc, g) => acc + g.racionesProgramadas, 0);
         const totalRacionesEsperadas = grupoStats.reduce((acc, g) => acc + g.racionesEsperadas, 0);
-        const totalPorcentaje = totalRacionesEsperadas > 0 ? ((totalRecibieron / totalRacionesEsperadas) * 100).toFixed(1) : '0.0';
+
+        const totalPorcentajeCobertura = totalRacionesProgramadas > 0 ? ((totalRecibieron / totalRacionesProgramadas) * 100).toFixed(1) : '0.0';
+        const totalPorcentajeEfectivo = totalRacionesEsperadas > 0 ? ((totalRecibieron / totalRacionesEsperadas) * 100).toFixed(1) : '0.0';
 
         let totalEstado = 'Crítico';
-        const pctNum = parseFloat(totalPorcentaje);
+        const pctNum = parseFloat(totalPorcentajeEfectivo);
         if (pctNum >= 90) totalEstado = 'Excelente';
         else if (pctNum >= 70) totalEstado = 'Bueno';
         else if (pctNum >= 50) totalEstado = 'Regular';
@@ -903,13 +939,20 @@ function ReportesContent() {
           'Total',
           '',
           totalActivos.toString(),
-          totalInactivos.toString()
+          totalInactivos.toString(),
+          totalSchoolBusinessDays.toString(),
+          totalRacionesProgramadas.toString(),
+          `${totalPorcentajeCobertura}%`
         ];
 
         if (hasDailyCols) {
           businessDates.forEach(d => {
-            const daySum = grupoStats.reduce((acc, g) => acc + (g.dailyRecibio[d] || 0), 0);
-            totalRow.push(daySum > 0 ? daySum.toString() : '');
+            if (festivosSet.has(d)) {
+              totalRow.push('Festivo');
+            } else {
+              const daySum = grupoStats.reduce((acc, g) => acc + (g.dailyRecibio[d] || 0), 0);
+              totalRow.push(daySum > 0 ? daySum.toString() : '');
+            }
           });
         }
 
@@ -919,7 +962,7 @@ function ReportesContent() {
           totalAusentes.toString(),
           maxDiasRegistrados.toString(),
           totalRacionesEsperadas.toString(),
-          `${totalPorcentaje}%`,
+          `${totalPorcentajeEfectivo}%`,
           totalEstado
         );
 
