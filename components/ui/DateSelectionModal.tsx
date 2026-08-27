@@ -9,6 +9,10 @@ interface DateSelectionModalProps {
     selectedDate: string;
     onSelectDate: (date: string) => void;
     title?: string;
+    highlightedDates?: string[];
+    dateData?: Record<string, number>;
+    showCounters?: boolean;
+    mode?: 'schedules' | 'attendance' | 'manual';
 }
 
 export function DateSelectionModal({
@@ -16,7 +20,11 @@ export function DateSelectionModal({
     onClose,
     selectedDate,
     onSelectDate,
-    title = 'Seleccionar Fecha'
+    title = 'Seleccionar Fecha',
+    highlightedDates,
+    dateData,
+    showCounters = false,
+    mode = 'manual'
 }: DateSelectionModalProps) {
     if (!isOpen) return null;
 
@@ -46,8 +54,10 @@ export function DateSelectionModal({
                             onSelectDate(date);
                             onClose();
                         }}
-                        mode="manual" // Simple mode without extra data fetching by default
-                        showCounters={false}
+                        mode={mode}
+                        showCounters={showCounters}
+                        dateData={dateData}
+                        highlightedDates={highlightedDates}
                     />
                 </div>
                 <div className="p-6 pt-0 bg-white dark:bg-gray-900">

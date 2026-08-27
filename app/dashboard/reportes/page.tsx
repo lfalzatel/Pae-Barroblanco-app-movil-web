@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, Suspense } from 'react';
+import { useEffect, useState, useRef, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
@@ -85,6 +85,20 @@ function ReportesContent() {
   const [chartData, setChartData] = useState<any[]>([]);
   const [distributionData, setDistributionData] = useState<any[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+
+  const calendarDateData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    (allPeriodRecords || []).forEach(r => {
+      if (r.estado === 'recibio') {
+        counts[r.fecha] = (counts[r.fecha] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [allPeriodRecords]);
+
+  const calendarHighlightedDates = useMemo(() => {
+    return Object.keys(calendarDateData);
+  }, [calendarDateData]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -1711,7 +1725,11 @@ function ReportesContent() {
           setSelectedDate(date);
           setPeriodo('fecha');
         }}
-        title="Seleccionar Fecha Reporte"
+        title={grupoFilter !== 'todos' ? `Calendario Grupo ${grupoFilter}` : sedeFilter !== 'todas' ? `Calendario Sede ${sedeFilter}` : 'Seleccionar Fecha Reporte'}
+        highlightedDates={calendarHighlightedDates}
+        dateData={calendarDateData}
+        mode={calendarHighlightedDates.length > 0 ? 'attendance' : 'manual'}
+        showCounters={calendarHighlightedDates.length > 0}
       />
 
       {/* Modal de Detalle por Grupo */}
