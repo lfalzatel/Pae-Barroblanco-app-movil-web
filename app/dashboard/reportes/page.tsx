@@ -894,10 +894,10 @@ function ReportesContent() {
         if (hasDailyCols) {
           businessDates.forEach(d => {
             if (festivosSet.has(d)) {
-              row.push('Festivo');
+              row.push('-');
             } else {
               const count = stat.dailyRecibio[d];
-              row.push(count ? count.toString() : '');
+              row.push(count && count > 0 ? count.toString() : '-');
             }
           });
         }
@@ -948,10 +948,10 @@ function ReportesContent() {
         if (hasDailyCols) {
           businessDates.forEach(d => {
             if (festivosSet.has(d)) {
-              totalRow.push('Festivo');
+              totalRow.push('-');
             } else {
               const daySum = grupoStats.reduce((acc, g) => acc + (g.dailyRecibio[d] || 0), 0);
-              totalRow.push(daySum > 0 ? daySum.toString() : '');
+              totalRow.push(daySum > 0 ? daySum.toString() : '-');
             }
           });
         }
@@ -1013,7 +1013,8 @@ function ReportesContent() {
             ['Estudiante', ...dates.map(d => {
               const dateObj = new Date(d + 'T00:00:00');
               const dayName = dateObj.toLocaleDateString('es-CO', { weekday: 'short' });
-              return `${dayName} ${dateObj.getDate()}`;
+              const isFestivo = festivosSet.has(d);
+              return `${dayName} ${dateObj.getDate()}${isFestivo ? ' (Festivo)' : ''}`;
             }), 'Registrados', '% Asistencia', 'Estado']
           );
 
@@ -1031,16 +1032,20 @@ function ReportesContent() {
             let totalRecibio = 0;
 
             dates.forEach(d => {
-              const estado = studentMatrix[student.id]?.[d];
-              if (estado === 'recibio') {
-                row.push('✅');
-                totalRecibio++;
-              } else if (estado === 'no_recibio') {
-                row.push('❌');
-              } else if (estado === 'ausente') {
-                row.push('⚪');
+              if (festivosSet.has(d)) {
+                row.push('🌴');
               } else {
-                row.push('-');
+                const estado = studentMatrix[student.id]?.[d];
+                if (estado === 'recibio') {
+                  row.push('✅');
+                  totalRecibio++;
+                } else if (estado === 'no_recibio') {
+                  row.push('❌');
+                } else if (estado === 'ausente') {
+                  row.push('⚪');
+                } else {
+                  row.push('-');
+                }
               }
             });
 
