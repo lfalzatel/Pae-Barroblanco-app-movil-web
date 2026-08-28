@@ -2862,7 +2862,22 @@ function ReportesContent() {
                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400">El formato Excel no permite vista previa visual aquí.</p>
                      </div>
                    ) : selectedExportFormat === 'pdf' && exportPreviewUrl ? (
-                     <iframe src={`${exportPreviewUrl}#toolbar=0`} className="w-full h-[50vh] border-0" title="PDF Preview" />
+                      <div className="w-full h-full flex flex-col items-center justify-center p-2">
+                        <iframe src={`${exportPreviewUrl}#toolbar=0`} className="hidden md:block w-full h-[50vh] border-0 rounded-xl" title="PDF Preview" />
+                        <div className="block md:hidden text-center p-6 bg-rose-50 dark:bg-rose-950/30 rounded-2xl border border-rose-100 dark:border-rose-900/50 w-full">
+                          <FileText className="w-12 h-12 text-rose-500 mx-auto mb-3" />
+                          <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-1">Documento PDF Listo</p>
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">Los visores de teléfono requieren abrir el PDF directamente en pantalla completa.</p>
+                          <a
+                            href={exportPreviewUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-rose-600 hover:bg-rose-700 text-white font-black text-[11px] uppercase tracking-wider rounded-xl shadow-lg shadow-rose-200 dark:shadow-none transition-all active:scale-95 w-full"
+                          >
+                            👁️ Abrir PDF en Pantalla Completa
+                          </a>
+                        </div>
+                      </div>
                    ) : selectedExportFormat === 'image' && exportPreviewUrl ? (
                      <div className="overflow-auto max-h-[50vh] p-2">
                        <img src={exportPreviewUrl} alt="Vista Previa" className="max-w-full h-auto object-contain rounded-xl shadow-sm" />

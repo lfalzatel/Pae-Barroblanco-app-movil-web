@@ -315,25 +315,25 @@ export const generateDetailedReportPDF = (params: {
     doc.setFillColor(22, 101, 52); // Verde esmeralda oscuro
     doc.rect(0, 0, pageWidth, 40, 'F');
     
-    doc.setFontSize(22);
+    doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.text('REPORTE DE ASISTENCIA PAE', pageWidth / 2, 20, { align: 'center' });
+    doc.text('REPORTE CONSOLIDADO PAE BARROBLANCO', pageWidth / 2, 18, { align: 'center' });
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('INSTITUCIÓN EDUCATIVA BARROBLANCO', pageWidth / 2, 28, { align: 'center' });
-    doc.text(`Generado el: ${todayStr}`, pageWidth / 2, 34, { align: 'center' });
+    doc.text('INSTITUCIÓN EDUCATIVA BARROBLANCO - SISTEMA DE GESTIÓN DE ALIMENTACIÓN ESCOLAR', pageWidth / 2, 26, { align: 'center' });
+    doc.text(`Fecha de Generación: ${todayStr}`, pageWidth / 2, 32, { align: 'center' });
 
-    // 2. Información de Filtros
-    let currentY = 50;
-    doc.setTextColor(50);
-    doc.setFontSize(12);
+    // 2. Información de Filtros y Glosario Breve
+    let currentY = 48;
+    doc.setTextColor(30);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.text('Parámetros del Reporte', 14, currentY);
-    currentY += 7;
+    currentY += 6;
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     const filterLines = [
         `Periodo: ${filters.startDate} al ${filters.endDate} (${filters.periodo.toUpperCase()})`,
@@ -342,45 +342,52 @@ export const generateDetailedReportPDF = (params: {
     ];
     filterLines.forEach(line => {
         doc.text(line, 14, currentY);
-        currentY += 5;
+        currentY += 4.5;
     });
 
-    // 3. Resumen Estadístico (Dashboard style)
-    currentY += 5;
-    doc.setFontSize(12);
+    // 3. Resumen Estadístico (Consolidado General)
+    currentY += 4;
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('Consolidado General', 14, currentY);
+    doc.text('Consolidado General de Asistencia', 14, currentY);
+
+    const bodyRows = [
+        ['Total Estudiantes (Activos)', stats.totalActivos?.toString() || stats.totalEstudiantes?.toString() || '0'],
+        ['Estudiantes Inactivos', stats.inactivos?.toString() || '0'],
+        ['Total Raciones Recibidas', stats.recibieron?.toString() || '0'],
+        ['No Recibieron Ración', stats.noRecibieron?.toString() || '0'],
+        ['Estudiantes Ausentes', stats.ausentes?.toString() || '0'],
+        ['Días Registrados en App', stats.diasRegistrados?.toString() || '0'],
+        ['Raciones Operativas Esperadas', stats.racionesEsperadas?.toString() || '0'],
+        ['% Asistencia Efectiva', `${stats.porcentajeAsistencia || stats.porcentajeEfectivo || '0.0'}%`],
+        ['Estado del Consolidado', stats.estado || '-']
+    ];
+
+    if (stats.porcentajeCobertura) {
+        bodyRows.splice(7, 0, ['% Cobertura PAE (Teórica)', `${stats.porcentajeCobertura}%`]);
+    }
     
     autoTable(doc, {
-        startY: currentY + 5,
+        startY: currentY + 4,
         head: [['Métrica', 'Valor']],
-        body: [
-            ['Total Estudiantes (Activos)', stats.totalActivos?.toString() || stats.totalEstudiantes?.toString()],
-            ['Estudiantes Inactivos', stats.inactivos?.toString() || '0'],
-            ['Total Raciones Entregadas', stats.recibieron.toString()],
-            ['No Recibieron Ración', stats.noRecibieron.toString()],
-            ['Estudiantes Ausentes', stats.ausentes.toString()],
-            ['Días Registrados', stats.diasRegistrados?.toString() || '0'],
-            ['Raciones Esperadas', stats.racionesEsperadas?.toString() || '0'],
-            ['Tasa de Asistencia', `${stats.porcentajeAsistencia}%`],
-            ['Estado', stats.estado || '-']
-        ],
+        body: bodyRows,
         theme: 'striped',
         headStyles: { fillColor: [22, 101, 52] },
-        styles: { fontSize: 9, cellPadding: 3 },
-        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 80 } }
+        styles: { fontSize: 8.5, cellPadding: 2.5 },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 90 } }
     });
 
-    currentY = (doc as any).lastAutoTable.finalY + 15;
+    currentY = (doc as any).lastAutoTable.finalY + 10;
 
-    // 4. Lógica de Matriz Semanal (Solo si hay un grupo seleccionado)
+    // 4. Lógica de Matriz Semanal/Mensual por Estudiante (Si hay grupo seleccionado)
     if (filters.grupo !== 'todos' && (filters.periodo === 'mes' || filters.periodo === 'semana')) {
-        doc.setFontSize(12);
+        if (currentY > 230) { doc.addPage(); currentY = 20; }
+        doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.text(`Matriz de Asistencia Diaria - Grupo ${filters.grupo}`, 14, currentY);
-        currentY += 8;
+        currentY += 6;
 
-        // Agrupar registros por fecha y estudiante
+        // Map attendance by student and date
         const attendanceMap: Record<string, Record<string, string>> = {};
         allPeriodRecords.forEach(r => {
             const est = Array.isArray(r.estudiantes) ? r.estudiantes[0] : r.estudiantes;
@@ -389,7 +396,7 @@ export const generateDetailedReportPDF = (params: {
             attendanceMap[est.id][r.fecha] = r.estado;
         });
 
-        // Generar lista de fechas (solo días de semana) entre startDate y endDate
+        // School dates (Mon-Fri)
         const allDates: string[] = [];
         let curr = new Date(filters.startDate + 'T00:00:00');
         const end = new Date(filters.endDate + 'T00:00:00');
@@ -400,20 +407,18 @@ export const generateDetailedReportPDF = (params: {
             curr.setDate(curr.getDate() + 1);
         }
 
-        // Agrupar fechas por semanas
+        // Group into weeks of max 5 days
         const weeks: string[][] = [];
         let currentWeek: string[] = [];
         allDates.forEach((date, i) => {
             currentWeek.push(date);
             const d = new Date(date + 'T00:00:00');
-            // Si es viernes o la última fecha, cerrar semana
             if (d.getDay() === 5 || i === allDates.length - 1) {
                 weeks.push(currentWeek);
                 currentWeek = [];
             }
         });
 
-        // Renderizar una tabla por cada semana
         const sortedStudents = [...allStudents].sort((a, b) => a.nombre.localeCompare(b.nombre));
 
         weeks.forEach((weekDates, weekIdx) => {
@@ -423,7 +428,7 @@ export const generateDetailedReportPDF = (params: {
             }
 
             const weekLabel = `Semana ${weekIdx + 1} (${weekDates[0]} al ${weekDates[weekDates.length - 1]})`;
-            doc.setFontSize(10);
+            doc.setFontSize(9.5);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(22, 101, 52);
             doc.text(weekLabel, 14, currentY);
@@ -432,97 +437,165 @@ export const generateDetailedReportPDF = (params: {
                 const day = new Date(d + 'T00:00:00').toLocaleDateString('es-CO', { weekday: 'short' });
                 const dayNum = d.split('-')[2];
                 return `${day} ${dayNum}`;
-            })]];
+            }), 'Recibió']];
 
             const matrixBody = sortedStudents.map(student => {
+                let recCount = 0;
                 const row: string[] = [student.nombre];
                 weekDates.forEach(date => {
                     const estado = attendanceMap[student.id]?.[date];
-                    if (estado === 'recibio') row.push('SI');
-                    else if (estado === 'no_recibio') row.push('NO');
+                    if (estado === 'recibio') {
+                        row.push('SI');
+                        recCount++;
+                    } else if (estado === 'no_recibio') row.push('NO');
                     else if (estado === 'ausente') row.push('AUS');
                     else row.push('-');
                 });
+                row.push(recCount.toString());
                 return row;
             });
+
+            // Add Total row for week
+            const weekTotalRow: string[] = ['Total'];
+            weekDates.forEach(date => {
+                const count = sortedStudents.filter(s => attendanceMap[s.id]?.[date] === 'recibio').length;
+                weekTotalRow.push(count > 0 ? count.toString() : '-');
+            });
+            const weekTotalSum = sortedStudents.reduce((acc, s) => {
+                const rowSum = weekDates.filter(d => attendanceMap[s.id]?.[d] === 'recibio').length;
+                return acc + rowSum;
+            }, 0);
+            weekTotalRow.push(weekTotalSum.toString());
+            matrixBody.push(weekTotalRow);
 
             autoTable(doc, {
                 startY: currentY + 4,
                 head: matrixHead,
                 body: matrixBody,
                 theme: 'grid',
-                headStyles: { fillColor: [51, 65, 85], fontSize: 7, halign: 'center' },
+                headStyles: { fillColor: [51, 65, 85], fontSize: 7.5, halign: 'center' },
                 bodyStyles: { fontSize: 7, halign: 'center' },
                 columnStyles: { 0: { halign: 'left', cellWidth: 45 } },
                 styles: { cellPadding: 1 },
                 didParseCell: (data) => {
+                    if (data.row.index === matrixBody.length - 1) {
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.fillColor = [241, 245, 249];
+                    }
                     if (data.cell.text[0] === 'SI') data.cell.styles.textColor = [22, 101, 52];
                     if (data.cell.text[0] === 'NO') data.cell.styles.textColor = [220, 38, 38];
                     if (data.cell.text[0] === 'AUS') data.cell.styles.textColor = [156, 163, 175];
                 }
             });
 
-            currentY = (doc as any).lastAutoTable.finalY + 12;
+            currentY = (doc as any).lastAutoTable.finalY + 10;
         });
     }
 
-    // Reporte Consolidado (Siempre visible, con o sin matriz)
-        if (sedeStats && sedeStats.length > 0) {
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Resumen Detallado por Sede', 14, currentY);
-            
-            autoTable(doc, {
-                startY: currentY + 5,
-                head: [['Sede', 'Total Est. (Act)', 'Est. Inactivos', 'Recibieron', 'No Recibieron', 'Ausentes', '% Asist.']],
-                body: sedeStats.map(s => [
-                    s.sede, 
-                    s.total.toString(), 
-                    s.inactivos.toString(),
-                    s.recibieron.toString(), 
-                    s.noRecibieron.toString(), 
-                    s.ausentes.toString(), 
-                    `${s.porcentaje}%`
-                ]),
-                theme: 'grid',
-                headStyles: { fillColor: [15, 118, 110] },
-                styles: { fontSize: 8 }
-            });
-            currentY = (doc as any).lastAutoTable.finalY + 15;
-        }
+    // 5. Resumen por Sede
+    if (sedeStats && sedeStats.length > 0) {
+        if (currentY > 230) { doc.addPage(); currentY = 20; }
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(30);
+        doc.text('Resumen Detallado por Sede', 14, currentY);
+        
+        const hasSedeTeorica = sedeStats.some(s => s.porcentajeCobertura !== undefined);
+        const headSede = hasSedeTeorica
+            ? [['Sede', 'Est. Activos', 'Est. Inactivos', 'Recibieron', 'No Recibieron', 'Ausentes', '% Cobertura', '% Asistencia']]
+            : [['Sede', 'Est. Activos', 'Est. Inactivos', 'Recibieron', 'No Recibieron', 'Ausentes', '% Asistencia']];
 
-        if (filters.grupo !== 'todos' && studentStats && studentStats.length > 0) {
-            if (currentY > 250) { doc.addPage(); currentY = 20; }
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Detalle de Estudiantes', 14, currentY);
+        const bodySede = sedeStats.map(s => {
+            const row = [
+                `Sede ${s.sede}`, 
+                s.total.toString(), 
+                s.inactivos.toString(),
+                s.recibieron.toString(), 
+                s.noRecibieron.toString(), 
+                s.ausentes.toString()
+            ];
+            if (hasSedeTeorica) row.push(`${s.porcentajeCobertura || '0.0'}%`);
+            row.push(`${s.porcentajeEfectivo || s.porcentaje}%`);
+            return row;
+        });
 
-            autoTable(doc, {
-                startY: currentY + 5,
-                head: [['Estudiante', 'Recibió', 'Ausente', 'Días Reg.', '% Asist.', 'Estado']],
-                body: studentStats.map(s => [
-                    s.nombre,
-                    s.recibio.toString(),
-                    s.ausentes.toString(),
-                    s.diasRegistrados.toString(),
-                    `${s.porcentaje}%`,
-                    s.estado
-                ]),
-                theme: 'grid',
-                headStyles: { fillColor: [8, 145, 178] },
-                styles: { fontSize: 8 },
-                didParseCell: (data) => {
-                    if (data.column.index === 5) {
-                        const val = data.cell.text[0];
-                        if (val === 'Excelente') data.cell.styles.textColor = [22, 101, 52];
-                        if (val === 'Crítico') data.cell.styles.textColor = [220, 38, 38];
-                    }
+        autoTable(doc, {
+            startY: currentY + 4,
+            head: headSede,
+            body: bodySede,
+            theme: 'grid',
+            headStyles: { fillColor: [15, 118, 110], fontSize: 8, halign: 'center' },
+            bodyStyles: { fontSize: 7.5, halign: 'center' },
+            columnStyles: { 0: { halign: 'left' } },
+            styles: { cellPadding: 2 }
+        });
+        currentY = (doc as any).lastAutoTable.finalY + 12;
+    }
+
+    // 6. Detalle de Estudiantes (Si se seleccionó un grupo)
+    if (filters.grupo !== 'todos' && studentStats && studentStats.length > 0) {
+        if (currentY > 230) { doc.addPage(); currentY = 20; }
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(30);
+        doc.text(`Consolidado por Estudiante - Grupo ${filters.grupo}`, 14, currentY);
+
+        const studentBody = studentStats.map(s => [
+            s.nombre,
+            s.recibio.toString(),
+            s.ausentes.toString(),
+            s.diasRegistrados.toString(),
+            `${s.porcentaje}%`,
+            s.estado
+        ]);
+
+        // Add summary Total row for students
+        const sumRecibió = studentStats.reduce((acc, s) => acc + s.recibio, 0);
+        const sumAusentes = studentStats.reduce((acc, s) => acc + s.ausentes, 0);
+        const maxDias = Math.max(...studentStats.map(s => s.diasRegistrados), 0);
+        const totalEst = studentStats.length;
+        const totalEsperadas = totalEst * maxDias;
+        const totalPct = totalEsperadas > 0 ? ((sumRecibió / totalEsperadas) * 100).toFixed(1) : '0.0';
+        let totalEstado = 'Crítico';
+        const pctVal = parseFloat(totalPct);
+        if (pctVal >= 90) totalEstado = 'Excelente';
+        else if (pctVal >= 70) totalEstado = 'Bueno';
+        else if (pctVal >= 50) totalEstado = 'Regular';
+
+        studentBody.push([
+            'Total Grupo',
+            sumRecibió.toString(),
+            sumAusentes.toString(),
+            maxDias.toString(),
+            `${totalPct}%`,
+            totalEstado
+        ]);
+
+        autoTable(doc, {
+            startY: currentY + 4,
+            head: [['Estudiante', 'Recibió (Total)', 'Ausente', 'Días Reg.', '% Asist.', 'Estado']],
+            body: studentBody,
+            theme: 'grid',
+            headStyles: { fillColor: [8, 145, 178], fontSize: 8, halign: 'center' },
+            bodyStyles: { fontSize: 7.5, halign: 'center' },
+            columnStyles: { 0: { halign: 'left', cellWidth: 55 } },
+            styles: { cellPadding: 2 },
+            didParseCell: (data) => {
+                if (data.row.index === studentBody.length - 1) {
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fillColor = [241, 245, 249];
                 }
-            });
-            currentY = (doc as any).lastAutoTable.finalY + 15;
-        }
+                if (data.column.index === 5) {
+                    const val = data.cell.text[0];
+                    if (val === 'Excelente') data.cell.styles.textColor = [22, 101, 52];
+                    if (val === 'Crítico') data.cell.styles.textColor = [220, 38, 38];
+                }
+            }
+        });
+        currentY = (doc as any).lastAutoTable.finalY + 12;
+    }
 
-    // Pie de Página
+    // Pie de Página en todas las páginas
     const pageCount = (doc as any).internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
