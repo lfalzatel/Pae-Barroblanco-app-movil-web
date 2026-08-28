@@ -346,13 +346,15 @@ export default function HorarioPage() {
                 setPrevWeekAssignments(prevGroupBlocks);
 
             } else {
-                const d = new Date(selectedDate + 'T12:00:00');
-                const day = d.getDay();
-                const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-                const dates = [];
+                const mon = getMondayDate(selectedDate);
+                const dates: string[] = [];
                 for (let i = 0; i < 5; i++) {
-                    const target = new Date(d.setDate(diff + i));
-                    dates.push(target.toISOString().split('T')[0]);
+                    const cur = new Date(mon);
+                    cur.setDate(mon.getDate() + i);
+                    const y = cur.getFullYear();
+                    const m = (cur.getMonth() + 1).toString().padStart(2, '0');
+                    const dayStr = cur.getDate().toString().padStart(2, '0');
+                    dates.push(`${y}-${m}-${dayStr}`);
                 }
                 setWeekData(dates.map(date => ({ date })));
 
@@ -556,39 +558,52 @@ export default function HorarioPage() {
 
     const isAssigned = (g: GlobalGroup) => Object.values(assignments).some(slots => slots.some(s => s.group.id === g.id)) || absentGroups.some(a => a.group.id === g.id);
 
-    const getWeekRange = (dateStr: string) => {
-        const d = new Date(dateStr + 'T12:00:00');
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const getMondayDate = (dateStr: string): Date => {
+        const [y, m, dayNum] = dateStr.split('-').map(Number);
+        const d = new Date(y, m - 1, dayNum, 12, 0, 0);
+        const day = d.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+        const diffToMon = day === 0 ? -6 : 1 - day;
+        d.setDate(d.getDate() + diffToMon);
+        return d;
+    };
 
-        const mon = new Date(d.setDate(diff));
-        const fri = new Date(d.setDate(diff + 4));
+    const getWeekRange = (dateStr: string) => {
+        const mon = getMondayDate(dateStr);
+        const fri = new Date(mon);
+        fri.setDate(mon.getDate() + 4);
 
         const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
         return `${mon.toLocaleDateString('es-CO', opts)} - ${fri.toLocaleDateString('es-CO', opts)}`.toUpperCase().replace(/\./g, '');
     };
 
     const handleMoveWeek = (offset: number) => {
-        const d = new Date(selectedDate + 'T12:00:00');
-        d.setDate(d.getDate() + (offset * 7));
-        setSelectedDate(d.toISOString().split('T')[0]);
+        const mon = getMondayDate(selectedDate);
+        mon.setDate(mon.getDate() + (offset * 7));
+        const y = mon.getFullYear();
+        const m = (mon.getMonth() + 1).toString().padStart(2, '0');
+        const dayStr = mon.getDate().toString().padStart(2, '0');
+        setSelectedDate(`${y}-${m}-${dayStr}`);
     };
 
     const handleJumpToDay = (dayIndex: number) => {
-        const d = new Date(selectedDate + 'T12:00:00');
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        const target = new Date(d.setDate(diff + (dayIndex - 1)));
-        setSelectedDate(target.toISOString().split('T')[0]);
+        const mon = getMondayDate(selectedDate);
+        const target = new Date(mon);
+        target.setDate(mon.getDate() + (dayIndex - 1));
+        const y = target.getFullYear();
+        const m = (target.getMonth() + 1).toString().padStart(2, '0');
+        const dayStr = target.getDate().toString().padStart(2, '0');
+        setSelectedDate(`${y}-${m}-${dayStr}`);
         setViewMode('day');
     };
 
     const handleSelectDateInWeek = (dayIndex: number) => {
-        const d = new Date(selectedDate + 'T12:00:00');
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        const target = new Date(d.setDate(diff + (dayIndex - 1)));
-        const targetStr = target.toISOString().split('T')[0];
+        const mon = getMondayDate(selectedDate);
+        const target = new Date(mon);
+        target.setDate(mon.getDate() + (dayIndex - 1));
+        const y = target.getFullYear();
+        const m = (target.getMonth() + 1).toString().padStart(2, '0');
+        const dayStr = target.getDate().toString().padStart(2, '0');
+        const targetStr = `${y}-${m}-${dayStr}`;
         setSelectedDate(targetStr);
 
         // Auto-scroll to the card
