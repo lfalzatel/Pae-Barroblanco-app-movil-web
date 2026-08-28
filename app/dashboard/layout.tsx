@@ -27,7 +27,7 @@ import {
     RefreshCcw,
     AlertCircle,
     ChevronLeft as ChevronLeftIcon,
-    ChevronRight as ChevronRightIcon,
+    ChevronRight,
     Download,
     School,
     Sun,
@@ -40,6 +40,9 @@ import {
     Star,
     Trophy
 } from 'lucide-react';
+
+const ChevronRightIcon = ChevronRight;
+
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
 import { useTheme } from '@/components/ThemeProvider';
 import { getAcademicBlock } from '@/lib/schedule-utils';
@@ -888,134 +891,229 @@ export default function DashboardLayout({
                         </button>
 
                         {isProfileMenuOpen && (
-                            <div className="absolute bottom-full mb-2 left-0 w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-y-auto max-h-[85vh] z-50 animate-in slide-in-from-bottom-2 fade-in duration-200 dark:bg-gray-800 dark:border-gray-700">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsProfileMenuOpen(false);
-                                        router.push('/dashboard/perfil');
-                                    }}
-                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left dark:text-gray-200 dark:hover:bg-gray-700"
-                                >
-                                    <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                    Mi Perfil
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        setIsProfileMenuOpen(false);
-                                        handleShareApp();
-                                    }}
-                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left dark:text-gray-200 dark:hover:bg-gray-700"
-                                >
-                                    <Share2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                    Compartir Aplicación
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        setIsProfileMenuOpen(false);
-                                        handleBiometricSetup();
-                                    }}
-                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left dark:text-gray-200 dark:hover:bg-gray-700"
-                                >
-                                    <Fingerprint className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                                    Vincular Huella / FaceID
-                                </button>
-
-                                {(usuario.rol === 'admin' || usuario.rol === 'coordinador_pae') && (
-                                    <button
-                                        onClick={handleTestPush}
-                                        disabled={isTestLoading}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50 w-full transition-colors text-left border-t border-gray-50 dark:border-gray-700 dark:hover:bg-blue-900/20"
-                                    >
-                                        <Bell className={`w-4 h-4 ${isTestLoading ? 'animate-spin' : ''}`} />
-                                        {isTestLoading ? 'Enviando...' : 'Probar Notificación'}
-                                    </button>
-                                )}
-
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        isSubscribed ? unsubscribe() : subscribe();
-                                    }}
-                                    disabled={isLoading}
-                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left dark:text-gray-200 dark:hover:bg-gray-700 relative"
-                                >
-                                    <div className="relative">
-                                        {isSubscribed ? (
-                                            <Bell className="w-4 h-4 text-cyan-600 dark:text-cyan-400 animate-pulse" />
+                            <div className="absolute bottom-full mb-2 left-0 w-full min-w-[280px] bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-y-auto max-h-[85vh] z-50 animate-in slide-in-from-bottom-2 fade-in duration-200 divide-y divide-gray-100 dark:divide-gray-700/60">
+                                {/* Encabezado Usuario */}
+                                <div className="p-4 flex items-center gap-3 bg-gray-50/60 dark:bg-gray-800/80">
+                                    <div className="w-12 h-12 rounded-2xl border-2 border-cyan-500/30 overflow-hidden bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center shrink-0 shadow-sm">
+                                        {usuario.foto ? (
+                                            <img src={usuario.foto} alt={usuario.nombre} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                         ) : (
-                                            <BellOff className="w-4 h-4 text-gray-400" />
-                                        )}
-                                        {isSubscribed && (
-                                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-white dark:border-gray-800" />
+                                            <span className="text-cyan-700 dark:text-cyan-300 font-black text-lg">{usuario.nombre?.charAt(0)}</span>
                                         )}
                                     </div>
-                                    <div className="flex flex-col leading-tight">
-                                        <span className={isSubscribed ? "text-cyan-700 dark:text-cyan-300 font-bold" : ""}>
-                                            {isSubscribed ? 'Notificaciones Activas' : 'Activar Notificaciones'}
-                                        </span>
-                                        <span className="text-[10px] text-gray-400 font-medium">
-                                            {isLoading ? 'Procesando...' : (isSubscribed ? 'Recibiendo alertas push' : 'Recibe avisos de cambios')}
-                                        </span>
+                                    <div className="flex flex-col min-w-0 flex-1">
+                                        <span className="text-sm font-black text-gray-900 dark:text-white truncate leading-tight">{usuario.nombre}</span>
+                                        <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{usuario.email}</span>
+                                        <div className="flex items-center gap-1.5 mt-1">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
+                                                {usuario.rol || 'Acudiente'}
+                                            </span>
+                                        </div>
                                     </div>
-                                </button>
+                                </div>
 
-                                {!isStandalone && deferredPrompt && (
+                                {/* Opcion Mi Perfil */}
+                                <div className="p-1">
                                     <button
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                            e.stopPropagation();
                                             setIsProfileMenuOpen(false);
-                                            handleInstallClick();
+                                            router.push('/dashboard/perfil');
                                         }}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left dark:text-gray-200 dark:hover:bg-gray-700"
+                                        className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-2xl transition-all text-left group"
                                     >
-                                        <Download className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                        Instalar Aplicación
+                                        <div className="p-2.5 rounded-2xl bg-rose-50 dark:bg-rose-900/30 text-rose-500 group-hover:scale-105 transition-transform">
+                                            <User className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-black text-gray-900 dark:text-white">Mi Perfil</p>
+                                            <p className="text-[10px] text-gray-400">Ver y editar datos personales</p>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
                                     </button>
-                                )}
+                                </div>
 
-                                <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700">
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Tema</p>
-                                    <div className="flex bg-gray-100/50 p-1 rounded-lg dark:bg-gray-700/50">
+                                {/* APARIENCIA Theme Selector */}
+                                <div className="p-3">
+                                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 px-1">APARIENCIA</p>
+                                    <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100/70 dark:bg-gray-900/60 rounded-2xl">
                                         <button
                                             onClick={() => { setTheme('light'); setIsProfileMenuOpen(false); }}
-                                            className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'light' ? 'bg-white text-yellow-500 shadow-sm dark:bg-gray-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
-                                            title="Modo Claro"
+                                            className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                                                theme === 'light'
+                                                    ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
+                                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                            }`}
                                         >
                                             <Sun className="w-4 h-4" />
+                                            <span className="text-[10px] font-bold">Claro</span>
                                         </button>
+
                                         <button
                                             onClick={() => { setTheme('dark'); setIsProfileMenuOpen(false); }}
-                                            className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm dark:bg-gray-900' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
-                                            title="Modo Oscuro"
+                                            className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                                                theme === 'dark'
+                                                    ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
+                                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                            }`}
                                         >
                                             <Moon className="w-4 h-4" />
+                                            <span className="text-[10px] font-bold">Oscuro</span>
                                         </button>
+
                                         <button
                                             onClick={() => { setTheme('system'); setIsProfileMenuOpen(false); }}
-                                            className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'system' ? 'bg-white text-gray-800 shadow-sm dark:bg-gray-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
-                                            title="Sistema"
+                                            className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                                                theme === 'system'
+                                                    ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
+                                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                            }`}
                                         >
                                             <Monitor className="w-4 h-4" />
+                                            <span className="text-[10px] font-bold">Sistema</span>
                                         </button>
                                     </div>
                                 </div>
-                                {/* Otras Cuentas Guardadas */}
+
+                                {/* Notificaciones Push Pill */}
+                                <div className="p-2">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            isSubscribed ? unsubscribe() : subscribe();
+                                        }}
+                                        disabled={isLoading}
+                                        className="w-full p-3 rounded-2xl bg-rose-50/60 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 flex items-center justify-between transition-all group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-xl bg-rose-100 text-rose-500 dark:bg-rose-900/40">
+                                                <Bell className={`w-4 h-4 ${isSubscribed ? 'animate-pulse' : ''}`} />
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-xs font-black text-gray-900 dark:text-white">
+                                                    {isSubscribed ? 'Notificaciones activas' : 'Notificaciones desactivadas'}
+                                                </p>
+                                                <p className="text-[10px] text-gray-400">
+                                                    {isLoading ? 'Procesando...' : (isSubscribed ? 'Toca para desactivar' : 'Toca para activar')}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className={`w-9 h-5 rounded-full p-0.5 transition-colors ${isSubscribed ? 'bg-rose-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                            <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isSubscribed ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                                        </div>
+                                    </button>
+                                </div>
+
+                                {/* Demás accesos con subtítulos */}
+                                <div className="p-1 space-y-0.5">
+                                    {['admin', 'coordinador_pae', 'secretaria_educacion'].includes(usuario.rol) && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setIsProfileMenuOpen(false);
+                                                router.push('/dashboard/novedades');
+                                            }}
+                                            className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-2xl transition-all text-left group"
+                                        >
+                                            <div className="p-2.5 rounded-2xl bg-cyan-50 dark:bg-cyan-900/30 text-cyan-500 group-hover:scale-105 transition-transform">
+                                                <Globe className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-black text-gray-900 dark:text-white">Recursos Externos</p>
+                                                <p className="text-[10px] text-gray-400">Novedades y planillas institucionales</p>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
+                                        </button>
+                                    )}
+
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsProfileMenuOpen(false);
+                                            router.push('/dashboard/perfil');
+                                        }}
+                                        className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-2xl transition-all text-left group"
+                                    >
+                                        <div className="p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-900/30 text-amber-500 group-hover:scale-105 transition-transform">
+                                            <Settings className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-black text-gray-900 dark:text-white">Configuración</p>
+                                            <p className="text-[10px] text-gray-400">Ajustes del sistema y sonidos</p>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setIsProfileMenuOpen(false);
+                                            handleShareApp();
+                                        }}
+                                        className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-2xl transition-all text-left group"
+                                    >
+                                        <div className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 group-hover:scale-105 transition-transform">
+                                            <Share2 className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-black text-gray-900 dark:text-white">Compartir app</p>
+                                            <p className="text-[10px] text-gray-400">Invitar por WhatsApp u otras apps</p>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setIsProfileMenuOpen(false);
+                                            handleBiometricSetup();
+                                        }}
+                                        className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-2xl transition-all text-left group"
+                                    >
+                                        <div className="p-2.5 rounded-2xl bg-purple-50 dark:bg-purple-900/30 text-purple-500 group-hover:scale-105 transition-transform">
+                                            <Fingerprint className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-black text-gray-900 dark:text-white">Vincular Biometría</p>
+                                            <p className="text-[10px] text-gray-400">Configurar Huella o FaceID</p>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
+                                    </button>
+
+                                    {!isStandalone && deferredPrompt && (
+                                        <button
+                                            onClick={() => {
+                                                setIsProfileMenuOpen(false);
+                                                handleInstallClick();
+                                            }}
+                                            className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-2xl transition-all text-left group"
+                                        >
+                                            <div className="p-2.5 rounded-2xl bg-green-50 dark:bg-green-900/30 text-green-500 group-hover:scale-105 transition-transform">
+                                                <Download className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-black text-gray-900 dark:text-white">Instalar app</p>
+                                                <p className="text-[10px] text-gray-400">Guardar en pantalla de inicio</p>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Multi-cuenta */}
                                 {savedAccounts.filter(acc => acc.id !== usuario?.id).length > 0 && (
-                                    <div className="border-t border-gray-50 dark:border-gray-700 py-1">
-                                        <p className="px-4 py-1 text-[10px] text-gray-400 uppercase tracking-wider font-bold">Cambiar a</p>
+                                    <div className="py-2">
+                                        <p className="px-4 text-[10px] text-gray-400 uppercase tracking-widest font-black mb-1">CAMBIAR A</p>
                                         {savedAccounts.filter(acc => acc.id !== usuario?.id).map((acc) => (
                                             <button
                                                 key={acc.id}
                                                 onClick={() => switchAccount(acc)}
-                                                className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+                                                className="w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-3 transition-colors text-left"
                                             >
-                                                <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center flex-shrink-0 text-cyan-600 dark:text-cyan-400 font-bold text-xs">
-                                                    {acc.nombre.charAt(0)}
+                                                <div className="w-7 h-7 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center text-cyan-700 dark:text-cyan-300 font-bold text-xs shrink-0">
+                                                    {acc.nombre?.charAt(0)}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-xs text-gray-700 dark:text-gray-200 font-medium truncate">{acc.nombre}</p>
+                                                    <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{acc.nombre}</p>
                                                     <p className="text-[10px] text-gray-400 truncate">{acc.email}</p>
                                                 </div>
                                             </button>
@@ -1023,24 +1121,18 @@ export default function DashboardLayout({
                                     </div>
                                 )}
 
-                                {/* Botón Añadir Cuenta */}
-                                <button
-                                    onClick={handleAddAccount}
-                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 w-full transition-colors text-left border-t border-gray-50 dark:border-gray-700"
-                                >
-                                    <div className="w-4 h-4 flex items-center justify-center rounded-full border-2 border-gray-400 flex-shrink-0">
-                                       <span className="text-xs font-bold leading-none">+</span>
-                                    </div>
-                                    Añadir otra cuenta
-                                </button>
-
-                                <button
-                                    onClick={handleLogout}
-                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors text-left border-t border-gray-50 dark:border-gray-700 dark:hover:bg-red-900/20 dark:text-red-400"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                    Cerrar Sesión
-                                </button>
+                                {/* Cerrar Sesion */}
+                                <div className="p-1">
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full p-3 flex items-center gap-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-colors text-left group"
+                                    >
+                                        <div className="p-2.5 rounded-2xl bg-red-50 dark:bg-red-900/30 text-red-500 group-hover:scale-105 transition-transform">
+                                            <LogOut className="w-5 h-5" />
+                                        </div>
+                                        <span className="text-xs font-black">Cerrar Sesión</span>
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -1215,164 +1307,229 @@ export default function DashboardLayout({
                         {isProfileMenuOpen && (
                             <>
                                 <div className="fixed inset-0 z-[99] bg-black/20 backdrop-blur-sm" onClick={() => setIsProfileMenuOpen(false)}></div>
-                                <div className="absolute top-full mt-2 right-0 w-max bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-y-auto max-h-[85vh] z-[101] animate-in slide-in-from-top-2 fade-in duration-200">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setIsProfileMenuOpen(false);
-                                            router.push('/dashboard/perfil');
-                                        }}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors bg-gray-50/50 w-full text-left dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-                                    >
-                                        <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                        Mi Perfil
-                                    </button>
-
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setIsProfileMenuOpen(false);
-                                            router.push('/dashboard/perfil');
-                                        }}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-purple-600 hover:bg-purple-50 transition-colors bg-purple-50/10 w-full text-left dark:bg-gray-800 dark:text-purple-400 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
-                                    >
-                                        <Settings className="w-4 h-4" />
-                                        Configuración
-                                    </button>
-
-                                    {['admin', 'coordinador_pae', 'secretaria_educacion'].includes(usuario.rol) && (
-                                        <Link
-                                            href="/dashboard/novedades"
-                                            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-cyan-600 hover:bg-cyan-50 transition-colors bg-cyan-50/10 dark:bg-gray-800 dark:text-cyan-400 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
-                                            onClick={() => setIsProfileMenuOpen(false)}
-                                        >
-                                            <Globe className="w-4 h-4" />
-                                            Recursos Externos
-                                        </Link>
-                                    )}
-
-                                    <button
-                                        onClick={() => {
-                                            setIsProfileMenuOpen(false);
-                                            handleShareApp();
-                                        }}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left bg-gray-50/50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
-                                    >
-                                        <Share2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                        Compartir Aplicación
-                                    </button>
-
-                                    <button
-                                        onClick={() => {
-                                            setIsProfileMenuOpen(false);
-                                            handleBiometricSetup();
-                                        }}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left bg-gray-50/50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
-                                    >
-                                        <Fingerprint className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                                        Vincular Biometría
-                                    </button>
-
-                                    {(usuario.rol === 'admin' || usuario.rol === 'coordinador_pae') && (
-                                        <button
-                                            onClick={handleTestPush}
-                                            disabled={isTestLoading}
-                                            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50 w-full transition-colors text-left border-t border-gray-50 dark:border-gray-700 dark:hover:bg-blue-900/20"
-                                        >
-                                            <Bell className={`w-4 h-4 ${isTestLoading ? 'animate-spin' : ''}`} />
-                                            {isTestLoading ? 'Enviando...' : 'Probar Notificación'}
-                                        </button>
-                                    )}
-
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            isSubscribed ? unsubscribe() : subscribe();
-                                        }}
-                                        disabled={isLoading}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left bg-gray-50/50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700 relative"
-                                    >
-                                        <div className="relative">
-                                            {isSubscribed ? (
-                                                <Bell className="w-4 h-4 text-cyan-600 dark:text-cyan-400 animate-pulse" />
+                                <div className="absolute top-full mt-2 right-0 w-[300px] sm:w-[320px] bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-y-auto max-h-[85vh] z-[101] animate-in slide-in-from-top-2 fade-in duration-200 divide-y divide-gray-100 dark:divide-gray-700/60">
+                                    {/* Encabezado Usuario */}
+                                    <div className="p-4 flex items-center gap-3 bg-gray-50/60 dark:bg-gray-800/80">
+                                        <div className="w-12 h-12 rounded-2xl border-2 border-cyan-500/30 overflow-hidden bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center shrink-0 shadow-sm">
+                                            {usuario.foto ? (
+                                                <img src={usuario.foto} alt={usuario.nombre} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                             ) : (
-                                                <BellOff className="w-4 h-4 text-gray-400" />
+                                                <span className="text-cyan-700 dark:text-cyan-300 font-black text-lg">{usuario.nombre?.charAt(0)}</span>
                                             )}
                                         </div>
-                                        <div className="flex flex-col leading-tight">
-                                            <span className={isSubscribed ? "text-cyan-700 dark:text-cyan-300 font-bold" : ""}>
-                                                {isSubscribed ? 'Notificaciones' : 'Activar Push'}
-                                            </span>
-                                            <span className="text-[9px] text-gray-400 font-medium">
-                                                {isLoading ? '...' : (isSubscribed ? 'Activadas' : 'Recibir alertas')}
-                                            </span>
+                                        <div className="flex flex-col min-w-0 flex-1">
+                                            <span className="text-sm font-black text-gray-900 dark:text-white truncate leading-tight">{usuario.nombre}</span>
+                                            <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{usuario.email}</span>
+                                            <div className="flex items-center gap-1.5 mt-1">
+                                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
+                                                    {usuario.rol || 'Acudiente'}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </button>
+                                    </div>
 
-                                    {!isStandalone && deferredPrompt && (
+                                    {/* Opcion Mi Perfil */}
+                                    <div className="p-1">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setIsProfileMenuOpen(false);
+                                                router.push('/dashboard/perfil');
+                                            }}
+                                            className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-2xl transition-all text-left group"
+                                        >
+                                            <div className="p-2.5 rounded-2xl bg-rose-50 dark:bg-rose-900/30 text-rose-500 group-hover:scale-105 transition-transform">
+                                                <User className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-black text-gray-900 dark:text-white">Mi Perfil</p>
+                                                <p className="text-[10px] text-gray-400">Ver y editar datos personales</p>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
+                                        </button>
+                                    </div>
+
+                                    {/* APARIENCIA Theme Selector */}
+                                    <div className="p-3">
+                                        <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 px-1">APARIENCIA</p>
+                                        <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100/70 dark:bg-gray-900/60 rounded-2xl">
+                                            <button
+                                                onClick={() => { setTheme('light'); setIsProfileMenuOpen(false); }}
+                                                className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                                                    theme === 'light'
+                                                        ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
+                                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                                }`}
+                                            >
+                                                <Sun className="w-4 h-4" />
+                                                <span className="text-[10px] font-bold">Claro</span>
+                                            </button>
+
+                                            <button
+                                                onClick={() => { setTheme('dark'); setIsProfileMenuOpen(false); }}
+                                                className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                                                    theme === 'dark'
+                                                        ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
+                                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                                }`}
+                                            >
+                                                <Moon className="w-4 h-4" />
+                                                <span className="text-[10px] font-bold">Oscuro</span>
+                                            </button>
+
+                                            <button
+                                                onClick={() => { setTheme('system'); setIsProfileMenuOpen(false); }}
+                                                className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                                                    theme === 'system'
+                                                        ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
+                                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                                }`}
+                                            >
+                                                <Monitor className="w-4 h-4" />
+                                                <span className="text-[10px] font-bold">Sistema</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Notificaciones Push Pill */}
+                                    <div className="p-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                isSubscribed ? unsubscribe() : subscribe();
+                                            }}
+                                            disabled={isLoading}
+                                            className="w-full p-3 rounded-2xl bg-rose-50/60 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 flex items-center justify-between transition-all group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 rounded-xl bg-rose-100 text-rose-500 dark:bg-rose-900/40">
+                                                    <Bell className={`w-4 h-4 ${isSubscribed ? 'animate-pulse' : ''}`} />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-xs font-black text-gray-900 dark:text-white">
+                                                        {isSubscribed ? 'Notificaciones activas' : 'Notificaciones desactivadas'}
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-400">
+                                                        {isLoading ? 'Procesando...' : (isSubscribed ? 'Toca para desactivar' : 'Toca para activar')}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className={`w-9 h-5 rounded-full p-0.5 transition-colors ${isSubscribed ? 'bg-rose-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isSubscribed ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                                            </div>
+                                        </button>
+                                    </div>
+
+                                    {/* Demás accesos con subtítulos */}
+                                    <div className="p-1 space-y-0.5">
+                                        {['admin', 'coordinador_pae', 'secretaria_educacion'].includes(usuario.rol) && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setIsProfileMenuOpen(false);
+                                                    router.push('/dashboard/novedades');
+                                                }}
+                                                className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-2xl transition-all text-left group"
+                                            >
+                                                <div className="p-2.5 rounded-2xl bg-cyan-50 dark:bg-cyan-900/30 text-cyan-500 group-hover:scale-105 transition-transform">
+                                                    <Globe className="w-5 h-5" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-black text-gray-900 dark:text-white">Recursos Externos</p>
+                                                    <p className="text-[10px] text-gray-400">Novedades y planillas institucionales</p>
+                                                </div>
+                                                <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
+                                            </button>
+                                        )}
+
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setIsProfileMenuOpen(false);
+                                                router.push('/dashboard/perfil');
+                                            }}
+                                            className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-2xl transition-all text-left group"
+                                        >
+                                            <div className="p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-900/30 text-amber-500 group-hover:scale-105 transition-transform">
+                                                <Settings className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-black text-gray-900 dark:text-white">Configuración</p>
+                                                <p className="text-[10px] text-gray-400">Ajustes del sistema y sonidos</p>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
+                                        </button>
+
                                         <button
                                             onClick={() => {
                                                 setIsProfileMenuOpen(false);
-                                                handleInstallClick();
+                                                handleShareApp();
                                             }}
-                                            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left bg-gray-50/50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
+                                            className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-2xl transition-all text-left group"
                                         >
-                                            <Download className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                            Instalar App
+                                            <div className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 group-hover:scale-105 transition-transform">
+                                                <Share2 className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-black text-gray-900 dark:text-white">Compartir app</p>
+                                                <p className="text-[10px] text-gray-400">Invitar por WhatsApp u otras apps</p>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
                                         </button>
-                                    )}
 
-                                    <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800">
-                                        <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Tema</p>
-                                        <div className="flex bg-gray-100/50 p-1 rounded-lg dark:bg-gray-700/50">
+                                        <button
+                                            onClick={() => {
+                                                setIsProfileMenuOpen(false);
+                                                handleBiometricSetup();
+                                            }}
+                                            className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-2xl transition-all text-left group"
+                                        >
+                                            <div className="p-2.5 rounded-2xl bg-purple-50 dark:bg-purple-900/30 text-purple-500 group-hover:scale-105 transition-transform">
+                                                <Fingerprint className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-black text-gray-900 dark:text-white">Vincular Biometría</p>
+                                                <p className="text-[10px] text-gray-400">Configurar Huella o FaceID</p>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
+                                        </button>
+
+                                        {!isStandalone && deferredPrompt && (
                                             <button
-                                                onClick={() => { setTheme('light'); setIsProfileMenuOpen(false); }}
-                                                className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'light' ? 'bg-white text-yellow-500 shadow-sm dark:bg-gray-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
-                                                title="Modo Claro"
+                                                onClick={() => {
+                                                    setIsProfileMenuOpen(false);
+                                                    handleInstallClick();
+                                                }}
+                                                className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-2xl transition-all text-left group"
                                             >
-                                                <Sun className="w-4 h-4" />
+                                                <div className="p-2.5 rounded-2xl bg-green-50 dark:bg-green-900/30 text-green-500 group-hover:scale-105 transition-transform">
+                                                    <Download className="w-5 h-5" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-black text-gray-900 dark:text-white">Instalar app</p>
+                                                    <p className="text-[10px] text-gray-400">Guardar en pantalla de inicio</p>
+                                                </div>
+                                                <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
                                             </button>
-                                            <button
-                                                onClick={() => { setTheme('dark'); setIsProfileMenuOpen(false); }}
-                                                className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm dark:bg-gray-900' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
-                                                title="Modo Oscuro"
-                                            >
-                                                <Moon className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => { setTheme('system'); setIsProfileMenuOpen(false); }}
-                                                className={`flex-1 p-1.5 rounded-md flex items-center justify-center transition-all ${theme === 'system' ? 'bg-white text-gray-800 shadow-sm dark:bg-gray-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
-                                                title="Sistema"
-                                            >
-                                                <Monitor className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800">
-                                        <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-1">Cuenta Actual</p>
-                                        <div className="flex items-center gap-2">
-                                           <div className="flex-1 min-w-0">
-                                              <p className="text-xs text-gray-600 truncate font-black dark:text-gray-300">{usuario.nombre}</p>
-                                              <p className="text-[10px] text-gray-400 truncate">{usuario.email}</p>
-                                           </div>
-                                        </div>
+                                        )}
                                     </div>
 
-                                    {/* Otras Cuentas Guardadas */}
+                                    {/* Multi-cuenta */}
                                     {savedAccounts.filter(acc => acc.id !== usuario?.id).length > 0 && (
-                                        <div className="border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800 py-1">
-                                            <p className="px-4 py-1 text-[10px] text-gray-400 uppercase tracking-wider font-bold">Cambiar a</p>
+                                        <div className="py-2">
+                                            <p className="px-4 text-[10px] text-gray-400 uppercase tracking-widest font-black mb-1">CAMBIAR A</p>
                                             {savedAccounts.filter(acc => acc.id !== usuario?.id).map((acc) => (
                                                 <button
                                                     key={acc.id}
                                                     onClick={() => switchAccount(acc)}
-                                                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+                                                    className="w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-3 transition-colors text-left"
                                                 >
-                                                    <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center flex-shrink-0 text-cyan-600 dark:text-cyan-400 font-bold text-xs">
-                                                        {acc.nombre.charAt(0)}
+                                                    <div className="w-7 h-7 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center text-cyan-700 dark:text-cyan-300 font-bold text-xs shrink-0">
+                                                        {acc.nombre?.charAt(0)}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-xs text-gray-700 dark:text-gray-200 font-medium truncate">{acc.nombre}</p>
+                                                        <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{acc.nombre}</p>
                                                         <p className="text-[10px] text-gray-400 truncate">{acc.email}</p>
                                                     </div>
                                                 </button>
@@ -1380,24 +1537,18 @@ export default function DashboardLayout({
                                         </div>
                                     )}
 
-                                    {/* Botón Añadir Cuenta */}
-                                    <button
-                                        onClick={handleAddAccount}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 w-full transition-colors text-left border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800"
-                                    >
-                                        <div className="w-4 h-4 flex items-center justify-center rounded-full border-2 border-gray-400 flex-shrink-0">
-                                           <span className="text-xs font-bold leading-none">+</span>
-                                        </div>
-                                        Añadir otra cuenta
-                                    </button>
-
-                                    <button
-                                        onClick={handleLogout}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors text-left border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20"
-                                    >
-                                        <LogOut className="w-4 h-4" />
-                                        Cerrar Sesión
-                                    </button>
+                                    {/* Cerrar Sesion */}
+                                    <div className="p-1">
+                                        <button
+                                            onClick={handleLogout}
+                                            className="w-full p-3 flex items-center gap-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-colors text-left group"
+                                        >
+                                            <div className="p-2.5 rounded-2xl bg-red-50 dark:bg-red-900/30 text-red-500 group-hover:scale-105 transition-transform">
+                                                <LogOut className="w-5 h-5" />
+                                            </div>
+                                            <span className="text-xs font-black">Cerrar Sesión</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </>
                         )}
