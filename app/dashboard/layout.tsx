@@ -38,7 +38,8 @@ import {
     Share2,
     Globe,
     Star,
-    Trophy
+    Trophy,
+    UserPlus
 } from 'lucide-react';
 
 const ChevronRightIcon = ChevronRight;
@@ -1117,26 +1118,35 @@ export default function DashboardLayout({
                                 </div>
 
                                 {/* Multi-cuenta */}
-                                {savedAccounts.filter(acc => acc.id !== usuario?.id).length > 0 && (
-                                    <div className="py-2">
-                                        <p className="px-4 text-[10px] text-gray-400 uppercase tracking-widest font-black mb-1">CAMBIAR A</p>
-                                        {savedAccounts.filter(acc => acc.id !== usuario?.id).map((acc) => (
-                                            <button
-                                                key={acc.id}
-                                                onClick={() => switchAccount(acc)}
-                                                className="w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-3 transition-colors text-left"
-                                            >
-                                                <div className="w-7 h-7 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center text-cyan-700 dark:text-cyan-300 font-bold text-xs shrink-0">
-                                                    {acc.nombre?.charAt(0)}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{acc.nombre}</p>
-                                                    <p className="text-[10px] text-gray-400 truncate">{acc.email}</p>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
+                                <div className="py-2 border-t border-gray-100 dark:border-gray-700/50">
+                                    <p className="px-4 text-[10px] text-gray-400 uppercase tracking-widest font-black mb-1">CUENTAS</p>
+                                    
+                                    {savedAccounts.filter(acc => acc.id !== usuario?.id).map((acc) => (
+                                        <button
+                                            key={acc.id}
+                                            onClick={() => switchAccount(acc)}
+                                            className="w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-3 transition-colors text-left"
+                                        >
+                                            <div className="w-7 h-7 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center text-cyan-700 dark:text-cyan-300 font-bold text-xs shrink-0">
+                                                {acc.nombre?.charAt(0)}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{acc.nombre}</p>
+                                                <p className="text-[10px] text-gray-400 truncate">{acc.email}</p>
+                                            </div>
+                                        </button>
+                                    ))}
+
+                                    <button
+                                        onClick={handleAddAccount}
+                                        className="w-full px-4 py-2 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 flex items-center gap-3 transition-colors text-left group"
+                                    >
+                                        <div className="w-7 h-7 rounded-full bg-cyan-100/80 dark:bg-cyan-900/40 flex items-center justify-center text-cyan-600 dark:text-cyan-300 font-bold shrink-0">
+                                            <UserPlus className="w-3.5 h-3.5" />
+                                        </div>
+                                        <span className="text-xs font-bold">Añadir otra cuenta</span>
+                                    </button>
+                                </div>
 
                                 {/* Cerrar Sesion */}
                                 <div className="p-1">
@@ -1542,12 +1552,11 @@ export default function DashboardLayout({
                                                 <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
                                             </button>
                                         )}
-                                    </div>
 
-                                    {/* Multi-cuenta */}
-                                    {savedAccounts.filter(acc => acc.id !== usuario?.id).length > 0 && (
-                                        <div className="py-2">
-                                            <p className="px-4 text-[10px] text-gray-400 uppercase tracking-widest font-black mb-1">CAMBIAR A</p>
+                                        {/* Multi-cuenta */}
+                                        <div className="py-2 border-t border-gray-100 dark:border-gray-700/50">
+                                            <p className="px-4 text-[10px] text-gray-400 uppercase tracking-widest font-black mb-1">CUENTAS</p>
+                                            
                                             {savedAccounts.filter(acc => acc.id !== usuario?.id).map((acc) => (
                                                 <button
                                                     key={acc.id}
@@ -1563,8 +1572,18 @@ export default function DashboardLayout({
                                                     </div>
                                                 </button>
                                             ))}
+
+                                            <button
+                                                onClick={handleAddAccount}
+                                                className="w-full px-4 py-2 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 flex items-center gap-3 transition-colors text-left group"
+                                            >
+                                                <div className="w-7 h-7 rounded-full bg-cyan-100/80 dark:bg-cyan-900/40 flex items-center justify-center text-cyan-600 dark:text-cyan-300 font-bold shrink-0">
+                                                    <UserPlus className="w-3.5 h-3.5" />
+                                                </div>
+                                                <span className="text-xs font-bold">Añadir otra cuenta</span>
+                                            </button>
                                         </div>
-                                    )}
+                                    </div>
 
                                     {/* Cerrar Sesion */}
                                     <div className="p-1">
