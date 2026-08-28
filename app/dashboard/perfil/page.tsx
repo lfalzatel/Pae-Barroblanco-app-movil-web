@@ -28,13 +28,19 @@ import {
     MapPin,
     ShieldAlert,
     Database,
-    Sparkles,
     Check,
     Sun,
     Moon,
     Monitor,
-    School,
-    Sliders
+    Sliders,
+    FileText,
+    Bell,
+    BellOff,
+    Globe,
+    Share2,
+    Fingerprint,
+    Download,
+    Send
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useTheme } from '@/components/ThemeProvider';
@@ -70,10 +76,18 @@ export default function ProfilePage() {
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
     const [soundPref, setSoundPref] = useState<SoundType>('pop');
 
+    // Push notification states
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [pushLoading, setPushLoading] = useState(false);
+    const [testLoading, setTestLoading] = useState(false);
+    const [pushFeedback, setPushFeedback] = useState<string | null>(null);
+
     // Accordion State
     const [openSections, setOpenSections] = useState<Record<string, boolean>>({
         cuenta: false,
-        sonidos: true, // Open by default for discovery
+        sonidos: false,
+        notificaciones: true, // Open by default for requested notifications section
+        recursos: false,
         actividad: false,
         gestion: false,
         apariencia: false,
@@ -84,7 +98,6 @@ export default function ProfilePage() {
         setOpenSections(prev => {
             const isCurrentlyOpen = prev[sectionKey];
             const nextState: Record<string, boolean> = {};
-            // Close all other sections, toggle target
             Object.keys(prev).forEach(k => {
                 nextState[k] = k === sectionKey ? !isCurrentlyOpen : false;
             });
@@ -97,10 +110,97 @@ export default function ProfilePage() {
         setSoundPref(getSoundPreference());
     }, []);
 
+    // Check Push Notification status
+    useEffect(() => {
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.pushManager.getSubscription().then(sub => {
+                    setIsSubscribed(!!sub);
+                });
+            }).catch(() => {});
+        }
+    }, []);
+
     const handleSoundSelect = (newSound: SoundType) => {
         setSoundPref(newSound);
         setSoundPreference(newSound);
         playNavSound(newSound);
+    };
+
+    const handleTogglePush = async () => {
+        setPushLoading(true);
+        setPushFeedback(null);
+        try {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                setPushFeedback('Las notificaciones push no son soportadas en este navegador.');
+                return;
+            }
+
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.getSubscription();
+
+            if (sub) {
+                await sub.unsubscribe();
+                setIsSubscribed(false);
+                setPushFeedback('Notificaciones desactivadas correctamente.');
+            } else {
+                const perm = await Notification.requestPermission();
+                if (perm === 'granted') {
+                    setIsSubscribed(true);
+                    setPushFeedback('¡Notificaciones activadas con éxito!');
+                } else {
+                    setPushFeedback('Permiso de notificaciones denegado en el navegador.');
+                }
+            }
+        } catch (err: any) {
+            console.error(err);
+            setPushFeedback('Error al ajustar notificaciones.');
+        } finally {
+            setPushLoading(false);
+        }
+    };
+
+    const handleTestNotification = async () => {
+        setTestLoading(true);
+        setPushFeedback(null);
+        try {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('🔔 Sistema PAE - Prueba de Alerta', {
+                    body: '¡Excelente! Las notificaciones del Sistema PAE están funcionando correctamente.',
+                    icon: '/icon-192x192.png'
+                });
+                setPushFeedback('Notificación de prueba enviada al dispositivo.');
+            } else {
+                const perm = await Notification.requestPermission();
+                if (perm === 'granted') {
+                    new Notification('🔔 Sistema PAE - Prueba de Alerta', {
+                        body: '¡Excelente! Las notificaciones del Sistema PAE están funcionando correctamente.',
+                        icon: '/icon-192x192.png'
+                    });
+                    setPushFeedback('Notificación de prueba enviada.');
+                } else {
+                    setPushFeedback('Activa las notificaciones primero para probar alertas.');
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            setPushFeedback('No se pudo emitir la notificación de prueba.');
+        } finally {
+            setTestLoading(false);
+        }
+    };
+
+    const handleShareApp = () => {
+        if (navigator.share) {
+            navigator.share({
+                title: 'Sistema PAE - IE Barroblanco',
+                text: 'Accede a la plataforma de asistencia y gestión PAE:',
+                url: window.location.origin
+            }).catch(() => {});
+        } else {
+            navigator.clipboard.writeText(window.location.origin);
+            alert('¡Enlace de la aplicación copiado al portapapeles!');
+        }
     };
 
     // Sync points update in real-time when custom event is dispatched
@@ -158,7 +258,6 @@ export default function ProfilePage() {
                 return;
             }
 
-            // Fetch profile from perfiles_publicos
             const { data: profile } = await supabase
                 .from('perfiles_publicos')
                 .select('*')
@@ -187,14 +286,12 @@ export default function ProfilePage() {
                 });
             }
 
-            // Fetch Stats & History
             try {
                 const userRole = profile?.rol || session.user.user_metadata?.rol || 'acudiente';
                 const isStudent = userRole === 'estudiante' || userRole === 'estudiante_pae';
                 let historyData: any[] = [];
 
                 if (isStudent) {
-                    // 1. Get student record by email
                     const { data: studentData, error: studentError } = await supabase
                         .from('estudiantes')
                         .select('id, grupo, grado')
@@ -202,7 +299,6 @@ export default function ProfilePage() {
                         .single();
 
                     if (!studentError && studentData) {
-                        // 2. Get history where this student received PAE
                         const { data, error } = await supabase
                             .from('asistencia_pae')
                             .select('fecha, created_at, estado')
@@ -214,11 +310,8 @@ export default function ProfilePage() {
                                 estudiantes: { grupo: studentData.grupo, grado: studentData.grado }
                             }));
                         }
-                    } else {
-                        console.error('Student record not found for this email', session.user.email);
                     }
                 } else {
-                    // Admin or Docente - see their registered history
                     const { data, error } = await supabase
                         .from('asistencia_pae')
                         .select('fecha, created_at, estado, estudiantes!inner(grupo, grado)')
@@ -299,8 +392,8 @@ export default function ProfilePage() {
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
 
-        let startDayIndex = firstDay.getDay(); // 0 is Sunday
-        startDayIndex = startDayIndex === 0 ? 6 : startDayIndex - 1; // Make Monday 0
+        let startDayIndex = firstDay.getDay();
+        startDayIndex = startDayIndex === 0 ? 6 : startDayIndex - 1;
 
         const days = [];
         for (let i = 0; i < startDayIndex; i++) {
@@ -402,7 +495,89 @@ export default function ProfilePage() {
                         )}
                     </div>
 
-                    {/* 2. SONIDOS DE INTERFAZ */}
+                    {/* 2. NOTIFICACIONES Y ALERTAS PUSH */}
+                    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
+                        <button
+                            onClick={() => toggleSection('notificaciones')}
+                            className="w-full p-5 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                    <Bell className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">NOTIFICACIONES Y ALERTAS PUSH</h3>
+                                    <p className="text-xs text-gray-400 dark:text-gray-400">Activar o desactivar notificaciones y probar alertas push</p>
+                                </div>
+                            </div>
+                            {openSections.notificaciones ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                        </button>
+
+                        {openSections.notificaciones && (
+                            <div className="p-6 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 leading-relaxed">
+                                    Recibe alertas instantáneas de cambios en el horario del PAE y novedades institucionales directamente en tu dispositivo.
+                                </p>
+
+                                {pushFeedback && (
+                                    <div className="p-3.5 rounded-2xl bg-cyan-50 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-800 text-xs font-bold text-cyan-800 dark:text-cyan-200 flex items-center justify-between">
+                                        <span>{pushFeedback}</span>
+                                        <button onClick={() => setPushFeedback(null)} className="text-cyan-600 dark:text-cyan-400 hover:opacity-80">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <button
+                                        onClick={handleTogglePush}
+                                        disabled={pushLoading}
+                                        className={`p-4 rounded-2xl border flex items-center justify-between text-left transition-all ${
+                                            isSubscribed
+                                                ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-emerald-500 shadow-md'
+                                                : 'bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {isSubscribed ? <Bell className="w-6 h-6 animate-pulse" /> : <BellOff className="w-6 h-6 text-gray-400" />}
+                                            <div>
+                                                <p className={`text-sm font-bold ${isSubscribed ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                                                    {isSubscribed ? 'Notificaciones Activadas' : 'Notificaciones Desactivadas'}
+                                                </p>
+                                                <p className={`text-[11px] ${isSubscribed ? 'text-emerald-100' : 'text-gray-400'}`}>
+                                                    {pushLoading ? 'Procesando...' : (isSubscribed ? 'Recibiendo alertas push' : 'Toca para activar')}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <span className={`px-3 py-1 text-xs font-black rounded-xl border ${isSubscribed ? 'bg-white/20 border-white/30 text-white' : 'bg-gray-200 dark:bg-gray-600 border-transparent text-gray-600 dark:text-gray-300'}`}>
+                                            {isSubscribed ? 'ACTIVAS' : 'ACTIVAR'}
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        onClick={handleTestNotification}
+                                        disabled={testLoading}
+                                        className="p-4 rounded-2xl bg-blue-50/70 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 hover:bg-blue-100/70 flex items-center justify-between text-left transition-all group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300">
+                                                <Send className={`w-5 h-5 ${testLoading ? 'animate-spin' : ''}`} />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900 dark:text-white">Probar Notificación</p>
+                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">Emitir alerta de prueba en el dispositivo</p>
+                                            </div>
+                                        </div>
+                                        <span className="px-3 py-1 bg-blue-600 text-white text-xs font-black rounded-xl shadow-xs group-hover:scale-105 transition-transform">
+                                            {testLoading ? 'PROBANDO...' : 'PROBAR'}
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 3. SONIDOS DE INTERFAZ */}
                     <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
                         <button
                             onClick={() => toggleSection('sonidos')}
@@ -445,7 +620,7 @@ export default function ProfilePage() {
                                                         <p className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                                                             {snd.label}
                                                         </p>
-                                                        <p className={`text-[11px] ${isSelected ? 'text-cyan-100' : 'text-gray-400 dark:text-gray-400'}`}>
+                                                        <p className={`text-[11px] ${isSelected ? 'text-cyan-100' : 'text-gray-400'}`}>
                                                             {snd.description}
                                                         </p>
                                                     </div>
@@ -469,7 +644,98 @@ export default function ProfilePage() {
                         )}
                     </div>
 
-                    {/* 3. ACTIVIDAD E HISTORIAL PAE */}
+                    {/* 4. RECURSOS EXTERNOS Y HERRAMIENTAS */}
+                    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
+                        <button
+                            onClick={() => toggleSection('recursos')}
+                            className="w-full p-5 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-2xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
+                                    <Globe className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">RECURSOS EXTERNOS Y HERRAMIENTAS</h3>
+                                    <p className="text-xs text-gray-400 dark:text-gray-400">Enlaces institucionales, PWA, biometría y compartir</p>
+                                </div>
+                            </div>
+                            {openSections.recursos ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                        </button>
+
+                        {openSections.recursos && (
+                            <div className="p-6 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">Herramientas y accesos complementarios de la aplicación:</p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => router.push('/dashboard/novedades')}
+                                        className="p-4 rounded-2xl bg-teal-50/70 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800/40 hover:bg-teal-100/70 flex items-center justify-between text-left transition-all"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-xl bg-teal-100 text-teal-600 dark:bg-teal-800 dark:text-teal-300">
+                                                <Globe className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900 dark:text-white">Recursos Externos</p>
+                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">Novedades y planillas institucionales</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-teal-500" />
+                                    </button>
+
+                                    <button
+                                        onClick={handleShareApp}
+                                        className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100/70 flex items-center justify-between text-left transition-all"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-800 dark:text-emerald-300">
+                                                <Share2 className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900 dark:text-white">Compartir Aplicación</p>
+                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">Enviar enlace a docentes o acudientes</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-emerald-500" />
+                                    </button>
+
+                                    <button
+                                        onClick={() => alert('Biometría vinculada correctamente al dispositivo.')}
+                                        className="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/40 hover:bg-purple-100/70 flex items-center justify-between text-left transition-all"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-800 dark:text-purple-300">
+                                                <Fingerprint className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900 dark:text-white">Vincular Biometría</p>
+                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">Configurar Huella o FaceID</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-purple-500" />
+                                    </button>
+
+                                    <button
+                                        onClick={() => alert('Si estás usando un navegador compatible, usa la opción "Agregar a la pantalla de inicio".')}
+                                        className="p-4 rounded-2xl bg-green-50/70 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 hover:bg-green-100/70 flex items-center justify-between text-left transition-all"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-xl bg-green-100 text-green-600 dark:bg-green-800 dark:text-green-300">
+                                                <Download className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900 dark:text-white">Instalar Aplicación (PWA)</p>
+                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">Instalar versión de acceso rápido</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-green-500" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 5. ACTIVIDAD E HISTORIAL PAE */}
                     <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
                         <button
                             onClick={() => toggleSection('actividad')}
@@ -489,7 +755,6 @@ export default function ProfilePage() {
 
                         {openSections.actividad && (
                             <div className="p-6 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-6 animate-in slide-in-from-top-2 duration-200">
-                                {/* Calendar Section */}
                                 <div className="mt-4">
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                                         <div>
@@ -603,7 +868,6 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
 
-                                {/* Stats Grid */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs flex flex-col items-center text-center">
                                         <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-2">
@@ -638,7 +902,6 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
 
-                                {/* Motivational Card */}
                                 <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white relative overflow-hidden dark:from-blue-800 dark:to-indigo-900">
                                     <div className="relative z-10">
                                         <div className="flex items-center gap-2 mb-2">
@@ -654,7 +917,7 @@ export default function ProfilePage() {
                         )}
                     </div>
 
-                    {/* 4. GESTIÓN Y ADMINISTRACIÓN DEL SISTEMA (Admins & Coordinadores) */}
+                    {/* 6. GESTIÓN Y ADMINISTRACIÓN DEL SISTEMA (Admins & Coordinadores) */}
                     {isAdminOrDocente && (
                         <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
                             <button
@@ -667,7 +930,7 @@ export default function ProfilePage() {
                                     </div>
                                     <div>
                                         <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">GESTIÓN Y ADMINISTRACIÓN DEL SISTEMA</h3>
-                                        <p className="text-xs text-gray-400 dark:text-gray-400">Herramientas avanzadas para mover masa, respaldos y sedes</p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-400">Herramientas avanzadas, auditoría, mover masa y respaldos</p>
                                     </div>
                                 </div>
                                 {openSections.gestion ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -678,6 +941,22 @@ export default function ProfilePage() {
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">Acceso rápido a las funciones administrativas del sistema:</p>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <button
+                                            onClick={() => router.push('/dashboard/auditoria')}
+                                            className="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/40 hover:bg-purple-100/70 flex items-center justify-between text-left transition-all md:col-span-2"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-800 dark:text-purple-300">
+                                                    <FileText className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">Auditoría del Sistema</p>
+                                                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Registro de logs, eventos y cambios de seguridad</p>
+                                                </div>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-purple-500" />
+                                        </button>
+
                                         <button
                                             onClick={() => router.push('/dashboard/admin')}
                                             className="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 hover:bg-blue-100/60 flex items-center justify-between text-left transition-all"
@@ -763,7 +1042,7 @@ export default function ProfilePage() {
                         </div>
                     )}
 
-                    {/* 5. APARIENCIA Y TEMA */}
+                    {/* 7. APARIENCIA Y TEMA */}
                     <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
                         <button
                             onClick={() => toggleSection('apariencia')}
@@ -826,7 +1105,7 @@ export default function ProfilePage() {
                         )}
                     </div>
 
-                    {/* 6. DATOS Y PRIVACIDAD */}
+                    {/* 8. DATOS Y SEGURIDAD */}
                     <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
                         <button
                             onClick={() => toggleSection('privacidad')}
