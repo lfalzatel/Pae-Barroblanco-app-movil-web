@@ -84,12 +84,11 @@ export default function ProfilePage() {
 
     // Accordion State
     const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-        cuenta: false,
+        cuenta: true,       // Open by default
         sonidos: false,
-        notificaciones: true, // Open by default for requested notifications section
-        recursos: false,
-        actividad: false,
         gestion: false,
+        notificaciones: false,
+        recursos: false,
         apariencia: false,
         privacidad: false,
     });
@@ -287,8 +286,8 @@ export default function ProfilePage() {
             }
 
             try {
-                const userRole = profile?.rol || session.user.user_metadata?.rol || 'acudiente';
-                const isStudent = userRole === 'estudiante' || userRole === 'estudiante_pae';
+                const rawRole = (profile?.rol || session.user.user_metadata?.rol || 'acudiente').toLowerCase();
+                const isStudent = rawRole === 'estudiante' || rawRole === 'estudiante_pae';
                 let historyData: any[] = [];
 
                 if (isStudent) {
@@ -342,20 +341,21 @@ export default function ProfilePage() {
 
     if (loading) {
         return (
-            <div className="p-8 max-w-4xl mx-auto space-y-6">
-                <Skeleton className="h-40 rounded-3xl w-full" />
-                <div className="space-y-4">
-                    <Skeleton className="h-20 rounded-2xl w-full" />
-                    <Skeleton className="h-20 rounded-2xl w-full" />
-                    <Skeleton className="h-20 rounded-2xl w-full" />
+            <div className="p-6 max-w-4xl mx-auto space-y-4">
+                <Skeleton className="h-20 rounded-2xl w-full" />
+                <div className="space-y-3">
+                    <Skeleton className="h-16 rounded-2xl w-full" />
+                    <Skeleton className="h-16 rounded-2xl w-full" />
+                    <Skeleton className="h-16 rounded-2xl w-full" />
                 </div>
             </div>
         );
     }
 
-    const userRole = usuario?.rol || 'acudiente';
-    const isStudent = userRole === 'estudiante' || userRole === 'estudiante_pae';
-    const isAdminOrDocente = userRole === 'administrador' || userRole === 'coordinador' || userRole === 'docente_pae';
+    // Role checks normalized for upper/lower case variations (e.g. 'admin', 'administrador', 'coordinador_pae')
+    const userRoleLower = (usuario?.rol || 'acudiente').toLowerCase();
+    const isStudent = userRoleLower === 'estudiante' || userRoleLower === 'estudiante_pae';
+    const isAdminOrDocente = ['admin', 'administrador', 'coordinador', 'coordinador_pae', 'docente_pae', 'docente', 'secretaria_educacion'].includes(userRoleLower);
 
     const currentMonthHistory = history.filter(h => {
         const year = currentDate.getFullYear();
@@ -406,15 +406,13 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50/50 dark:bg-transparent p-4 md:p-8">
-            <div className="max-w-4xl mx-auto space-y-6">
+        <div className="min-h-screen bg-gray-50/50 dark:bg-transparent p-3 md:p-6">
+            <div className="max-w-4xl mx-auto space-y-4">
 
-                {/* Header Banner - Centro de Control */}
-                <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 rounded-3xl p-6 md:p-8 text-white shadow-xl shadow-cyan-900/10 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none"></div>
-
-                    <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-                        <div className="w-24 h-24 md:w-28 md:h-28 rounded-full border-4 border-white/30 shadow-2xl overflow-hidden bg-white/20 flex items-center justify-center shrink-0">
+                {/* Compact, Slim Header Banner */}
+                <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 rounded-2xl p-4 md:p-5 text-white shadow-md flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-11 h-11 md:w-12 md:h-12 rounded-full border-2 border-white/40 shadow-md overflow-hidden bg-white/20 flex items-center justify-center shrink-0">
                             {usuario?.foto ? (
                                 <img
                                     src={usuario.foto}
@@ -423,375 +421,147 @@ export default function ProfilePage() {
                                     referrerPolicy="no-referrer"
                                 />
                             ) : (
-                                <span className="text-3xl md:text-4xl font-black text-white">{usuario?.nombre?.charAt(0) || 'U'}</span>
+                                <span className="text-lg md:text-xl font-black text-white">{usuario?.nombre?.charAt(0) || 'U'}</span>
                             )}
                         </div>
 
-                        <div className="text-center md:text-left flex-1 space-y-2">
-                            <p className="text-[10px] font-black uppercase tracking-[0.25em] opacity-80">CENTRO DE CONTROL Y CONFIGURACIÓN</p>
-                            <h1 className="text-2xl md:text-3xl font-black tracking-tight">{usuario?.nombre || 'Usuario'}</h1>
-                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 text-xs">
-                                <div className="flex items-center gap-1.5 bg-white/15 px-3 py-1 rounded-full text-white/90 backdrop-blur-md">
-                                    <Mail className="w-3.5 h-3.5" />
-                                    {usuario?.email}
-                                </div>
-                                <div className="flex items-center gap-1.5 bg-white text-cyan-800 font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                                    <Shield className="w-3.5 h-3.5 text-cyan-600" />
+                        <div className="min-w-0 flex-1">
+                            <h1 className="text-base md:text-xl font-black tracking-tight text-white truncate leading-tight">{usuario?.nombre || 'Usuario'}</h1>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[11px] text-cyan-100 font-medium truncate">{usuario?.email}</span>
+                                <span className="bg-white/20 text-white font-bold text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
                                     {usuario?.rol || 'Acudiente'}
-                                </div>
+                                </span>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="bg-white/15 backdrop-blur-md border border-white/20 p-4 rounded-2xl flex flex-col items-center justify-center shrink-0 min-w-[120px]">
-                            <Award className="w-8 h-8 text-yellow-300 drop-shadow-md mb-1 animate-pulse" />
-                            <span className="text-2xl font-black">{usuario?.puntos_gestor_pae || 0}</span>
-                            <span className="text-[9px] font-bold uppercase tracking-wider opacity-90">PUNTOS PAE</span>
-                        </div>
+                    <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shrink-0">
+                        <Award className="w-4 h-4 text-yellow-300 drop-shadow-xs" />
+                        <span className="text-sm md:text-base font-black leading-none">{usuario?.puntos_gestor_pae || 0}</span>
+                        <span className="text-[9px] font-bold text-cyan-100 uppercase tracking-wider hidden sm:inline">PTS</span>
                     </div>
                 </div>
 
                 {/* ACCORDION CONFIGURATION MENU */}
-                <div className="space-y-3">
+                <div className="space-y-2.5">
 
-                    {/* 1. CUENTA Y PERFIL */}
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
+                    {/* 1. CUENTA Y PERFIL + ACTIVIDAD E HISTORIAL PAE */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
                         <button
                             onClick={() => toggleSection('cuenta')}
-                            className="w-full p-5 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
+                            className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2.5 rounded-2xl bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400">
+                                <div className="p-2 rounded-xl bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400">
                                     <User className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">CUENTA Y PERFIL</h3>
-                                    <p className="text-xs text-gray-400 dark:text-gray-400">Información personal y rol institucional</p>
+                                    <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">CUENTA Y PERFIL</h3>
+                                    <p className="text-[11px] text-gray-400 dark:text-gray-400">Información personal, estadísticas e historial PAE</p>
                                 </div>
                             </div>
-                            {openSections.cuenta ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                            {openSections.cuenta ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                         </button>
 
                         {openSections.cuenta && (
-                            <div className="p-6 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-4 animate-in slide-in-from-top-2 duration-200">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                    <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-600">
-                                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-widest">Nombre Completo</p>
-                                        <p className="text-sm font-bold text-gray-800 dark:text-white mt-1">{usuario?.nombre || 'N/A'}</p>
+                            <div className="p-5 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-6 animate-in slide-in-from-top-2 duration-200">
+                                {/* Informacion Personal */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                                    <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-600">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nombre Completo</p>
+                                        <p className="text-xs font-bold text-gray-800 dark:text-white mt-0.5">{usuario?.nombre || 'N/A'}</p>
                                     </div>
-                                    <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-600">
-                                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-widest">Correo Institucional</p>
-                                        <p className="text-sm font-bold text-gray-800 dark:text-white mt-1">{usuario?.email || 'N/A'}</p>
+                                    <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-600">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Correo Institucional</p>
+                                        <p className="text-xs font-bold text-gray-800 dark:text-white mt-0.5">{usuario?.email || 'N/A'}</p>
                                     </div>
-                                    <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-600">
-                                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-widest">Rol Asignado</p>
-                                        <p className="text-sm font-bold text-cyan-600 dark:text-cyan-400 capitalize mt-1">{usuario?.rol || 'N/A'}</p>
+                                    <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-600">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Rol Asignado</p>
+                                        <p className="text-xs font-bold text-cyan-600 dark:text-cyan-400 capitalize mt-0.5">{usuario?.rol || 'N/A'}</p>
                                     </div>
-                                    <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-600">
-                                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-widest">Sede Principal</p>
-                                        <p className="text-sm font-bold text-gray-800 dark:text-white mt-1">{usuario?.sede || 'IE Barroblanco'}</p>
+                                    <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-600">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sede Principal</p>
+                                        <p className="text-xs font-bold text-gray-800 dark:text-white mt-0.5">{usuario?.sede || 'IE Barroblanco'}</p>
                                     </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
 
-                    {/* 2. NOTIFICACIONES Y ALERTAS PUSH */}
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
-                        <button
-                            onClick={() => toggleSection('notificaciones')}
-                            className="w-full p-5 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="p-2.5 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                                    <Bell className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">NOTIFICACIONES Y ALERTAS PUSH</h3>
-                                    <p className="text-xs text-gray-400 dark:text-gray-400">Activar o desactivar notificaciones y probar alertas push</p>
-                                </div>
-                            </div>
-                            {openSections.notificaciones ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-                        </button>
-
-                        {openSections.notificaciones && (
-                            <div className="p-6 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-4 animate-in slide-in-from-top-2 duration-200">
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 leading-relaxed">
-                                    Recibe alertas instantáneas de cambios en el horario del PAE y novedades institucionales directamente en tu dispositivo.
-                                </p>
-
-                                {pushFeedback && (
-                                    <div className="p-3.5 rounded-2xl bg-cyan-50 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-800 text-xs font-bold text-cyan-800 dark:text-cyan-200 flex items-center justify-between">
-                                        <span>{pushFeedback}</span>
-                                        <button onClick={() => setPushFeedback(null)} className="text-cyan-600 dark:text-cyan-400 hover:opacity-80">
-                                            <X className="w-4 h-4" />
-                                        </button>
+                                {/* ACTIVIDAD E HISTORIAL PAE */}
+                                <div className="pt-4 border-t border-gray-100 dark:border-gray-700 space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <CalendarDays className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                        <h4 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider">ACTIVIDAD E HISTORIAL PAE</h4>
                                     </div>
-                                )}
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <button
-                                        onClick={handleTogglePush}
-                                        disabled={pushLoading}
-                                        className={`p-4 rounded-2xl border flex items-center justify-between text-left transition-all ${
-                                            isSubscribed
-                                                ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-emerald-500 shadow-md'
-                                                : 'bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            {isSubscribed ? <Bell className="w-6 h-6 animate-pulse" /> : <BellOff className="w-6 h-6 text-gray-400" />}
-                                            <div>
-                                                <p className={`text-sm font-bold ${isSubscribed ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                                                    {isSubscribed ? 'Notificaciones Activadas' : 'Notificaciones Desactivadas'}
-                                                </p>
-                                                <p className={`text-[11px] ${isSubscribed ? 'text-emerald-100' : 'text-gray-400'}`}>
-                                                    {pushLoading ? 'Procesando...' : (isSubscribed ? 'Recibiendo alertas push' : 'Toca para activar')}
-                                                </p>
+                                    {/* Stats Grid */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                                        <div className="bg-gray-50 dark:bg-gray-700/40 p-3 rounded-xl border border-gray-100 dark:border-gray-600 flex flex-col items-center text-center">
+                                            <div className="w-7 h-7 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-1">
+                                                <CheckCircle2 className="w-3.5 h-3.5" />
                                             </div>
+                                            <span className="text-xl font-black text-gray-900 dark:text-white">{displayStats.totalRegistros}</span>
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">Registros</span>
                                         </div>
-                                        <span className={`px-3 py-1 text-xs font-black rounded-xl border ${isSubscribed ? 'bg-white/20 border-white/30 text-white' : 'bg-gray-200 dark:bg-gray-600 border-transparent text-gray-600 dark:text-gray-300'}`}>
-                                            {isSubscribed ? 'ACTIVAS' : 'ACTIVAR'}
-                                        </span>
-                                    </button>
 
-                                    <button
-                                        onClick={handleTestNotification}
-                                        disabled={testLoading}
-                                        className="p-4 rounded-2xl bg-blue-50/70 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 hover:bg-blue-100/70 flex items-center justify-between text-left transition-all group"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300">
-                                                <Send className={`w-5 h-5 ${testLoading ? 'animate-spin' : ''}`} />
+                                        <div className="bg-gray-50 dark:bg-gray-700/40 p-3 rounded-xl border border-gray-100 dark:border-gray-600 flex flex-col items-center text-center">
+                                            <div className="w-7 h-7 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center mb-1">
+                                                <Calendar className="w-3.5 h-3.5" />
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-900 dark:text-white">Probar Notificación</p>
-                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">Emitir alerta de prueba en el dispositivo</p>
-                                            </div>
+                                            <span className="text-xl font-black text-gray-900 dark:text-white">{displayStats.diasActivos}</span>
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">Días Activos</span>
                                         </div>
-                                        <span className="px-3 py-1 bg-blue-600 text-white text-xs font-black rounded-xl shadow-xs group-hover:scale-105 transition-transform">
-                                            {testLoading ? 'PROBANDO...' : 'PROBAR'}
-                                        </span>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
 
-                    {/* 3. SONIDOS DE INTERFAZ */}
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
-                        <button
-                            onClick={() => toggleSection('sonidos')}
-                            className="w-full p-5 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-                                    <Volume2 className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">SONIDOS DE INTERFAZ</h3>
-                                    <p className="text-xs text-gray-400 dark:text-gray-400">Personaliza la retroalimentación auditiva del menú inferior</p>
-                                </div>
-                            </div>
-                            {openSections.sonidos ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-                        </button>
-
-                        {openSections.sonidos && (
-                            <div className="p-6 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-4 animate-in slide-in-from-top-2 duration-200">
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 leading-relaxed">
-                                    Selecciona el efecto sintetizado por código (0 descargas de red) que sonará al cambiar entre las pestañas del menú inferior:
-                                </p>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {SOUND_OPTIONS.map((snd) => {
-                                        const isSelected = soundPref === snd.id;
-                                        return (
-                                            <button
-                                                key={snd.id}
-                                                onClick={() => handleSoundSelect(snd.id)}
-                                                className={`p-4 rounded-2xl border text-left flex items-center justify-between transition-all ${
-                                                    isSelected
-                                                        ? 'bg-gradient-to-r from-cyan-600 to-cyan-700 text-white border-cyan-500 shadow-md shadow-cyan-200/50 scale-[1.02]'
-                                                        : 'bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600 hover:border-cyan-400 text-gray-800 dark:text-gray-200'
-                                                }`}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-2xl">{snd.icon}</span>
-                                                    <div>
-                                                        <p className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                                                            {snd.label}
-                                                        </p>
-                                                        <p className={`text-[11px] ${isSelected ? 'text-cyan-100' : 'text-gray-400'}`}>
-                                                            {snd.description}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                {isSelected && <Check className="w-5 h-5 text-white shrink-0" />}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                <div className="pt-2 flex justify-end">
-                                    <button
-                                        onClick={() => playNavSound(soundPref)}
-                                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95"
-                                    >
-                                        <Volume2 className="w-4 h-4" />
-                                        PROBAR SONIDO SELECCIONADO
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* 4. RECURSOS EXTERNOS Y HERRAMIENTAS */}
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
-                        <button
-                            onClick={() => toggleSection('recursos')}
-                            className="w-full p-5 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="p-2.5 rounded-2xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
-                                    <Globe className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">RECURSOS EXTERNOS Y HERRAMIENTAS</h3>
-                                    <p className="text-xs text-gray-400 dark:text-gray-400">Enlaces institucionales, PWA, biometría y compartir</p>
-                                </div>
-                            </div>
-                            {openSections.recursos ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-                        </button>
-
-                        {openSections.recursos && (
-                            <div className="p-6 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-3 animate-in slide-in-from-top-2 duration-200">
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">Herramientas y accesos complementarios de la aplicación:</p>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <button
-                                        onClick={() => router.push('/dashboard/novedades')}
-                                        className="p-4 rounded-2xl bg-teal-50/70 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800/40 hover:bg-teal-100/70 flex items-center justify-between text-left transition-all"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 rounded-xl bg-teal-100 text-teal-600 dark:bg-teal-800 dark:text-teal-300">
-                                                <Globe className="w-5 h-5" />
+                                        <div className="bg-gray-50 dark:bg-gray-700/40 p-3 rounded-xl border border-gray-100 dark:border-gray-600 flex flex-col items-center text-center">
+                                            <div className="w-7 h-7 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mb-1">
+                                                <TrendingUp className="w-3.5 h-3.5" />
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-900 dark:text-white">Recursos Externos</p>
-                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">Novedades y planillas institucionales</p>
-                                            </div>
+                                            <span className="text-xl font-black text-gray-900 dark:text-white">{displayStats.gruposAtendidos}</span>
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">Grupos</span>
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-teal-500" />
-                                    </button>
 
-                                    <button
-                                        onClick={handleShareApp}
-                                        className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100/70 flex items-center justify-between text-left transition-all"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-800 dark:text-emerald-300">
-                                                <Share2 className="w-5 h-5" />
+                                        <div className="bg-gray-50 dark:bg-gray-700/40 p-3 rounded-xl border border-gray-100 dark:border-gray-600 flex flex-col items-center text-center">
+                                            <div className="w-7 h-7 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-1">
+                                                <Clock className="w-3.5 h-3.5" />
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-900 dark:text-white">Compartir Aplicación</p>
-                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">Enviar enlace a docentes o acudientes</p>
-                                            </div>
+                                            <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-full">{displayStats.ultimoRegistro}</span>
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">Último</span>
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-emerald-500" />
-                                    </button>
+                                    </div>
 
-                                    <button
-                                        onClick={() => alert('Biometría vinculada correctamente al dispositivo.')}
-                                        className="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/40 hover:bg-purple-100/70 flex items-center justify-between text-left transition-all"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-800 dark:text-purple-300">
-                                                <Fingerprint className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-900 dark:text-white">Vincular Biometría</p>
-                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">Configurar Huella o FaceID</p>
-                                            </div>
-                                        </div>
-                                        <ChevronRight className="w-4 h-4 text-purple-500" />
-                                    </button>
-
-                                    <button
-                                        onClick={() => alert('Si estás usando un navegador compatible, usa la opción "Agregar a la pantalla de inicio".')}
-                                        className="p-4 rounded-2xl bg-green-50/70 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 hover:bg-green-100/70 flex items-center justify-between text-left transition-all"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 rounded-xl bg-green-100 text-green-600 dark:bg-green-800 dark:text-green-300">
-                                                <Download className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-900 dark:text-white">Instalar Aplicación (PWA)</p>
-                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">Instalar versión de acceso rápido</p>
-                                            </div>
-                                        </div>
-                                        <ChevronRight className="w-4 h-4 text-green-500" />
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* 5. ACTIVIDAD E HISTORIAL PAE */}
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
-                        <button
-                            onClick={() => toggleSection('actividad')}
-                            className="w-full p-5 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="p-2.5 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                                    <CalendarDays className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">ACTIVIDAD E HISTORIAL PAE</h3>
-                                    <p className="text-xs text-gray-400 dark:text-gray-400">Calendario mensual y resumen de registros</p>
-                                </div>
-                            </div>
-                            {openSections.actividad ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-                        </button>
-
-                        {openSections.actividad && (
-                            <div className="p-6 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-6 animate-in slide-in-from-top-2 duration-200">
-                                <div className="mt-4">
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                                        <div>
-                                            <h4 className="text-lg font-bold text-gray-900 dark:text-white">
-                                                {isStudent ? 'Tu Historial PAE' : 'Tu Actividad Reciente'}
-                                            </h4>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">Resumen mensual interactivo</p>
-                                        </div>
-                                        <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700/70 p-1.5 rounded-xl border border-gray-200 dark:border-gray-600">
-                                            <button
-                                                onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }}
-                                                className="p-1.5 hover:bg-white dark:hover:bg-gray-600 rounded-lg transition-colors text-gray-700 dark:text-gray-200"
-                                            >
-                                                <ChevronLeft className="w-4 h-4" />
-                                            </button>
-                                            <span className="text-xs font-black min-w-[110px] text-center capitalize text-gray-800 dark:text-gray-100">
-                                                {currentDate.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
+                                    {/* Monthly Calendar */}
+                                    <div className="bg-gray-50/50 dark:bg-gray-900/40 p-4 rounded-2xl border border-gray-100 dark:border-gray-700">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-xs font-bold text-gray-700 dark:text-gray-200">
+                                                {isStudent ? 'Historial PAE' : 'Actividad Reciente'}
                                             </span>
-                                            <button
-                                                onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }}
-                                                className="p-1.5 hover:bg-white dark:hover:bg-gray-600 rounded-lg transition-colors text-gray-700 dark:text-gray-200"
-                                            >
-                                                <ChevronRight className="w-4 h-4" />
-                                            </button>
+                                            <div className="flex items-center gap-1.5 bg-white dark:bg-gray-700 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-600">
+                                                <button
+                                                    onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }}
+                                                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors text-gray-700 dark:text-gray-200"
+                                                >
+                                                    <ChevronLeft className="w-3.5 h-3.5" />
+                                                </button>
+                                                <span className="text-[11px] font-bold capitalize text-gray-800 dark:text-gray-100 min-w-[90px] text-center">
+                                                    {currentDate.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
+                                                </span>
+                                                <button
+                                                    onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }}
+                                                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors text-gray-700 dark:text-gray-200"
+                                                >
+                                                    <ChevronRight className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div className="bg-gray-50/50 p-4 md:p-6 rounded-[2rem] border border-gray-100/50 shadow-inner dark:bg-gray-900/50 dark:border-gray-700/50">
-                                        <div className="grid grid-cols-7 gap-2 md:gap-3 mb-3">
-                                            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
-                                                <div key={day} className="text-center text-[10px] md:text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider py-1">
+                                        <div className="grid grid-cols-7 gap-1.5 mb-2 text-center">
+                                            {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day, idx) => (
+                                                <div key={idx} className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase">
                                                     {day}
                                                 </div>
                                             ))}
                                         </div>
 
-                                        <div className="grid grid-cols-7 gap-2 md:gap-3">
+                                        <div className="grid grid-cols-7 gap-1.5">
                                             {getDaysInMonth().map((d, i) => {
                                                 if (!d) return <div key={`empty-${i}`} className="aspect-square"></div>;
 
@@ -842,22 +612,20 @@ export default function ProfilePage() {
                                                         }}
                                                         disabled={!hasActivity}
                                                         className={`
-                                                            aspect-square rounded-2xl flex flex-col items-center justify-center border transition-all duration-300
+                                                            aspect-square rounded-xl flex flex-col items-center justify-center border transition-all text-xs font-bold
                                                             ${isFuture
-                                                                ? 'opacity-20 bg-gray-100 dark:bg-gray-800 border-transparent text-gray-400 dark:text-gray-600 cursor-default'
+                                                                ? 'opacity-20 bg-gray-100 dark:bg-gray-800 border-transparent text-gray-400'
                                                                 : hasActivity
-                                                                    ? 'bg-cyan-600 border-cyan-500 text-white shadow-md shadow-cyan-100 dark:shadow-cyan-900/30 hover:scale-105 active:scale-95 cursor-pointer'
+                                                                    ? 'bg-cyan-600 border-cyan-500 text-white shadow-xs hover:scale-105 active:scale-95 cursor-pointer'
                                                                     : isWeekend
-                                                                        ? 'bg-gray-100/70 dark:bg-gray-900/40 border-transparent text-gray-400 dark:text-gray-500'
-                                                                        : 'bg-white dark:bg-gray-700/60 border-gray-100 dark:border-gray-600 text-gray-400 dark:text-gray-400'
+                                                                        ? 'bg-gray-100/70 dark:bg-gray-900/40 border-transparent text-gray-400'
+                                                                        : 'bg-white dark:bg-gray-700/60 border-gray-100 dark:border-gray-600 text-gray-400'
                                                             }
                                                         `}
                                                     >
-                                                        <span className={`text-xs md:text-base font-black ${hasActivity ? 'text-white' : ''}`}>
-                                                            {d.getDate()}
-                                                        </span>
+                                                        <span>{d.getDate()}</span>
                                                         {hasActivity && (
-                                                            <span className="text-[9px] md:text-[10px] font-black opacity-90 mt-0.5 leading-none">
+                                                            <span className="text-[8px] font-black opacity-90 leading-none mt-0.5">
                                                                 {records.length}
                                                             </span>
                                                         )}
@@ -867,91 +635,45 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
                                 </div>
-
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs flex flex-col items-center text-center">
-                                        <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-2">
-                                            <CheckCircle2 className="w-4 h-4" />
-                                        </div>
-                                        <span className="text-2xl font-black text-gray-900 dark:text-white">{displayStats.totalRegistros}</span>
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase mt-1">Registros</span>
-                                    </div>
-
-                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs flex flex-col items-center text-center">
-                                        <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center mb-2">
-                                            <Calendar className="w-4 h-4" />
-                                        </div>
-                                        <span className="text-2xl font-black text-gray-900 dark:text-white">{displayStats.diasActivos}</span>
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase mt-1">Días Activos</span>
-                                    </div>
-
-                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs flex flex-col items-center text-center">
-                                        <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mb-2">
-                                            <TrendingUp className="w-4 h-4" />
-                                        </div>
-                                        <span className="text-2xl font-black text-gray-900 dark:text-white">{displayStats.gruposAtendidos}</span>
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase mt-1">Grupos</span>
-                                    </div>
-
-                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs flex flex-col items-center text-center">
-                                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-2">
-                                            <Clock className="w-4 h-4" />
-                                        </div>
-                                        <span className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-full">{displayStats.ultimoRegistro}</span>
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase mt-1">Último</span>
-                                    </div>
-                                </div>
-
-                                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white relative overflow-hidden dark:from-blue-800 dark:to-indigo-900">
-                                    <div className="relative z-10">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Award className="w-6 h-6 text-yellow-300" />
-                                            <h4 className="text-base font-bold">¡Gracias por tu labor!</h4>
-                                        </div>
-                                        <p className="text-xs text-blue-100 leading-relaxed">
-                                            Tu compromiso con el Programa de Alimentación Escolar garantiza la calidad y transparencia en la I.E. Barroblanco.
-                                        </p>
-                                    </div>
-                                </div>
                             </div>
                         )}
                     </div>
 
-                    {/* 6. GESTIÓN Y ADMINISTRACIÓN DEL SISTEMA (Admins & Coordinadores) */}
+                    {/* 2. GESTIÓN Y ADMINISTRACIÓN DEL SISTEMA (Admins, Coordinadores, Docentes) */}
                     {isAdminOrDocente && (
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
                             <button
                                 onClick={() => toggleSection('gestion')}
-                                className="w-full p-5 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
+                                className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2.5 rounded-2xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                                    <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
                                         <Sliders className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">GESTIÓN Y ADMINISTRACIÓN DEL SISTEMA</h3>
-                                        <p className="text-xs text-gray-400 dark:text-gray-400">Herramientas avanzadas, auditoría, mover masa y respaldos</p>
+                                        <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">GESTIÓN Y ADMINISTRACIÓN DEL SISTEMA</h3>
+                                        <p className="text-[11px] text-gray-400 dark:text-gray-400">Herramientas avanzadas, auditoría, mover masa y respaldos</p>
                                     </div>
                                 </div>
-                                {openSections.gestion ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                                {openSections.gestion ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                             </button>
 
                             {openSections.gestion && (
-                                <div className="p-6 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                <div className="p-5 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-3 animate-in slide-in-from-top-2 duration-200">
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">Acceso rápido a las funciones administrativas del sistema:</p>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                                         <button
                                             onClick={() => router.push('/dashboard/auditoria')}
-                                            className="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/40 hover:bg-purple-100/70 flex items-center justify-between text-left transition-all md:col-span-2"
+                                            className="p-3.5 rounded-xl bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/40 hover:bg-purple-100/70 flex items-center justify-between text-left transition-all md:col-span-2"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-800 dark:text-purple-300">
-                                                    <FileText className="w-5 h-5" />
+                                                <div className="p-2 rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-800 dark:text-purple-300">
+                                                    <FileText className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">Auditoría del Sistema</p>
-                                                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Registro de logs, eventos y cambios de seguridad</p>
+                                                    <p className="text-xs font-bold text-gray-900 dark:text-white">Auditoría del Sistema</p>
+                                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Registro de logs, eventos y cambios de seguridad</p>
                                                 </div>
                                             </div>
                                             <ChevronRight className="w-4 h-4 text-purple-500" />
@@ -959,15 +681,15 @@ export default function ProfilePage() {
 
                                         <button
                                             onClick={() => router.push('/dashboard/admin')}
-                                            className="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 hover:bg-blue-100/60 flex items-center justify-between text-left transition-all"
+                                            className="p-3.5 rounded-xl bg-blue-50/60 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 hover:bg-blue-100/60 flex items-center justify-between text-left transition-all"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300">
-                                                    <ArrowRightLeft className="w-5 h-5" />
+                                                <div className="p-2 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300">
+                                                    <ArrowRightLeft className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">Mover Masa</p>
-                                                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Transferir estudiantes de grupo</p>
+                                                    <p className="text-xs font-bold text-gray-900 dark:text-white">Mover Masa</p>
+                                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Transferir estudiantes de grupo</p>
                                                 </div>
                                             </div>
                                             <ChevronRight className="w-4 h-4 text-blue-500" />
@@ -975,15 +697,15 @@ export default function ProfilePage() {
 
                                         <button
                                             onClick={() => router.push('/dashboard/admin')}
-                                            className="p-4 rounded-2xl bg-purple-50/60 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/40 hover:bg-purple-100/60 flex items-center justify-between text-left transition-all"
+                                            className="p-3.5 rounded-xl bg-purple-50/60 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/40 hover:bg-purple-100/60 flex items-center justify-between text-left transition-all"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-800 dark:text-purple-300">
-                                                    <Edit3 className="w-5 h-5" />
+                                                <div className="p-2 rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-800 dark:text-purple-300">
+                                                    <Edit3 className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">Renombrar Grupos</p>
-                                                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Actualizar nombres institucionales</p>
+                                                    <p className="text-xs font-bold text-gray-900 dark:text-white">Renombrar Grupos</p>
+                                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Actualizar nombres institucionales</p>
                                                 </div>
                                             </div>
                                             <ChevronRight className="w-4 h-4 text-purple-500" />
@@ -991,15 +713,15 @@ export default function ProfilePage() {
 
                                         <button
                                             onClick={() => router.push('/dashboard/admin')}
-                                            className="p-4 rounded-2xl bg-orange-50/60 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/40 hover:bg-orange-100/60 flex items-center justify-between text-left transition-all"
+                                            className="p-3.5 rounded-xl bg-orange-50/60 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/40 hover:bg-orange-100/60 flex items-center justify-between text-left transition-all"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-800 dark:text-orange-300">
-                                                    <MapPin className="w-5 h-5" />
+                                                <div className="p-2 rounded-lg bg-orange-100 text-orange-600 dark:bg-orange-800 dark:text-orange-300">
+                                                    <MapPin className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">Cambiar Sede</p>
-                                                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Asignar sede a cursos</p>
+                                                    <p className="text-xs font-bold text-gray-900 dark:text-white">Cambiar Sede</p>
+                                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Asignar sede a cursos</p>
                                                 </div>
                                             </div>
                                             <ChevronRight className="w-4 h-4 text-orange-500" />
@@ -1007,15 +729,15 @@ export default function ProfilePage() {
 
                                         <button
                                             onClick={() => router.push('/dashboard/admin')}
-                                            className="p-4 rounded-2xl bg-red-50/60 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 hover:bg-red-100/60 flex items-center justify-between text-left transition-all"
+                                            className="p-3.5 rounded-xl bg-red-50/60 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 hover:bg-red-100/60 flex items-center justify-between text-left transition-all"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-xl bg-red-100 text-red-600 dark:bg-red-800 dark:text-red-300">
-                                                    <ShieldAlert className="w-5 h-5" />
+                                                <div className="p-2 rounded-lg bg-red-100 text-red-600 dark:bg-red-800 dark:text-red-300">
+                                                    <ShieldAlert className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">Gestión de Estados</p>
-                                                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Activo, retirado, graduado</p>
+                                                    <p className="text-xs font-bold text-gray-900 dark:text-white">Gestión de Estados</p>
+                                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Activo, retirado, graduado</p>
                                                 </div>
                                             </div>
                                             <ChevronRight className="w-4 h-4 text-red-500" />
@@ -1023,15 +745,15 @@ export default function ProfilePage() {
 
                                         <button
                                             onClick={() => router.push('/dashboard/admin')}
-                                            className="p-4 rounded-2xl bg-green-50/60 dark:bg-green-900/20 border border-green-100 dark:border-green-800/40 hover:bg-green-100/60 flex items-center justify-between text-left transition-all md:col-span-2"
+                                            className="p-3.5 rounded-xl bg-green-50/60 dark:bg-green-900/20 border border-green-100 dark:border-green-800/40 hover:bg-green-100/60 flex items-center justify-between text-left transition-all md:col-span-2"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-xl bg-green-100 text-green-600 dark:bg-green-800 dark:text-green-300">
-                                                    <Database className="w-5 h-5" />
+                                                <div className="p-2 rounded-lg bg-green-100 text-green-600 dark:bg-green-800 dark:text-green-300">
+                                                    <Database className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">Respaldos de Datos</p>
-                                                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Exportar y asegurar la base de datos de asistencia</p>
+                                                    <p className="text-xs font-bold text-gray-900 dark:text-white">Respaldos de Datos</p>
+                                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Exportar y asegurar la base de datos de asistencia</p>
                                                 </div>
                                             </div>
                                             <ChevronRight className="w-4 h-4 text-green-500" />
@@ -1042,62 +764,302 @@ export default function ProfilePage() {
                         </div>
                     )}
 
-                    {/* 7. APARIENCIA Y TEMA */}
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
+                    {/* 3. SONIDOS DE INTERFAZ */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
                         <button
-                            onClick={() => toggleSection('apariencia')}
-                            className="w-full p-5 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
+                            onClick={() => toggleSection('sonidos')}
+                            className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                                <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                                    <Volume2 className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">SONIDOS DE INTERFAZ</h3>
+                                    <p className="text-[11px] text-gray-400 dark:text-gray-400">Personaliza la retroalimentación auditiva del menú inferior</p>
+                                </div>
+                            </div>
+                            {openSections.sonidos ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                        </button>
+
+                        {openSections.sonidos && (
+                            <div className="p-5 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 leading-relaxed">
+                                    Selecciona el efecto sintetizado por código (0 descargas de red) que sonará al cambiar entre las pestañas del menú inferior:
+                                </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                                    {SOUND_OPTIONS.map((snd) => {
+                                        const isSelected = soundPref === snd.id;
+                                        return (
+                                            <button
+                                                key={snd.id}
+                                                onClick={() => handleSoundSelect(snd.id)}
+                                                className={`p-3.5 rounded-xl border text-left flex items-center justify-between transition-all ${
+                                                    isSelected
+                                                        ? 'bg-gradient-to-r from-cyan-600 to-cyan-700 text-white border-cyan-500 shadow-xs'
+                                                        : 'bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600 hover:border-cyan-400 text-gray-800 dark:text-gray-200'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-xl">{snd.icon}</span>
+                                                    <div>
+                                                        <p className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                                                            {snd.label}
+                                                        </p>
+                                                        <p className={`text-[10px] ${isSelected ? 'text-cyan-100' : 'text-gray-400'}`}>
+                                                            {snd.description}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="pt-2 flex justify-end">
+                                    <button
+                                        onClick={() => playNavSound(soundPref)}
+                                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all active:scale-95"
+                                    >
+                                        <Volume2 className="w-4 h-4" />
+                                        PROBAR SONIDO SELECCIONADO
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 4. NOTIFICACIONES Y ALERTAS PUSH */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
+                        <button
+                            onClick={() => toggleSection('notificaciones')}
+                            className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                    <Bell className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">NOTIFICACIONES Y ALERTAS PUSH</h3>
+                                    <p className="text-[11px] text-gray-400 dark:text-gray-400">Activar o desactivar notificaciones y probar alertas push</p>
+                                </div>
+                            </div>
+                            {openSections.notificaciones ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                        </button>
+
+                        {openSections.notificaciones && (
+                            <div className="p-5 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 leading-relaxed">
+                                    Recibe alertas instantáneas de cambios en el horario del PAE y novedades institucionales directamente en tu dispositivo.
+                                </p>
+
+                                {pushFeedback && (
+                                    <div className="p-3 rounded-xl bg-cyan-50 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-800 text-xs font-bold text-cyan-800 dark:text-cyan-200 flex items-center justify-between">
+                                        <span>{pushFeedback}</span>
+                                        <button onClick={() => setPushFeedback(null)} className="text-cyan-600 hover:opacity-80">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                                    <button
+                                        onClick={handleTogglePush}
+                                        disabled={pushLoading}
+                                        className={`p-3.5 rounded-xl border flex items-center justify-between text-left transition-all ${
+                                            isSubscribed
+                                                ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-emerald-500 shadow-xs'
+                                                : 'bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {isSubscribed ? <Bell className="w-5 h-5 animate-pulse" /> : <BellOff className="w-5 h-5 text-gray-400" />}
+                                            <div>
+                                                <p className={`text-xs font-bold ${isSubscribed ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                                                    {isSubscribed ? 'Notificaciones Activadas' : 'Notificaciones Desactivadas'}
+                                                </p>
+                                                <p className={`text-[10px] ${isSubscribed ? 'text-emerald-100' : 'text-gray-400'}`}>
+                                                    {pushLoading ? 'Procesando...' : (isSubscribed ? 'Recibiendo alertas push' : 'Toca para activar')}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <span className={`px-2.5 py-0.5 text-[10px] font-black rounded-lg border ${isSubscribed ? 'bg-white/20 border-white/30 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600'}`}>
+                                            {isSubscribed ? 'ACTIVAS' : 'ACTIVAR'}
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        onClick={handleTestNotification}
+                                        disabled={testLoading}
+                                        className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 hover:bg-blue-100/70 flex items-center justify-between text-left transition-all group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300">
+                                                <Send className={`w-4 h-4 ${testLoading ? 'animate-spin' : ''}`} />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-900 dark:text-white">Probar Notificación</p>
+                                                <p className="text-[10px] text-gray-500 dark:text-gray-400">Emitir alerta de prueba en el dispositivo</p>
+                                            </div>
+                                        </div>
+                                        <span className="px-2.5 py-1 bg-blue-600 text-white text-[10px] font-black rounded-lg shadow-xs group-hover:scale-105 transition-transform">
+                                            {testLoading ? 'PROBANDO...' : 'PROBAR'}
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 5. RECURSOS EXTERNOS Y HERRAMIENTAS */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
+                        <button
+                            onClick={() => toggleSection('recursos')}
+                            className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
+                                    <Globe className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">RECURSOS EXTERNOS Y HERRAMIENTAS</h3>
+                                    <p className="text-[11px] text-gray-400 dark:text-gray-400">Enlaces institucionales, PWA, biometría y compartir</p>
+                                </div>
+                            </div>
+                            {openSections.recursos ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                        </button>
+
+                        {openSections.recursos && (
+                            <div className="p-5 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-2.5 animate-in slide-in-from-top-2 duration-200">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">Herramientas y accesos complementarios de la aplicación:</p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                                    <button
+                                        onClick={() => router.push('/dashboard/novedades')}
+                                        className="p-3.5 rounded-xl bg-teal-50/70 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800/40 hover:bg-teal-100/70 flex items-center justify-between text-left transition-all"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-lg bg-teal-100 text-teal-600 dark:bg-teal-800 dark:text-teal-300">
+                                                <Globe className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-900 dark:text-white">Recursos Externos</p>
+                                                <p className="text-[10px] text-gray-500 dark:text-gray-400">Novedades y planillas institucionales</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-teal-500" />
+                                    </button>
+
+                                    <button
+                                        onClick={handleShareApp}
+                                        className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100/70 flex items-center justify-between text-left transition-all"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-800 dark:text-emerald-300">
+                                                <Share2 className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-900 dark:text-white">Compartir Aplicación</p>
+                                                <p className="text-[10px] text-gray-500 dark:text-gray-400">Enviar enlace a docentes o acudientes</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-emerald-500" />
+                                    </button>
+
+                                    <button
+                                        onClick={() => alert('Biometría vinculada correctamente al dispositivo.')}
+                                        className="p-3.5 rounded-xl bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/40 hover:bg-purple-100/70 flex items-center justify-between text-left transition-all"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-800 dark:text-purple-300">
+                                                <Fingerprint className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-900 dark:text-white">Vincular Biometría</p>
+                                                <p className="text-[10px] text-gray-500 dark:text-gray-400">Configurar Huella o FaceID</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-purple-500" />
+                                    </button>
+
+                                    <button
+                                        onClick={() => alert('Si estás usando un navegador compatible, usa la opción "Agregar a la pantalla de inicio".')}
+                                        className="p-3.5 rounded-xl bg-green-50/70 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 hover:bg-green-100/70 flex items-center justify-between text-left transition-all"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-lg bg-green-100 text-green-600 dark:bg-green-800 dark:text-green-300">
+                                                <Download className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-900 dark:text-white">Instalar Aplicación (PWA)</p>
+                                                <p className="text-[10px] text-gray-500 dark:text-gray-400">Instalar versión de acceso rápido</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-green-500" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 6. APARIENCIA Y TEMA */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
+                        <button
+                            onClick={() => toggleSection('apariencia')}
+                            className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                                     <Palette className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">APARIENCIA Y TEMA</h3>
-                                    <p className="text-xs text-gray-400 dark:text-gray-400">Personaliza la interfaz visual de la aplicación</p>
+                                    <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">APARIENCIA Y TEMA</h3>
+                                    <p className="text-[11px] text-gray-400 dark:text-gray-400">Personaliza la interfaz visual de la aplicación</p>
                                 </div>
                             </div>
-                            {openSections.apariencia ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                            {openSections.apariencia ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                         </button>
 
                         {openSections.apariencia && (
-                            <div className="p-6 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                            <div className="p-5 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-3 animate-in slide-in-from-top-2 duration-200">
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">Elige el tema de pantalla preferido:</p>
 
-                                <div className="grid grid-cols-3 gap-3">
+                                <div className="grid grid-cols-3 gap-2.5">
                                     <button
                                         onClick={() => setTheme('light')}
-                                        className={`p-4 rounded-2xl border flex flex-col items-center gap-2 transition-all ${
+                                        className={`p-3.5 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${
                                             theme === 'light'
-                                                ? 'bg-cyan-600 text-white border-cyan-500 shadow-md'
+                                                ? 'bg-cyan-600 text-white border-cyan-500 shadow-xs'
                                                 : 'bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
                                         }`}
                                     >
-                                        <Sun className="w-6 h-6" />
+                                        <Sun className="w-5 h-5" />
                                         <span className="text-xs font-bold">Claro</span>
                                     </button>
 
                                     <button
                                         onClick={() => setTheme('dark')}
-                                        className={`p-4 rounded-2xl border flex flex-col items-center gap-2 transition-all ${
+                                        className={`p-3.5 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${
                                             theme === 'dark'
-                                                ? 'bg-cyan-600 text-white border-cyan-500 shadow-md'
+                                                ? 'bg-cyan-600 text-white border-cyan-500 shadow-xs'
                                                 : 'bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
                                         }`}
                                     >
-                                        <Moon className="w-6 h-6" />
+                                        <Moon className="w-5 h-5" />
                                         <span className="text-xs font-bold">Oscuro</span>
                                     </button>
 
                                     <button
                                         onClick={() => setTheme('system')}
-                                        className={`p-4 rounded-2xl border flex flex-col items-center gap-2 transition-all ${
+                                        className={`p-3.5 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${
                                             theme === 'system'
-                                                ? 'bg-cyan-600 text-white border-cyan-500 shadow-md'
+                                                ? 'bg-cyan-600 text-white border-cyan-500 shadow-xs'
                                                 : 'bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
                                         }`}
                                     >
-                                        <Monitor className="w-6 h-6" />
+                                        <Monitor className="w-5 h-5" />
                                         <span className="text-xs font-bold">Sistema</span>
                                     </button>
                                 </div>
@@ -1105,36 +1067,36 @@ export default function ProfilePage() {
                         )}
                     </div>
 
-                    {/* 8. DATOS Y SEGURIDAD */}
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-all">
+                    {/* 7. DATOS Y SEGURIDAD */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
                         <button
                             onClick={() => toggleSection('privacidad')}
-                            className="w-full p-5 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
+                            className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2.5 rounded-2xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
+                                <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
                                     <Lock className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black text-rose-600 dark:text-rose-400 uppercase tracking-wider">DATOS Y SEGURIDAD</h3>
-                                    <p className="text-xs text-gray-400 dark:text-gray-400">Información del sistema y cierre de sesión</p>
+                                    <h3 className="text-sm font-black text-rose-600 dark:text-rose-400 uppercase tracking-wider">DATOS Y SEGURIDAD</h3>
+                                    <p className="text-[11px] text-gray-400 dark:text-gray-400">Información del sistema y cierre de sesión</p>
                                 </div>
                             </div>
-                            {openSections.privacidad ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                            {openSections.privacidad ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                         </button>
 
                         {openSections.privacidad && (
-                            <div className="p-6 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-4 animate-in slide-in-from-top-2 duration-200">
-                                <div className="space-y-2 mt-4 text-xs text-gray-500 dark:text-gray-400">
-                                    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700/40">
+                            <div className="p-5 pt-0 border-t border-gray-100 dark:border-gray-700/50 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                <div className="space-y-1.5 mt-4 text-xs text-gray-500 dark:text-gray-400">
+                                    <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-gray-700/40">
                                         <span className="font-bold">Versión del Sistema</span>
                                         <span>Sistema PAE v2.0 (PWA)</span>
                                     </div>
-                                    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700/40">
+                                    <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-gray-700/40">
                                         <span className="font-bold">Institución</span>
                                         <span>I.E. Barroblanco</span>
                                     </div>
-                                    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700/40">
+                                    <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-gray-700/40">
                                         <span className="font-bold">Motor de Datos</span>
                                         <span>Supabase PostgreSQL + Web Audio</span>
                                     </div>
@@ -1143,9 +1105,9 @@ export default function ProfilePage() {
                                 <div className="pt-2">
                                     <button
                                         onClick={handleLogout}
-                                        className="w-full p-4 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-black text-sm flex items-center justify-center gap-2 shadow-md shadow-rose-200 dark:shadow-none transition-all active:scale-95"
+                                        className="w-full p-3.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95"
                                     >
-                                        <LogOut className="w-5 h-5" />
+                                        <LogOut className="w-4 h-4" />
                                         CERRAR SESIÓN
                                     </button>
                                 </div>
@@ -1159,13 +1121,13 @@ export default function ProfilePage() {
                 {selectedDate && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-200">
                         <div
-                            className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl w-full max-w-md shadow-2xl border border-white/50 dark:border-gray-700 overflow-hidden animate-in zoom-in-95 duration-300"
+                            className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-2xl w-full max-w-md shadow-2xl border border-white/50 dark:border-gray-700 overflow-hidden animate-in zoom-in-95 duration-300"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 flex justify-between items-center">
+                            <div className="p-5 border-b border-gray-100 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 flex justify-between items-center">
                                 <div>
-                                    <p className="text-xs font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest">Detalle del Día</p>
-                                    <h3 className="text-xl font-black text-gray-900 dark:text-white capitalize">{selectedDate.date}</h3>
+                                    <p className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest">Detalle del Día</p>
+                                    <h3 className="text-lg font-black text-gray-900 dark:text-white capitalize">{selectedDate.date}</h3>
                                 </div>
                                 <button
                                     onClick={() => setSelectedDate(null)}
@@ -1175,9 +1137,9 @@ export default function ProfilePage() {
                                 </button>
                             </div>
 
-                            <div className="p-6 space-y-6">
+                            <div className="p-5 space-y-5">
                                 <div>
-                                    <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <h4 className="text-xs font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                                         <Users className="w-4 h-4 text-cyan-500" />
                                         Grupos Atendidos
                                     </h4>
@@ -1185,18 +1147,18 @@ export default function ProfilePage() {
                                         {selectedDate.groups.map((g, idx) => (
                                             <div key={idx} className="flex items-center justify-between p-3 bg-white dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-xl shadow-xs">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-cyan-50 dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-400 flex items-center justify-center font-bold text-xs uppercase">
+                                                    <div className="w-7 h-7 rounded-full bg-cyan-50 dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-400 flex items-center justify-center font-bold text-xs uppercase">
                                                         {g.grado}
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="font-bold text-gray-700 dark:text-gray-200 text-sm">Grupo {g.grupo}</span>
+                                                        <span className="font-bold text-gray-700 dark:text-gray-200 text-xs">Grupo {g.grupo}</span>
                                                         <span className="text-[10px] text-gray-400 flex items-center gap-1">
                                                             <Clock className="w-3 h-3" />
                                                             {new Date(g.timestamp).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <span className="bg-cyan-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow-xs">
+                                                <span className="bg-cyan-600 text-white text-xs font-bold px-2 py-0.5 rounded-lg shadow-xs">
                                                     {g.count}
                                                 </span>
                                             </div>
@@ -1204,8 +1166,8 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
 
-                                <div className="pt-4 border-t border-gray-100 dark:border-gray-700 text-center">
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                <div className="pt-3 border-t border-gray-100 dark:border-gray-700 text-center">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
                                         Total procesado: <b className="text-gray-900 dark:text-white">{selectedDate.total} estudiantes</b>
                                     </p>
                                 </div>
