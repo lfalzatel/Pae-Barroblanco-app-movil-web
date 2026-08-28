@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
+import { playNavSound } from '../../lib/ui-sounds';
 import {
     Home,
     ClipboardList,
@@ -1101,6 +1102,7 @@ export default function DashboardLayout({
                         <Link
                             key={item.href}
                             href={item.href}
+                            onClick={() => playNavSound()}
                             className="group flex flex-col items-center justify-center flex-1 py-1 relative"
                         >
                             <div className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-2xl transition-all duration-300 ${
