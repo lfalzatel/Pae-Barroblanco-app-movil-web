@@ -834,24 +834,14 @@ export default function DashboardLayout({
                             {isAdminMenuOpen && (
                                 <div className="pl-4 space-y-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                     <Link
-                                        href="/dashboard/admin"
-                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border-l-2 ${pathname === '/dashboard/admin'
+                                        href="/dashboard/perfil"
+                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border-l-2 ${pathname === '/dashboard/perfil'
                                             ? 'border-purple-500 bg-purple-50/50 text-purple-700 dark:bg-purple-900/10 dark:text-purple-300'
                                             : 'border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700/30'
                                             }`}
                                     >
-                                        <RefreshCcw className="w-4 h-4" />
+                                        <Settings className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                                         Configuración
-                                    </Link>
-                                    <Link
-                                        href="/dashboard/auditoria"
-                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border-l-2 ${pathname === '/dashboard/auditoria'
-                                            ? 'border-purple-500 bg-purple-50/50 text-purple-700 dark:bg-purple-900/10 dark:text-purple-300'
-                                            : 'border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700/30'
-                                            }`}
-                                    >
-                                        <FileText className="w-4 h-4" />
-                                        Auditoría
                                     </Link>
                                 </div>
                             )}
@@ -1232,26 +1222,14 @@ export default function DashboardLayout({
                                         Mi Perfil
                                     </Link>
 
-                                    {usuario.rol === 'admin' && (
-                                        <>
-                                            <Link
-                                                href="/dashboard/admin"
-                                                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-purple-600 hover:bg-purple-50 transition-colors bg-purple-50/10 dark:bg-gray-800 dark:text-purple-400 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
-                                                onClick={() => setIsProfileMenuOpen(false)}
-                                            >
-                                                <RefreshCcw className="w-4 h-4" />
-                                                Configuración
-                                            </Link>
-                                            <Link
-                                                href="/dashboard/auditoria"
-                                                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-purple-600 hover:bg-purple-50 transition-colors bg-purple-50/10 dark:bg-gray-800 dark:text-purple-400 dark:hover:bg-gray-700"
-                                                onClick={() => setIsProfileMenuOpen(false)}
-                                            >
-                                                <FileText className="w-4 h-4" />
-                                                Auditoría
-                                            </Link>
-                                        </>
-                                    )}
+                                    <Link
+                                        href="/dashboard/perfil"
+                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-purple-600 hover:bg-purple-50 transition-colors bg-purple-50/10 dark:bg-gray-800 dark:text-purple-400 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
+                                        onClick={() => setIsProfileMenuOpen(false)}
+                                    >
+                                        <Settings className="w-4 h-4" />
+                                        Configuración
+                                    </Link>
 
                                     {['admin', 'coordinador_pae', 'secretaria_educacion'].includes(usuario.rol) && (
                                         <Link
