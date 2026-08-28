@@ -42,6 +42,11 @@ import {
     Download,
     Send
 } from 'lucide-react';
+import {
+    hasLinkedBiometrics,
+    registerBiometrics,
+    clearBiometrics
+} from '@/lib/webauthnService';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useTheme } from '@/components/ThemeProvider';
 import {
@@ -81,6 +86,39 @@ export default function ProfilePage() {
     const [pushLoading, setPushLoading] = useState(false);
     const [testLoading, setTestLoading] = useState(false);
     const [pushFeedback, setPushFeedback] = useState<string | null>(null);
+
+    // Biometric state
+    const [isBioLinked, setIsBioLinked] = useState(false);
+    const [bioLoading, setBioLoading] = useState(false);
+
+    useEffect(() => {
+        setIsBioLinked(hasLinkedBiometrics());
+    }, []);
+
+    const handleLinkBiometrics = async () => {
+        if (isBioLinked) {
+            if (confirm('¿Deseas desvincular la biometría de este dispositivo?')) {
+                clearBiometrics();
+                setIsBioLinked(false);
+                setPushFeedback('Biometría desvinculada correctamente de este dispositivo.');
+            }
+            return;
+        }
+
+        setBioLoading(true);
+        const result = await registerBiometrics(
+            usuario?.email || 'usuario@barroblanco.edu.co',
+            usuario?.id || 'user_id'
+        );
+        setBioLoading(false);
+
+        if (result.success) {
+            setIsBioLinked(true);
+            setPushFeedback(result.message);
+        } else {
+            setPushFeedback(result.message);
+        }
+    };
 
     // Accordion State
     const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -984,21 +1022,32 @@ export default function ProfilePage() {
                                         <ChevronRight className="w-4 h-4 text-emerald-500" />
                                     </button>
 
-                                    <button
-                                        onClick={() => alert('Biometría vinculada correctamente al dispositivo.')}
-                                        className="p-3.5 rounded-xl bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/40 hover:bg-purple-100/70 flex items-center justify-between text-left transition-all"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-800 dark:text-purple-300">
-                                                <Fingerprint className="w-4 h-4" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs font-bold text-gray-900 dark:text-white">Vincular Biometría</p>
-                                                <p className="text-[10px] text-gray-500 dark:text-gray-400">Configurar Huella o FaceID</p>
-                                            </div>
-                                        </div>
-                                        <ChevronRight className="w-4 h-4 text-purple-500" />
-                                    </button>
+                                     <button
+                                         onClick={handleLinkBiometrics}
+                                         disabled={bioLoading}
+                                         className={`p-3.5 rounded-xl border flex items-center justify-between text-left transition-all ${
+                                             isBioLinked
+                                                 ? 'bg-purple-100/80 dark:bg-purple-900/40 border-purple-300 dark:border-purple-700'
+                                                 : 'bg-purple-50/70 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800/40 hover:bg-purple-100/70'
+                                         }`}
+                                     >
+                                         <div className="flex items-center gap-3">
+                                             <div className={`p-2 rounded-lg ${isBioLinked ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-600 dark:bg-purple-800 dark:text-purple-300'}`}>
+                                                 <Fingerprint className="w-4 h-4" />
+                                             </div>
+                                             <div>
+                                                 <p className="text-xs font-bold text-gray-900 dark:text-white">
+                                                     {bioLoading ? 'Procesando...' : isBioLinked ? 'Biometría Vinculada (Activa)' : 'Vincular Biometría'}
+                                                 </p>
+                                                 <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                                     {isBioLinked ? 'Toca para desvincular Huella o FaceID' : 'Configurar Huella o FaceID'}
+                                                 </p>
+                                             </div>
+                                         </div>
+                                         <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${isBioLinked ? 'bg-purple-600 text-white' : 'bg-purple-100 dark:bg-purple-800 text-purple-700 dark:text-purple-200'}`}>
+                                             {isBioLinked ? 'ACTIVA' : 'VINCULAR'}
+                                         </span>
+                                     </button>
 
                                     <button
                                         onClick={() => alert('Si estás usando un navegador compatible, usa la opción "Agregar a la pantalla de inicio".')}

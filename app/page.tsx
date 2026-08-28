@@ -7,6 +7,7 @@ import { AlertCircle, Eye, EyeOff, LogIn, Fingerprint } from 'lucide-react';
 import Image from 'next/image';
 import InstallPrompt from '../components/InstallPrompt';
 import { useSplash } from '../components/SplashScreenProvider';
+import { hasLinkedBiometrics, verifyBiometrics } from '../lib/webauthnService';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,8 +19,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [isLoginSuccess, setIsLoginSuccess] = useState(false);
   const [showCredentials, setShowCredentials] = useState(false);
+  const [hasBio, setHasBio] = useState(false);
+  const [bioLoading, setBioLoading] = useState(false);
 
   useEffect(() => {
+    setHasBio(hasLinkedBiometrics());
     // Forzar limpieza inmediata
     setEmail('');
     setPassword('');
@@ -39,6 +43,25 @@ export default function LoginPage() {
     checkSession();
     return () => clearTimeout(timer);
   }, [router]);
+
+  const handleBiometricLogin = async () => {
+    setError('');
+    setBioLoading(true);
+    const result = await verifyBiometrics();
+    setBioLoading(false);
+
+    if (result.success) {
+      startManualSplash([
+        'Autenticación biométrica verificada',
+        'Cargando tu espacio',
+        '¡Bienvenido de nuevo!'
+      ]);
+      setIsLoginSuccess(true);
+      router.push('/dashboard');
+    } else {
+      setError(result.message);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,6 +154,19 @@ export default function LoginPage() {
             <p className="text-[#388e3c] text-[10px] font-black uppercase tracking-widest">Barroblanco Institución Educativa</p>
             <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-wider">Programa de Alimentación Escolar</p>
           </div>
+
+          {/* Botón Biometría (si está vinculada) */}
+          {hasBio && (
+            <button
+              type="button"
+              onClick={handleBiometricLogin}
+              disabled={bioLoading}
+              className="w-full mb-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black py-3 px-4 rounded-xl shadow-lg shadow-purple-500/20 transition-all duration-200 flex items-center justify-center gap-3 active:scale-95 text-xs uppercase tracking-widest"
+            >
+              <Fingerprint className={`w-5 h-5 ${bioLoading ? 'animate-spin' : 'animate-pulse'}`} />
+              {bioLoading ? 'Escaneando Huella...' : 'Ingresar con Huella / Biometría'}
+            </button>
+          )}
 
           {/* Botón Google */}
           <button
