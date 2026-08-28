@@ -889,14 +889,17 @@ export default function DashboardLayout({
 
                         {isProfileMenuOpen && (
                             <div className="absolute bottom-full mb-2 left-0 w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-y-auto max-h-[85vh] z-50 animate-in slide-in-from-bottom-2 fade-in duration-200 dark:bg-gray-800 dark:border-gray-700">
-                                <Link
-                                    href="/dashboard/perfil"
-                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:text-gray-200 dark:hover:bg-gray-700"
-                                    onClick={() => setIsProfileMenuOpen(false)}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsProfileMenuOpen(false);
+                                        router.push('/dashboard/perfil');
+                                    }}
+                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors w-full text-left dark:text-gray-200 dark:hover:bg-gray-700"
                                 >
                                     <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                     Mi Perfil
-                                </Link>
+                                </button>
 
                                 <button
                                     onClick={() => {
@@ -1213,23 +1216,29 @@ export default function DashboardLayout({
                             <>
                                 <div className="fixed inset-0 z-[99] bg-black/20 backdrop-blur-sm" onClick={() => setIsProfileMenuOpen(false)}></div>
                                 <div className="absolute top-full mt-2 right-0 w-max bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-y-auto max-h-[85vh] z-[101] animate-in slide-in-from-top-2 fade-in duration-200">
-                                    <Link
-                                        href="/dashboard/perfil"
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors bg-gray-50/50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-                                        onClick={() => setIsProfileMenuOpen(false)}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsProfileMenuOpen(false);
+                                            router.push('/dashboard/perfil');
+                                        }}
+                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors bg-gray-50/50 w-full text-left dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                                     >
                                         <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                         Mi Perfil
-                                    </Link>
+                                    </button>
 
-                                    <Link
-                                        href="/dashboard/perfil"
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-purple-600 hover:bg-purple-50 transition-colors bg-purple-50/10 dark:bg-gray-800 dark:text-purple-400 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
-                                        onClick={() => setIsProfileMenuOpen(false)}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsProfileMenuOpen(false);
+                                            router.push('/dashboard/perfil');
+                                        }}
+                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-purple-600 hover:bg-purple-50 transition-colors bg-purple-50/10 w-full text-left dark:bg-gray-800 dark:text-purple-400 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
                                     >
                                         <Settings className="w-4 h-4" />
                                         Configuración
-                                    </Link>
+                                    </button>
 
                                     {['admin', 'coordinador_pae', 'secretaria_educacion'].includes(usuario.rol) && (
                                         <Link
