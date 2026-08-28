@@ -35,6 +35,7 @@ import confetti from 'canvas-confetti';
 interface GrupoConEstado extends Grupo {
   completado: boolean;
   estudiantesActivos?: number;
+  horaGuardado?: string;
 }
 
 // Función helper para recortar nombres de grupos (ej: 1001-2024 -> 1001)
@@ -499,20 +500,53 @@ function RegistroContent() {
 
       const { data: asistenciaData } = await supabase
         .from('asistencia_pae')
-        .select('estudiante_id, estudiantes!inner(grupo)')
+        .select('created_at, estudiante_id, estudiantes!inner(grupo)')
         .eq('fecha', today);
 
       if (asistenciaData) {
         const conteoPorGrupo: Record<string, number> = {};
+        const ultimaHoraPorGrupo: Record<string, string> = {};
+
         asistenciaData.forEach((a: any) => {
-          const g = a.estudiantes.grupo;
-          conteoPorGrupo[g] = (conteoPorGrupo[g] || 0) + 1;
+          const g = a.estudiantes?.grupo;
+          if (g) {
+            conteoPorGrupo[g] = (conteoPorGrupo[g] || 0) + 1;
+            if (a.created_at) {
+              if (!ultimaHoraPorGrupo[g] || new Date(a.created_at) > new Date(ultimaHoraPorGrupo[g])) {
+                ultimaHoraPorGrupo[g] = a.created_at;
+              }
+            }
+          }
         });
+
+        // Incluir asistencias locales en cola offline de hoy
+        const pending = OfflineService.getPending();
+        if (pending && pending.length > 0) {
+          pending.forEach((p: any) => {
+            if (p.fecha === today && p.grupo) {
+              conteoPorGrupo[p.grupo] = (conteoPorGrupo[p.grupo] || 0) + 1;
+              const t = p.timestamp || p.created_at;
+              if (t) {
+                if (!ultimaHoraPorGrupo[p.grupo] || new Date(t) > new Date(ultimaHoraPorGrupo[p.grupo])) {
+                  ultimaHoraPorGrupo[p.grupo] = t;
+                }
+              }
+            }
+          });
+        }
 
         gruposUnicos.forEach(g => {
           const threshold = (g as any).estudiantesActivos;
           if (conteoPorGrupo[g.nombre] && conteoPorGrupo[g.nombre] >= threshold && threshold > 0) {
             g.completado = true;
+            if (ultimaHoraPorGrupo[g.nombre]) {
+              try {
+                const d = new Date(ultimaHoraPorGrupo[g.nombre]);
+                g.horaGuardado = d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
+              } catch (e) {
+                console.error(e);
+              }
+            }
           }
         });
       }
@@ -1092,8 +1126,20 @@ function RegistroContent() {
                     <div className={`text-[11px] font-medium leading-none mb-2 ${grupo.completado ? 'text-cyan-100' : 'text-slate-400 dark:text-slate-500'}`}>
                       {grupo.estudiantes || 0} estudiantes
                     </div>
-                    <div className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${grupo.completado ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-300'}`}>
-                      {grupo.completado ? 'COMPLETADO' : 'PENDIENTE'}
+                    <div className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1 ${grupo.completado ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-300'}`}>
+                      {grupo.completado ? (
+                        <>
+                          <span>COMPLETADO</span>
+                          {grupo.horaGuardado && (
+                            <>
+                              <span className="opacity-60">•</span>
+                              <span className="font-bold tracking-normal">{grupo.horaGuardado}</span>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        'PENDIENTE'
+                      )}
                     </div>
                   </button>
                 ))}
