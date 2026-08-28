@@ -84,7 +84,7 @@ export default function ProfilePage() {
 
     // Accordion State
     const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-        cuenta: true,       // Open by default
+        cuenta: false,
         sonidos: false,
         gestion: false,
         notificaciones: false,
@@ -100,6 +100,17 @@ export default function ProfilePage() {
             Object.keys(prev).forEach(k => {
                 nextState[k] = k === sectionKey ? !isCurrentlyOpen : false;
             });
+
+            if (!isCurrentlyOpen) {
+                setTimeout(() => {
+                    const el = document.getElementById(`section-${sectionKey}`);
+                    if (el) {
+                        const top = el.getBoundingClientRect().top + window.scrollY - 80;
+                        window.scrollTo({ top, behavior: 'smooth' });
+                    }
+                }, 150);
+            }
+
             return nextState;
         });
     };
@@ -263,8 +274,13 @@ export default function ProfilePage() {
                 .eq('id', session.user.id)
                 .single();
 
+            const userPhoto = profile?.foto || session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || session.user.user_metadata?.foto || null;
+
             if (profile) {
-                setUsuario(profile);
+                setUsuario({
+                    ...profile,
+                    foto: userPhoto
+                });
             } else {
                 let userRole = session.user.user_metadata?.rol;
                 const userEmail = session.user.email || '';
@@ -281,7 +297,7 @@ export default function ProfilePage() {
                     email: userEmail,
                     nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
                     rol: userRole,
-                    foto: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
+                    foto: userPhoto
                 });
             }
 
@@ -447,7 +463,7 @@ export default function ProfilePage() {
                 <div className="space-y-2.5">
 
                     {/* 1. CUENTA Y PERFIL + ACTIVIDAD E HISTORIAL PAE */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
+                    <div id="section-cuenta" className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
                         <button
                             onClick={() => toggleSection('cuenta')}
                             className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
@@ -641,7 +657,7 @@ export default function ProfilePage() {
 
                     {/* 2. GESTIÓN Y ADMINISTRACIÓN DEL SISTEMA (Admins, Coordinadores, Docentes) */}
                     {isAdminOrDocente && (
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
+                        <div id="section-gestion" className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
                             <button
                                 onClick={() => toggleSection('gestion')}
                                 className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
@@ -680,7 +696,7 @@ export default function ProfilePage() {
                                         </button>
 
                                         <button
-                                            onClick={() => router.push('/dashboard/admin')}
+                                            onClick={() => router.push('/dashboard/admin?tab=move')}
                                             className="p-3.5 rounded-xl bg-blue-50/60 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 hover:bg-blue-100/60 flex items-center justify-between text-left transition-all"
                                         >
                                             <div className="flex items-center gap-3">
@@ -696,7 +712,7 @@ export default function ProfilePage() {
                                         </button>
 
                                         <button
-                                            onClick={() => router.push('/dashboard/admin')}
+                                            onClick={() => router.push('/dashboard/admin?tab=rename')}
                                             className="p-3.5 rounded-xl bg-purple-50/60 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/40 hover:bg-purple-100/60 flex items-center justify-between text-left transition-all"
                                         >
                                             <div className="flex items-center gap-3">
@@ -712,7 +728,7 @@ export default function ProfilePage() {
                                         </button>
 
                                         <button
-                                            onClick={() => router.push('/dashboard/admin')}
+                                            onClick={() => router.push('/dashboard/admin?tab=sede')}
                                             className="p-3.5 rounded-xl bg-orange-50/60 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/40 hover:bg-orange-100/60 flex items-center justify-between text-left transition-all"
                                         >
                                             <div className="flex items-center gap-3">
@@ -728,7 +744,7 @@ export default function ProfilePage() {
                                         </button>
 
                                         <button
-                                            onClick={() => router.push('/dashboard/admin')}
+                                            onClick={() => router.push('/dashboard/admin?tab=status')}
                                             className="p-3.5 rounded-xl bg-red-50/60 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 hover:bg-red-100/60 flex items-center justify-between text-left transition-all"
                                         >
                                             <div className="flex items-center gap-3">
@@ -744,7 +760,7 @@ export default function ProfilePage() {
                                         </button>
 
                                         <button
-                                            onClick={() => router.push('/dashboard/admin')}
+                                            onClick={() => router.push('/dashboard/admin?tab=backup')}
                                             className="p-3.5 rounded-xl bg-green-50/60 dark:bg-green-900/20 border border-green-100 dark:border-green-800/40 hover:bg-green-100/60 flex items-center justify-between text-left transition-all md:col-span-2"
                                         >
                                             <div className="flex items-center gap-3">
@@ -765,7 +781,7 @@ export default function ProfilePage() {
                     )}
 
                     {/* 3. SONIDOS DE INTERFAZ */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
+                    <div id="section-sonidos" className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
                         <button
                             onClick={() => toggleSection('sonidos')}
                             className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
@@ -832,7 +848,7 @@ export default function ProfilePage() {
                     </div>
 
                     {/* 4. NOTIFICACIONES Y ALERTAS PUSH */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
+                    <div id="section-notificaciones" className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
                         <button
                             onClick={() => toggleSection('notificaciones')}
                             className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
@@ -914,7 +930,7 @@ export default function ProfilePage() {
                     </div>
 
                     {/* 5. RECURSOS EXTERNOS Y HERRAMIENTAS */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
+                    <div id="section-recursos" className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
                         <button
                             onClick={() => toggleSection('recursos')}
                             className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
@@ -1005,7 +1021,7 @@ export default function ProfilePage() {
                     </div>
 
                     {/* 6. APARIENCIA Y TEMA */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
+                    <div id="section-apariencia" className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
                         <button
                             onClick={() => toggleSection('apariencia')}
                             className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"
@@ -1068,7 +1084,7 @@ export default function ProfilePage() {
                     </div>
 
                     {/* 7. DATOS Y SEGURIDAD */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
+                    <div id="section-privacidad" className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden transition-all">
                         <button
                             onClick={() => toggleSection('privacidad')}
                             className="w-full p-4 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors text-left"

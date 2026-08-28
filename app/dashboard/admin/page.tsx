@@ -134,6 +134,17 @@ export default function AdminPage() {
     const [moveSedeFilter, setMoveSedeFilter] = useState('Principal');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'move' | 'rename' | 'status' | 'backup' | 'sede' | 'cleanup' | 'usuarios'>('move');
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const tab = params.get('tab');
+            if (tab && ['move', 'rename', 'status', 'backup', 'sede', 'cleanup', 'usuarios'].includes(tab)) {
+                setActiveTab(tab as any);
+            }
+        }
+    }, []);
+
     const [uploading, setUploading] = useState(false);
     const [inactivateAll, setInactivateAll] = useState(false);
     const [importProgress, setImportProgress] = useState(0);
@@ -774,7 +785,7 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <Link
-                                href="/dashboard"
+                                href="/dashboard/perfil"
                                 className="p-2 md:p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg border border-white/10"
                             >
                                 <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />

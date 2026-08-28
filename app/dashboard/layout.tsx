@@ -532,12 +532,17 @@ export default function DashboardLayout({
                 .eq('id', session.user.id)
                 .single();
 
-            let baseUsuario = profile ? profile : {
+            const userPhoto = profile?.foto || session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || session.user.user_metadata?.foto || null;
+
+            let baseUsuario = profile ? {
+                ...profile,
+                foto: userPhoto
+            } : {
                 id: session.user.id,
-                nombre: session.user.user_metadata?.nombre || 'Usuario',
+                nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
                 email: session.user.email || '',
                 rol: session.user.user_metadata?.rol || (session.user.email?.endsWith('@barroblanco.edu.co') ? 'estudiante' : 'acudiente'),
-                foto: session.user.user_metadata?.foto || null,
+                foto: userPhoto,
                 puntos_gestor_pae: 0
             };
 
@@ -579,7 +584,7 @@ export default function DashboardLayout({
                 email: session.user.email,
                 nombre: session.user.user_metadata?.nombre || profile?.nombre || 'Usuario',
                 rol: session.user.user_metadata?.rol || profile?.rol || 'estudiante',
-                foto: session.user.user_metadata?.foto || profile?.foto || null,
+                foto: userPhoto,
                 access_token: session.access_token,
                 refresh_token: session.refresh_token,
             };
@@ -891,9 +896,9 @@ export default function DashboardLayout({
                         </button>
 
                         {isProfileMenuOpen && (
-                            <div className="absolute bottom-full mb-2 left-0 w-full min-w-[280px] bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-y-auto max-h-[85vh] z-50 animate-in slide-in-from-bottom-2 fade-in duration-200 divide-y divide-gray-100 dark:divide-gray-700/60">
+                            <div className="absolute bottom-full mb-2 left-0 w-full min-w-[280px] bg-white/85 dark:bg-gray-800/85 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/60 overflow-y-auto max-h-[85vh] z-50 animate-in slide-in-from-bottom-2 fade-in duration-200 divide-y divide-gray-100 dark:divide-gray-700/60">
                                 {/* Encabezado Usuario */}
-                                <div className="p-4 flex items-center gap-3 bg-gray-50/60 dark:bg-gray-800/80">
+                                <div className="p-4 flex items-center gap-3 bg-gray-50/40 dark:bg-gray-800/40">
                                     <div className="w-12 h-12 rounded-2xl border-2 border-cyan-500/30 overflow-hidden bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center shrink-0 shadow-sm">
                                         {usuario.foto ? (
                                             <img src={usuario.foto} alt={usuario.nombre} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -910,6 +915,48 @@ export default function DashboardLayout({
                                                 {usuario.rol || 'Acudiente'}
                                             </span>
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* APARIENCIA Theme Selector */}
+                                <div className="p-3">
+                                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 px-1">APARIENCIA</p>
+                                    <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100/70 dark:bg-gray-900/60 rounded-2xl">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setTheme('light'); }}
+                                            className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                                                theme === 'light'
+                                                    ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
+                                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                            }`}
+                                        >
+                                            <Sun className="w-4 h-4" />
+                                            <span className="text-[10px] font-bold">Claro</span>
+                                        </button>
+
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setTheme('dark'); }}
+                                            className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                                                theme === 'dark'
+                                                    ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
+                                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                            }`}
+                                        >
+                                            <Moon className="w-4 h-4" />
+                                            <span className="text-[10px] font-bold">Oscuro</span>
+                                        </button>
+
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setTheme('system'); }}
+                                            className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                                                theme === 'system'
+                                                    ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
+                                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                            }`}
+                                        >
+                                            <Monitor className="w-4 h-4" />
+                                            <span className="text-[10px] font-bold">Sistema</span>
+                                        </button>
                                     </div>
                                 </div>
 
@@ -934,50 +981,8 @@ export default function DashboardLayout({
                                     </button>
                                 </div>
 
-                                {/* APARIENCIA Theme Selector */}
-                                <div className="p-3">
-                                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 px-1">APARIENCIA</p>
-                                    <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100/70 dark:bg-gray-900/60 rounded-2xl">
-                                        <button
-                                            onClick={() => { setTheme('light'); setIsProfileMenuOpen(false); }}
-                                            className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
-                                                theme === 'light'
-                                                    ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
-                                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
-                                            }`}
-                                        >
-                                            <Sun className="w-4 h-4" />
-                                            <span className="text-[10px] font-bold">Claro</span>
-                                        </button>
-
-                                        <button
-                                            onClick={() => { setTheme('dark'); setIsProfileMenuOpen(false); }}
-                                            className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
-                                                theme === 'dark'
-                                                    ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
-                                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
-                                            }`}
-                                        >
-                                            <Moon className="w-4 h-4" />
-                                            <span className="text-[10px] font-bold">Oscuro</span>
-                                        </button>
-
-                                        <button
-                                            onClick={() => { setTheme('system'); setIsProfileMenuOpen(false); }}
-                                            className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
-                                                theme === 'system'
-                                                    ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
-                                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
-                                            }`}
-                                        >
-                                            <Monitor className="w-4 h-4" />
-                                            <span className="text-[10px] font-bold">Sistema</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Notificaciones Push Pill */}
-                                <div className="p-2">
+                                {/* Notificaciones Push Pill & Probar Notificación */}
+                                <div className="p-2 space-y-1.5">
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -1002,6 +1007,18 @@ export default function DashboardLayout({
                                         <div className={`w-9 h-5 rounded-full p-0.5 transition-colors ${isSubscribed ? 'bg-rose-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
                                             <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isSubscribed ? 'translate-x-4' : 'translate-x-0'}`}></div>
                                         </div>
+                                    </button>
+
+                                    <button
+                                        onClick={handleTestPush}
+                                        disabled={isTestLoading}
+                                        className="w-full p-2.5 rounded-xl bg-blue-50/70 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 hover:bg-blue-100/70 flex items-center justify-between text-left transition-all text-xs font-bold text-blue-700 dark:text-blue-300"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <Bell className={`w-3.5 h-3.5 ${isTestLoading ? 'animate-spin' : ''}`} />
+                                            <span>{isTestLoading ? 'Enviando...' : 'Probar Notificación'}</span>
+                                        </div>
+                                        <span className="text-[9px] font-black uppercase bg-blue-200/60 dark:bg-blue-800 px-2 py-0.5 rounded-md">PROBAR</span>
                                     </button>
                                 </div>
 
@@ -1307,9 +1324,9 @@ export default function DashboardLayout({
                         {isProfileMenuOpen && (
                             <>
                                 <div className="fixed inset-0 z-[99] bg-black/20 backdrop-blur-sm" onClick={() => setIsProfileMenuOpen(false)}></div>
-                                <div className="absolute top-full mt-2 right-0 w-[300px] sm:w-[320px] bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-y-auto max-h-[85vh] z-[101] animate-in slide-in-from-top-2 fade-in duration-200 divide-y divide-gray-100 dark:divide-gray-700/60">
+                                <div className="absolute top-full mt-2 right-0 w-[300px] sm:w-[320px] bg-white/85 dark:bg-gray-800/85 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/60 overflow-y-auto max-h-[85vh] z-[101] animate-in slide-in-from-top-2 fade-in duration-200 divide-y divide-gray-100 dark:divide-gray-700/60">
                                     {/* Encabezado Usuario */}
-                                    <div className="p-4 flex items-center gap-3 bg-gray-50/60 dark:bg-gray-800/80">
+                                    <div className="p-4 flex items-center gap-3 bg-gray-50/40 dark:bg-gray-800/40">
                                         <div className="w-12 h-12 rounded-2xl border-2 border-cyan-500/30 overflow-hidden bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center shrink-0 shadow-sm">
                                             {usuario.foto ? (
                                                 <img src={usuario.foto} alt={usuario.nombre} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -1326,6 +1343,48 @@ export default function DashboardLayout({
                                                     {usuario.rol || 'Acudiente'}
                                                 </span>
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    {/* APARIENCIA Theme Selector */}
+                                    <div className="p-3">
+                                        <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 px-1">APARIENCIA</p>
+                                        <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100/70 dark:bg-gray-900/60 rounded-2xl">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setTheme('light'); }}
+                                                className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                                                    theme === 'light'
+                                                        ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
+                                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                                }`}
+                                            >
+                                                <Sun className="w-4 h-4" />
+                                                <span className="text-[10px] font-bold">Claro</span>
+                                            </button>
+
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setTheme('dark'); }}
+                                                className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                                                    theme === 'dark'
+                                                        ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
+                                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                                }`}
+                                            >
+                                                <Moon className="w-4 h-4" />
+                                                <span className="text-[10px] font-bold">Oscuro</span>
+                                            </button>
+
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setTheme('system'); }}
+                                                className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                                                    theme === 'system'
+                                                        ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
+                                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                                }`}
+                                            >
+                                                <Monitor className="w-4 h-4" />
+                                                <span className="text-[10px] font-bold">Sistema</span>
+                                            </button>
                                         </div>
                                     </div>
 
@@ -1350,50 +1409,8 @@ export default function DashboardLayout({
                                         </button>
                                     </div>
 
-                                    {/* APARIENCIA Theme Selector */}
-                                    <div className="p-3">
-                                        <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 px-1">APARIENCIA</p>
-                                        <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100/70 dark:bg-gray-900/60 rounded-2xl">
-                                            <button
-                                                onClick={() => { setTheme('light'); setIsProfileMenuOpen(false); }}
-                                                className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
-                                                    theme === 'light'
-                                                        ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
-                                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
-                                                }`}
-                                            >
-                                                <Sun className="w-4 h-4" />
-                                                <span className="text-[10px] font-bold">Claro</span>
-                                            </button>
-
-                                            <button
-                                                onClick={() => { setTheme('dark'); setIsProfileMenuOpen(false); }}
-                                                className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
-                                                    theme === 'dark'
-                                                        ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
-                                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
-                                                }`}
-                                            >
-                                                <Moon className="w-4 h-4" />
-                                                <span className="text-[10px] font-bold">Oscuro</span>
-                                            </button>
-
-                                            <button
-                                                onClick={() => { setTheme('system'); setIsProfileMenuOpen(false); }}
-                                                className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
-                                                    theme === 'system'
-                                                        ? 'bg-white text-cyan-600 shadow-sm dark:bg-gray-800 dark:text-cyan-400 font-bold'
-                                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
-                                                }`}
-                                            >
-                                                <Monitor className="w-4 h-4" />
-                                                <span className="text-[10px] font-bold">Sistema</span>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Notificaciones Push Pill */}
-                                    <div className="p-2">
+                                    {/* Notificaciones Push Pill & Probar Notificación */}
+                                    <div className="p-2 space-y-1.5">
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -1418,6 +1435,18 @@ export default function DashboardLayout({
                                             <div className={`w-9 h-5 rounded-full p-0.5 transition-colors ${isSubscribed ? 'bg-rose-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
                                                 <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isSubscribed ? 'translate-x-4' : 'translate-x-0'}`}></div>
                                             </div>
+                                        </button>
+
+                                        <button
+                                            onClick={handleTestPush}
+                                            disabled={isTestLoading}
+                                            className="w-full p-2.5 rounded-xl bg-blue-50/70 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 hover:bg-blue-100/70 flex items-center justify-between text-left transition-all text-xs font-bold text-blue-700 dark:text-blue-300"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <Bell className={`w-3.5 h-3.5 ${isTestLoading ? 'animate-spin' : ''}`} />
+                                                <span>{isTestLoading ? 'Enviando...' : 'Probar Notificación'}</span>
+                                            </div>
+                                            <span className="text-[9px] font-black uppercase bg-blue-200/60 dark:bg-blue-800 px-2 py-0.5 rounded-md">PROBAR</span>
                                         </button>
                                     </div>
 
