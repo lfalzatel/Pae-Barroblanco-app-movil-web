@@ -222,7 +222,7 @@ export default function AuditoriaPage() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <Link
-                                href="/dashboard"
+                                href="/dashboard/perfil"
                                 className="p-2 md:p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg border border-white/10"
                             >
                                 <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />

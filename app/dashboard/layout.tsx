@@ -1209,7 +1209,7 @@ export default function DashboardLayout({
                         >
                             <div className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-2xl transition-all duration-300 ${
                                 isActive
-                                    ? 'bg-cyan-600 text-white scale-110 -translate-y-2 shadow-lg shadow-cyan-400/40 dark:shadow-cyan-900/50 delay-[150ms]'
+                                    ? 'bg-cyan-600 text-white scale-110 -translate-y-2 shadow-lg shadow-cyan-400/40 dark:shadow-cyan-900/50 delay-[50ms]'
                                     : 'text-cyan-600 dark:text-cyan-400 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-900/20 group-hover:scale-105'
                             }`}>
                                 <div className={`relative ${isRegistrar && !isActive ? 'animate-pulse' : ''}`}>
