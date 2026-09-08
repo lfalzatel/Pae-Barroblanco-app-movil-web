@@ -93,11 +93,11 @@ export default function ProfilePage() {
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
     const [soundPref, setSoundPref] = useState<SoundType>('pop');
 
-    // Inner Accordions State for Sonidos y Animaciones
+    // Inner Accordions State for Sonidos y Animaciones (Collapsados por defecto)
     const [innerAccordions, setInnerAccordions] = useState<Record<string, boolean>>({
-        accion: true,
-        navegacion: true,
-        animaciones: true,
+        accion: false,
+        navegacion: false,
+        animaciones: false,
     });
 
     const toggleInnerAccordion = (key: string) => {

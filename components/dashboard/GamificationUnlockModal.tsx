@@ -18,7 +18,14 @@ interface GamificationUnlockModalProps {
   onClaimWithParticles?: () => void;
 }
 
-const FOOD_EMOJIS = ['🥐', '🍳', '🍓', '🥪', '🍎', '🥛', '🍇', '⭐', '🪙'];
+const CARD_EMOJIS = [
+  { char: '🍎', className: 'top-[18%] left-[8%] text-3xl sm:text-4xl animate-bounce' },
+  { char: '🥪', className: 'top-[18%] right-[8%] text-3xl sm:text-4xl animate-bounce [animation-delay:200ms]' },
+  { char: '🪙', className: 'top-[44%] left-[4%] text-2xl sm:text-3xl animate-pulse' },
+  { char: '🪙', className: 'top-[44%] right-[4%] text-2xl sm:text-3xl animate-pulse [animation-delay:300ms]' },
+  { char: '🧀', className: 'top-[68%] left-[6%] text-2xl sm:text-3xl animate-bounce [animation-delay:400ms]' },
+  { char: '🍇', className: 'top-[68%] right-[6%] text-2xl sm:text-3xl animate-bounce [animation-delay:150ms]' },
+];
 
 export default function GamificationUnlockModal({
   isOpen,
@@ -30,16 +37,30 @@ export default function GamificationUnlockModal({
   onClaimWithParticles,
 }: GamificationUnlockModalProps) {
   const [isClaimed, setIsClaimed] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   // Play fanfare when modal pops in
   useEffect(() => {
     if (isOpen) {
       setIsClaimed(false);
+      setIsClosing(false);
       playGamificationFanfare();
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  // Helper to pick visible profile points capsule in DOM
+  const getVisibleCapsule = (): HTMLElement | null => {
+    const candidates = Array.from(document.querySelectorAll('[data-points-capsule]'));
+    const visible = candidates.find((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    }) as HTMLElement | null;
+    if (!visible) return null;
+    return (visible.querySelector('button') || visible) as HTMLElement;
+  };
 
   const handleClaim = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -50,18 +71,126 @@ export default function GamificationUnlockModal({
     playRewardClaimSound();
     speakVoiceConfirmation(`¡Felicidades! Has ganado ${points} puntos PAE.`);
 
-    // If parent supplied custom particle callback or we close modal
+    // Target profile capsule
+    const targetEl = getVisibleCapsule();
+    const targetRect = targetEl?.getBoundingClientRect();
+    const targetX = targetRect ? targetRect.left + targetRect.width / 2 : window.innerWidth - 60;
+    const targetY = targetRect ? targetRect.top + targetRect.height / 2 : 40;
+
+    // Collect positions of card emoticons to launch
+    const emojiElements = cardRef.current?.querySelectorAll('[data-emoticon-particle]');
+    const nodes: HTMLElement[] = [];
+
+    // Helper Web Audio synthesizer for flight chime tones
+    let audioCtx: AudioContext | null = null;
+    try {
+      const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtxClass) audioCtx = new AudioCtxClass();
+    } catch (err) {}
+
+    const playChimeTone = (freq: number, delayMs: number) => {
+      setTimeout(() => {
+        try {
+          if (!audioCtx) return;
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.14, audioCtx.currentTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime);
+          osc.stop(audioCtx.currentTime + 0.2);
+        } catch (e) {}
+      }, delayMs);
+    };
+
+    // Animate emoticons flying from card straight to capsule
+    if (emojiElements && emojiElements.length > 0) {
+      emojiElements.forEach((el, idx) => {
+        const rect = el.getBoundingClientRect();
+        const startX = rect.left + rect.width / 2;
+        const startY = rect.top + rect.height / 2;
+
+        const flyer = document.createElement('div');
+        flyer.innerHTML = el.textContent || '⭐';
+        Object.assign(flyer.style, {
+          position: 'fixed',
+          left: `${startX}px`,
+          top: `${startY}px`,
+          fontSize: '28px',
+          lineHeight: '1',
+          zIndex: '100000',
+          transform: 'translate(-50%, -50%) scale(1) rotate(0deg)',
+          opacity: '1',
+          pointerEvents: 'none',
+          willChange: 'transform, opacity',
+          transition: 'transform 900ms cubic-bezier(.22,1.6,.4,1), opacity 900ms ease',
+        });
+        document.body.appendChild(flyer);
+        nodes.push(flyer);
+
+        const delay = idx * 100;
+
+        // Sound chime for each emoticon flight
+        playChimeTone(1046.50 + idx * 90, delay);
+
+        setTimeout(() => {
+          requestAnimationFrame(() => {
+            const deltaX = targetX - startX;
+            const deltaY = targetY - startY;
+            flyer.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px)) scale(0.3) rotate(360deg)`;
+            flyer.style.opacity = '0.9';
+          });
+        }, delay);
+
+        setTimeout(() => {
+          flyer.remove();
+        }, delay + 950);
+      });
+    }
+
+    // Pulse & consume effect on Profile Points Capsule
+    if (targetEl) {
+      setTimeout(() => {
+        targetEl.style.transition = 'transform 300ms cubic-bezier(.22,1.6,.4,1), box-shadow 300ms ease';
+        targetEl.style.transform = 'scale(1.18)';
+        targetEl.style.boxShadow = '0 0 25px 8px rgba(251,191,36,0.8)';
+      }, 300);
+
+      setTimeout(() => {
+        targetEl.style.transform = 'scale(1.3)';
+        targetEl.style.boxShadow = '0 0 40px 14px rgba(251,191,36,1)';
+      }, 700);
+
+      setTimeout(() => {
+        targetEl.style.transform = '';
+        targetEl.style.boxShadow = '';
+        targetEl.style.transition = '';
+      }, 1400);
+    }
+
+    // Also trigger parent callback if provided
     if (onClaimWithParticles) {
       onClaimWithParticles();
     }
 
+    // Fade out modal and close
+    setIsClosing(true);
     setTimeout(() => {
       onClose();
-    }, 600);
+    }, 700);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-hidden animate-fadeIn">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-hidden transition-opacity duration-300 ${
+        isClosing ? 'opacity-0' : 'opacity-100'
+      }`}
+    >
       {/* 360 Sunburst Background Rays */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-35">
         <div
@@ -70,23 +199,6 @@ export default function GamificationUnlockModal({
             background: `conic-gradient(from 0deg, #f59e0b 0deg 15deg, transparent 15deg 30deg, #eab308 30deg 45deg, transparent 45deg 60deg, #f59e0b 60deg 75deg, transparent 75deg 90deg, #eab308 90deg 105deg, transparent 105deg 120deg, #f59e0b 120deg 135deg, transparent 135deg 150deg, #eab308 150deg 165deg, transparent 165deg 180deg, #f59e0b 180deg 195deg, transparent 195deg 210deg, #eab308 210deg 225deg, transparent 225deg 240deg, #f59e0b 240deg 255deg, transparent 255deg 270deg, #eab308 270deg 285deg, transparent 285deg 300deg, #f59e0b 300deg 315deg, transparent 315deg 330deg, #eab308 330deg 345deg, transparent 345deg 360deg)`,
           }}
         />
-      </div>
-
-      {/* Floating Emojis in background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {FOOD_EMOJIS.map((emoji, idx) => (
-          <div
-            key={idx}
-            className="absolute bottom-[-40px] text-2xl sm:text-3xl opacity-80"
-            style={{
-              left: `${(idx + 1) * 10}%`,
-              animation: `floatUp ${3 + (idx % 3)}s linear infinite`,
-              animationDelay: `${idx * 0.3}s`,
-            }}
-          >
-            {emoji}
-          </div>
-        ))}
       </div>
 
       {/* Close button top right */}
@@ -98,8 +210,23 @@ export default function GamificationUnlockModal({
         <X className="w-6 h-6" />
       </button>
 
-      {/* Main Single-Step Reward Card (Pop-in Zoom Animation + CookFlow Colors) */}
-      <div className="relative z-10 w-full max-w-sm sm:max-w-md animate-[popIn_500ms_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]">
+      {/* Main Single-Step Reward Card Container */}
+      <div
+        ref={cardRef}
+        className="relative z-10 w-full max-w-sm sm:max-w-md animate-[popIn_500ms_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]"
+      >
+        {/* EMOTICONS FLOATING ON TOP OF THE CARD (Z-30 LAYER AS IN COOKFLOW) */}
+        {CARD_EMOJIS.map((item, idx) => (
+          <div
+            key={idx}
+            data-emoticon-particle="true"
+            className={`absolute z-30 pointer-events-none select-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] ${item.className}`}
+          >
+            {item.char}
+          </div>
+        ))}
+
+        {/* Card Main Body */}
         <div className="w-full bg-gradient-to-b from-amber-400 via-orange-500 to-red-600 border-4 border-yellow-300 rounded-[36px] p-5 sm:p-7 shadow-[0_0_60px_rgba(245,158,11,0.6)] flex flex-col items-center text-center relative overflow-hidden">
           
           {/* Sparkle background accents */}
@@ -187,7 +314,7 @@ export default function GamificationUnlockModal({
         </div>
       </div>
 
-      {/* Global CSS Animations */}
+      {/* Global CSS Keyframes */}
       <style jsx global>{`
         @keyframes popIn {
           0% {
@@ -200,24 +327,6 @@ export default function GamificationUnlockModal({
           }
           100% {
             transform: scale(1);
-            opacity: 1;
-          }
-        }
-        @keyframes floatUp {
-          0% {
-            transform: translateY(0) rotate(0deg);
-            opacity: 0.9;
-          }
-          100% {
-            transform: translateY(-100vh) rotate(360deg);
-            opacity: 0;
-          }
-        }
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
             opacity: 1;
           }
         }
