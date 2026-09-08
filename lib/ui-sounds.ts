@@ -252,27 +252,27 @@ export function speakVoiceConfirmation(text: string): void {
   }
 }
 
-// Gamification Special Audio Synthesizers
+// Gamification Special Audio Synthesizers (CookFlow Blueprint Native Web Audio API)
 export function playGamificationFanfare(): void {
   if (typeof window === 'undefined') return;
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
     const now = ctx.currentTime;
-    // Major chord triumphant fanfare sequence: C4, E4, G4, C5, E5
-    const freqs = [261.63, 329.63, 392.0, 523.25, 659.25];
-    freqs.forEach((freq, idx) => {
+    // 🎺 Fanfarria Triunfal CookFlow (C5: 523.25, E5: 659.25, G5: 783.99, C6: 1046.5)
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
-      gain.gain.setValueAtTime(0, now + idx * 0.08);
-      gain.gain.linearRampToValueAtTime(0.18, now + idx * 0.08 + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+      osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+      gain.gain.setValueAtTime(0.01, now + idx * 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.3, now + idx * 0.12 + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.4);
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.start(now + idx * 0.08);
-      osc.stop(now + idx * 0.08 + 0.35);
+      osc.start(now + idx * 0.12);
+      osc.stop(now + idx * 0.12 + 0.45);
     });
   } catch (e) {}
 }
@@ -283,17 +283,18 @@ export function playCardFlipSound(): void {
     const ctx = getAudioContext();
     if (!ctx) return;
     const now = ctx.currentTime;
+    // ✨ Chime Dorado Tarjeta 3D (La5: 880Hz -> La6: 1760Hz)
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(180, now);
-    osc.frequency.exponentialRampToValueAtTime(750, now + 0.12);
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(1760, now + 0.25);
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.12);
+    osc.stop(now + 0.32);
   } catch (e) {}
 }
 
@@ -303,41 +304,39 @@ export function playCounterTick(): void {
     const ctx = getAudioContext();
     if (!ctx) return;
     const now = ctx.currentTime;
+    // ⏱️ Tic Rápido de Conteo XP
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(900, now);
-    gain.gain.setValueAtTime(0.05, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(600 + Math.random() * 200, now);
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.02);
+    osc.stop(now + 0.05);
   } catch (e) {}
 }
 
-export function playCookFlowCoinSound(): void {
+export function playCoinClaimSound(): void {
   if (typeof window === 'undefined') return;
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
     const now = ctx.currentTime;
-    // Classic Mario / CookFlow Coin Chime: B5 (987.77Hz) -> E6 (1318.51Hz)
-    const notes = [
-      { freq: 987.77, time: now, duration: 0.08 },
-      { freq: 1318.51, time: now + 0.08, duration: 0.35 },
-    ];
-    notes.forEach((n) => {
+    // 🪙 Recolección de Monedas CookFlow / Mario (Si5: 987.77Hz, Mi6: 1318.51Hz)
+    const freqs = [987.77, 1318.51];
+    freqs.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(n.freq, n.time);
-      gain.gain.setValueAtTime(0.12, n.time);
-      gain.gain.exponentialRampToValueAtTime(0.001, n.time + n.duration);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+      gain.gain.setValueAtTime(0.3, now + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.3);
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.start(n.time);
-      osc.stop(n.time + n.duration);
+      osc.start(now + idx * 0.08);
+      osc.stop(now + idx * 0.08 + 0.35);
     });
   } catch (e) {}
 }

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Trophy, Gift, Sparkles, X, CheckCircle } from 'lucide-react';
 import {
   playGamificationFanfare,
-  playCookFlowCoinSound,
+  playCoinClaimSound,
   speakVoiceConfirmation,
 } from '@/lib/ui-sounds';
 
@@ -17,10 +17,26 @@ interface GamificationUnlockModalProps {
   badgeName?: string;
 }
 
-// 16 Mario Bros & PAE Style Emoticons
-const MARIO_PAE_EMOJIS = [
-  '🍄', '⭐', '🪙', '🥪', '🍎', '🥛', '🍇', '🥐',
-  '🍳', '🍓', '🎒', '🏫', '🥳', '🏆', '💎', '🔥'
+// 16 Mario Bros & PAE Particles Array (CookFlow Blueprint Specification)
+const MARIO_PARTICLES = [
+  // 8 Izquierda
+  { id: 1, symbol: '🍄', side: 'left', x: -160, y: -120, scale: 1.4, duration: 2.2, delay: 0.1 },
+  { id: 2, symbol: '⭐', side: 'left', x: -200, y: -50, scale: 1.6, duration: 2.4, delay: 0.15 },
+  { id: 3, symbol: '🪙', side: 'left', x: -120, y: 30, scale: 1.3, duration: 2.0, delay: 0.2 },
+  { id: 4, symbol: '🍓', side: 'left', x: -180, y: 90, scale: 1.5, duration: 2.3, delay: 0.25 },
+  { id: 5, symbol: '🎒', side: 'left', x: -220, y: -15, scale: 1.4, duration: 2.5, delay: 0.3 },
+  { id: 6, symbol: '🥪', side: 'left', x: -140, y: 130, scale: 1.3, duration: 2.1, delay: 0.35 },
+  { id: 7, symbol: '🍳', side: 'left', x: -170, y: -150, scale: 1.5, duration: 2.4, delay: 0.4 },
+  { id: 8, symbol: '🥐', side: 'left', x: -110, y: -70, scale: 1.2, duration: 2.2, delay: 0.45 },
+  // 8 Derecha
+  { id: 9, symbol: '🍄', side: 'right', x: 160, y: -120, scale: 1.4, duration: 2.2, delay: 0.1 },
+  { id: 10, symbol: '⭐', side: 'right', x: 200, y: -50, scale: 1.6, duration: 2.4, delay: 0.15 },
+  { id: 11, symbol: '🪙', side: 'right', x: 180, y: 30, scale: 1.3, duration: 2.0, delay: 0.2 },
+  { id: 12, symbol: '🏫', side: 'right', x: 180, y: 90, scale: 1.5, duration: 2.3, delay: 0.25 },
+  { id: 13, symbol: '🍎', side: 'right', x: 220, y: -15, scale: 1.4, duration: 2.5, delay: 0.3 },
+  { id: 14, symbol: '🥛', side: 'right', x: 140, y: 130, scale: 1.3, duration: 2.1, delay: 0.35 },
+  { id: 15, symbol: '🍇', side: 'right', x: 170, y: -150, scale: 1.5, duration: 2.4, delay: 0.4 },
+  { id: 16, symbol: '🏆', side: 'right', x: 110, y: -70, scale: 1.2, duration: 2.2, delay: 0.45 },
 ];
 
 export default function GamificationUnlockModal({
@@ -63,7 +79,7 @@ export default function GamificationUnlockModal({
     setIsClaimed(true);
 
     // 1. Play CookFlow Mario Coin Chime & Speech confirmation
-    playCookFlowCoinSound();
+    playCoinClaimSound();
     speakVoiceConfirmation(`¡Felicidades! Has ganado ${points} puntos PAE.`);
 
     // 2. Find target profile points capsule
@@ -72,8 +88,8 @@ export default function GamificationUnlockModal({
     const targetX = targetRect ? targetRect.left + targetRect.width / 2 : window.innerWidth - 60;
     const targetY = targetRect ? targetRect.top + targetRect.height / 2 : 40;
 
-    // 3. Collect 16 radial emoticon elements for flight trajectory
-    const emojiElements = cardRef.current?.querySelectorAll('[data-mario-emoticon]');
+    // 3. Collect 16 active particle elements for flight trajectory
+    const emojiElements = cardRef.current?.querySelectorAll('[data-mario-particle]');
     const nodes: HTMLElement[] = [];
 
     // Helper Web Audio synthesizer for flight crystal arpeggio
@@ -103,7 +119,7 @@ export default function GamificationUnlockModal({
       }, delayMs);
     };
 
-    // 4. Launch each emoticon from its 360° position straight to profile capsule
+    // 4. Launch each active particle from its floating screen position straight to capsule
     if (emojiElements && emojiElements.length > 0) {
       emojiElements.forEach((el, idx) => {
         const rect = el.getBoundingClientRect();
@@ -130,7 +146,7 @@ export default function GamificationUnlockModal({
 
         const delay = idx * 60; // staggered arpeggio burst
 
-        // Play crystal arpeggio note per emoticon
+        // Play crystal arpeggio note per particle impact
         const freq = 523.25 + (idx % 8) * 90;
         playCrystalArpeggioTone(freq, delay);
 
@@ -149,7 +165,7 @@ export default function GamificationUnlockModal({
       });
     }
 
-    // 5. Capsule absorption pulsing glow effect
+    // 5. Profile capsule absorption pulsing glow effect
     if (targetEl) {
       setTimeout(() => {
         targetEl.style.transition = 'transform 350ms cubic-bezier(.22,1.6,.4,1), box-shadow 350ms ease';
@@ -206,30 +222,25 @@ export default function GamificationUnlockModal({
         ref={cardRef}
         className="relative z-10 w-full max-w-sm sm:max-w-md animate-[popIn_500ms_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]"
       >
-        {/* 16 MARIO BROS / PAE EMOTICONS BURSTING 360° OUTWARDS FROM CENTER */}
-        {MARIO_PAE_EMOJIS.map((emoji, idx) => {
-          const angle = (idx * (360 / MARIO_PAE_EMOJIS.length)) * (Math.PI / 180);
-          const distance = 140 + (idx % 3) * 35; // 140px to 210px radial offset
-          const offsetX = Math.cos(angle) * distance;
-          const offsetY = Math.sin(angle) * distance;
-
-          return (
-            <div
-              key={idx}
-              data-mario-emoticon="true"
-              className="absolute z-30 pointer-events-none select-none text-2xl sm:text-3xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)] transition-all animate-bounce"
-              style={{
-                left: `calc(50% + ${offsetX}px)`,
-                top: `calc(50% + ${offsetY}px)`,
-                transform: 'translate(-50%, -50%)',
-                animationDelay: `${idx * 150}ms`,
-                animationDuration: `${2.2 + (idx % 2) * 0.8}s`,
-              }}
-            >
-              {emoji}
-            </div>
-          );
-        })}
+        {/* 16 MARIO BROS & PAE PARTICLES - CONTINUOUS RADIAL PARABOLIC DISPERSION (COOKFLOW BLUEPRINT) */}
+        {MARIO_PARTICLES.map((pt) => (
+          <div
+            key={pt.id}
+            data-mario-particle="true"
+            className="absolute z-30 pointer-events-none select-none text-3xl sm:text-4xl drop-shadow-[0_0_12px_rgba(255,255,255,0.9)]"
+            style={{
+              left: '50%',
+              top: '50%',
+              animation: `marioParabolicOrbit ${pt.duration}s ease-out ${pt.delay}s infinite`,
+              ['--pt-x' as any]: `${pt.x}px`,
+              ['--pt-y' as any]: `${pt.y}px`,
+              ['--pt-scale' as any]: pt.scale,
+              ['--pt-rot' as any]: pt.side === 'left' ? '-360deg' : '360deg',
+            }}
+          >
+            {pt.symbol}
+          </div>
+        ))}
 
         {/* Card Main Body */}
         <div className="w-full bg-gradient-to-b from-amber-400 via-orange-500 to-red-600 border-4 border-yellow-300 rounded-[36px] p-5 sm:p-7 shadow-[0_0_60px_rgba(245,158,11,0.6)] flex flex-col items-center text-center relative overflow-hidden">
@@ -333,6 +344,28 @@ export default function GamificationUnlockModal({
           100% {
             transform: scale(1);
             opacity: 1;
+          }
+        }
+
+        @keyframes marioParabolicOrbit {
+          0% {
+            transform: translate(-50%, -50%) scale(0) translate3d(0, 0, 0) rotate(0deg);
+            opacity: 0;
+          }
+          20% {
+            opacity: 1;
+          }
+          60% {
+            transform: translate(-50%, -50%) scale(var(--pt-scale)) translate3d(calc(var(--pt-x) * 0.5), calc(var(--pt-y) - 50px), 0) rotate(calc(var(--pt-rot) * 0.5));
+            opacity: 1;
+          }
+          85% {
+            transform: translate(-50%, -50%) scale(calc(var(--pt-scale) * 0.85)) translate3d(var(--pt-x), calc(var(--pt-y) + 30px), 0) rotate(var(--pt-rot));
+            opacity: 0.9;
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(0) translate3d(var(--pt-x), calc(var(--pt-y) + 50px), 0) rotate(var(--pt-rot));
+            opacity: 0;
           }
         }
       `}</style>
