@@ -245,7 +245,7 @@ export default function GamificationUnlockModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-hidden transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-hidden transition-opacity duration-300 ${
         isClosing ? 'opacity-0' : 'opacity-100'
       }`}
     >
@@ -262,13 +262,21 @@ export default function GamificationUnlockModal({
         />
       </div>
 
-      {/* Close button top right */}
+      {/* Close button top right screen overlay */}
       <button
-        onClick={onClose}
-        className="absolute top-4 right-4 text-white/80 hover:text-white bg-slate-900/70 p-2.5 rounded-full border border-amber-400/40 backdrop-blur-sm z-50 transition-colors shadow-lg"
-        title="Cerrar"
+        onClick={(e) => {
+          if (!isClaimed) {
+            handleClaim(e);
+          } else {
+            setIsClosing(true);
+            setTimeout(onClose, 300);
+          }
+        }}
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 text-amber-950 hover:text-black bg-yellow-400 hover:bg-yellow-300 p-2.5 rounded-full border-2 border-white shadow-[0_0_20px_rgba(251,191,36,0.8)] z-[100000] transition-all hover:scale-110 active:scale-95 cursor-pointer"
+        title="Cerrar y continuar animación"
+        aria-label="Cerrar y continuar animación"
       >
-        <X className="w-6 h-6" />
+        <X className="w-6 h-6 stroke-[3]" />
       </button>
 
       {/* Main Single-Step Reward Card Container */}
@@ -276,6 +284,22 @@ export default function GamificationUnlockModal({
         ref={cardRef}
         className="relative z-10 w-full max-w-sm sm:max-w-md animate-[popIn_500ms_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]"
       >
+        {/* Card Attached Close Button (High contrast, impossible to miss on mobile) */}
+        <button
+          onClick={(e) => {
+            if (!isClaimed) {
+              handleClaim(e);
+            } else {
+              setIsClosing(true);
+              setTimeout(onClose, 300);
+            }
+          }}
+          className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 z-50 text-amber-950 bg-yellow-400 hover:bg-yellow-300 p-2.5 rounded-full border-2 border-white shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+          title="Cerrar y continuar animación"
+          aria-label="Cerrar y continuar animación"
+        >
+          <X className="w-6 h-6 stroke-[3]" />
+        </button>
         {/* 16 MARIO BROS & PAE PARTICLES - CONTINUOUS RADIAL PARABOLIC DISPERSION (COOKFLOW BLUEPRINT) */}
         {MARIO_PARTICLES.map((pt) => (
           <div
@@ -383,8 +407,12 @@ export default function GamificationUnlockModal({
       {/* Global CSS Keyframes & Bottom Nav Hiding */}
       <style jsx global>{`
         body.gamification-modal-open nav,
-        body.gamification-modal-open [data-bottom-nav] {
+        body.gamification-modal-open [data-bottom-nav],
+        body.gamification-modal-open .fixed.bottom-2 {
           display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
         }
 
         @keyframes popIn {

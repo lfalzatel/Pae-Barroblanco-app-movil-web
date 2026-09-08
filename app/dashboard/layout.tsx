@@ -1205,7 +1205,7 @@ export default function DashboardLayout({
             </main>
 
             {/* Mobile Bottom Navigation */}
-            <div className="md:hidden fixed bottom-2 left-0 right-0 mx-4 bg-white/10 dark:bg-black/30 backdrop-blur-3xl border border-white/30 dark:border-white/10 flex justify-around p-3 rounded-[2.5rem] z-[100] shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
+            <div data-bottom-nav="true" className="md:hidden fixed bottom-2 left-0 right-0 mx-4 bg-white/10 dark:bg-black/30 backdrop-blur-3xl border border-white/30 dark:border-white/10 flex justify-around p-3 rounded-[2.5rem] z-[100] shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
                 {navItems.filter(item => item.label !== 'Recursos Externos').map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
