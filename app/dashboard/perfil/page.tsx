@@ -1243,6 +1243,7 @@ export default function ProfilePage() {
                                                 >
                                                     <div className={`w-5 h-5 rounded-full bg-white transition-transform shadow-xs ${animToggles.celebracionConfeti ? 'translate-x-6' : 'translate-x-0'}`} />
                                                 </button>
+                                            </div>
                                             {/* Switch 3: Explosión de Partículas y Estrellas (PointsBurstAnimation) */}
                                             <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 flex items-center justify-between">
                                                 <div>
