@@ -989,12 +989,19 @@ export default function ProfilePage() {
 
                                 {/* BARRA DE VISTA PREVIA Y PRUEBAS EN VIVO */}
                                 <div className="mt-4 p-3.5 rounded-xl bg-amber-50/60 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/40 space-y-2">
-                                    <div className="flex items-center justify-between">
+<div className="flex items-center justify-between">
                                         <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
                                             <Eye className="w-3.5 h-3.5 text-amber-500" /> Probador en Vivo de Animaciones y Voz
                                         </span>
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsGamificationModalTestOpen(true)}
+                                            className="col-span-2 sm:col-span-1 p-2 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 border border-yellow-300 text-[10px] font-black uppercase text-slate-950 flex items-center justify-center gap-1 active:scale-95 transition-all shadow-md"
+                                        >
+                                            <span>🏆 Modo 3D</span>
+                                        </button>
                                         <button
                                             type="button"
                                             onClick={testConfettiPreview}
@@ -1022,7 +1029,7 @@ export default function ProfilePage() {
                                             onClick={() => playSynthesizedSound(soundCategories.ingresos)}
                                             className="p-2 rounded-lg bg-white dark:bg-gray-700 hover:bg-amber-100/50 dark:hover:bg-gray-600 border border-amber-200 dark:border-gray-600 text-[10px] font-black uppercase text-amber-800 dark:text-amber-200 flex items-center justify-center gap-1 active:scale-95 transition-all shadow-xs"
                                         >
-                                            <span>🎵 Tono Acción</span>
+                                            <span>🎵 Tono</span>
                                         </button>
                                     </div>
                                 </div>
