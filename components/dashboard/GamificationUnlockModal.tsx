@@ -17,7 +17,7 @@ interface GamificationUnlockModalProps {
   badgeName?: string;
 }
 
-// Exact 16 Mario Bros Particles Array (CookFlow Blueprint Specification)
+// 16 Mario Bros & PAE Particles Array (CookFlow Blueprint Specification)
 const MARIO_PARTICLES = [
   // 8 Izquierda
   { id: 1, symbol: '🍄', side: 'left', x: -220, y: -160, scale: 1.4, duration: 2.2, delay: 0.1 },
@@ -88,18 +88,17 @@ export default function GamificationUnlockModal({
     const targetX = targetRect ? targetRect.left + targetRect.width / 2 : window.innerWidth - 60;
     const targetY = targetRect ? targetRect.top + targetRect.height / 2 : 40;
 
-    // 3. Collect 16 active particle elements for flight trajectory
+    // 3. Collect active particle elements for flight trajectory
     const emojiElements = cardRef.current?.querySelectorAll('[data-mario-particle]');
-    const nodes: HTMLElement[] = [];
 
-    // Helper Web Audio synthesizer for flight crystal arpeggio
+    // Helper Web Audio synthesizer for impact crystal chimes
     let audioCtx: AudioContext | null = null;
     try {
       const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtxClass) audioCtx = new AudioCtxClass();
     } catch (err) {}
 
-    const playCrystalArpeggioTone = (freq: number, delayMs: number) => {
+    const playImpactCrystalChime = (freq: number, delayMs: number) => {
       setTimeout(() => {
         try {
           if (!audioCtx) return;
@@ -109,17 +108,19 @@ export default function GamificationUnlockModal({
           osc.type = 'sine';
           osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
           gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.15, audioCtx.currentTime + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.22);
+          gain.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.25);
           osc.connect(gain);
           gain.connect(audioCtx.destination);
           osc.start(audioCtx.currentTime);
-          osc.stop(audioCtx.currentTime + 0.22);
+          osc.stop(audioCtx.currentTime + 0.25);
         } catch (e) {}
       }, delayMs);
     };
 
-    // 4. Launch each active particle from its floating screen position straight to capsule
+    // 4. Launch each emoticon with exact arrival sound synchronization
+    const flightDurationMs = 1000;
+
     if (emojiElements && emojiElements.length > 0) {
       emojiElements.forEach((el, idx) => {
         const rect = el.getBoundingClientRect();
@@ -139,50 +140,64 @@ export default function GamificationUnlockModal({
           opacity: '1',
           pointerEvents: 'none',
           willChange: 'transform, opacity',
-          transition: 'transform 950ms cubic-bezier(.22,1.6,.4,1), opacity 950ms ease',
+          transition: `transform ${flightDurationMs}ms cubic-bezier(.22,1.6,.4,1), opacity ${flightDurationMs}ms ease`,
         });
         document.body.appendChild(flyer);
-        nodes.push(flyer);
 
-        const delay = idx * 60; // staggered arpeggio burst
+        const startDelay = 80 + idx * 110;
+        const impactTimestamp = startDelay + flightDurationMs;
 
-        // Play crystal arpeggio note per particle impact
-        const freq = 523.25 + (idx % 8) * 90;
-        playCrystalArpeggioTone(freq, delay);
+        // 🎵 Campanada de cristal sintonizada en el MILISEGUNDO EXACTO del impacto
+        const chimeFreq = 1046.50 + idx * 70;
+        playImpactCrystalChime(chimeFreq, impactTimestamp);
 
+        // Volar hacia la cápsula
         setTimeout(() => {
           requestAnimationFrame(() => {
             const deltaX = targetX - startX;
             const deltaY = targetY - startY;
-            flyer.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px)) scale(0.3) rotate(360deg)`;
+            flyer.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px)) scale(0.35) rotate(600deg)`;
             flyer.style.opacity = '0.9';
           });
-        }, delay);
+        }, startDelay);
 
+        // Eliminar nodo tras el impacto
         setTimeout(() => {
           flyer.remove();
-        }, delay + 1000);
+        }, impactTimestamp + 80);
       });
     }
 
-    // 5. Profile capsule absorption pulsing glow effect
+    // 5. 4 Etapas de Pulso y Crecimiento Progresivo de la Cápsula (1.1x ➔ 1.22x ➔ 1.32x)
     if (targetEl) {
-      setTimeout(() => {
-        targetEl.style.transition = 'transform 350ms cubic-bezier(.22,1.6,.4,1), box-shadow 350ms ease';
-        targetEl.style.transform = 'scale(1.2)';
-        targetEl.style.boxShadow = '0 0 30px 10px rgba(251,191,36,0.95)';
-      }, 250);
+      const computedRadius = window.getComputedStyle(targetEl).borderRadius || '9999px';
+      targetEl.style.borderRadius = computedRadius;
 
+      // Etapa 1: Inicio al despegar las partículas (800ms)
       setTimeout(() => {
-        targetEl.style.transform = 'scale(1.35)';
+        targetEl.style.transition = 'transform 400ms cubic-bezier(.22,1.6,.4,1), box-shadow 400ms ease';
+        targetEl.style.transform = 'scale(1.1)';
+        targetEl.style.boxShadow = '0 0 18px 4px rgba(251,191,36,0.6)';
+      }, 800);
+
+      // Etapa 2: Crecimiento intermedio con la llegada de la primera oleada (1800ms)
+      setTimeout(() => {
+        targetEl.style.transform = 'scale(1.22)';
+        targetEl.style.boxShadow = '0 0 30px 10px rgba(251,191,36,0.85)';
+      }, 1800);
+
+      // Etapa 3: Pulso máximo al impactar la oleada final (2600ms)
+      setTimeout(() => {
+        targetEl.style.transform = 'scale(1.32)';
         targetEl.style.boxShadow = '0 0 45px 16px rgba(251,191,36,1)';
-      }, 650);
+      }, 2600);
 
+      // Etapa 4: Retorno suave a tamaño normal (3400ms)
       setTimeout(() => {
         targetEl.style.transform = '';
         targetEl.style.boxShadow = '';
         targetEl.style.transition = '';
-      }, 1500);
+      }, 3400);
     }
 
     // Fade out modal and close
@@ -192,7 +207,7 @@ export default function GamificationUnlockModal({
     }, 750);
   };
 
-  // Generate explicit per-particle keyframes matching Framer Motion spec
+  // Dynamic Keyframes Generator for 16 Mario Particles continuous parabolic orbit
   const generateDynamicKeyframes = () => {
     return MARIO_PARTICLES.map((pt) => {
       const rotMid = pt.side === 'left' ? -180 : 180;
