@@ -57,6 +57,7 @@ const formatDateSpanish = (dateStr: string) => {
 
 import { useModalBack } from '@/hooks/useModalBack';
 import PointsBurstAnimation from '@/components/PointsBurstAnimation';
+import GamificationUnlockModal from '@/components/dashboard/GamificationUnlockModal';
 import StudentHistoryModal from '@/components/dashboard/StudentHistoryModal';
 
 function RegistroContent() {
@@ -117,6 +118,8 @@ function RegistroContent() {
   // Estado para animación de puntos
   const [pointsBurst, setPointsBurst] = useState<number | null>(null);
   const [nuevoTotalPuntos, setNuevoTotalPuntos] = useState<number | null>(null);
+  const [isGamificationModalOpen, setIsGamificationModalOpen] = useState(false);
+  const [gamificationPoints, setGamificationPoints] = useState(50);
 
   // Estados para Novedades
   const [novedades, setNovedades] = useState<Record<string, { tipo: string; descripcion: string }>>({});
@@ -823,7 +826,17 @@ function RegistroContent() {
         }
       }
 
-      if (puntosGanados > 0) {
+      let animToggles = { modoHiperDopamina3D: false, explosionParticulas: true };
+      try {
+        const saved = localStorage.getItem('pae_anim_toggles');
+        if (saved) animToggles = JSON.parse(saved);
+      } catch (e) {}
+
+      if (animToggles.modoHiperDopamina3D) {
+        setNuevoTotalPuntos(nuevoTotal);
+        setGamificationPoints(puntosGanados > 0 ? puntosGanados : 50);
+        setIsGamificationModalOpen(true);
+      } else if (puntosGanados > 0) {
         setNuevoTotalPuntos(nuevoTotal);
         setPointsBurst(puntosGanados);
       } else {
@@ -1375,6 +1388,22 @@ function RegistroContent() {
             }}
         />
       )}
+
+      {/* Modal de Recompensa 3D Modo CookFlow al Guardar Asistencia */}
+      <GamificationUnlockModal
+        isOpen={isGamificationModalOpen}
+        onClose={() => {
+          setIsGamificationModalOpen(false);
+          if (nuevoTotalPuntos && nuevoTotalPuntos > 0 && usuario?.id) {
+            window.dispatchEvent(new CustomEvent('puntosActualizados', { detail: { points: gamificationPoints } }));
+          }
+          handleBack();
+        }}
+        title="¡Asistencia Guardada PAE!"
+        points={gamificationPoints}
+        rewardText="¡Puntualidad ejemplar en la entrega del refrigerio!"
+        badgeName="Gestor PAE Ejemplar"
+      />
 
       <StudentHistoryModal
         student={selectedStudentForHistory}
