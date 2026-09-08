@@ -11,6 +11,7 @@ import {
     CheckCircle2,
     TrendingUp,
     Award,
+    Trophy,
     Clock,
     X,
     CalendarDays,
