@@ -51,12 +51,16 @@ export default function GamificationUnlockModal({
   const [isClosing, setIsClosing] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
-  // Play CookFlow fanfare when modal pops in
+  // Play CookFlow fanfare when modal pops in & hide bottom navigation
   useEffect(() => {
     if (isOpen) {
       setIsClaimed(false);
       setIsClosing(false);
       playGamificationFanfare();
+      document.body.classList.add('gamification-modal-open', 'overflow-hidden');
+      return () => {
+        document.body.classList.remove('gamification-modal-open', 'overflow-hidden');
+      };
     }
   }, [isOpen]);
 
@@ -78,9 +82,10 @@ export default function GamificationUnlockModal({
     if (isClaimed) return;
     setIsClaimed(true);
 
-    // 1. Play CookFlow Mario Coin Chime & Speech confirmation
+    // 1. Play CookFlow Mario Coin Chime & Speech confirmation (singular vs plural)
     playCoinClaimSound();
-    speakVoiceConfirmation(`¡Felicidades! Has ganado ${points} puntos PAE.`);
+    const pointsSpeech = points === 1 ? '1 punto PAE.' : `${points} puntos PAE.`;
+    speakVoiceConfirmation(`¡Felicidades! Has ganado ${pointsSpeech}`);
 
     // 2. Find target profile points capsule
     const targetEl = getVisibleCapsule();
@@ -375,8 +380,13 @@ export default function GamificationUnlockModal({
         </div>
       </div>
 
-      {/* Global CSS Keyframes */}
+      {/* Global CSS Keyframes & Bottom Nav Hiding */}
       <style jsx global>{`
+        body.gamification-modal-open nav,
+        body.gamification-modal-open [data-bottom-nav] {
+          display: none !important;
+        }
+
         @keyframes popIn {
           0% {
             transform: scale(0);

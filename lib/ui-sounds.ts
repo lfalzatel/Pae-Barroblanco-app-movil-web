@@ -242,7 +242,9 @@ export function speakVoiceConfirmation(text: string): void {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
   try {
     window.speechSynthesis.cancel(); // Cancel active speech
-    const utterance = new SpeechSynthesisUtterance(text);
+    // Transform PAE / P.A.E. into "Páe" for fluent word pronunciation
+    const fluentText = text.replace(/P\.?A\.?E\.?/gi, 'Páe');
+    const utterance = new SpeechSynthesisUtterance(fluentText);
     utterance.lang = 'es-CO';
     utterance.rate = 1.0;
     utterance.pitch = 1.0;

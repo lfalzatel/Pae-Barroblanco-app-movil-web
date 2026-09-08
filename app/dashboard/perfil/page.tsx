@@ -125,13 +125,13 @@ export default function ProfilePage() {
         });
     }, []);
 
-    // Animation Toggles State & Gamification Test Modal
+    // Animation Toggles State & Gamification Test Modal (Modo 3D activado por defecto)
     const [isGamificationModalTestOpen, setIsGamificationModalTestOpen] = useState(false);
     const [animToggles, setAnimToggles] = useState({
         powerCard3D: true,
         celebracionConfeti: true,
-        explosionParticulas: true, // PointsBurstAnimation
-        modoHiperDopamina3D: false, // Celebración Hiper-Dopamina 3D (CookFlow)
+        explosionParticulas: false, // PointsBurstAnimation
+        modoHiperDopamina3D: true,  // Celebración Hiper-Dopamina 3D CookFlow (ACTIVADO POR DEFECTO)
         vozHabladaConfirmacion: true,
     });
 

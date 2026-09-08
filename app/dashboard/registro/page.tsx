@@ -826,7 +826,7 @@ function RegistroContent() {
         }
       }
 
-      let animToggles = { modoHiperDopamina3D: false, explosionParticulas: true };
+      let animToggles = { modoHiperDopamina3D: true, explosionParticulas: false };
       try {
         const saved = localStorage.getItem('pae_anim_toggles');
         if (saved) animToggles = JSON.parse(saved);
