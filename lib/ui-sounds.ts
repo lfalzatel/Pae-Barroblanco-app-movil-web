@@ -3,12 +3,28 @@
 export type SoundType = 'pop' | 'click' | 'chime' | 'haptic' | 'sparkle' | 'none';
 
 export const SOUND_OPTIONS: { id: SoundType; label: string; icon: string; description: string }[] = [
-  { id: 'pop', label: 'Pop / Burbuja', icon: '🍿', description: 'Suave, satisfactorio, estilo iOS (Por defecto)' },
-  { id: 'click', label: 'Click Digital', icon: '⚡', description: 'Crisp, mecánico y tecnológico' },
-  { id: 'chime', label: 'Campana Armónica', icon: '🎵', description: 'Micro-acorde elegante y refinado' },
-  { id: 'haptic', label: 'Toque Háptico', icon: '📳', description: 'Golpecito grave estilo motor de vibración' },
-  { id: 'sparkle', label: 'Chime Brillos', icon: '✨', description: 'Tono cristalino ascendente moderno' },
-  { id: 'none', label: 'Silencioso', icon: '🔇', description: 'Desactivar efectos de sonido' },
+  { id: 'pop', label: 'Pop / Burbuja', icon: '🍿', description: 'Feedback suave estilo iOS' },
+  { id: 'click', label: 'Click Digital', icon: '⚡', description: 'Sensación mecánica de interruptor' },
+  { id: 'chime', label: 'Campana Armónica', icon: '🎵', description: 'Micro-acorde musical' },
+  { id: 'haptic', label: 'Toque Háptico', icon: '📳', description: 'Pulso grave sutil estilo motor' },
+  { id: 'sparkle', label: 'Chime Brillos', icon: '✨', description: 'Tono cristalino ascendente' },
+  { id: 'none', label: 'Silencioso', icon: '🔇', description: 'Desactivar efecto auditivo' },
+];
+
+export const ACTION_SOUND_OPTIONS = [
+  { id: 'arpegio', label: 'Arpegio Sintetizado', icon: '🎵', description: 'Acorde armónico de 3 tonos ascendentes' },
+  { id: 'cristal', label: 'Cristalino Acústico', icon: '💎', description: 'Resonancia pura de alta frecuencia' },
+  { id: 'electro', label: 'Pulso Eléctrico', icon: '⚡', description: 'Onda sintética moderna y enérgica' },
+  { id: 'disolucion', label: 'Disolución Armónica', icon: '🌌', description: 'Tono descendente suave y envolvente' },
+  { id: 'silencioso', label: 'Silencioso', icon: '🔇', description: 'Desactivar sonido para esta acción' },
+];
+
+export const PARTICLE_SOUND_OPTIONS = [
+  { id: 'cristalino_pentatonico', label: 'Cristalino Pentatónico', icon: '🔮', description: 'Cascada de tonos armónicos brillantes' },
+  { id: 'arcade_8bit', label: 'Arcade 8-Bit', icon: '✨', description: 'Ráfaga vintage estilo consola NES' },
+  { id: 'marimba_acustica', label: 'Marimba Acústica', icon: '🪵', description: 'Toques de madera cálida y resonante' },
+  { id: 'neon_ciberpunk', label: 'Neón Ciberpunk', icon: '⚡', description: 'Onda sintetizada retro futurista' },
+  { id: 'silencioso', label: 'Silencioso', icon: '🔇', description: 'Desactivar sonido en partículas' },
 ];
 
 let globalAudioCtx: AudioContext | null = null;
@@ -41,19 +57,28 @@ export function setSoundPreference(sound: SoundType): void {
   localStorage.setItem('pae_ui_sound', sound);
 }
 
-export function playNavSound(overrideType?: SoundType): void {
-  if (typeof window === 'undefined') return;
-  const type = overrideType || getSoundPreference();
-  if (type === 'none') return;
+// Sound Preference Helpers for specific categories
+export function getCategorySoundPref(category: string, defaultId: string): string {
+  if (typeof window === 'undefined') return defaultId;
+  return localStorage.getItem(`pae_sound_${category}`) || defaultId;
+}
 
+export function setCategorySoundPref(category: string, soundId: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(`pae_sound_${category}`, soundId);
+}
+
+// Audio Synthesizers for Particle & Custom Sounds
+export function playSynthesizedSound(soundId: string): void {
+  if (typeof window === 'undefined' || soundId === 'silencioso' || soundId === 'none') return;
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
-
     const now = ctx.currentTime;
 
-    switch (type) {
-      case 'pop': {
+    switch (soundId) {
+      case 'pop':
+      case 'pop_burbuja': {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
@@ -67,7 +92,8 @@ export function playNavSound(overrideType?: SoundType): void {
         osc.stop(now + 0.08);
         break;
       }
-      case 'click': {
+      case 'click':
+      case 'click_digital': {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'triangle';
@@ -80,26 +106,24 @@ export function playNavSound(overrideType?: SoundType): void {
         osc.stop(now + 0.03);
         break;
       }
-      case 'chime': {
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc1.type = 'sine';
-        osc2.type = 'sine';
-        osc1.frequency.setValueAtTime(523.25, now); // C5
-        osc2.frequency.setValueAtTime(659.25, now); // E5
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(ctx.destination);
-        osc1.start(now);
-        osc2.start(now);
-        osc1.stop(now + 0.12);
-        osc2.stop(now + 0.12);
+      case 'chime':
+      case 'campana_armonica': {
+        [523.25, 659.25, 783.99].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.03);
+          gain.gain.setValueAtTime(0.1, now + i * 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.03 + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.03);
+          osc.stop(now + i * 0.03 + 0.15);
+        });
         break;
       }
-      case 'haptic': {
+      case 'haptic':
+      case 'toque_haptico': {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
@@ -113,23 +137,124 @@ export function playNavSound(overrideType?: SoundType): void {
         osc.stop(now + 0.04);
         break;
       }
-      case 'sparkle': {
+      case 'arpegio':
+      case 'arpegio_sintetizado': {
+        [440, 554.37, 659.25, 880].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.04);
+          gain.gain.setValueAtTime(0.12, now + i * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.18);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.04);
+          osc.stop(now + i * 0.04 + 0.18);
+        });
+        break;
+      }
+      case 'disolucion':
+      case 'disolucion_armonica': {
+        [880, 659.25, 523.25, 349.23].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.05);
+          gain.gain.setValueAtTime(0.1, now + i * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.22);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.05);
+          osc.stop(now + i * 0.05 + 0.22);
+        });
+        break;
+      }
+      case 'cristalino_pentatonico': {
+        [523.25, 587.33, 659.25, 783.99, 880, 1046.5].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.035);
+          gain.gain.setValueAtTime(0.08, now + i * 0.035);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.035 + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.035);
+          osc.stop(now + i * 0.035 + 0.2);
+        });
+        break;
+      }
+      case 'arcade_8bit': {
+        [220, 440, 880, 1760].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(freq, now + i * 0.03);
+          gain.gain.setValueAtTime(0.06, now + i * 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.03 + 0.05);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.03);
+          osc.stop(now + i * 0.03 + 0.05);
+        });
+        break;
+      }
+      case 'marimba_acustica': {
+        [329.63, 392.0, 493.88].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.04);
+          gain.gain.setValueAtTime(0.18, now + i * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.1);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.04);
+          osc.stop(now + i * 0.04 + 0.1);
+        });
+        break;
+      }
+      case 'neon_ciberpunk': {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(600, now);
-        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.06);
-        osc.frequency.exponentialRampToValueAtTime(1800, now + 0.12);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.12);
+        gain.gain.setValueAtTime(0.09, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.12);
+        osc.stop(now + 0.15);
+        break;
+      }
+      default: {
+        playNavSound('pop');
         break;
       }
     }
-  } catch (err) {
-    // Ignore audio autoplay restrictions gracefully
+  } catch (e) {
+    // Ignore audio restrictions
   }
+}
+
+export function speakVoiceConfirmation(text: string): void {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel(); // Cancel active speech
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'es-CO';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+  } catch (e) {
+    console.error('Speech Synthesis Error:', e);
+  }
+}
+
+export function playNavSound(overrideType?: SoundType): void {
+  if (typeof window === 'undefined') return;
+  const type = overrideType || getSoundPreference();
+  if (type === 'none') return;
+  playSynthesizedSound(type);
 }

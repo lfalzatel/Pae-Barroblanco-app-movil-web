@@ -436,9 +436,30 @@ export default function HorarioPage() {
             const hasNotes = items.some(item => item.notes && item.notes.trim().length > 0);
             
             if (hasNoAsiste || hasNotes) {
-                const message = hasNoAsiste 
-                    ? `Hay grupos que no asisten y novedades para el ${formatDateLabel(selectedDate)}.`
-                    : `Se han registrado nuevas notas en el horario del ${formatDateLabel(selectedDate)}.`;
+                let message = '';
+                const formattedDate = formatDateLabel(selectedDate);
+
+                if (hasNoAsiste) {
+                    const absentNames = absentGroups.map(a => a.group.label);
+                    const eventTitles = dailyInstEvents.map(e => e.titulo).filter(Boolean);
+                    const eventInfo = eventTitles.length > 0 ? ` (Motivo: ${eventTitles.join(', ')})` : '';
+
+                    if (absentNames.length === 1) {
+                        message = `El grupo ${absentNames[0]} no asiste el ${formattedDate}${eventInfo}.`;
+                    } else if (absentNames.length > 1 && absentNames.length <= 5) {
+                        const namesCopy = [...absentNames];
+                        const lastGroup = namesCopy.pop();
+                        message = `Los grupos ${namesCopy.join(', ')} y ${lastGroup} no asisten el ${formattedDate}${eventInfo}.`;
+                    } else if (absentNames.length > 5) {
+                        const shown = absentNames.slice(0, 4).join(', ');
+                        const remaining = absentNames.length - 4;
+                        message = `No asisten ${absentNames.length} grupos el ${formattedDate}: ${shown} y ${remaining} más${eventInfo}.`;
+                    } else {
+                        message = `Hay grupos que no asisten el ${formattedDate}${eventInfo}.`;
+                    }
+                } else {
+                    message = `Se han registrado observaciones en el horario del ${formattedDate}.`;
+                }
                 
                 triggerPushNotification('Actualización de Horario PAE', message);
             }
@@ -539,9 +560,10 @@ export default function HorarioPage() {
             setShowEventModal(false);
             
             // Trigger push notify for institutional events
+            const afectadosInfo = eventForm.afectados ? ` (Afecta: ${eventForm.afectados})` : '';
             triggerPushNotification(
                 'Evento Institucional PAE', 
-                `Nuevo evento: ${eventForm.titulo} para el ${formatDateLabel(eventDate)}.`
+                `Nuevo evento: ${eventForm.titulo}${afectadosInfo} para el ${formatDateLabel(eventDate)}.`
             );
             
             initData();

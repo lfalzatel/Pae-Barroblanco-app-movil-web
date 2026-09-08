@@ -1712,7 +1712,9 @@ export default function DashboardLayout({
                                                         <div key={idx} className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-2xl p-4 flex items-start justify-between">
                                                             <div className="flex flex-col">
                                                                 <span className="text-xs font-black text-red-900 dark:text-red-200 uppercase">{item.group}</span>
-                                                                <span className="text-[9px] font-bold text-red-600 dark:text-red-400 italic">SIN SERVICIO PAE</span>
+                                                                <span className="text-[9px] font-bold text-red-600 dark:text-red-400 italic">
+                                                                    {item.notes && item.notes.trim() ? item.notes : 'SIN SERVICIO PAE'}
+                                                                </span>
                                                             </div>
                                                             <div className="bg-red-600 text-white px-2 py-0.5 rounded-full text-[8px] font-black uppercase">NO ASISTE</div>
                                                         </div>
