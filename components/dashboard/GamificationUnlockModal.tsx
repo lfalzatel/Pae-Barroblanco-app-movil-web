@@ -71,7 +71,14 @@ export default function GamificationUnlockModal({
     const candidates = Array.from(document.querySelectorAll('[data-points-capsule]'));
     const visible = candidates.find((el) => {
       const r = el.getBoundingClientRect();
-      return r.width > 0 && r.height > 0;
+      const style = window.getComputedStyle(el);
+      return (
+        r.width > 0 &&
+        r.height > 0 &&
+        style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        style.opacity !== '0'
+      );
     }) as HTMLElement | null;
     if (!visible) return null;
     return (visible.querySelector('button') || visible) as HTMLElement;
@@ -123,7 +130,7 @@ export default function GamificationUnlockModal({
       }, delayMs);
     };
 
-    // 4. Launch each emoticon with exact arrival sound synchronization
+    // 4. Launch each emoticon with exact arrival sound synchronization & dynamic live target position
     const flightDurationMs = 1000;
 
     if (emojiElements && emojiElements.length > 0) {
@@ -156,11 +163,16 @@ export default function GamificationUnlockModal({
         const chimeFreq = 1046.50 + idx * 70;
         playImpactCrystalChime(chimeFreq, impactTimestamp);
 
-        // Volar hacia la cápsula
+        // Volar hacia la cápsula con cálculo de coordenadas en tiempo real
         setTimeout(() => {
           requestAnimationFrame(() => {
-            const deltaX = targetX - startX;
-            const deltaY = targetY - startY;
+            const liveTargetEl = getVisibleCapsule() || targetEl;
+            const liveRect = liveTargetEl?.getBoundingClientRect();
+            const liveTargetX = liveRect && liveRect.width > 0 ? liveRect.left + liveRect.width / 2 : targetX;
+            const liveTargetY = liveRect && liveRect.height > 0 ? liveRect.top + liveRect.height / 2 : targetY;
+
+            const deltaX = liveTargetX - startX;
+            const deltaY = liveTargetY - startY;
             flyer.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px)) scale(0.35) rotate(600deg)`;
             flyer.style.opacity = '0.9';
           });
