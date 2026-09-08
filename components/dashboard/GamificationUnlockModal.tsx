@@ -17,26 +17,26 @@ interface GamificationUnlockModalProps {
   badgeName?: string;
 }
 
-// 16 Mario Bros & PAE Particles Array (CookFlow Blueprint Specification)
+// Exact 16 Mario Bros Particles Array (CookFlow Blueprint Specification)
 const MARIO_PARTICLES = [
   // 8 Izquierda
-  { id: 1, symbol: '🍄', side: 'left', x: -160, y: -120, scale: 1.4, duration: 2.2, delay: 0.1 },
-  { id: 2, symbol: '⭐', side: 'left', x: -200, y: -50, scale: 1.6, duration: 2.4, delay: 0.15 },
-  { id: 3, symbol: '🪙', side: 'left', x: -120, y: 30, scale: 1.3, duration: 2.0, delay: 0.2 },
-  { id: 4, symbol: '🍓', side: 'left', x: -180, y: 90, scale: 1.5, duration: 2.3, delay: 0.25 },
-  { id: 5, symbol: '🎒', side: 'left', x: -220, y: -15, scale: 1.4, duration: 2.5, delay: 0.3 },
-  { id: 6, symbol: '🥪', side: 'left', x: -140, y: 130, scale: 1.3, duration: 2.1, delay: 0.35 },
-  { id: 7, symbol: '🍳', side: 'left', x: -170, y: -150, scale: 1.5, duration: 2.4, delay: 0.4 },
-  { id: 8, symbol: '🥐', side: 'left', x: -110, y: -70, scale: 1.2, duration: 2.2, delay: 0.45 },
+  { id: 1, symbol: '🍄', side: 'left', x: -220, y: -160, scale: 1.4, duration: 2.2, delay: 0.1 },
+  { id: 2, symbol: '⭐', side: 'left', x: -300, y: -80, scale: 1.6, duration: 2.4, delay: 0.15 },
+  { id: 3, symbol: '🪙', side: 'left', x: -180, y: 40, scale: 1.3, duration: 2.0, delay: 0.2 },
+  { id: 4, symbol: '🍓', side: 'left', x: -280, y: 120, scale: 1.5, duration: 2.3, delay: 0.25 },
+  { id: 5, symbol: '🥑', side: 'left', x: -340, y: -20, scale: 1.4, duration: 2.5, delay: 0.3 },
+  { id: 6, symbol: '🧀', side: 'left', x: -210, y: 180, scale: 1.3, duration: 2.1, delay: 0.35 },
+  { id: 7, symbol: '🍳', side: 'left', x: -260, y: -210, scale: 1.5, duration: 2.4, delay: 0.4 },
+  { id: 8, symbol: '🥐', side: 'left', x: -170, y: -100, scale: 1.2, duration: 2.2, delay: 0.45 },
   // 8 Derecha
-  { id: 9, symbol: '🍄', side: 'right', x: 160, y: -120, scale: 1.4, duration: 2.2, delay: 0.1 },
-  { id: 10, symbol: '⭐', side: 'right', x: 200, y: -50, scale: 1.6, duration: 2.4, delay: 0.15 },
-  { id: 11, symbol: '🪙', side: 'right', x: 180, y: 30, scale: 1.3, duration: 2.0, delay: 0.2 },
-  { id: 12, symbol: '🏫', side: 'right', x: 180, y: 90, scale: 1.5, duration: 2.3, delay: 0.25 },
-  { id: 13, symbol: '🍎', side: 'right', x: 220, y: -15, scale: 1.4, duration: 2.5, delay: 0.3 },
-  { id: 14, symbol: '🥛', side: 'right', x: 140, y: 130, scale: 1.3, duration: 2.1, delay: 0.35 },
-  { id: 15, symbol: '🍇', side: 'right', x: 170, y: -150, scale: 1.5, duration: 2.4, delay: 0.4 },
-  { id: 16, symbol: '🏆', side: 'right', x: 110, y: -70, scale: 1.2, duration: 2.2, delay: 0.45 },
+  { id: 9, symbol: '🍄', side: 'right', x: 220, y: -160, scale: 1.4, duration: 2.2, delay: 0.1 },
+  { id: 10, symbol: '⭐', side: 'right', x: 300, y: -80, scale: 1.6, duration: 2.4, delay: 0.15 },
+  { id: 11, symbol: '🪙', side: 'right', x: 180, y: 40, scale: 1.3, duration: 2.0, delay: 0.2 },
+  { id: 12, symbol: '🍗', side: 'right', x: 280, y: 120, scale: 1.5, duration: 2.3, delay: 0.25 },
+  { id: 13, symbol: '🍕', side: 'right', x: 340, y: -20, scale: 1.4, duration: 2.5, delay: 0.3 },
+  { id: 14, symbol: '🌶️', side: 'right', x: 210, y: 180, scale: 1.3, duration: 2.1, delay: 0.35 },
+  { id: 15, symbol: '🥞', side: 'right', x: 260, y: -210, scale: 1.5, duration: 2.4, delay: 0.4 },
+  { id: 16, symbol: '🍍', side: 'right', x: 170, y: -100, scale: 1.2, duration: 2.2, delay: 0.45 },
 ];
 
 export default function GamificationUnlockModal({
@@ -192,12 +192,46 @@ export default function GamificationUnlockModal({
     }, 750);
   };
 
+  // Generate explicit per-particle keyframes matching Framer Motion spec
+  const generateDynamicKeyframes = () => {
+    return MARIO_PARTICLES.map((pt) => {
+      const rotMid = pt.side === 'left' ? -180 : 180;
+      const rotEnd = pt.side === 'left' ? -360 : 360;
+      return `
+        @keyframes marioOrbit_${pt.id} {
+          0% {
+            transform: translate(-50%, -50%) translate3d(0, 0, 0) scale(0) rotate(0deg);
+            opacity: 0;
+          }
+          15% {
+            opacity: 1;
+          }
+          50% {
+            transform: translate(-50%, -50%) translate3d(${pt.x * 0.5}px, ${pt.y - 60}px, 0) scale(${pt.scale}) rotate(${rotMid}deg);
+            opacity: 1;
+          }
+          85% {
+            transform: translate(-50%, -50%) translate3d(${pt.x}px, ${pt.y + 40}px, 0) scale(${pt.scale * 0.8}) rotate(${rotEnd}deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translate(-50%, -50%) translate3d(${pt.x}px, ${pt.y + 40}px, 0) scale(0) rotate(${rotEnd}deg);
+            opacity: 0;
+          }
+        }
+      `;
+    }).join('\n');
+  };
+
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-hidden transition-opacity duration-300 ${
         isClosing ? 'opacity-0' : 'opacity-100'
       }`}
     >
+      {/* Dynamic Keyframes Injection */}
+      <style>{generateDynamicKeyframes()}</style>
+
       {/* 360 Sunburst Background Rays */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-35">
         <div
@@ -231,11 +265,7 @@ export default function GamificationUnlockModal({
             style={{
               left: '50%',
               top: '50%',
-              animation: `marioParabolicOrbit ${pt.duration}s ease-out ${pt.delay}s infinite`,
-              ['--pt-x' as any]: `${pt.x}px`,
-              ['--pt-y' as any]: `${pt.y}px`,
-              ['--pt-scale' as any]: pt.scale,
-              ['--pt-rot' as any]: pt.side === 'left' ? '-360deg' : '360deg',
+              animation: `marioOrbit_${pt.id} ${pt.duration}s ease-out ${pt.delay}s infinite`,
             }}
           >
             {pt.symbol}
@@ -344,28 +374,6 @@ export default function GamificationUnlockModal({
           100% {
             transform: scale(1);
             opacity: 1;
-          }
-        }
-
-        @keyframes marioParabolicOrbit {
-          0% {
-            transform: translate(-50%, -50%) scale(0) translate3d(0, 0, 0) rotate(0deg);
-            opacity: 0;
-          }
-          20% {
-            opacity: 1;
-          }
-          60% {
-            transform: translate(-50%, -50%) scale(var(--pt-scale)) translate3d(calc(var(--pt-x) * 0.5), calc(var(--pt-y) - 50px), 0) rotate(calc(var(--pt-rot) * 0.5));
-            opacity: 1;
-          }
-          85% {
-            transform: translate(-50%, -50%) scale(calc(var(--pt-scale) * 0.85)) translate3d(var(--pt-x), calc(var(--pt-y) + 30px), 0) rotate(var(--pt-rot));
-            opacity: 0.9;
-          }
-          100% {
-            transform: translate(-50%, -50%) scale(0) translate3d(var(--pt-x), calc(var(--pt-y) + 50px), 0) rotate(var(--pt-rot));
-            opacity: 0;
           }
         }
       `}</style>
