@@ -1713,9 +1713,6 @@ export default function ProfilePage() {
                     points={50}
                     rewardText="¡Excelente puntualidad en la entrega del refrigerio!"
                     badgeName="Estudiante Campeón PAE"
-                    onClaimWithParticles={() => {
-                        setPointsBurst(50);
-                    }}
                 />
             </div>
         </div>

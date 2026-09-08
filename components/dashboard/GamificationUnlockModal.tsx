@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Trophy, Gift, Sparkles, X, CheckCircle } from 'lucide-react';
 import {
   playGamificationFanfare,
-  playRewardClaimSound,
+  playCookFlowCoinSound,
   speakVoiceConfirmation,
 } from '@/lib/ui-sounds';
 
@@ -15,16 +15,12 @@ interface GamificationUnlockModalProps {
   points?: number;
   rewardText?: string;
   badgeName?: string;
-  onClaimWithParticles?: () => void;
 }
 
-const CARD_EMOJIS = [
-  { char: '🍎', className: 'top-[18%] left-[8%] text-3xl sm:text-4xl animate-bounce' },
-  { char: '🥪', className: 'top-[18%] right-[8%] text-3xl sm:text-4xl animate-bounce [animation-delay:200ms]' },
-  { char: '🪙', className: 'top-[44%] left-[4%] text-2xl sm:text-3xl animate-pulse' },
-  { char: '🪙', className: 'top-[44%] right-[4%] text-2xl sm:text-3xl animate-pulse [animation-delay:300ms]' },
-  { char: '🧀', className: 'top-[68%] left-[6%] text-2xl sm:text-3xl animate-bounce [animation-delay:400ms]' },
-  { char: '🍇', className: 'top-[68%] right-[6%] text-2xl sm:text-3xl animate-bounce [animation-delay:150ms]' },
+// 16 Mario Bros & PAE Style Emoticons
+const MARIO_PAE_EMOJIS = [
+  '🍄', '⭐', '🪙', '🥪', '🍎', '🥛', '🍇', '🥐',
+  '🍳', '🍓', '🎒', '🏫', '🥳', '🏆', '💎', '🔥'
 ];
 
 export default function GamificationUnlockModal({
@@ -34,13 +30,12 @@ export default function GamificationUnlockModal({
   points = 50,
   rewardText = '¡Excelente puntualidad en el registro!',
   badgeName = 'Estudiante PAE',
-  onClaimWithParticles,
 }: GamificationUnlockModalProps) {
   const [isClaimed, setIsClaimed] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
-  // Play fanfare when modal pops in
+  // Play CookFlow fanfare when modal pops in
   useEffect(() => {
     if (isOpen) {
       setIsClaimed(false);
@@ -67,28 +62,28 @@ export default function GamificationUnlockModal({
     if (isClaimed) return;
     setIsClaimed(true);
 
-    // Play sounds & speech confirmation
-    playRewardClaimSound();
+    // 1. Play CookFlow Mario Coin Chime & Speech confirmation
+    playCookFlowCoinSound();
     speakVoiceConfirmation(`¡Felicidades! Has ganado ${points} puntos PAE.`);
 
-    // Target profile capsule
+    // 2. Find target profile points capsule
     const targetEl = getVisibleCapsule();
     const targetRect = targetEl?.getBoundingClientRect();
     const targetX = targetRect ? targetRect.left + targetRect.width / 2 : window.innerWidth - 60;
     const targetY = targetRect ? targetRect.top + targetRect.height / 2 : 40;
 
-    // Collect positions of card emoticons to launch
-    const emojiElements = cardRef.current?.querySelectorAll('[data-emoticon-particle]');
+    // 3. Collect 16 radial emoticon elements for flight trajectory
+    const emojiElements = cardRef.current?.querySelectorAll('[data-mario-emoticon]');
     const nodes: HTMLElement[] = [];
 
-    // Helper Web Audio synthesizer for flight chime tones
+    // Helper Web Audio synthesizer for flight crystal arpeggio
     let audioCtx: AudioContext | null = null;
     try {
       const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtxClass) audioCtx = new AudioCtxClass();
     } catch (err) {}
 
-    const playChimeTone = (freq: number, delayMs: number) => {
+    const playCrystalArpeggioTone = (freq: number, delayMs: number) => {
       setTimeout(() => {
         try {
           if (!audioCtx) return;
@@ -98,17 +93,17 @@ export default function GamificationUnlockModal({
           osc.type = 'sine';
           osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
           gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.14, audioCtx.currentTime + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+          gain.gain.exponentialRampToValueAtTime(0.15, audioCtx.currentTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.22);
           osc.connect(gain);
           gain.connect(audioCtx.destination);
           osc.start(audioCtx.currentTime);
-          osc.stop(audioCtx.currentTime + 0.2);
+          osc.stop(audioCtx.currentTime + 0.22);
         } catch (e) {}
       }, delayMs);
     };
 
-    // Animate emoticons flying from card straight to capsule
+    // 4. Launch each emoticon from its 360° position straight to profile capsule
     if (emojiElements && emojiElements.length > 0) {
       emojiElements.forEach((el, idx) => {
         const rect = el.getBoundingClientRect();
@@ -121,22 +116,23 @@ export default function GamificationUnlockModal({
           position: 'fixed',
           left: `${startX}px`,
           top: `${startY}px`,
-          fontSize: '28px',
+          fontSize: '32px',
           lineHeight: '1',
           zIndex: '100000',
           transform: 'translate(-50%, -50%) scale(1) rotate(0deg)',
           opacity: '1',
           pointerEvents: 'none',
           willChange: 'transform, opacity',
-          transition: 'transform 900ms cubic-bezier(.22,1.6,.4,1), opacity 900ms ease',
+          transition: 'transform 950ms cubic-bezier(.22,1.6,.4,1), opacity 950ms ease',
         });
         document.body.appendChild(flyer);
         nodes.push(flyer);
 
-        const delay = idx * 100;
+        const delay = idx * 60; // staggered arpeggio burst
 
-        // Sound chime for each emoticon flight
-        playChimeTone(1046.50 + idx * 90, delay);
+        // Play crystal arpeggio note per emoticon
+        const freq = 523.25 + (idx % 8) * 90;
+        playCrystalArpeggioTone(freq, delay);
 
         setTimeout(() => {
           requestAnimationFrame(() => {
@@ -149,40 +145,35 @@ export default function GamificationUnlockModal({
 
         setTimeout(() => {
           flyer.remove();
-        }, delay + 950);
+        }, delay + 1000);
       });
     }
 
-    // Pulse & consume effect on Profile Points Capsule
+    // 5. Capsule absorption pulsing glow effect
     if (targetEl) {
       setTimeout(() => {
-        targetEl.style.transition = 'transform 300ms cubic-bezier(.22,1.6,.4,1), box-shadow 300ms ease';
-        targetEl.style.transform = 'scale(1.18)';
-        targetEl.style.boxShadow = '0 0 25px 8px rgba(251,191,36,0.8)';
-      }, 300);
+        targetEl.style.transition = 'transform 350ms cubic-bezier(.22,1.6,.4,1), box-shadow 350ms ease';
+        targetEl.style.transform = 'scale(1.2)';
+        targetEl.style.boxShadow = '0 0 30px 10px rgba(251,191,36,0.95)';
+      }, 250);
 
       setTimeout(() => {
-        targetEl.style.transform = 'scale(1.3)';
-        targetEl.style.boxShadow = '0 0 40px 14px rgba(251,191,36,1)';
-      }, 700);
+        targetEl.style.transform = 'scale(1.35)';
+        targetEl.style.boxShadow = '0 0 45px 16px rgba(251,191,36,1)';
+      }, 650);
 
       setTimeout(() => {
         targetEl.style.transform = '';
         targetEl.style.boxShadow = '';
         targetEl.style.transition = '';
-      }, 1400);
-    }
-
-    // Also trigger parent callback if provided
-    if (onClaimWithParticles) {
-      onClaimWithParticles();
+      }, 1500);
     }
 
     // Fade out modal and close
     setIsClosing(true);
     setTimeout(() => {
       onClose();
-    }, 700);
+    }, 750);
   };
 
   return (
@@ -215,16 +206,30 @@ export default function GamificationUnlockModal({
         ref={cardRef}
         className="relative z-10 w-full max-w-sm sm:max-w-md animate-[popIn_500ms_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]"
       >
-        {/* EMOTICONS FLOATING ON TOP OF THE CARD (Z-30 LAYER AS IN COOKFLOW) */}
-        {CARD_EMOJIS.map((item, idx) => (
-          <div
-            key={idx}
-            data-emoticon-particle="true"
-            className={`absolute z-30 pointer-events-none select-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] ${item.className}`}
-          >
-            {item.char}
-          </div>
-        ))}
+        {/* 16 MARIO BROS / PAE EMOTICONS BURSTING 360° OUTWARDS FROM CENTER */}
+        {MARIO_PAE_EMOJIS.map((emoji, idx) => {
+          const angle = (idx * (360 / MARIO_PAE_EMOJIS.length)) * (Math.PI / 180);
+          const distance = 140 + (idx % 3) * 35; // 140px to 210px radial offset
+          const offsetX = Math.cos(angle) * distance;
+          const offsetY = Math.sin(angle) * distance;
+
+          return (
+            <div
+              key={idx}
+              data-mario-emoticon="true"
+              className="absolute z-30 pointer-events-none select-none text-2xl sm:text-3xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)] transition-all animate-bounce"
+              style={{
+                left: `calc(50% + ${offsetX}px)`,
+                top: `calc(50% + ${offsetY}px)`,
+                transform: 'translate(-50%, -50%)',
+                animationDelay: `${idx * 150}ms`,
+                animationDuration: `${2.2 + (idx % 2) * 0.8}s`,
+              }}
+            >
+              {emoji}
+            </div>
+          );
+        })}
 
         {/* Card Main Body */}
         <div className="w-full bg-gradient-to-b from-amber-400 via-orange-500 to-red-600 border-4 border-yellow-300 rounded-[36px] p-5 sm:p-7 shadow-[0_0_60px_rgba(245,158,11,0.6)] flex flex-col items-center text-center relative overflow-hidden">

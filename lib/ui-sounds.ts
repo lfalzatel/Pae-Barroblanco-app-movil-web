@@ -316,6 +316,32 @@ export function playCounterTick(): void {
   } catch (e) {}
 }
 
+export function playCookFlowCoinSound(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    // Classic Mario / CookFlow Coin Chime: B5 (987.77Hz) -> E6 (1318.51Hz)
+    const notes = [
+      { freq: 987.77, time: now, duration: 0.08 },
+      { freq: 1318.51, time: now + 0.08, duration: 0.35 },
+    ];
+    notes.forEach((n) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(n.freq, n.time);
+      gain.gain.setValueAtTime(0.12, n.time);
+      gain.gain.exponentialRampToValueAtTime(0.001, n.time + n.duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(n.time);
+      osc.stop(n.time + n.duration);
+    });
+  } catch (e) {}
+}
+
 export function playRewardClaimSound(): void {
   if (typeof window === 'undefined') return;
   try {
