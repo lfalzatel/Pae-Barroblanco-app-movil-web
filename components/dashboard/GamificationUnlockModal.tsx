@@ -245,7 +245,7 @@ export default function GamificationUnlockModal({
 
   return (
     <div
-      className={`fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-hidden transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 pt-16 bg-slate-950/85 backdrop-blur-md overflow-hidden transition-opacity duration-300 ${
         isClosing ? 'opacity-0' : 'opacity-100'
       }`}
     >
@@ -261,23 +261,6 @@ export default function GamificationUnlockModal({
           }}
         />
       </div>
-
-      {/* Close button top right screen overlay */}
-      <button
-        onClick={(e) => {
-          if (!isClaimed) {
-            handleClaim(e);
-          } else {
-            setIsClosing(true);
-            setTimeout(onClose, 300);
-          }
-        }}
-        className="absolute top-4 right-4 sm:top-6 sm:right-6 text-amber-950 hover:text-black bg-yellow-400 hover:bg-yellow-300 p-2.5 rounded-full border-2 border-white shadow-[0_0_20px_rgba(251,191,36,0.8)] z-[100000] transition-all hover:scale-110 active:scale-95 cursor-pointer"
-        title="Cerrar y continuar animación"
-        aria-label="Cerrar y continuar animación"
-      >
-        <X className="w-6 h-6 stroke-[3]" />
-      </button>
 
       {/* Main Single-Step Reward Card Container */}
       <div
@@ -404,8 +387,12 @@ export default function GamificationUnlockModal({
         </div>
       </div>
 
-      {/* Global CSS Keyframes & Bottom Nav Hiding */}
+      {/* Global CSS Keyframes & Navigation Control */}
       <style jsx global>{`
+        body.gamification-modal-open [data-top-header] {
+          z-index: 100000 !important;
+        }
+
         body.gamification-modal-open nav,
         body.gamification-modal-open [data-bottom-nav],
         body.gamification-modal-open .fixed.bottom-2 {

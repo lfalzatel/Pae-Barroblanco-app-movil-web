@@ -1240,7 +1240,7 @@ export default function DashboardLayout({
             </div>
 
             {/* Mobile Top Header */}
-            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#00A3E0] flex items-center justify-between px-4 z-[100] shadow-md">
+            <div data-top-header="true" className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#00A3E0] flex items-center justify-between px-4 z-[100] shadow-md">
                 <div className="relative flex items-center gap-2">
                     <div 
                         className="relative w-10 h-10 ml-1 cursor-pointer transition-transform active:scale-95"
