@@ -51,6 +51,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { useTheme } from '@/components/ThemeProvider';
 import confetti from 'canvas-confetti';
 import PointsBurstAnimation from '@/components/PointsBurstAnimation';
+import GamificationUnlockModal from '@/components/dashboard/GamificationUnlockModal';
 import SoundSelectionModal, { SoundOption } from '@/components/dashboard/SoundSelectionModal';
 import {
     getSoundPreference,
@@ -123,11 +124,13 @@ export default function ProfilePage() {
         });
     }, []);
 
-    // Animation Toggles State
+    // Animation Toggles State & Gamification Test Modal
+    const [isGamificationModalTestOpen, setIsGamificationModalTestOpen] = useState(false);
     const [animToggles, setAnimToggles] = useState({
         powerCard3D: true,
         celebracionConfeti: true,
-        explosionParticulas: true,
+        explosionParticulas: true, // PointsBurstAnimation
+        modoHiperDopamina3D: false, // Celebración Hiper-Dopamina 3D (CookFlow)
         vozHabladaConfirmacion: true,
     });
 
@@ -144,7 +147,15 @@ export default function ProfilePage() {
 
     const toggleAnimSetting = (key: keyof typeof animToggles) => {
         setAnimToggles(prev => {
-            const updated = { ...prev, [key]: !prev[key] };
+            let updated = { ...prev, [key]: !prev[key] };
+
+            // Mutual Exclusivity: activating explosionParticulas turns off modoHiperDopamina3D and vice versa
+            if (key === 'explosionParticulas' && updated.explosionParticulas) {
+                updated.modoHiperDopamina3D = false;
+            } else if (key === 'modoHiperDopamina3D' && updated.modoHiperDopamina3D) {
+                updated.explosionParticulas = false;
+            }
+
             if (typeof window !== 'undefined') {
                 localStorage.setItem('pae_anim_toggles', JSON.stringify(updated));
             }
@@ -1232,15 +1243,13 @@ export default function ProfilePage() {
                                                 >
                                                     <div className={`w-5 h-5 rounded-full bg-white transition-transform shadow-xs ${animToggles.celebracionConfeti ? 'translate-x-6' : 'translate-x-0'}`} />
                                                 </button>
-                                            </div>
-
-                                            {/* Switch 3: Explosión de Partículas y Estrellas */}
+                                            {/* Switch 3: Explosión de Partículas y Estrellas (PointsBurstAnimation) */}
                                             <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 flex items-center justify-between">
                                                 <div>
                                                     <p className="text-xs font-black text-cyan-700 dark:text-cyan-300 uppercase tracking-wider flex items-center gap-1">
-                                                        <span>EXPLOSIÓN DE PARTÍCULAS Y ESTRELLAS</span> <span>✨</span>
+                                                        <span>EXPLOSIÓN DE ESTRELLAS (PointsBurst)</span> <span>✨</span>
                                                     </p>
-                                                    <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-400 uppercase mt-0.5">Trayectoria voladora hacia la cápsula de perfil / saldo</p>
+                                                    <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-400 uppercase mt-0.5">Trayectoria voladora hacia la cápsula de perfil / saldo (Mutuamente exclusivo)</p>
                                                 </div>
                                                 <button
                                                     type="button"
@@ -1253,7 +1262,26 @@ export default function ProfilePage() {
                                                 </button>
                                             </div>
 
-                                            {/* Switch 4: Voz Hablada */}
+                                            {/* Switch 4: Modo Hiper-Dopamina 3D (CookFlow / Temu) */}
+                                            <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-amber-500/10 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-amber-900/30 border border-amber-300/50 dark:border-amber-700/50 flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-xs font-black text-amber-700 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1">
+                                                        <span>CELEBRACIÓN HIPER-DOPAMINA 3D (COOKFLOW)</span> <span>🏆</span>
+                                                    </p>
+                                                    <p className="text-[10px] font-semibold text-amber-600/80 dark:text-amber-400/80 uppercase mt-0.5">Sunburst 360°, carta 3D flip y recompensas PAE (Mutuamente exclusivo)</p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleAnimSetting('modoHiperDopamina3D')}
+                                                    className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${
+                                                        animToggles.modoHiperDopamina3D ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'
+                                                    }`}
+                                                >
+                                                    <div className={`w-5 h-5 rounded-full bg-white transition-transform shadow-xs ${animToggles.modoHiperDopamina3D ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                </button>
+                                            </div>
+
+                                            {/* Switch 5: Voz Hablada */}
                                             <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 flex items-center justify-between">
                                                 <div>
                                                     <p className="text-xs font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1">
@@ -1269,6 +1297,17 @@ export default function ProfilePage() {
                                                     }`}
                                                 >
                                                     <div className={`w-5 h-5 rounded-full bg-white transition-transform shadow-xs ${animToggles.vozHabladaConfirmacion ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                </button>
+                                            </div>
+
+                                            {/* Botón para Probar Animación 3D Hiper-Dopamina */}
+                                            <div className="pt-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsGamificationModalTestOpen(true)}
+                                                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-all"
+                                                >
+                                                    <Trophy className="w-4 h-4 fill-slate-950" /> Probar Celebración Hiper-Dopamina 3D 🏆
                                                 </button>
                                             </div>
                                         </div>
@@ -1656,6 +1695,16 @@ export default function ProfilePage() {
                         onComplete={() => setPointsBurst(null)}
                     />
                 )}
+
+                {/* Modal de Recompensa Gamificada 3D (CookFlow / Temu) */}
+                <GamificationUnlockModal
+                    isOpen={isGamificationModalTestOpen}
+                    onClose={() => setIsGamificationModalTestOpen(false)}
+                    title="¡Asistencia Confirmada PAE!"
+                    points={50}
+                    rewardText="¡Excelente puntualidad en la entrega del refrigerio!"
+                    badgeName="Estudiante Campeón PAE"
+                />
             </div>
         </div>
     );
