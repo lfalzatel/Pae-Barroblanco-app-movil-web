@@ -54,6 +54,7 @@ import confetti from 'canvas-confetti';
 import PointsBurstAnimation from '@/components/PointsBurstAnimation';
 import GamificationUnlockModal from '@/components/dashboard/GamificationUnlockModal';
 import SoundSelectionModal, { SoundOption } from '@/components/dashboard/SoundSelectionModal';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import {
     getSoundPreference,
     setSoundPreference,
@@ -238,9 +239,13 @@ export default function ProfilePage() {
         speakVoiceConfirmation('Respuesta por voz al procesar comandos del Sistema PAE.');
     };
 
-    // Push notification states
-    const [isSubscribed, setIsSubscribed] = useState(false);
-    const [pushLoading, setPushLoading] = useState(false);
+    // Push notification hook integration
+    const {
+        isSubscribed,
+        subscribe: subscribePush,
+        unsubscribe: unsubscribePush,
+        isLoading: pushLoading
+    } = usePushNotifications();
     const [testLoading, setTestLoading] = useState(false);
     const [pushFeedback, setPushFeedback] = useState<string | null>(null);
 
@@ -315,17 +320,6 @@ export default function ProfilePage() {
         setSoundPref(getSoundPreference());
     }, []);
 
-    // Check Push Notification status
-    useEffect(() => {
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-            navigator.serviceWorker.ready.then(reg => {
-                reg.pushManager.getSubscription().then(sub => {
-                    setIsSubscribed(!!sub);
-                });
-            }).catch(() => {});
-        }
-    }, []);
-
     const handleSoundSelect = (newSound: SoundType) => {
         setSoundPref(newSound);
         setSoundPreference(newSound);
@@ -333,35 +327,18 @@ export default function ProfilePage() {
     };
 
     const handleTogglePush = async () => {
-        setPushLoading(true);
         setPushFeedback(null);
         try {
-            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                setPushFeedback('Las notificaciones push no son soportadas en este navegador.');
-                return;
-            }
-
-            const reg = await navigator.serviceWorker.ready;
-            const sub = await reg.pushManager.getSubscription();
-
-            if (sub) {
-                await sub.unsubscribe();
-                setIsSubscribed(false);
+            if (isSubscribed) {
+                await unsubscribePush();
                 setPushFeedback('Notificaciones desactivadas correctamente.');
             } else {
-                const perm = await Notification.requestPermission();
-                if (perm === 'granted') {
-                    setIsSubscribed(true);
-                    setPushFeedback('¡Notificaciones activadas con éxito!');
-                } else {
-                    setPushFeedback('Permiso de notificaciones denegado en el navegador.');
-                }
+                await subscribePush();
+                setPushFeedback('¡Notificaciones activadas con éxito!');
             }
         } catch (err: any) {
             console.error(err);
             setPushFeedback('Error al ajustar notificaciones.');
-        } finally {
-            setPushLoading(false);
         }
     };
 
