@@ -59,12 +59,15 @@ import {
     setSoundPreference,
     getCategorySoundPref,
     setCategorySoundPref,
+    getGeneralClickSoundPref,
+    setGeneralClickSoundPref,
     playSynthesizedSound,
     playNavSound,
     speakVoiceConfirmation,
     SOUND_OPTIONS,
     ACTION_SOUND_OPTIONS,
     PARTICLE_SOUND_OPTIONS,
+    ATTENDANCE_SOUND_OPTIONS,
     SoundType
 } from '@/lib/ui-sounds';
 import { Sparkles, Music, Mic, Play, Eye } from 'lucide-react';
@@ -112,6 +115,8 @@ export default function ProfilePage() {
         eliminaciones: 'disolucion',
         navegacion: 'pop',
         particulas: 'cristalino_pentatonico',
+        clics_generales: 'pop',
+        asistencia_exito: 'exito_chime',
     });
 
     useEffect(() => {
@@ -122,6 +127,8 @@ export default function ProfilePage() {
             eliminaciones: getCategorySoundPref('eliminaciones', 'disolucion'),
             navegacion: getSoundPreference(),
             particulas: getCategorySoundPref('particulas', 'cristalino_pentatonico'),
+            clics_generales: getGeneralClickSoundPref(),
+            asistencia_exito: getCategorySoundPref('asistencia_exito', 'exito_chime'),
         });
     }, []);
 
@@ -203,6 +210,8 @@ export default function ProfilePage() {
         if (key === 'navegacion') {
             setSoundPreference(newSoundId as SoundType);
             setSoundPref(newSoundId as SoundType);
+        } else if (key === 'clics_generales') {
+            setGeneralClickSoundPref(newSoundId as SoundType);
         } else {
             setCategorySoundPref(key, newSoundId);
         }

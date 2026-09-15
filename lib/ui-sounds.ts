@@ -372,3 +372,129 @@ export function playNavSound(overrideType?: SoundType): void {
   playSynthesizedSound(type);
 }
 
+// ── VIBRACIÓN HÁPTICA WEB ──
+export function triggerHapticVibration(pattern: number | number[] = 30): void {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+  try {
+    if ('vibrate' in navigator && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(pattern);
+    }
+  } catch (e) {
+    // Ignore vibration errors on non-supported browsers
+  }
+}
+
+// ── INTERACCIÓN GENERAL DE CLICS ──
+export function getGeneralClickSoundPref(): SoundType {
+  if (typeof window === 'undefined') return 'pop';
+  const saved = localStorage.getItem('pae_sound_general_clicks') as SoundType;
+  if (saved && (SOUND_OPTIONS.some(s => s.id === saved) || saved === 'none')) {
+    return saved;
+  }
+  return 'pop';
+}
+
+export function setGeneralClickSoundPref(sound: SoundType): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('pae_sound_general_clicks', sound);
+}
+
+export function playGeneralClickSound(overrideType?: SoundType): void {
+  if (typeof window === 'undefined') return;
+  const type = overrideType || getGeneralClickSoundPref();
+  if (type === 'none' || (type as string) === 'silencioso') return;
+  playSynthesizedSound(type);
+}
+
+// ── EFECTOS DE ASISTENCIA Y NEGOCIO PAE ──
+export const ATTENDANCE_SOUND_OPTIONS = [
+  { id: 'exito_chime', label: 'Tono Éxito Armónico', icon: '✅', description: 'Micro-acorde alegre Do-Mi-Sol' },
+  { id: 'exito_pop', label: 'Pop Burbuja Doble', icon: '🍿', description: 'Doble impacto suave' },
+  { id: 'alerta_pulso', label: 'Doble Pulso Grave', icon: '⚠️', description: 'Aviso grave para duplicados' },
+  { id: 'silencioso', label: 'Silencioso', icon: '🔇', description: 'Desactivar sonido de asistencia' },
+];
+
+// 1. Asistencia Registrada con Éxito (Confirmación Alegre)
+export function playAttendanceSuccess(): void {
+  if (typeof window === 'undefined') return;
+  const pref = getCategorySoundPref('asistencia_exito', 'exito_chime');
+  if (pref === 'silencioso' || pref === 'none') return;
+  
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    
+    // Tono alegre Do5 -> Mi5 -> Sol5
+    [523.25, 659.25, 783.99].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+      gain.gain.setValueAtTime(0.18, now + idx * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + idx * 0.05);
+      osc.stop(now + idx * 0.05 + 0.22);
+    });
+
+    triggerHapticVibration([30, 40, 30]);
+  } catch (e) {}
+}
+
+// 2. Alerta de Asistencia Duplicada (Estudiante ya registró hoy)
+export function playAttendanceDuplicate(): void {
+  if (typeof window === 'undefined') return;
+  const pref = getCategorySoundPref('asistencia_duplicada', 'alerta_pulso');
+  if (pref === 'silencioso' || pref === 'none') return;
+
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    // Doble pulso de frecuencia grave (180Hz -> 90Hz)
+    [0, 0.09].forEach((delay) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(180, now + delay);
+      osc.frequency.exponentialRampToValueAtTime(90, now + delay + 0.07);
+      gain.gain.setValueAtTime(0.2, now + delay);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.07);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + delay);
+      osc.stop(now + delay + 0.08);
+    });
+
+    triggerHapticVibration([100, 50, 100]);
+  } catch (e) {}
+}
+
+// 3. Error en Asistencia / Red
+export function playAttendanceError(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.exponentialRampToValueAtTime(150, now + 0.15);
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.18);
+
+    triggerHapticVibration([200]);
+  } catch (e) {}
+}
+
+

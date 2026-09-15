@@ -30,6 +30,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { OfflineService, PendingAttendance } from '@/lib/offlineService';
 import { MiniCalendar } from '@/components/ui/MiniCalendar';
 import confetti from 'canvas-confetti';
+import { playAttendanceSuccess, playAttendanceDuplicate, playAttendanceError } from '@/lib/ui-sounds';
 
 // Extendemos la interfaz de Grupo para incluir el estado de completado
 interface GrupoConEstado extends Grupo {
@@ -795,6 +796,7 @@ function RegistroContent() {
 
       OfflineService.clearPending();
       showToast(`Asistencia guardada para el ${selectedDate}`, 'success');
+      playAttendanceSuccess();
       
       // Animación de confeti al guardar con éxito
       confetti({
@@ -844,6 +846,7 @@ function RegistroContent() {
       }
     } catch (error: any) {
       console.error('Error guardando:', error);
+      playAttendanceError();
       showToast(`Error: ${error.message || 'Desconocido'}`, 'error');
     } finally {
       setSaving(false);

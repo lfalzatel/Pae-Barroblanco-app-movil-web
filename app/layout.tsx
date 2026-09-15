@@ -25,6 +25,8 @@ export const viewport = {
 };
 
 
+import GlobalSoundListener from "@/components/GlobalSoundListener";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,6 +37,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider>
           <SplashScreenProvider>
+            <GlobalSoundListener />
             {children}
           </SplashScreenProvider>
         </ThemeProvider>
