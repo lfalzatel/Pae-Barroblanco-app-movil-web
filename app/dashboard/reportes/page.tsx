@@ -50,6 +50,7 @@ function ReportesContent() {
 
   // Estado para menú de exportar (Restored)
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showNovedadesMenu, setShowNovedadesMenu] = useState(false);
   const [exportPreviewOpen, setExportPreviewOpen] = useState(false);
   const [selectedExportFormat, setSelectedExportFormat] = useState<'excel' | 'pdf' | 'image' | null>(null);
   const [isGeneratingExport, setIsGeneratingExport] = useState(false);
@@ -1196,11 +1197,10 @@ function ReportesContent() {
     }
   };
 
-  const handlePrepareReporteNovedades = async () => {
+  const handlePrepareReporteNovedades = async (format: 'excel' | 'pdf' | 'image' = 'excel') => {
     setIsGeneratingExport(true);
+    setSelectedExportFormat(format);
     try {
-      const XLSX = await import('xlsx');
-
       let periodoLabel = '';
       let reportDate = selectedDate;
       const today = new Date();
@@ -1317,7 +1317,14 @@ function ReportesContent() {
       const { data: asistData } = await queryAsistencia;
       const asistencias = asistData || [];
 
-      // 5. Consultar Novedades de Cupos
+      // 5. Consultar Programación Oficial de Horarios (schedules) para detectar grupos que realmente NO asisten
+      const { data: schedulesData } = await supabase
+        .from('schedules')
+        .select('date, items')
+        .gte('date', startDate)
+        .lte('date', endDate);
+
+      // 6. Consultar Novedades de Cupos e Institucionales
       const { data: cuposNovedades } = await supabase
         .from('novedades_cupos')
         .select('*');
@@ -1327,80 +1334,152 @@ function ReportesContent() {
         return fn && fn >= startDate && fn <= endDate;
       });
 
-      // 6. Construir filas de novedades por grupo y fecha
-      const novedadesGrupoRows: any[][] = [];
+      const { data: instNovedades } = await supabase
+        .from('novedades_institucionales')
+        .select('*')
+        .gte('fecha', startDate)
+        .lte('fecha', endDate);
 
-      // Evaluar cada día hábil y cada grupo
+      // 7. Estructurar Novedades Grupales y de Operación con estricta distinción
+      interface NovedadGrupoItem {
+        fecha: string;
+        dia: string;
+        sede: string;
+        grupo: string;
+        tipo: string;
+        origen: string;
+        racionesEsperadas: number | string;
+        racionesRecibidas: number | string;
+        categoria: 'PROGRAMADA' | 'PENDIENTE' | 'CRITICA' | 'ALERTA' | 'INSTITUCIONAL';
+        detalle: string;
+      }
+
+      const novedadesGrupoItems: NovedadGrupoItem[] = [];
+
       businessDates.forEach(dateStr => {
         const dateObj = new Date(dateStr + 'T00:00:00');
         const dayName = dateObj.toLocaleDateString('es-CO', { weekday: 'long' });
         const dayCapitalized = dayName.charAt(0).toUpperCase() + dayName.slice(1);
 
+        const daySchedule = (schedulesData || []).find((s: any) => s.date === dateStr);
+
         Object.values(groupsMap).forEach(g => {
+          // A. Verificar si el grupo estaba oficialmente programado como NO_ASISTE en el horario
+          const cleanTarget = g.grupo.replace('-2026', '').trim();
+          const schedItem = (daySchedule?.items || []).find((item: any) => {
+            const cleanSchedGroup = (item.group || '').replace('-2026', '').trim();
+            return cleanSchedGroup === cleanTarget;
+          });
+
+          const isScheduledNoAsiste = schedItem?.time === 'NO_ASISTE' || schedItem?.time_start === 'NO_ASISTE';
+          const schedNotes = schedItem?.notes ? schedItem.notes.trim() : '';
+
+          // B. Obtener registros de asistencia en la app para este grupo y fecha
           const groupRecs = asistencias.filter(a => {
             const e = Array.isArray(a.estudiantes) ? a.estudiantes[0] : a.estudiantes;
-            return e?.grupo === g.grupo && e?.sede === g.sede && a.fecha === dateStr;
+            const matchGroup = e?.grupo === g.grupo;
+            const matchSede = (sedeFilter === 'todas' || sedeFilter === 'primaria-principal') ? true : e?.sede === g.sede;
+            return matchGroup && matchSede && a.fecha === dateStr;
           });
 
           const totalRecibieron = groupRecs.filter(r => r.estado === 'recibio').length;
           const totalAusentes = groupRecs.filter(r => r.estado === 'ausente').length;
           const totalNoRecibieron = groupRecs.filter(r => r.estado === 'no_recibio').length;
 
-          if (groupRecs.length === 0) {
-            // Caso 1: El grupo no asistió / no registró asistencia en la fecha
-            novedadesGrupoRows.push([
-              dateStr,
-              dayCapitalized,
-              g.sede,
-              g.grupo,
-              'Grupo Sin Asistencia / No Asistió',
-              g.totalActivos,
-              0,
-              `El grupo ${g.grupo} no registró consumo el día ${dateStr}. No consumieron ${g.totalActivos} raciones esperadas.`
-            ]);
+          if (isScheduledNoAsiste) {
+            // CASO 1: Inasistencia Programada Oficialmente en Horario del Restaurante
+            novedadesGrupoItems.push({
+              fecha: dateStr,
+              dia: dayCapitalized,
+              sede: g.sede,
+              grupo: g.grupo,
+              tipo: 'Inasistencia Programada en Horario',
+              origen: 'Horario PAE (Programado)',
+              racionesEsperadas: g.totalActivos,
+              racionesRecibidas: 0,
+              categoria: 'PROGRAMADA',
+              detalle: `Grupo reportado oficialmente como "NO ASISTE" en el horario del comedor.${schedNotes ? ` Motivo: ${schedNotes}.` : ''} Raciones no despachadas: ${g.totalActivos}.`
+            });
+          } else if (groupRecs.length === 0) {
+            // CASO 2: Sin Registro de Asistencia (El grupo debía asistir, pero el docente no registró en la app)
+            novedadesGrupoItems.push({
+              fecha: dateStr,
+              dia: dayCapitalized,
+              sede: g.sede,
+              grupo: g.grupo,
+              tipo: 'Sin Registro de Asistencia',
+              origen: 'Pendiente Docente',
+              racionesEsperadas: g.totalActivos,
+              racionesRecibidas: 0,
+              categoria: 'PENDIENTE',
+              detalle: `El grupo tenía servicio programado pero no registra toma de asistencia en la app por parte del docente. ${g.totalActivos} raciones pendientes de auditoría.`
+            });
           } else if (totalRecibieron === 0 && (totalAusentes > 0 || totalNoRecibieron > 0)) {
-            // Caso 2: Se abrió registro pero ningún estudiante recibió (100% ausentes o no recibieron)
-            novedadesGrupoRows.push([
-              dateStr,
-              dayCapitalized,
-              g.sede,
-              g.grupo,
-              'Ausencia Total del Grupo',
-              g.totalActivos,
-              0,
-              `El grupo ${g.grupo} reportó ${groupRecs.length} estudiantes sin recepción (${totalAusentes} ausentes). Raciones consumidas: 0.`
-            ]);
+            // CASO 3: Ausencia Total Registrada (El docente tomó asistencia, pero ningún estudiante recibió)
+            novedadesGrupoItems.push({
+              fecha: dateStr,
+              dia: dayCapitalized,
+              sede: g.sede,
+              grupo: g.grupo,
+              tipo: 'Ausencia Total Registrada (0 raciones)',
+              origen: 'Registro en Comedor',
+              racionesEsperadas: g.totalActivos,
+              racionesRecibidas: 0,
+              categoria: 'CRITICA',
+              detalle: `Asistencia tomada en plataforma (${groupRecs.length} estudiantes registrados), pero ningún estudiante consumió ración (${totalAusentes} ausentes, ${totalNoRecibieron} no recibieron).`
+            });
           } else if (totalRecibieron > 0 && totalRecibieron < Math.ceil(g.totalActivos * 0.4)) {
-            // Caso 3: Asistencia atípicamente baja (< 40%)
-            novedadesGrupoRows.push([
-              dateStr,
-              dayCapitalized,
-              g.sede,
-              g.grupo,
-              'Baja Asistencia Crítica (<40%)',
-              g.totalActivos,
-              totalRecibieron,
-              `Solo ${totalRecibieron} de ${g.totalActivos} estudiantes recibieron ración (${Math.round((totalRecibieron / g.totalActivos) * 100)}% de asistencia).`
-            ]);
+            // CASO 4: Baja Asistencia Crítica (< 40%)
+            const pct = Math.round((totalRecibieron / g.totalActivos) * 100);
+            novedadesGrupoItems.push({
+              fecha: dateStr,
+              dia: dayCapitalized,
+              sede: g.sede,
+              grupo: g.grupo,
+              tipo: `Baja Asistencia Crítica (${pct}%)`,
+              origen: 'Consumo Parcial',
+              racionesEsperadas: g.totalActivos,
+              racionesRecibidas: totalRecibieron,
+              categoria: 'ALERTA',
+              detalle: `Asistencia atípicamente baja: solo ${totalRecibieron} de ${g.totalActivos} estudiantes recibieron ración (${pct}% de cobertura efectiva en este grupo).`
+            });
           }
         });
 
-        // Novedades institucionales o de cupos en este día
+        // Novedades institucionales en esta fecha
+        (instNovedades || []).filter((n: any) => n.fecha === dateStr).forEach((n: any) => {
+          novedadesGrupoItems.push({
+            fecha: dateStr,
+            dia: dayCapitalized,
+            sede: n.sede || 'Todas',
+            grupo: n.afectados || 'Institucional',
+            tipo: `Evento Institucional: ${n.titulo || 'Novedad'}`,
+            origen: 'Administración',
+            racionesEsperadas: '-',
+            racionesRecibidas: '-',
+            categoria: 'INSTITUCIONAL',
+            detalle: n.descripcion || 'Sin observación adicional'
+          });
+        });
+
+        // Novedades de cupos en esta fecha
         cuposFiltrados.filter((c: any) => (c.fecha_novedad === dateStr || c.fecha_inicio === dateStr)).forEach((c: any) => {
-          novedadesGrupoRows.push([
-            dateStr,
-            dayCapitalized,
-            c.sede || 'Todas',
-            c.grupo || 'Institucional',
-            `Ajuste de Cupos: ${c.tipo || 'General'}`,
-            '-',
-            c.cupos_afectados || 0,
-            c.descripcion || c.motivo || 'Novedad de cupos programada'
-          ]);
+          novedadesGrupoItems.push({
+            fecha: dateStr,
+            dia: dayCapitalized,
+            sede: c.sede || 'Todas',
+            grupo: c.grupo || 'Institucional',
+            tipo: `Ajuste de Cupos: ${c.tipo || 'General'}`,
+            origen: 'Planeación PAE',
+            racionesEsperadas: '-',
+            racionesRecibidas: c.cupos_afectados || 0,
+            categoria: 'INSTITUCIONAL',
+            detalle: c.descripcion || c.motivo || 'Novedad de cupos programada'
+          });
         });
       });
 
-      // 7. Extraer Novedades Individuales registradas en asistencia
+      // 8. Extraer Novedades Individuales registradas en asistencia de estudiantes
       const novedadesEstudiantesRows: any[][] = [];
       asistencias.forEach(a => {
         if (a.novedad_tipo || a.novedad_descripcion) {
@@ -1418,88 +1497,401 @@ function ReportesContent() {
       });
 
       // Ordenar novedades de grupo cronológicamente y por grupo
-      novedadesGrupoRows.sort((a, b) => a[0].localeCompare(b[0]) || a[3].localeCompare(b[3]));
-      novedadesEstudiantesRows.sort((a, b) => a[0].localeCompare(b[0]) || a[3].localeCompare(b[3]));
+      novedadesGrupoItems.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.grupo.localeCompare(b.grupo));
+      novedadesEstudiantesRows.sort((a, b) => a[0].localeCompare(b[0]) || a[2].localeCompare(b[2]) || a[3].localeCompare(b[3]));
 
-      // 8. Crear Estructura Excel
-      const excelGrupoData: any[][] = [
-        ['REPORTE DE NOVEDADES PAE POR GRUPO Y FECHA'],
-        ['Institución Educativa:', 'IE Barroblanco - Rionegro'],
-        ['Período Analizado:', `${startDate} al ${endDate} (${periodoLabel})`],
-        ['Fecha de Emisión:', new Date().toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' })],
-        ['Total Novedades de Grupo Detectadas:', novedadesGrupoRows.length],
-        [''],
-        [
-          'Fecha',
-          'Día',
-          'Sede',
-          'Grupo',
-          'Tipo de Novedad',
-          'Raciones Esperadas',
-          'Raciones Recibidas',
-          'Detalle de la Novedad'
-        ],
-        ...(novedadesGrupoRows.length > 0 ? novedadesGrupoRows : [
-          ['-', '-', '-', '-', 'Sin novedades registradas', '-', '-', 'No se presentaron inasistencias grupales en el período.']
-        ])
-      ];
+      // Métricas de resumen
+      const countProgramadas = novedadesGrupoItems.filter(n => n.categoria === 'PROGRAMADA').length;
+      const countPendientes = novedadesGrupoItems.filter(n => n.categoria === 'PENDIENTE').length;
+      const countCriticas = novedadesGrupoItems.filter(n => n.categoria === 'CRITICA' || n.categoria === 'ALERTA').length;
+      const countEstudiantes = novedadesEstudiantesRows.length;
 
-      const wsGrupos = XLSX.utils.aoa_to_sheet(excelGrupoData);
-      wsGrupos['!cols'] = [
-        { wch: 14 },
-        { wch: 12 },
-        { wch: 16 },
-        { wch: 10 },
-        { wch: 32 },
-        { wch: 18 },
-        { wch: 18 },
-        { wch: 70 }
-      ];
+      const sedeFilename = sedeFilter === 'todas' ? 'Todas' : sedeFilter;
+      const baseFilename = `Reporte_Novedades_PAE_${sedeFilename}_${startDate}_${endDate}`;
 
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, wsGrupos, 'Novedades de Grupos');
-
-      if (novedadesEstudiantesRows.length > 0) {
-        const excelEstData: any[][] = [
-          ['REPORTE DE NOVEDADES ALIMENTARIAS Y DE ATENCIÓN (ESTUDIANTES)'],
-          ['Período:', `${startDate} al ${endDate}`],
-          ['Total Novedades de Estudiantes:', novedadesEstudiantesRows.length],
+      // 9. Generar según el Formato Solicitado
+      if (format === 'excel') {
+        const XLSX = await import('xlsx');
+        const excelGrupoData: any[][] = [
+          ['REPORTE DE NOVEDADES Y AUDITORÍA PAE'],
+          ['Institución Educativa:', 'IE Barroblanco - Rionegro'],
+          ['Período Analizado:', `${startDate} al ${endDate} (${periodoLabel})`],
+          ['Sede:', sedeFilter === 'todas' ? 'Todas las Sedes' : sedeFilter],
+          ['Fecha de Emisión:', new Date().toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' })],
+          ['Resumen de Novedades:', `Inasistencias Programadas Horario: ${countProgramadas} | Sin Registro Docente: ${countPendientes} | Ausencias Totales / Alertas: ${countCriticas} | Novedades Estudiantes: ${countEstudiantes}`],
           [''],
           [
             'Fecha',
+            'Día',
             'Sede',
             'Grupo',
-            'Estudiante',
             'Tipo de Novedad',
-            'Descripción / Observación',
-            'Estado en Comedor'
+            'Origen / Clasificación',
+            'Raciones Esperadas',
+            'Raciones Recibidas',
+            'Detalle de la Novedad'
           ],
-          ...novedadesEstudiantesRows
+          ...(novedadesGrupoItems.length > 0 ? novedadesGrupoItems.map(n => [
+            n.fecha,
+            n.dia,
+            n.sede,
+            n.grupo,
+            n.tipo,
+            n.origen,
+            n.racionesEsperadas,
+            n.racionesRecibidas,
+            n.detalle
+          ]) : [
+            ['-', '-', '-', '-', 'Sin novedades registradas', '-', '-', '-', 'No se presentaron anomalías en el período.']
+          ])
         ];
-        const wsEst = XLSX.utils.aoa_to_sheet(excelEstData);
-        wsEst['!cols'] = [
-          { wch: 14 },
-          { wch: 16 },
+
+        const wsGrupos = XLSX.utils.aoa_to_sheet(excelGrupoData);
+        wsGrupos['!cols'] = [
+          { wch: 13 },
+          { wch: 12 },
+          { wch: 15 },
           { wch: 10 },
           { wch: 32 },
-          { wch: 22 },
-          { wch: 45 },
-          { wch: 16 }
+          { wch: 26 },
+          { wch: 18 },
+          { wch: 18 },
+          { wch: 75 }
         ];
-        XLSX.utils.book_append_sheet(wb, wsEst, 'Novedades Estudiantes');
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, wsGrupos, 'Novedades de Grupos');
+
+        if (novedadesEstudiantesRows.length > 0) {
+          const excelEstData: any[][] = [
+            ['REPORTE DE NOVEDADES ALIMENTARIAS Y DE ATENCIÓN (ESTUDIANTES)'],
+            ['Período:', `${startDate} al ${endDate}`],
+            ['Total Novedades de Estudiantes:', novedadesEstudiantesRows.length],
+            [''],
+            [
+              'Fecha',
+              'Sede',
+              'Grupo',
+              'Estudiante',
+              'Tipo de Novedad',
+              'Descripción / Observación',
+              'Estado en Comedor'
+            ],
+            ...novedadesEstudiantesRows
+          ];
+          const wsEst = XLSX.utils.aoa_to_sheet(excelEstData);
+          wsEst['!cols'] = [
+            { wch: 14 },
+            { wch: 16 },
+            { wch: 10 },
+            { wch: 32 },
+            { wch: 22 },
+            { wch: 45 },
+            { wch: 16 }
+          ];
+          XLSX.utils.book_append_sheet(wb, wsEst, 'Novedades Estudiantes');
+        }
+
+        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+        setExportBlob(blob);
+        setExportPreviewFilename(`${baseFilename}.xlsx`);
+        setExportPreviewUrl(null);
+        setExportPreviewOpen(true);
+
+      } else if (format === 'pdf') {
+        const jsPDFModule = await import('jspdf');
+        const jsPDF = jsPDFModule.default || jsPDFModule;
+        const autoTableModule = await import('jspdf-autotable');
+        const autoTable = (autoTableModule.default || autoTableModule) as any;
+
+        const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
+
+        // Header Superior Decorativo
+        doc.setFillColor(245, 158, 11); // Amber-500
+        doc.rect(0, 0, 297, 8, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.setTextColor(30, 41, 59); // Slate-800
+        doc.text('INSTITUCIÓN EDUCATIVA BARROBLANCO - RIONEGRO', 148.5, 20, { align: 'center' });
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(217, 119, 6); // Amber-600
+        doc.text('SISTEMA PAE — REPORTE DE NOVEDADES Y AUDITORÍA DE ATENCIÓN', 148.5, 28, { align: 'center' });
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(100, 116, 139); // Slate-500
+        doc.text(`Período: ${startDate} al ${endDate} (${periodoLabel}) | Sede: ${sedeFilter === 'todas' ? 'Todas las Sedes' : sedeFilter} | Emisión: ${new Date().toLocaleDateString('es-CO')}`, 148.5, 35, { align: 'center' });
+
+        // Resumen Métrico en Cajas Superiores
+        const cardY = 40;
+        const cardW = 63;
+        const cardH = 15;
+
+        // Tarjeta 1: Programadas en Horario
+        doc.setFillColor(239, 246, 255); // Blue-50
+        doc.setDrawColor(191, 219, 254);
+        doc.roundedRect(15, cardY, cardW, cardH, 2, 2, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(29, 78, 216);
+        doc.text(countProgramadas.toString(), 20, cardY + 7);
+        doc.setFontSize(7.5);
+        doc.setTextColor(30, 64, 175);
+        doc.text('INASISTENCIAS PROGRAMADAS', 20, cardY + 12);
+
+        // Tarjeta 2: Pendientes Docente
+        doc.setFillColor(254, 252, 232); // Amber-50
+        doc.setDrawColor(254, 240, 138);
+        doc.roundedRect(82, cardY, cardW, cardH, 2, 2, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(180, 83, 9);
+        doc.text(countPendientes.toString(), 87, cardY + 7);
+        doc.setFontSize(7.5);
+        doc.setTextColor(146, 64, 14);
+        doc.text('SIN REGISTRO (DOCENTE)', 87, cardY + 12);
+
+        // Tarjeta 3: Ausencias Totales / Críticas
+        doc.setFillColor(254, 242, 242); // Rose-50
+        doc.setDrawColor(254, 205, 211);
+        doc.roundedRect(149, cardY, cardW, cardH, 2, 2, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(190, 24, 93);
+        doc.text(countCriticas.toString(), 154, cardY + 7);
+        doc.setFontSize(7.5);
+        doc.setTextColor(159, 18, 57);
+        doc.text('AUSENCIAS TOTALES / ALERTA', 154, cardY + 12);
+
+        // Tarjeta 4: Novedades Estudiantes
+        doc.setFillColor(240, 253, 244); // Green-50
+        doc.setDrawColor(187, 247, 208);
+        doc.roundedRect(216, cardY, cardW, cardH, 2, 2, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(21, 128, 61);
+        doc.text(countEstudiantes.toString(), 221, cardY + 7);
+        doc.setFontSize(7.5);
+        doc.setTextColor(22, 101, 52);
+        doc.text('NOVEDADES ESTUDIANTES', 221, cardY + 12);
+
+        // Tabla 1: Novedades de Grupo
+        const tableBody = novedadesGrupoItems.length > 0 ? novedadesGrupoItems.map(n => [
+          n.fecha,
+          n.dia,
+          n.sede,
+          n.grupo,
+          n.tipo,
+          n.origen,
+          n.racionesEsperadas,
+          n.racionesRecibidas,
+          n.detalle
+        ]) : [
+          ['-', '-', '-', '-', 'Sin novedades registradas', '-', '-', '-', 'No se presentaron novedades en el período.']
+        ];
+
+        autoTable(doc, {
+          startY: 60,
+          head: [['Fecha', 'Día', 'Sede', 'Grupo', 'Tipo de Novedad', 'Origen / Clasificación', 'R. Esp.', 'R. Rec.', 'Detalle de la Novedad']],
+          body: tableBody,
+          theme: 'grid',
+          headStyles: {
+            fillColor: [245, 158, 11],
+            textColor: 255,
+            fontSize: 8,
+            fontStyle: 'bold',
+            halign: 'center'
+          },
+          bodyStyles: {
+            fontSize: 7.5,
+            cellPadding: 2.5
+          },
+          columnStyles: {
+            0: { cellWidth: 20, halign: 'center' },
+            1: { cellWidth: 18, halign: 'center' },
+            2: { cellWidth: 24, halign: 'center' },
+            3: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
+            4: { cellWidth: 44 },
+            5: { cellWidth: 36, fontStyle: 'bold' },
+            6: { cellWidth: 14, halign: 'center' },
+            7: { cellWidth: 14, halign: 'center' },
+            8: { cellWidth: 'auto' }
+          },
+          didParseCell: (data: any) => {
+            if (data.section === 'body' && novedadesGrupoItems.length > 0) {
+              const item = novedadesGrupoItems[data.row.index];
+              if (item) {
+                if (item.categoria === 'PROGRAMADA') {
+                  data.cell.styles.fillColor = [240, 249, 255]; // Soft blue
+                } else if (item.categoria === 'PENDIENTE') {
+                  data.cell.styles.fillColor = [254, 252, 232]; // Soft yellow
+                } else if (item.categoria === 'CRITICA') {
+                  data.cell.styles.fillColor = [254, 242, 242]; // Soft red
+                } else if (item.categoria === 'ALERTA') {
+                  data.cell.styles.fillColor = [255, 247, 237]; // Soft orange
+                }
+              }
+            }
+          }
+        });
+
+        // Tabla 2: Novedades Estudiantes (si existen)
+        if (novedadesEstudiantesRows.length > 0) {
+          const finalY = (doc as any).lastAutoTable?.finalY || 160;
+          let nextY = finalY + 12;
+
+          if (nextY > 175) {
+            doc.addPage();
+            nextY = 20;
+          }
+
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.setTextColor(14, 116, 144); // Cyan-700
+          doc.text('NOVEDADES ALIMENTARIAS Y DE ATENCIÓN (ESTUDIANTES)', 15, nextY);
+
+          autoTable(doc, {
+            startY: nextY + 4,
+            head: [['Fecha', 'Sede', 'Grupo', 'Estudiante', 'Tipo de Novedad', 'Descripción / Observación', 'Estado']],
+            body: novedadesEstudiantesRows,
+            theme: 'grid',
+            headStyles: {
+              fillColor: [14, 116, 144],
+              textColor: 255,
+              fontSize: 8,
+              fontStyle: 'bold',
+              halign: 'center'
+            },
+            bodyStyles: {
+              fontSize: 7.5,
+              cellPadding: 2
+            },
+            columnStyles: {
+              0: { cellWidth: 22, halign: 'center' },
+              1: { cellWidth: 26, halign: 'center' },
+              2: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
+              3: { cellWidth: 48 },
+              4: { cellWidth: 32 },
+              5: { cellWidth: 'auto' },
+              6: { cellWidth: 22, halign: 'center' }
+            }
+          });
+        }
+
+        // Número de página en pie
+        const pageCount = doc.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.setTextColor(148, 163, 184);
+          doc.text(`Página ${i} de ${pageCount} — Sistema PAE Barroblanco`, 148.5, 202, { align: 'center' });
+        }
+
+        const pdfBlob = doc.output('blob');
+        const url = URL.createObjectURL(pdfBlob);
+
+        setExportBlob(pdfBlob);
+        setExportPreviewFilename(`${baseFilename}.pdf`);
+        setExportPreviewUrl(url);
+        setExportPreviewOpen(true);
+
+      } else if (format === 'image') {
+        const el = document.createElement('div');
+        el.style.cssText = 'position:absolute;left:-9999px;top:0;width:880px;background:#ffffff;padding:32px;font-family:system-ui, -apple-system, sans-serif;color:#1e293b;border-radius:16px;box-sizing:border-box;';
+
+        const sedeText = sedeFilter === 'todas' ? 'Todas las Sedes' : sedeFilter;
+
+        const groupRowsHTML = novedadesGrupoItems.length > 0 ? novedadesGrupoItems.slice(0, 30).map(n => {
+          const badgeBg = n.categoria === 'PROGRAMADA' ? '#e0f2fe' : n.categoria === 'PENDIENTE' ? '#fef3c7' : n.categoria === 'CRITICA' ? '#fee2e2' : '#ffedd5';
+          const badgeText = n.categoria === 'PROGRAMADA' ? '#0369a1' : n.categoria === 'PENDIENTE' ? '#92400e' : n.categoria === 'CRITICA' ? '#991b1b' : '#9a3412';
+          return `
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 7px 10px; font-size: 11px; white-space: nowrap;">${n.fecha}</td>
+              <td style="padding: 7px 10px; font-size: 11px; font-weight: 700;">${n.grupo}</td>
+              <td style="padding: 7px 10px; font-size: 11px;">${n.sede}</td>
+              <td style="padding: 7px 10px;">
+                <span style="background: ${badgeBg}; color: ${badgeText}; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700;">
+                  ${n.origen}
+                </span>
+              </td>
+              <td style="padding: 7px 10px; font-size: 11px; color: #475569;">${n.detalle}</td>
+            </tr>
+          `;
+        }).join('') : `
+          <tr>
+            <td colspan="5" style="padding: 24px; text-align: center; color: #64748b; font-size: 12px;">No se presentaron novedades registradas en el período.</td>
+          </tr>
+        `;
+
+        el.innerHTML = `
+          <div style="border-bottom: 2px solid #f59e0b; padding-bottom: 16px; margin-bottom: 20px; text-align: center;">
+            <p style="font-size: 10px; font-weight: 800; color: #d97706; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 4px;">Sistema PAE — IE Barroblanco</p>
+            <h1 style="font-size: 20px; font-weight: 900; color: #0f172a; margin: 0 0 6px;">REPORTE DE NOVEDADES Y AUDITORÍA PAE</h1>
+            <p style="font-size: 12px; color: #64748b; margin: 0;">Período: <strong>${startDate}</strong> al <strong>${endDate}</strong> (${periodoLabel}) | Sede: <strong>${sedeText}</strong></p>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 12px; text-align: center;">
+              <div style="font-size: 22px; font-weight: 900; color: #1d4ed8;">${countProgramadas}</div>
+              <div style="font-size: 9px; font-weight: 700; color: #1e40af; text-transform: uppercase; margin-top: 2px;">Inasistencias Horario</div>
+            </div>
+            <div style="background: #fefce8; border: 1px solid #fef08a; border-radius: 12px; padding: 12px; text-align: center;">
+              <div style="font-size: 22px; font-weight: 900; color: #b45309;">${countPendientes}</div>
+              <div style="font-size: 9px; font-weight: 700; color: #92400e; text-transform: uppercase; margin-top: 2px;">Sin Registro Docente</div>
+            </div>
+            <div style="background: #fef2f2; border: 1px solid #fecdd3; border-radius: 12px; padding: 12px; text-align: center;">
+              <div style="font-size: 22px; font-weight: 900; color: #be123c;">${countCriticas}</div>
+              <div style="font-size: 9px; font-weight: 700; color: #9f1239; text-transform: uppercase; margin-top: 2px;">Ausencias Totales / Alertas</div>
+            </div>
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px; text-align: center;">
+              <div style="font-size: 22px; font-weight: 900; color: #15803d;">${countEstudiantes}</div>
+              <div style="font-size: 9px; font-weight: 700; color: #166534; text-transform: uppercase; margin-top: 2px;">Novedades Estudiantes</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <h3 style="font-size: 13px; font-weight: 800; color: #334155; text-transform: uppercase; margin: 0 0 10px; letter-spacing: 0.5px;">Detalle de Novedades Grupales y de Horario</h3>
+            <table style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+              <thead>
+                <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                  <th style="padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase;">Fecha</th>
+                  <th style="padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase;">Grupo</th>
+                  <th style="padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase;">Sede</th>
+                  <th style="padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase;">Clasificación</th>
+                  <th style="padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase;">Detalle Observado</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${groupRowsHTML}
+              </tbody>
+            </table>
+          </div>
+
+          <div style="text-align: center; margin-top: 20px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+            <p style="font-size: 10px; color: #94a3b8; margin: 0;">Generado por Sistema PAE IE Barroblanco • ${new Date().toLocaleString()}</p>
+          </div>
+        `;
+
+        document.body.appendChild(el);
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 880 });
+        document.body.removeChild(el);
+
+        canvas.toBlob(blob => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          setExportBlob(blob);
+          setExportPreviewFilename(`${baseFilename}.png`);
+          setExportPreviewUrl(url);
+          setExportPreviewOpen(true);
+        }, 'image/png');
       }
-
-      const sedeFilename = sedeFilter === 'todas' ? 'Todas' : sedeFilter;
-      const filename = `Reporte_Novedades_PAE_${sedeFilename}_${startDate}_${endDate}.xlsx`;
-
-      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
-      setSelectedExportFormat('excel');
-      setExportBlob(blob);
-      setExportPreviewFilename(filename);
-      setExportPreviewUrl(null);
-      setExportPreviewOpen(true);
 
     } catch (error: any) {
       console.error('Error generating novedades report:', error);
@@ -2241,16 +2633,55 @@ function ReportesContent() {
           )}
 
           {['admin', 'coordinador', 'coordinador_pae', 'secretaria', 'operador'].includes(usuario?.rol) && (
-            <button
-              id="reporte-novedades-btn"
-              onClick={handlePrepareReporteNovedades}
-              disabled={isGeneratingExport}
-              className="flex items-center gap-2 px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-amber-200 dark:shadow-none active:scale-95 text-[10px] md:text-xs uppercase tracking-wide disabled:opacity-50"
-              title="Generar reporte detallado de novedades por grupo y fecha"
-            >
-              <FileText className="w-4 h-4" />
-              <span>Reporte <span className="hidden md:inline">Novedades</span></span>
-            </button>
+            <div className="relative">
+              <button
+                id="reporte-novedades-btn"
+                onClick={() => setShowNovedadesMenu(!showNovedadesMenu)}
+                disabled={isGeneratingExport}
+                className="flex items-center gap-2 px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-amber-200 dark:shadow-none active:scale-95 text-[10px] md:text-xs uppercase tracking-wide disabled:opacity-50"
+                title="Generar reporte detallado de novedades (Excel, PDF, Imagen)"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Reporte <span className="hidden md:inline">Novedades</span></span>
+                <ChevronDown className="w-3.5 h-3.5 ml-0.5" />
+              </button>
+
+              {showNovedadesMenu && (
+                <>
+                  <div className="fixed inset-0 z-[60]" onClick={() => setShowNovedadesMenu(false)} />
+                  <div className="absolute right-0 mt-2 w-56 bg-white/95 dark:bg-gray-800 backdrop-blur-md rounded-3xl shadow-2xl border border-amber-100 dark:border-gray-700 z-[70] py-3 p-2 animate-in fade-in zoom-in-95 duration-200">
+                    <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest px-4 mb-2">Formato Novedades</p>
+                    <button
+                      onClick={() => { setShowNovedadesMenu(false); handlePrepareReporteNovedades('excel'); }}
+                      className="w-full text-left px-4 py-3 hover:bg-amber-50 dark:hover:bg-gray-700/50 rounded-2xl flex items-center gap-3 transition-colors group/item"
+                    >
+                      <div className="bg-emerald-100 p-2 rounded-xl group-hover/item:bg-emerald-500 group-hover/item:text-white transition-colors">
+                        <span className="font-black text-[10px]">XLS</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Reporte en Excel</span>
+                    </button>
+                    <button
+                      onClick={() => { setShowNovedadesMenu(false); handlePrepareReporteNovedades('pdf'); }}
+                      className="w-full text-left px-4 py-3 hover:bg-amber-50 dark:hover:bg-gray-700/50 rounded-2xl flex items-center gap-3 transition-colors border-t border-gray-50 dark:border-gray-700/50 mt-1 group/item"
+                    >
+                      <div className="bg-rose-100 p-2 rounded-xl group-hover/item:bg-rose-500 group-hover/item:text-white transition-colors">
+                        <span className="font-black text-[10px]">PDF</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Reporte en PDF</span>
+                    </button>
+                    <button
+                      onClick={() => { setShowNovedadesMenu(false); handlePrepareReporteNovedades('image'); }}
+                      className="w-full text-left px-4 py-3 hover:bg-amber-50 dark:hover:bg-gray-700/50 rounded-2xl flex items-center gap-3 transition-colors border-t border-gray-50 dark:border-gray-700/50 mt-1 group/item"
+                    >
+                      <div className="bg-purple-100 p-2 rounded-xl group-hover/item:bg-purple-500 group-hover/item:text-white transition-colors">
+                        <span className="font-black text-[10px]">PNG</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Reporte en Imagen</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
 
