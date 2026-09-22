@@ -1260,30 +1260,39 @@ function ReportesContent() {
         curDate.setDate(curDate.getDate() + 1);
       }
 
-      // 3. Consultar Estudiantes Activos por Sede y Grupo
+      // 3. Consultar Estudiantes Activos por Sede y Grupo (con paginación para asegurar el 100% de estudiantes)
       const sedeMap: Record<string, string> = {
         'principal': 'Principal',
         'primaria': 'Primaria',
         'maria-inmaculada': 'Maria Inmaculada'
       };
 
-      let queryStudents = supabase
-        .from('estudiantes')
-        .select('id, nombre, grupo, sede, estado')
-        .not('grupo', 'ilike', '%2025%')
-        .in('estado', ['activo', 'active']);
+      let activeStudents: any[] = [];
+      let estPage = 0;
+      const pageSize = 1000;
+      while (true) {
+        let queryStudents = supabase
+          .from('estudiantes')
+          .select('id, nombre, grupo, sede, estado')
+          .not('grupo', 'ilike', '%2025%')
+          .in('estado', ['activo', 'active'])
+          .range(estPage * pageSize, (estPage + 1) * pageSize - 1);
 
-      if (sedeFilter === 'primaria-principal') {
-        queryStudents = queryStudents.in('sede', ['Principal', 'Primaria', 'Sede Primaria']);
-      } else if (sedeFilter !== 'todas') {
-        queryStudents = queryStudents.eq('sede', sedeMap[sedeFilter] || 'Principal');
-      }
-      if (grupoFilter !== 'todos') {
-        queryStudents = queryStudents.eq('grupo', grupoFilter);
-      }
+        if (sedeFilter === 'primaria-principal') {
+          queryStudents = queryStudents.in('sede', ['Principal', 'Primaria', 'Sede Primaria']);
+        } else if (sedeFilter !== 'todas') {
+          queryStudents = queryStudents.eq('sede', sedeMap[sedeFilter] || 'Principal');
+        }
+        if (grupoFilter !== 'todos') {
+          queryStudents = queryStudents.eq('grupo', grupoFilter);
+        }
 
-      const { data: studentsData } = await queryStudents;
-      const activeStudents = studentsData || [];
+        const { data: pageData, error: pageErr } = await queryStudents;
+        if (pageErr || !pageData || pageData.length === 0) break;
+        activeStudents = activeStudents.concat(pageData);
+        if (pageData.length < pageSize) break;
+        estPage++;
+      }
 
       // Mapear grupos activos con sus totales
       const groupsMap: Record<string, { grupo: string; sede: string; totalActivos: number }> = {};
@@ -1295,27 +1304,35 @@ function ReportesContent() {
         groupsMap[key].totalActivos++;
       });
 
-      // 4. Consultar Asistencias del rango
-      let queryAsistencia = supabase
-        .from('asistencia_pae')
-        .select(`
-          id, estado, fecha, novedad_tipo, novedad_descripcion,
-          estudiantes!inner (id, nombre, grupo, sede)
-        `)
-        .gte('fecha', startDate)
-        .lte('fecha', endDate);
+      // 4. Consultar Asistencias del rango (con paginación para evitar cortes de 1000 filas)
+      let asistencias: any[] = [];
+      let asistPage = 0;
+      while (true) {
+        let queryAsistencia = supabase
+          .from('asistencia_pae')
+          .select(`
+            id, estado, fecha, novedad_tipo, novedad_descripcion,
+            estudiantes!inner (id, nombre, grupo, sede)
+          `)
+          .gte('fecha', startDate)
+          .lte('fecha', endDate)
+          .range(asistPage * pageSize, (asistPage + 1) * pageSize - 1);
 
-      if (sedeFilter === 'primaria-principal') {
-        queryAsistencia = queryAsistencia.in('estudiantes.sede', ['Principal', 'Primaria', 'Sede Primaria']);
-      } else if (sedeFilter !== 'todas') {
-        queryAsistencia = queryAsistencia.eq('estudiantes.sede', sedeMap[sedeFilter] || 'Principal');
-      }
-      if (grupoFilter !== 'todos') {
-        queryAsistencia = queryAsistencia.eq('estudiantes.grupo', grupoFilter);
-      }
+        if (sedeFilter === 'primaria-principal') {
+          queryAsistencia = queryAsistencia.in('estudiantes.sede', ['Principal', 'Primaria', 'Sede Primaria']);
+        } else if (sedeFilter !== 'todas') {
+          queryAsistencia = queryAsistencia.eq('estudiantes.sede', sedeMap[sedeFilter] || 'Principal');
+        }
+        if (grupoFilter !== 'todos') {
+          queryAsistencia = queryAsistencia.eq('estudiantes.grupo', grupoFilter);
+        }
 
-      const { data: asistData } = await queryAsistencia;
-      const asistencias = asistData || [];
+        const { data: pageAsist, error: errAsist } = await queryAsistencia;
+        if (errAsist || !pageAsist || pageAsist.length === 0) break;
+        asistencias = asistencias.concat(pageAsist);
+        if (pageAsist.length < pageSize) break;
+        asistPage++;
+      }
 
       // 5. Consultar Programación Oficial de Horarios (schedules) para detectar grupos que realmente NO asisten
       const { data: schedulesData } = await supabase
@@ -1340,7 +1357,7 @@ function ReportesContent() {
         .gte('fecha', startDate)
         .lte('fecha', endDate);
 
-      // 7. Estructurar Novedades Grupales y de Operación con estricta distinción
+      // 7. Estructurar Estado de TODOS los Grupos con estricta distinción técnica
       interface NovedadGrupoItem {
         fecha: string;
         dia: string;
@@ -1350,7 +1367,7 @@ function ReportesContent() {
         origen: string;
         racionesEsperadas: number | string;
         racionesRecibidas: number | string;
-        categoria: 'PROGRAMADA' | 'PENDIENTE' | 'CRITICA' | 'ALERTA' | 'INSTITUCIONAL';
+        categoria: 'PROGRAMADA' | 'PENDIENTE' | 'CRITICA' | 'ALERTA' | 'NORMAL' | 'INSTITUCIONAL';
         detalle: string;
       }
 
@@ -1443,6 +1460,21 @@ function ReportesContent() {
               categoria: 'ALERTA',
               detalle: `Asistencia atípicamente baja: solo ${totalRecibieron} de ${g.totalActivos} estudiantes recibieron ración (${pct}% de cobertura efectiva en este grupo).`
             });
+          } else {
+            // CASO 5: Atención Normal / Asistencia Regular (El grupo asistió y consumió con normalidad)
+            const pct = Math.round((totalRecibieron / g.totalActivos) * 100);
+            novedadesGrupoItems.push({
+              fecha: dateStr,
+              dia: dayCapitalized,
+              sede: g.sede,
+              grupo: g.grupo,
+              tipo: `Atención Normal (${pct}%)`,
+              origen: 'Atención Regular',
+              racionesEsperadas: g.totalActivos,
+              racionesRecibidas: totalRecibieron,
+              categoria: 'NORMAL',
+              detalle: `Servicio prestado con normalidad: ${totalRecibieron} de ${g.totalActivos} estudiantes recibieron ración (${pct}% de asistencia registrada).`
+            });
           }
         });
 
@@ -1496,14 +1528,15 @@ function ReportesContent() {
         }
       });
 
-      // Ordenar novedades de grupo cronológicamente y por grupo
-      novedadesGrupoItems.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.grupo.localeCompare(b.grupo));
-      novedadesEstudiantesRows.sort((a, b) => a[0].localeCompare(b[0]) || a[2].localeCompare(b[2]) || a[3].localeCompare(b[3]));
+      // Ordenar novedades cronológicamente, por sede y luego por grupo
+      novedadesGrupoItems.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.sede.localeCompare(b.sede) || a.grupo.localeCompare(b.grupo));
+      novedadesEstudiantesRows.sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]) || a[2].localeCompare(b[2]) || a[3].localeCompare(b[3]));
 
       // Métricas de resumen
       const countProgramadas = novedadesGrupoItems.filter(n => n.categoria === 'PROGRAMADA').length;
       const countPendientes = novedadesGrupoItems.filter(n => n.categoria === 'PENDIENTE').length;
       const countCriticas = novedadesGrupoItems.filter(n => n.categoria === 'CRITICA' || n.categoria === 'ALERTA').length;
+      const countNormales = novedadesGrupoItems.filter(n => n.categoria === 'NORMAL').length;
       const countEstudiantes = novedadesEstudiantesRows.length;
 
       const sedeFilename = sedeFilter === 'todas' ? 'Todas' : sedeFilter;
@@ -1513,19 +1546,19 @@ function ReportesContent() {
       if (format === 'excel') {
         const XLSX = await import('xlsx');
         const excelGrupoData: any[][] = [
-          ['REPORTE DE NOVEDADES Y AUDITORÍA PAE'],
+          ['REPORTE DE ESTADO, NOVEDADES Y AUDITORÍA PAE'],
           ['Institución Educativa:', 'IE Barroblanco - Rionegro'],
           ['Período Analizado:', `${startDate} al ${endDate} (${periodoLabel})`],
           ['Sede:', sedeFilter === 'todas' ? 'Todas las Sedes' : sedeFilter],
           ['Fecha de Emisión:', new Date().toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' })],
-          ['Resumen de Novedades:', `Inasistencias Programadas Horario: ${countProgramadas} | Sin Registro Docente: ${countPendientes} | Ausencias Totales / Alertas: ${countCriticas} | Novedades Estudiantes: ${countEstudiantes}`],
+          ['Resumen Consolidado:', `Inasistencias Horario: ${countProgramadas} | Sin Registro Docente: ${countPendientes} | Atención Normal: ${countNormales} | Ausencias / Alertas: ${countCriticas} | Novedades Estudiantes: ${countEstudiantes}`],
           [''],
           [
             'Fecha',
             'Día',
             'Sede',
             'Grupo',
-            'Tipo de Novedad',
+            'Tipo de Novedad / Estado',
             'Origen / Clasificación',
             'Raciones Esperadas',
             'Raciones Recibidas',
@@ -1542,7 +1575,7 @@ function ReportesContent() {
             n.racionesRecibidas,
             n.detalle
           ]) : [
-            ['-', '-', '-', '-', 'Sin novedades registradas', '-', '-', '-', 'No se presentaron anomalías en el período.']
+            ['-', '-', '-', '-', 'Sin registros en el período', '-', '-', '-', 'No se encontraron registros.']
           ])
         ];
 
@@ -1550,17 +1583,17 @@ function ReportesContent() {
         wsGrupos['!cols'] = [
           { wch: 13 },
           { wch: 12 },
-          { wch: 15 },
+          { wch: 18 },
           { wch: 10 },
           { wch: 32 },
           { wch: 26 },
           { wch: 18 },
           { wch: 18 },
-          { wch: 75 }
+          { wch: 80 }
         ];
 
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, wsGrupos, 'Novedades de Grupos');
+        XLSX.utils.book_append_sheet(wb, wsGrupos, 'Estado y Novedades Grupos');
 
         if (novedadesEstudiantesRows.length > 0) {
           const excelEstData: any[][] = [
@@ -1613,24 +1646,24 @@ function ReportesContent() {
         doc.rect(0, 0, 297, 8, 'F');
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(16);
+        doc.setFontSize(15);
         doc.setTextColor(30, 41, 59); // Slate-800
-        doc.text('INSTITUCIÓN EDUCATIVA BARROBLANCO - RIONEGRO', 148.5, 20, { align: 'center' });
+        doc.text('INSTITUCIÓN EDUCATIVA BARROBLANCO - RIONEGRO', 148.5, 18, { align: 'center' });
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
+        doc.setFontSize(11);
         doc.setTextColor(217, 119, 6); // Amber-600
-        doc.text('SISTEMA PAE — REPORTE DE NOVEDADES Y AUDITORÍA DE ATENCIÓN', 148.5, 28, { align: 'center' });
+        doc.text('SISTEMA PAE — REPORTE DE ESTADO, NOVEDADES Y AUDITORÍA DE ATENCIÓN', 148.5, 25, { align: 'center' });
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
+        doc.setFontSize(8.5);
         doc.setTextColor(100, 116, 139); // Slate-500
-        doc.text(`Período: ${startDate} al ${endDate} (${periodoLabel}) | Sede: ${sedeFilter === 'todas' ? 'Todas las Sedes' : sedeFilter} | Emisión: ${new Date().toLocaleDateString('es-CO')}`, 148.5, 35, { align: 'center' });
+        doc.text(`Período: ${startDate} al ${endDate} (${periodoLabel}) | Sede: ${sedeFilter === 'todas' ? 'Todas las Sedes' : sedeFilter} | Total Grupos: ${novedadesGrupoItems.length} | Emisión: ${new Date().toLocaleDateString('es-CO')}`, 148.5, 32, { align: 'center' });
 
-        // Resumen Métrico en Cajas Superiores
-        const cardY = 40;
-        const cardW = 63;
-        const cardH = 15;
+        // Resumen Métrico en 5 Cajas Superiores
+        const cardY = 37;
+        const cardW = 49;
+        const cardH = 14;
 
         // Tarjeta 1: Programadas en Horario
         doc.setFillColor(239, 246, 255); // Blue-50
@@ -1639,48 +1672,60 @@ function ReportesContent() {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         doc.setTextColor(29, 78, 216);
-        doc.text(countProgramadas.toString(), 20, cardY + 7);
-        doc.setFontSize(7.5);
+        doc.text(countProgramadas.toString(), 19, cardY + 6.5);
+        doc.setFontSize(6.8);
         doc.setTextColor(30, 64, 175);
-        doc.text('INASISTENCIAS PROGRAMADAS', 20, cardY + 12);
+        doc.text('INASISTENCIAS HORARIO', 19, cardY + 11);
 
         // Tarjeta 2: Pendientes Docente
         doc.setFillColor(254, 252, 232); // Amber-50
         doc.setDrawColor(254, 240, 138);
-        doc.roundedRect(82, cardY, cardW, cardH, 2, 2, 'FD');
+        doc.roundedRect(69.5, cardY, cardW, cardH, 2, 2, 'FD');
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         doc.setTextColor(180, 83, 9);
-        doc.text(countPendientes.toString(), 87, cardY + 7);
-        doc.setFontSize(7.5);
+        doc.text(countPendientes.toString(), 73.5, cardY + 6.5);
+        doc.setFontSize(6.8);
         doc.setTextColor(146, 64, 14);
-        doc.text('SIN REGISTRO (DOCENTE)', 87, cardY + 12);
+        doc.text('SIN REGISTRO (DOCENTE)', 73.5, cardY + 11);
 
-        // Tarjeta 3: Ausencias Totales / Críticas
-        doc.setFillColor(254, 242, 242); // Rose-50
-        doc.setDrawColor(254, 205, 211);
-        doc.roundedRect(149, cardY, cardW, cardH, 2, 2, 'FD');
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
-        doc.setTextColor(190, 24, 93);
-        doc.text(countCriticas.toString(), 154, cardY + 7);
-        doc.setFontSize(7.5);
-        doc.setTextColor(159, 18, 57);
-        doc.text('AUSENCIAS TOTALES / ALERTA', 154, cardY + 12);
-
-        // Tarjeta 4: Novedades Estudiantes
+        // Tarjeta 3: Atención Normal
         doc.setFillColor(240, 253, 244); // Green-50
         doc.setDrawColor(187, 247, 208);
-        doc.roundedRect(216, cardY, cardW, cardH, 2, 2, 'FD');
+        doc.roundedRect(124, cardY, cardW, cardH, 2, 2, 'FD');
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         doc.setTextColor(21, 128, 61);
-        doc.text(countEstudiantes.toString(), 221, cardY + 7);
-        doc.setFontSize(7.5);
+        doc.text(countNormales.toString(), 128, cardY + 6.5);
+        doc.setFontSize(6.8);
         doc.setTextColor(22, 101, 52);
-        doc.text('NOVEDADES ESTUDIANTES', 221, cardY + 12);
+        doc.text('ATENCIÓN NORMAL', 128, cardY + 11);
 
-        // Tabla 1: Novedades de Grupo
+        // Tarjeta 4: Ausencias Totales / Críticas
+        doc.setFillColor(254, 242, 242); // Rose-50
+        doc.setDrawColor(254, 205, 211);
+        doc.roundedRect(178.5, cardY, cardW, cardH, 2, 2, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(190, 24, 93);
+        doc.text(countCriticas.toString(), 182.5, cardY + 6.5);
+        doc.setFontSize(6.8);
+        doc.setTextColor(159, 18, 57);
+        doc.text('AUSENCIAS / ALERTA', 182.5, cardY + 11);
+
+        // Tarjeta 5: Novedades Estudiantes
+        doc.setFillColor(236, 254, 255); // Cyan-50
+        doc.setDrawColor(165, 243, 252);
+        doc.roundedRect(233, cardY, cardW, cardH, 2, 2, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(14, 116, 144);
+        doc.text(countEstudiantes.toString(), 237, cardY + 6.5);
+        doc.setFontSize(6.8);
+        doc.setTextColor(21, 94, 117);
+        doc.text('NOVEDADES ESTUDIANTES', 237, cardY + 11);
+
+        // Tabla 1: Estado y Novedades de Grupo
         const tableBody = novedadesGrupoItems.length > 0 ? novedadesGrupoItems.map(n => [
           n.fecha,
           n.dia,
@@ -1692,32 +1737,32 @@ function ReportesContent() {
           n.racionesRecibidas,
           n.detalle
         ]) : [
-          ['-', '-', '-', '-', 'Sin novedades registradas', '-', '-', '-', 'No se presentaron novedades en el período.']
+          ['-', '-', '-', '-', 'Sin registros en el período', '-', '-', '-', 'No se presentaron registros.']
         ];
 
         autoTable(doc, {
-          startY: 60,
-          head: [['Fecha', 'Día', 'Sede', 'Grupo', 'Tipo de Novedad', 'Origen / Clasificación', 'R. Esp.', 'R. Rec.', 'Detalle de la Novedad']],
+          startY: 56,
+          head: [['Fecha', 'Día', 'Sede', 'Grupo', 'Tipo / Estado', 'Origen / Clasificación', 'R. Esp.', 'R. Rec.', 'Detalle de la Novedad']],
           body: tableBody,
           theme: 'grid',
           headStyles: {
             fillColor: [245, 158, 11],
             textColor: 255,
-            fontSize: 8,
+            fontSize: 7.5,
             fontStyle: 'bold',
             halign: 'center'
           },
           bodyStyles: {
-            fontSize: 7.5,
-            cellPadding: 2.5
+            fontSize: 7,
+            cellPadding: 2
           },
           columnStyles: {
-            0: { cellWidth: 20, halign: 'center' },
-            1: { cellWidth: 18, halign: 'center' },
-            2: { cellWidth: 24, halign: 'center' },
+            0: { cellWidth: 19, halign: 'center' },
+            1: { cellWidth: 17, halign: 'center' },
+            2: { cellWidth: 25, halign: 'center' },
             3: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
-            4: { cellWidth: 44 },
-            5: { cellWidth: 36, fontStyle: 'bold' },
+            4: { cellWidth: 42 },
+            5: { cellWidth: 35, fontStyle: 'bold' },
             6: { cellWidth: 14, halign: 'center' },
             7: { cellWidth: 14, halign: 'center' },
             8: { cellWidth: 'auto' }
@@ -1727,9 +1772,11 @@ function ReportesContent() {
               const item = novedadesGrupoItems[data.row.index];
               if (item) {
                 if (item.categoria === 'PROGRAMADA') {
-                  data.cell.styles.fillColor = [240, 249, 255]; // Soft blue
+                  data.cell.styles.fillColor = [239, 246, 255]; // Soft blue
                 } else if (item.categoria === 'PENDIENTE') {
                   data.cell.styles.fillColor = [254, 252, 232]; // Soft yellow
+                } else if (item.categoria === 'NORMAL') {
+                  data.cell.styles.fillColor = [240, 253, 244]; // Soft green
                 } else if (item.categoria === 'CRITICA') {
                   data.cell.styles.fillColor = [254, 242, 242]; // Soft red
                 } else if (item.categoria === 'ALERTA') {
@@ -1743,7 +1790,7 @@ function ReportesContent() {
         // Tabla 2: Novedades Estudiantes (si existen)
         if (novedadesEstudiantesRows.length > 0) {
           const finalY = (doc as any).lastAutoTable?.finalY || 160;
-          let nextY = finalY + 12;
+          let nextY = finalY + 10;
 
           if (nextY > 175) {
             doc.addPage();
@@ -1751,34 +1798,34 @@ function ReportesContent() {
           }
 
           doc.setFont('helvetica', 'bold');
-          doc.setFontSize(11);
+          doc.setFontSize(10.5);
           doc.setTextColor(14, 116, 144); // Cyan-700
           doc.text('NOVEDADES ALIMENTARIAS Y DE ATENCIÓN (ESTUDIANTES)', 15, nextY);
 
           autoTable(doc, {
-            startY: nextY + 4,
+            startY: nextY + 3,
             head: [['Fecha', 'Sede', 'Grupo', 'Estudiante', 'Tipo de Novedad', 'Descripción / Observación', 'Estado']],
             body: novedadesEstudiantesRows,
             theme: 'grid',
             headStyles: {
               fillColor: [14, 116, 144],
               textColor: 255,
-              fontSize: 8,
+              fontSize: 7.5,
               fontStyle: 'bold',
               halign: 'center'
             },
             bodyStyles: {
-              fontSize: 7.5,
+              fontSize: 7,
               cellPadding: 2
             },
             columnStyles: {
-              0: { cellWidth: 22, halign: 'center' },
-              1: { cellWidth: 26, halign: 'center' },
+              0: { cellWidth: 20, halign: 'center' },
+              1: { cellWidth: 25, halign: 'center' },
               2: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
               3: { cellWidth: 48 },
               4: { cellWidth: 32 },
               5: { cellWidth: 'auto' },
-              6: { cellWidth: 22, halign: 'center' }
+              6: { cellWidth: 20, halign: 'center' }
             }
           });
         }
@@ -1787,7 +1834,7 @@ function ReportesContent() {
         const pageCount = doc.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
           doc.setPage(i);
-          doc.setFontSize(8);
+          doc.setFontSize(7.5);
           doc.setTextColor(148, 163, 184);
           doc.text(`Página ${i} de ${pageCount} — Sistema PAE Barroblanco`, 148.5, 202, { align: 'center' });
         }
@@ -1802,68 +1849,72 @@ function ReportesContent() {
 
       } else if (format === 'image') {
         const el = document.createElement('div');
-        el.style.cssText = 'position:absolute;left:-9999px;top:0;width:880px;background:#ffffff;padding:32px;font-family:system-ui, -apple-system, sans-serif;color:#1e293b;border-radius:16px;box-sizing:border-box;';
+        el.style.cssText = 'position:absolute;left:-9999px;top:0;width:900px;background:#ffffff;padding:32px;font-family:system-ui, -apple-system, sans-serif;color:#1e293b;border-radius:16px;box-sizing:border-box;';
 
         const sedeText = sedeFilter === 'todas' ? 'Todas las Sedes' : sedeFilter;
 
-        const groupRowsHTML = novedadesGrupoItems.length > 0 ? novedadesGrupoItems.slice(0, 30).map(n => {
-          const badgeBg = n.categoria === 'PROGRAMADA' ? '#e0f2fe' : n.categoria === 'PENDIENTE' ? '#fef3c7' : n.categoria === 'CRITICA' ? '#fee2e2' : '#ffedd5';
-          const badgeText = n.categoria === 'PROGRAMADA' ? '#0369a1' : n.categoria === 'PENDIENTE' ? '#92400e' : n.categoria === 'CRITICA' ? '#991b1b' : '#9a3412';
+        const groupRowsHTML = novedadesGrupoItems.length > 0 ? novedadesGrupoItems.slice(0, 45).map(n => {
+          const badgeBg = n.categoria === 'PROGRAMADA' ? '#e0f2fe' : n.categoria === 'PENDIENTE' ? '#fef3c7' : n.categoria === 'NORMAL' ? '#dcfce7' : n.categoria === 'CRITICA' ? '#fee2e2' : '#ffedd5';
+          const badgeText = n.categoria === 'PROGRAMADA' ? '#0369a1' : n.categoria === 'PENDIENTE' ? '#92400e' : n.categoria === 'NORMAL' ? '#15803d' : n.categoria === 'CRITICA' ? '#991b1b' : '#9a3412';
           return `
             <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 7px 10px; font-size: 11px; white-space: nowrap;">${n.fecha}</td>
-              <td style="padding: 7px 10px; font-size: 11px; font-weight: 700;">${n.grupo}</td>
-              <td style="padding: 7px 10px; font-size: 11px;">${n.sede}</td>
-              <td style="padding: 7px 10px;">
-                <span style="background: ${badgeBg}; color: ${badgeText}; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700;">
+              <td style="padding: 6px 8px; font-size: 10.5px; white-space: nowrap;">${n.fecha}</td>
+              <td style="padding: 6px 8px; font-size: 10.5px; font-weight: 700;">${n.grupo}</td>
+              <td style="padding: 6px 8px; font-size: 10.5px;">${n.sede}</td>
+              <td style="padding: 6px 8px;">
+                <span style="background: ${badgeBg}; color: ${badgeText}; padding: 2px 7px; border-radius: 6px; font-size: 9.5px; font-weight: 700;">
                   ${n.origen}
                 </span>
               </td>
-              <td style="padding: 7px 10px; font-size: 11px; color: #475569;">${n.detalle}</td>
+              <td style="padding: 6px 8px; font-size: 10.5px; color: #475569;">${n.detalle}</td>
             </tr>
           `;
         }).join('') : `
           <tr>
-            <td colspan="5" style="padding: 24px; text-align: center; color: #64748b; font-size: 12px;">No se presentaron novedades registradas en el período.</td>
+            <td colspan="5" style="padding: 24px; text-align: center; color: #64748b; font-size: 12px;">No se presentaron registros en el período.</td>
           </tr>
         `;
 
         el.innerHTML = `
-          <div style="border-bottom: 2px solid #f59e0b; padding-bottom: 16px; margin-bottom: 20px; text-align: center;">
+          <div style="border-bottom: 2px solid #f59e0b; padding-bottom: 14px; margin-bottom: 18px; text-align: center;">
             <p style="font-size: 10px; font-weight: 800; color: #d97706; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 4px;">Sistema PAE — IE Barroblanco</p>
-            <h1 style="font-size: 20px; font-weight: 900; color: #0f172a; margin: 0 0 6px;">REPORTE DE NOVEDADES Y AUDITORÍA PAE</h1>
-            <p style="font-size: 12px; color: #64748b; margin: 0;">Período: <strong>${startDate}</strong> al <strong>${endDate}</strong> (${periodoLabel}) | Sede: <strong>${sedeText}</strong></p>
+            <h1 style="font-size: 19px; font-weight: 900; color: #0f172a; margin: 0 0 4px;">REPORTE DE ESTADO, NOVEDADES Y AUDITORÍA PAE</h1>
+            <p style="font-size: 11.5px; color: #64748b; margin: 0;">Período: <strong>${startDate}</strong> al <strong>${endDate}</strong> (${periodoLabel}) | Sede: <strong>${sedeText}</strong> | Total Grupos: <strong>${novedadesGrupoItems.length}</strong></p>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
-            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 12px; text-align: center;">
-              <div style="font-size: 22px; font-weight: 900; color: #1d4ed8;">${countProgramadas}</div>
-              <div style="font-size: 9px; font-weight: 700; color: #1e40af; text-transform: uppercase; margin-top: 2px;">Inasistencias Horario</div>
+          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px;">
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 10px; text-align: center;">
+              <div style="font-size: 20px; font-weight: 900; color: #1d4ed8;">${countProgramadas}</div>
+              <div style="font-size: 8.5px; font-weight: 700; color: #1e40af; text-transform: uppercase; margin-top: 2px;">Inasistencias Horario</div>
             </div>
-            <div style="background: #fefce8; border: 1px solid #fef08a; border-radius: 12px; padding: 12px; text-align: center;">
-              <div style="font-size: 22px; font-weight: 900; color: #b45309;">${countPendientes}</div>
-              <div style="font-size: 9px; font-weight: 700; color: #92400e; text-transform: uppercase; margin-top: 2px;">Sin Registro Docente</div>
+            <div style="background: #fefce8; border: 1px solid #fef08a; border-radius: 12px; padding: 10px; text-align: center;">
+              <div style="font-size: 20px; font-weight: 900; color: #b45309;">${countPendientes}</div>
+              <div style="font-size: 8.5px; font-weight: 700; color: #92400e; text-transform: uppercase; margin-top: 2px;">Sin Registro Docente</div>
             </div>
-            <div style="background: #fef2f2; border: 1px solid #fecdd3; border-radius: 12px; padding: 12px; text-align: center;">
-              <div style="font-size: 22px; font-weight: 900; color: #be123c;">${countCriticas}</div>
-              <div style="font-size: 9px; font-weight: 700; color: #9f1239; text-transform: uppercase; margin-top: 2px;">Ausencias Totales / Alertas</div>
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 10px; text-align: center;">
+              <div style="font-size: 20px; font-weight: 900; color: #15803d;">${countNormales}</div>
+              <div style="font-size: 8.5px; font-weight: 700; color: #166534; text-transform: uppercase; margin-top: 2px;">Atención Normal</div>
             </div>
-            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px; text-align: center;">
-              <div style="font-size: 22px; font-weight: 900; color: #15803d;">${countEstudiantes}</div>
-              <div style="font-size: 9px; font-weight: 700; color: #166534; text-transform: uppercase; margin-top: 2px;">Novedades Estudiantes</div>
+            <div style="background: #fef2f2; border: 1px solid #fecdd3; border-radius: 12px; padding: 10px; text-align: center;">
+              <div style="font-size: 20px; font-weight: 900; color: #be123c;">${countCriticas}</div>
+              <div style="font-size: 8.5px; font-weight: 700; color: #9f1239; text-transform: uppercase; margin-top: 2px;">Ausencias / Alertas</div>
+            </div>
+            <div style="background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 12px; padding: 10px; text-align: center;">
+              <div style="font-size: 20px; font-weight: 900; color: #0e7490;">${countEstudiantes}</div>
+              <div style="font-size: 8.5px; font-weight: 700; color: #155e75; text-transform: uppercase; margin-top: 2px;">Novedades Alumnos</div>
             </div>
           </div>
 
           <div style="margin-bottom: 16px;">
-            <h3 style="font-size: 13px; font-weight: 800; color: #334155; text-transform: uppercase; margin: 0 0 10px; letter-spacing: 0.5px;">Detalle de Novedades Grupales y de Horario</h3>
+            <h3 style="font-size: 12px; font-weight: 800; color: #334155; text-transform: uppercase; margin: 0 0 8px; letter-spacing: 0.5px;">Detalle Consolidado de Grupos y Horario</h3>
             <table style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
               <thead>
                 <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                  <th style="padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase;">Fecha</th>
-                  <th style="padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase;">Grupo</th>
-                  <th style="padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase;">Sede</th>
-                  <th style="padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase;">Clasificación</th>
-                  <th style="padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase;">Detalle Observado</th>
+                  <th style="padding: 7px 8px; text-align: left; font-size: 9.5px; font-weight: 800; color: #475569; text-transform: uppercase;">Fecha</th>
+                  <th style="padding: 7px 8px; text-align: left; font-size: 9.5px; font-weight: 800; color: #475569; text-transform: uppercase;">Grupo</th>
+                  <th style="padding: 7px 8px; text-align: left; font-size: 9.5px; font-weight: 800; color: #475569; text-transform: uppercase;">Sede</th>
+                  <th style="padding: 7px 8px; text-align: left; font-size: 9.5px; font-weight: 800; color: #475569; text-transform: uppercase;">Clasificación</th>
+                  <th style="padding: 7px 8px; text-align: left; font-size: 9.5px; font-weight: 800; color: #475569; text-transform: uppercase;">Detalle Observado</th>
                 </tr>
               </thead>
               <tbody>
