@@ -38,7 +38,6 @@ function ReportesContent() {
 
   // Proyecciones
   const [viewMode, setViewMode] = useState<'historico' | 'proyeccion'>('historico');
-  const [showTestAnimation, setShowTestAnimation] = useState(false);
   const [projectionData, setProjectionData] = useState<any[]>([]);
   const [manualAdjustments, setManualAdjustments] = useState<any[]>([]);
   const [projectionLoading, setProjectionLoading] = useState(false);
@@ -991,7 +990,7 @@ function ReportesContent() {
         );
 
         if (grupoKey) {
-          const studentsInGroup = studentsByGrupo[grupoKey];
+          const studentsInGroup = (studentsByGrupo[grupoKey] || []).filter(s => s.estado === 'activo' || s.estado === 'active' || !s.estado);
           const studentIds = studentsInGroup.map(s => s.id);
 
           // Fetch all attendance for range
@@ -1131,7 +1130,7 @@ function ReportesContent() {
         );
 
         if (grupoKey) {
-          const studentsInGroup = studentsByGrupo[grupoKey];
+          const studentsInGroup = (studentsByGrupo[grupoKey] || []).filter(s => s.estado === 'activo' || s.estado === 'active' || !s.estado);
           const studentIds = studentsInGroup.map(s => s.id);
 
           const { data: attendanceDetails } = await supabase
@@ -1192,6 +1191,319 @@ function ReportesContent() {
     } catch (error) {
       console.error('Error generating Excel report:', error);
       alert('Error al generar el reporte Excel. Por favor, intenta de nuevo.');
+    } finally {
+      setIsGeneratingExport(false);
+    }
+  };
+
+  const handlePrepareReporteNovedades = async () => {
+    setIsGeneratingExport(true);
+    try {
+      const XLSX = await import('xlsx');
+
+      let periodoLabel = '';
+      let reportDate = selectedDate;
+      const today = new Date();
+
+      if (periodo === 'hoy') {
+        periodoLabel = 'Hoy';
+        const offset = today.getTimezoneOffset() * 60000;
+        reportDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
+      } else if (periodo === 'semana') {
+        periodoLabel = `Semana del ${getWeekRangeLabel(selectedDate)}`;
+        reportDate = selectedDate;
+      } else if (periodo === 'mes') {
+        periodoLabel = getMonthLabel(selectedDate);
+        reportDate = selectedDate;
+      } else if (periodo === 'fecha') {
+        periodoLabel = `Fecha específica: ${selectedDate}`;
+        reportDate = selectedDate;
+      }
+
+      const [pYear, pMonth, pDay] = reportDate.split('-').map(Number);
+      const analysisDate = new Date(pYear, pMonth - 1, pDay);
+
+      let startDate = reportDate;
+      let endDate = reportDate;
+
+      if (periodo === 'semana') {
+        const d = new Date(analysisDate);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const start = new Date(d.getFullYear(), d.getMonth(), diff);
+        const end = new Date(d.getFullYear(), d.getMonth(), diff + 6);
+        startDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        endDate = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      } else if (periodo === 'mes') {
+        const start = new Date(analysisDate.getFullYear(), analysisDate.getMonth(), 1);
+        const end = new Date(analysisDate.getFullYear(), analysisDate.getMonth() + 1, 0);
+        startDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        endDate = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      }
+
+      // 1. Obtener festivos de Colombia
+      const { data: festivosData } = await supabase.from('festivos_colombia').select('fecha');
+      const festivosSet = new Set((festivosData || []).map(f => f.fecha));
+
+      // 2. Calcular días hábiles del período (Lunes a Viernes)
+      const businessDates: string[] = [];
+      let curDate = new Date(startDate + 'T00:00:00');
+      const endDateObj = new Date(endDate + 'T00:00:00');
+      while (curDate <= endDateObj) {
+        const dayOfWeek = curDate.getDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          const dateStr = new Date(curDate.getTime() - curDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+          if (!festivosSet.has(dateStr)) {
+            businessDates.push(dateStr);
+          }
+        }
+        curDate.setDate(curDate.getDate() + 1);
+      }
+
+      // 3. Consultar Estudiantes Activos por Sede y Grupo
+      const sedeMap: Record<string, string> = {
+        'principal': 'Principal',
+        'primaria': 'Primaria',
+        'maria-inmaculada': 'Maria Inmaculada'
+      };
+
+      let queryStudents = supabase
+        .from('estudiantes')
+        .select('id, nombre, grupo, sede, estado')
+        .not('grupo', 'ilike', '%2025%')
+        .in('estado', ['activo', 'active']);
+
+      if (sedeFilter === 'primaria-principal') {
+        queryStudents = queryStudents.in('sede', ['Principal', 'Primaria', 'Sede Primaria']);
+      } else if (sedeFilter !== 'todas') {
+        queryStudents = queryStudents.eq('sede', sedeMap[sedeFilter] || 'Principal');
+      }
+      if (grupoFilter !== 'todos') {
+        queryStudents = queryStudents.eq('grupo', grupoFilter);
+      }
+
+      const { data: studentsData } = await queryStudents;
+      const activeStudents = studentsData || [];
+
+      // Mapear grupos activos con sus totales
+      const groupsMap: Record<string, { grupo: string; sede: string; totalActivos: number }> = {};
+      activeStudents.forEach(s => {
+        const key = `${s.grupo}|${s.sede}`;
+        if (!groupsMap[key]) {
+          groupsMap[key] = { grupo: s.grupo, sede: s.sede, totalActivos: 0 };
+        }
+        groupsMap[key].totalActivos++;
+      });
+
+      // 4. Consultar Asistencias del rango
+      let queryAsistencia = supabase
+        .from('asistencia_pae')
+        .select(`
+          id, estado, fecha, novedad_tipo, novedad_descripcion,
+          estudiantes!inner (id, nombre, grupo, sede)
+        `)
+        .gte('fecha', startDate)
+        .lte('fecha', endDate);
+
+      if (sedeFilter === 'primaria-principal') {
+        queryAsistencia = queryAsistencia.in('estudiantes.sede', ['Principal', 'Primaria', 'Sede Primaria']);
+      } else if (sedeFilter !== 'todas') {
+        queryAsistencia = queryAsistencia.eq('estudiantes.sede', sedeMap[sedeFilter] || 'Principal');
+      }
+      if (grupoFilter !== 'todos') {
+        queryAsistencia = queryAsistencia.eq('estudiantes.grupo', grupoFilter);
+      }
+
+      const { data: asistData } = await queryAsistencia;
+      const asistencias = asistData || [];
+
+      // 5. Consultar Novedades de Cupos
+      const { data: cuposNovedades } = await supabase
+        .from('novedades_cupos')
+        .select('*');
+
+      const cuposFiltrados = (cuposNovedades || []).filter((c: any) => {
+        const fn = c.fecha_novedad || c.fecha_inicio;
+        return fn && fn >= startDate && fn <= endDate;
+      });
+
+      // 6. Construir filas de novedades por grupo y fecha
+      const novedadesGrupoRows: any[][] = [];
+
+      // Evaluar cada día hábil y cada grupo
+      businessDates.forEach(dateStr => {
+        const dateObj = new Date(dateStr + 'T00:00:00');
+        const dayName = dateObj.toLocaleDateString('es-CO', { weekday: 'long' });
+        const dayCapitalized = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+
+        Object.values(groupsMap).forEach(g => {
+          const groupRecs = asistencias.filter(a => {
+            const e = Array.isArray(a.estudiantes) ? a.estudiantes[0] : a.estudiantes;
+            return e?.grupo === g.grupo && e?.sede === g.sede && a.fecha === dateStr;
+          });
+
+          const totalRecibieron = groupRecs.filter(r => r.estado === 'recibio').length;
+          const totalAusentes = groupRecs.filter(r => r.estado === 'ausente').length;
+          const totalNoRecibieron = groupRecs.filter(r => r.estado === 'no_recibio').length;
+
+          if (groupRecs.length === 0) {
+            // Caso 1: El grupo no asistió / no registró asistencia en la fecha
+            novedadesGrupoRows.push([
+              dateStr,
+              dayCapitalized,
+              g.sede,
+              g.grupo,
+              'Grupo Sin Asistencia / No Asistió',
+              g.totalActivos,
+              0,
+              `El grupo ${g.grupo} no registró consumo el día ${dateStr}. No consumieron ${g.totalActivos} raciones esperadas.`
+            ]);
+          } else if (totalRecibieron === 0 && (totalAusentes > 0 || totalNoRecibieron > 0)) {
+            // Caso 2: Se abrió registro pero ningún estudiante recibió (100% ausentes o no recibieron)
+            novedadesGrupoRows.push([
+              dateStr,
+              dayCapitalized,
+              g.sede,
+              g.grupo,
+              'Ausencia Total del Grupo',
+              g.totalActivos,
+              0,
+              `El grupo ${g.grupo} reportó ${groupRecs.length} estudiantes sin recepción (${totalAusentes} ausentes). Raciones consumidas: 0.`
+            ]);
+          } else if (totalRecibieron > 0 && totalRecibieron < Math.ceil(g.totalActivos * 0.4)) {
+            // Caso 3: Asistencia atípicamente baja (< 40%)
+            novedadesGrupoRows.push([
+              dateStr,
+              dayCapitalized,
+              g.sede,
+              g.grupo,
+              'Baja Asistencia Crítica (<40%)',
+              g.totalActivos,
+              totalRecibieron,
+              `Solo ${totalRecibieron} de ${g.totalActivos} estudiantes recibieron ración (${Math.round((totalRecibieron / g.totalActivos) * 100)}% de asistencia).`
+            ]);
+          }
+        });
+
+        // Novedades institucionales o de cupos en este día
+        cuposFiltrados.filter((c: any) => (c.fecha_novedad === dateStr || c.fecha_inicio === dateStr)).forEach((c: any) => {
+          novedadesGrupoRows.push([
+            dateStr,
+            dayCapitalized,
+            c.sede || 'Todas',
+            c.grupo || 'Institucional',
+            `Ajuste de Cupos: ${c.tipo || 'General'}`,
+            '-',
+            c.cupos_afectados || 0,
+            c.descripcion || c.motivo || 'Novedad de cupos programada'
+          ]);
+        });
+      });
+
+      // 7. Extraer Novedades Individuales registradas en asistencia
+      const novedadesEstudiantesRows: any[][] = [];
+      asistencias.forEach(a => {
+        if (a.novedad_tipo || a.novedad_descripcion) {
+          const e = Array.isArray(a.estudiantes) ? a.estudiantes[0] : a.estudiantes;
+          novedadesEstudiantesRows.push([
+            a.fecha,
+            e?.sede || '-',
+            e?.grupo || '-',
+            e?.nombre || '-',
+            a.novedad_tipo || 'Novedad',
+            a.novedad_descripcion || '-',
+            a.estado === 'recibio' ? 'Recibió' : a.estado === 'no_recibio' ? 'No Recibió' : 'Ausente'
+          ]);
+        }
+      });
+
+      // Ordenar novedades de grupo cronológicamente y por grupo
+      novedadesGrupoRows.sort((a, b) => a[0].localeCompare(b[0]) || a[3].localeCompare(b[3]));
+      novedadesEstudiantesRows.sort((a, b) => a[0].localeCompare(b[0]) || a[3].localeCompare(b[3]));
+
+      // 8. Crear Estructura Excel
+      const excelGrupoData: any[][] = [
+        ['REPORTE DE NOVEDADES PAE POR GRUPO Y FECHA'],
+        ['Institución Educativa:', 'IE Barroblanco - Rionegro'],
+        ['Período Analizado:', `${startDate} al ${endDate} (${periodoLabel})`],
+        ['Fecha de Emisión:', new Date().toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' })],
+        ['Total Novedades de Grupo Detectadas:', novedadesGrupoRows.length],
+        [''],
+        [
+          'Fecha',
+          'Día',
+          'Sede',
+          'Grupo',
+          'Tipo de Novedad',
+          'Raciones Esperadas',
+          'Raciones Recibidas',
+          'Detalle de la Novedad'
+        ],
+        ...(novedadesGrupoRows.length > 0 ? novedadesGrupoRows : [
+          ['-', '-', '-', '-', 'Sin novedades registradas', '-', '-', 'No se presentaron inasistencias grupales en el período.']
+        ])
+      ];
+
+      const wsGrupos = XLSX.utils.aoa_to_sheet(excelGrupoData);
+      wsGrupos['!cols'] = [
+        { wch: 14 },
+        { wch: 12 },
+        { wch: 16 },
+        { wch: 10 },
+        { wch: 32 },
+        { wch: 18 },
+        { wch: 18 },
+        { wch: 70 }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, wsGrupos, 'Novedades de Grupos');
+
+      if (novedadesEstudiantesRows.length > 0) {
+        const excelEstData: any[][] = [
+          ['REPORTE DE NOVEDADES ALIMENTARIAS Y DE ATENCIÓN (ESTUDIANTES)'],
+          ['Período:', `${startDate} al ${endDate}`],
+          ['Total Novedades de Estudiantes:', novedadesEstudiantesRows.length],
+          [''],
+          [
+            'Fecha',
+            'Sede',
+            'Grupo',
+            'Estudiante',
+            'Tipo de Novedad',
+            'Descripción / Observación',
+            'Estado en Comedor'
+          ],
+          ...novedadesEstudiantesRows
+        ];
+        const wsEst = XLSX.utils.aoa_to_sheet(excelEstData);
+        wsEst['!cols'] = [
+          { wch: 14 },
+          { wch: 16 },
+          { wch: 10 },
+          { wch: 32 },
+          { wch: 22 },
+          { wch: 45 },
+          { wch: 16 }
+        ];
+        XLSX.utils.book_append_sheet(wb, wsEst, 'Novedades Estudiantes');
+      }
+
+      const sedeFilename = sedeFilter === 'todas' ? 'Todas' : sedeFilter;
+      const filename = `Reporte_Novedades_PAE_${sedeFilename}_${startDate}_${endDate}.xlsx`;
+
+      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+      setSelectedExportFormat('excel');
+      setExportBlob(blob);
+      setExportPreviewFilename(filename);
+      setExportPreviewUrl(null);
+      setExportPreviewOpen(true);
+
+    } catch (error: any) {
+      console.error('Error generating novedades report:', error);
+      alert('Error al generar el reporte de novedades: ' + (error?.message || 'Error desconocido'));
     } finally {
       setIsGeneratingExport(false);
     }
@@ -1383,8 +1695,9 @@ function ReportesContent() {
     let studentStats: any[] = [];
     if (grupoFilter !== 'todos') {
       const gRegDays = new Set(records.map(r => r.fecha)).size || 1;
+      const activeStudentsOnly = students.filter(s => s.estado === 'activo' || s.estado === 'active' || !s.estado);
       
-      students.forEach(student => {
+      activeStudentsOnly.forEach(student => {
         const sRecs = records.filter(r => {
           const e = Array.isArray(r.estudiantes) ? r.estudiantes[0] : r.estudiantes;
           return e?.id === student.id;
@@ -1693,7 +2006,9 @@ function ReportesContent() {
         .map(e => ({
           nombre: e.nombre,
           fecha: 'Estado Actual',
-          id: e.id
+          estado: 'Inactivo',
+          id: e.id,
+          student: e
         }));
     } else {
       const state = category === 'recibieron' ? 'recibio' : (category === 'noRecibieron' ? 'no_recibio' : 'ausente');
@@ -1925,15 +2240,16 @@ function ReportesContent() {
             </button>
           )}
 
-          {usuario?.rol === 'admin' && (
+          {['admin', 'coordinador', 'coordinador_pae', 'secretaria', 'operador'].includes(usuario?.rol) && (
             <button
-              id="test-anim-btn"
-              onClick={() => setShowTestAnimation(true)}
-              className="flex items-center gap-2 px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-amber-200 dark:shadow-none active:scale-95 text-[10px] md:text-xs uppercase tracking-wide"
-              title="Probar animación de estrellas sin modificar puntos"
+              id="reporte-novedades-btn"
+              onClick={handlePrepareReporteNovedades}
+              disabled={isGeneratingExport}
+              className="flex items-center gap-2 px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-amber-200 dark:shadow-none active:scale-95 text-[10px] md:text-xs uppercase tracking-wide disabled:opacity-50"
+              title="Generar reporte detallado de novedades por grupo y fecha"
             >
-              <Sparkles className="w-4 h-4 fill-current text-amber-200" />
-              <span>Probar <span className="hidden md:inline">Animación</span></span>
+              <FileText className="w-4 h-4" />
+              <span>Reporte <span className="hidden md:inline">Novedades</span></span>
             </button>
           )}
         </div>
@@ -2904,15 +3220,6 @@ function ReportesContent() {
              )}
           </div>
         </div>
-      )}
-
-      {showTestAnimation && (
-        <PointsBurstAnimation
-          points={5}
-          targetSelector="[data-points-capsule]"
-          originSelector="#test-anim-btn"
-          onComplete={() => setShowTestAnimation(false)}
-        />
       )}
     </div>
   );

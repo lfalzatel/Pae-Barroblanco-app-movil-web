@@ -869,10 +869,12 @@ function RegistroContent() {
     }
   };
 
-  const estudiantesFiltrados = estudiantes.filter(est =>
-    est.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    est.matricula.includes(searchQuery)
-  );
+  const estudiantesFiltrados = estudiantes
+    .filter(est => est.estado !== 'inactivo')
+    .filter(est =>
+      est.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      est.matricula.includes(searchQuery)
+    );
 
   const statsCount = {
     recibieron: Object.values(asistencias).filter(a => a === 'recibio').length,

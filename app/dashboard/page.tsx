@@ -6,6 +6,7 @@ import ScheduleModal from '../../components/ScheduleModal';
 import WeeklyScheduleModal from '../../components/WeeklyScheduleModal';
 import StatsDetailModal from '../../components/StatsDetailModal';
 import SecretariaDashboard from '../../components/dashboard/SecretariaDashboard';
+import StudentHistoryModal from '@/components/dashboard/StudentHistoryModal';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { Usuario, calcularEstadisticasHoy } from '../data/demoData';
@@ -50,6 +51,7 @@ export default function DashboardPage() {
   const [deepDetailTitle, setDeepDetailTitle] = useState("");
   const [deepDetailData, setDeepDetailData] = useState<any[]>([]);
   const [modalData, setModalData] = useState<{ grupo: string, count: number, total: number, percentage: string }[]>([]);
+  const [selectedStudentForHistory, setSelectedStudentForHistory] = useState<any | null>(null);
 
   // Estado para Modal de Horario
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
@@ -357,7 +359,8 @@ export default function DashboardPage() {
           nombre: e.nombre || 'Sin Nombre',
           estado: 'Inactivo',
           id: e.id,
-          fecha: 'Estado Actual'
+          fecha: 'Estado Actual',
+          student: e
         }));
     } else if (category === 'recibieron') {
       records = allAttendance
@@ -371,7 +374,8 @@ export default function DashboardPage() {
             nombre: est?.nombre || 'Desconocido',
             estado: 'Recibió',
             id: a.estudiante_id,
-            fecha: 'Hoy'
+            fecha: 'Hoy',
+            student: est
           };
         });
     } else if (category === 'noRecibieron') {
@@ -386,7 +390,8 @@ export default function DashboardPage() {
             nombre: est?.nombre || 'Desconocido',
             estado: 'No Recibió',
             id: a.estudiante_id,
-            fecha: 'Hoy'
+            fecha: 'Hoy',
+            student: est
           };
         });
     } else if (category === 'ausentes') {
@@ -404,7 +409,8 @@ export default function DashboardPage() {
           nombre: e.nombre,
           estado: asistMap[e.id] === 'ausente' ? 'Marcado Ausente' : 'Sin Registro',
           id: e.id,
-          fecha: 'Hoy'
+          fecha: 'Hoy',
+          student: e
         }));
     }
 
@@ -446,7 +452,15 @@ export default function DashboardPage() {
         deepDetailData={deepDetailData}
         onGroupSelect={openDeepDetail}
         onBackToSummary={() => setDeepDetailOpen(false)}
+        onStudentSelect={(student) => setSelectedStudentForHistory(student)}
       />
+
+      {selectedStudentForHistory && (
+        <StudentHistoryModal
+          student={selectedStudentForHistory}
+          onClose={() => setSelectedStudentForHistory(null)}
+        />
+      )}
 
       {/* Dynamic Notification */}
       {notif && (

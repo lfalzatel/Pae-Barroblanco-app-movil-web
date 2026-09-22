@@ -1283,7 +1283,7 @@ export default function HorarioPage() {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3 md:gap-4">
-                                    <div className="space-y-1.5 md:space-y-2">
+                                    <div className="flex flex-col justify-end space-y-1.5 md:space-y-2">
                                         <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hora de inicio (opcional)</label>
                                         <div className="relative cursor-pointer" onClick={() => setTimePickerTarget('inicio')}>
                                             <input
@@ -1296,7 +1296,7 @@ export default function HorarioPage() {
                                             <Clock className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                                         </div>
                                     </div>
-                                    <div className="space-y-1.5 md:space-y-2">
+                                    <div className="flex flex-col justify-end space-y-1.5 md:space-y-2">
                                         <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hora de finalización (opcional)</label>
                                         <div className="relative cursor-pointer" onClick={() => setTimePickerTarget('fin')}>
                                             <input
@@ -1312,7 +1312,7 @@ export default function HorarioPage() {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3 md:gap-4">
-                                    <div className="space-y-1.5 md:space-y-2">
+                                    <div className="flex flex-col justify-end space-y-1.5 md:space-y-2">
                                         <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Dirigido a / Participantes</label>
                                         <div className="relative">
                                             <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
@@ -1333,7 +1333,7 @@ export default function HorarioPage() {
                                             <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                                         </div>
                                     </div>
-                                    <div className="space-y-1.5 md:space-y-2">
+                                    <div className="flex flex-col justify-end space-y-1.5 md:space-y-2">
                                         <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Prioridad</label>
                                         <div className="relative">
                                             <select

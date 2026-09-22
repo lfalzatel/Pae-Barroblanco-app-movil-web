@@ -292,13 +292,21 @@ export default function AdminPage() {
                                 }
                             }
 
+                            // Detección inteligente de estado (desertor, cancelado, retirado, inactivo)
+                            const rawEstado = String(findVal(['estado', 'motivo', 'situacion', 'novedad', 'anotacion', 'anotaciones', 'condicion']) || '').trim().toLowerCase();
+                            const esInactivoODesertor =
+                                rawEstado.includes('desert') ||
+                                rawEstado.includes('cancel') ||
+                                rawEstado.includes('retir') ||
+                                rawEstado.includes('inactiv');
+
                             return {
                                 matricula,
                                 nombre: nombre.toUpperCase(),
                                 grado,
                                 grupo,
                                 sede: rawSede.charAt(0).toUpperCase() + rawSede.slice(1).toLowerCase(),
-                                estado: 'activo' // Reactivar si estaba inactivo
+                                estado: esInactivoODesertor ? 'inactivo' : 'activo'
                             };
                         }).filter(Boolean); // Eliminar nulos
 

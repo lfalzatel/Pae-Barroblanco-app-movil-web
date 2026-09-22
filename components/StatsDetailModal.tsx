@@ -49,12 +49,14 @@ interface StatsDetailModalProps {
     deepDetailTitle: string;
     deepDetailData: {
         nombre: string;
-        estado: string;
-        fecha: string;
-        id: string;
+        estado?: string;
+        fecha?: string;
+        id?: string;
+        student?: any;
     }[];
     onGroupSelect: (grupo: string) => void;
     onBackToSummary: () => void;
+    onStudentSelect?: (student: any) => void;
     summaryStats?: {
         diasRegistrados: number;
         estudiantesActivos: number;
@@ -72,6 +74,7 @@ export default function StatsDetailModal({
     deepDetailData,
     onGroupSelect,
     onBackToSummary,
+    onStudentSelect,
     summaryStats
 }: StatsDetailModalProps) {
     useModalBack(isOpen, onClose, 'stats-detail-modal');
@@ -195,26 +198,49 @@ export default function StatsDetailModal({
                         <div className="p-6 space-y-4 pb-20 animate-in fade-in zoom-in-95 duration-200">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">LISTADO DETALLADO</p>
                             {deepDetailData.length > 0 ? (
-                                deepDetailData.map((item, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="bg-white dark:bg-gray-800 p-3 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both flex items-center justify-between group"
-                                        style={{ animationDelay: `${idx * 30}ms` }}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-black ${getAvatarColor(item.nombre)}`}>
-                                                {getInitials(item.nombre)}
+                                deepDetailData.map((item, idx) => {
+                                    const isInactive = item.fecha === 'Estado Actual' || item.estado?.toLowerCase() === 'inactivo';
+
+                                    return (
+                                        <div
+                                            key={idx}
+                                            onClick={() => {
+                                                if (onStudentSelect) {
+                                                    onStudentSelect(item.student || item);
+                                                }
+                                            }}
+                                            className={`bg-white dark:bg-gray-800 p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both flex items-center justify-between group ${onStudentSelect ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-500 hover:scale-[1.01] active:scale-[0.99]' : ''}`}
+                                            style={{ animationDelay: `${idx * 30}ms` }}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-black ${getAvatarColor(item.nombre)}`}>
+                                                    {getInitials(item.nombre)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-gray-900 dark:text-white text-sm leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                        {item.nombre}
+                                                    </p>
+                                                    <p className="text-[10px] font-bold text-gray-400 mt-0.5 tracking-wide uppercase">
+                                                        {isInactive ? (
+                                                            <span>Estado actual: <span className="text-amber-500 dark:text-amber-400 font-extrabold">Inactivo</span></span>
+                                                        ) : (
+                                                            item.estado
+                                                        )}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="font-bold text-gray-900 dark:text-white text-sm leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.nombre}</p>
-                                                <p className="text-[10px] font-bold text-gray-400 mt-0.5 uppercase tracking-wide">{item.estado}</p>
+                                            <div className="flex flex-col items-end">
+                                                {isInactive ? (
+                                                    <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors flex items-center gap-1">
+                                                        Ver actividad →
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] font-black text-gray-300 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded-lg">{item.fecha}</span>
+                                                )}
                                             </div>
                                         </div>
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-[10px] font-black text-gray-300 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded-lg">{item.fecha}</span>
-                                        </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             ) : (
                                 <div className="py-20 text-center">
                                     <p className="text-gray-400 font-medium">No hay registros detallados</p>
