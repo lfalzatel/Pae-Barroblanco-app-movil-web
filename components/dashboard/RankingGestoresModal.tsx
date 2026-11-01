@@ -5,13 +5,14 @@ import { supabase } from '@/lib/supabase';
 import { X, Trophy, Star, ChevronLeft, Medal, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DocenteActivityModal from '@/components/dashboard/DocenteActivityModal';
+import MedalleroPanel from '@/components/dashboard/MedalleroPanel';
 
 interface GrupoRanking { grupo: string; grado: string | null; total_puntos: number; }
-interface GestorRanking { usuario_id: string; nombre: string; avatar_url: string | null; puntos: number; grupos?: string[]; }
+interface GestorRanking { usuario_id: string; nombre: string; avatar_url: string | null; puntos: number; grupos?: string[]; rol?: string; }
 
 export default function RankingGestoresModal({ onClose }: { onClose: () => void }) {
     const [loading, setLoading] = useState(true);
-    const [tabPrincipal, setTabPrincipal] = useState<'grupos' | 'estrellas'>('grupos');
+    const [tabPrincipal, setTabPrincipal] = useState<'grupos' | 'estrellas' | 'medallero'>('grupos');
     const [grupos, setGrupos] = useState<GrupoRanking[]>([]);
     const [grupoSeleccionado, setGrupoSeleccionado] = useState<string | null>(null);
     const [gestores, setGestores] = useState<GestorRanking[]>([]);
@@ -60,6 +61,19 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                         });
                     }
                 });
+
+                // Roles para separar estudiantes PAE (compiten por medallas) de docentes
+                const ids = Array.from(userMap.keys());
+                if (ids.length > 0) {
+                    const { data: perfilesRol } = await supabase
+                        .from('perfiles_publicos')
+                        .select('id, rol')
+                        .in('id', ids);
+                    (perfilesRol || []).forEach((p: any) => {
+                        const u = userMap.get(p.id);
+                        if (u) u.rol = p.rol;
+                    });
+                }
 
                 const sortedUsers = Array.from(userMap.values()).sort((a, b) => b.puntos - a.puntos);
                 setUsuariosEstrellas(sortedUsers);
@@ -368,7 +382,7 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                                 }`}
                             >
                                 <Trophy className="w-4 h-4" />
-                                Ranking Grupos
+                                Grupos
                             </button>
                             <button
                                 type="button"
@@ -380,7 +394,19 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                                 }`}
                             >
                                 <Star className="w-4 h-4 fill-current" />
-                                Estrellas PAE
+                                Estrellas
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setTabPrincipal('medallero')}
+                                className={`flex-1 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all relative z-10 ${
+                                    tabPrincipal === 'medallero'
+                                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/20 active:scale-95'
+                                        : 'text-amber-800 dark:text-amber-300 hover:text-amber-950 font-bold'
+                                }`}
+                            >
+                                <Medal className="w-4 h-4" />
+                                Medallero
                             </button>
                         </div>
                     </div>
@@ -388,7 +414,7 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
 
                 <div className="p-4 overflow-y-auto">
                     {/* Filtros de período */}
-                    {!grupoSeleccionado && (
+                    {!grupoSeleccionado && tabPrincipal !== 'medallero' && (
                         <div className="bg-gray-100/80 dark:bg-gray-700/50 p-1 rounded-2xl flex items-center shrink-0 relative w-full mb-4">
                             {(['hoy', 'semana', 'mes'] as const).map((p) => (
                                 <button
@@ -411,7 +437,7 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                     )}
 
                     {/* Navegación por fechas */}
-                    {!grupoSeleccionado && (periodo === 'semana' || periodo === 'mes') && (
+                    {!grupoSeleccionado && tabPrincipal !== 'medallero' && (periodo === 'semana' || periodo === 'mes') && (
                         <div className="flex justify-center mb-4 transition-all animate-in slide-in-from-top-2">
                             <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-0.5 rounded-[2rem] flex items-center shadow-lg shadow-orange-100 border border-orange-500/30">
                                 <button
@@ -442,7 +468,9 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                     )}
 
                     {!grupoSeleccionado ? (
-                        tabPrincipal === 'grupos' ? (
+                        tabPrincipal === 'medallero' ? (
+                            <MedalleroPanel />
+                        ) : tabPrincipal === 'grupos' ? (
                             loading ? (
                                 <p className="text-center text-sm text-gray-500 py-8">Cargando ranking...</p>
                             ) : grupos.length === 0 ? (
@@ -477,7 +505,13 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                                 <p className="text-center text-sm text-gray-500 py-8">Aún no hay usuarios con estrellas en este período.</p>
                             ) : (
                                 <div className="space-y-2">
-                                    {usuariosEstrellas.map((u, i) => (
+                                    {[
+                                        { titulo: 'Estudiantes PAE', lista: usuariosEstrellas.filter(u => u.rol === 'estudiante_pae'), medallas: true },
+                                        { titulo: 'Docentes gestores', lista: usuariosEstrellas.filter(u => u.rol !== 'estudiante_pae'), medallas: false }
+                                    ].filter(s => s.lista.length > 0).map(seccion => (
+                                    <div key={seccion.titulo} className="space-y-2">
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1 pt-1">{seccion.titulo}</h4>
+                                    {seccion.lista.map((u, i) => (
                                         <button
                                             key={u.usuario_id}
                                             type="button"
@@ -485,7 +519,7 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                                             className="w-full flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left group cursor-pointer active:scale-98"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <Medal className={`w-5 h-5 shrink-0 ${medalColor(i)}`} />
+                                                {seccion.medallas && <Medal className={`w-5 h-5 shrink-0 ${medalColor(i)}`} />}
                                                 <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center overflow-hidden shrink-0">
                                                     {u.avatar_url ? (
                                                         <img src={u.avatar_url} className="w-full h-full object-cover" alt={u.nombre} />
@@ -507,6 +541,8 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                                                 {u.puntos}
                                             </span>
                                         </button>
+                                    ))}
+                                    </div>
                                     ))}
                                 </div>
                             )

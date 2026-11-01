@@ -49,6 +49,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { getAcademicBlock } from '@/lib/schedule-utils';
 import GlobalNotificationsModal from '@/components/dashboard/GlobalNotificationsModal';
 import RankingGestoresModal from '@/components/dashboard/RankingGestoresModal';
+import PodioMensualAnuncio from '@/components/dashboard/PodioMensualAnuncio';
 import { useSplash } from '@/components/SplashScreenProvider';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
@@ -1838,6 +1839,8 @@ export default function DashboardLayout({
             <div className="md:hidden h-16"></div>
 
             {rankingModalOpen && <RankingGestoresModal onClose={() => setRankingModalOpen(false)} />}
+
+            {usuario?.id && <PodioMensualAnuncio usuario={usuario} />}
         </div>
     );
 }
