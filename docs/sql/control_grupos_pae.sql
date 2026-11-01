@@ -236,14 +236,17 @@ $$;
 --    - Estudiante PAE: solo gana con su grupo principal
 --    - Otros roles: solo ganan en grupos que no tienen estudiante PAE asignado
 --    - Un solo punto por grupo y día
-CREATE OR REPLACE FUNCTION public.registrar_puntos_asistencia(p_asistencia_id BIGINT)
+-- Tipos tomados de la tabla (%TYPE): asistencia_pae.id es UUID en producción
+DROP FUNCTION IF EXISTS public.registrar_puntos_asistencia(BIGINT);
+
+CREATE OR REPLACE FUNCTION public.registrar_puntos_asistencia(p_asistencia_id public.asistencia_pae.id%TYPE)
 RETURNS VOID
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
     v_usuario UUID;
-    v_estudiante_id BIGINT;
+    v_estudiante_id public.asistencia_pae.estudiante_id%TYPE;
     v_fecha DATE;
     v_grupo TEXT;
     v_grado TEXT;
