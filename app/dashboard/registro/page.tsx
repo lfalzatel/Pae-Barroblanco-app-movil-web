@@ -37,7 +37,12 @@ interface GrupoConEstado extends Grupo {
   completado: boolean;
   estudiantesActivos?: number;
   horaGuardado?: string;
+  noAsiste?: boolean;
 }
+
+// Errores de validación lanzados por el trigger validar_asistencia_pae
+const esBloqueoPae = (error: any) => typeof error?.message === 'string' && error.message.startsWith('PAE_BLOQUEO');
+const mensajeBloqueoPae = (error: any) => error.message.replace('PAE_BLOQUEO: ', '');
 
 // Función helper para recortar nombres de grupos (ej: 1001-2024 -> 1001)
 const formatGroupName = (name: string) => {
@@ -105,6 +110,7 @@ function RegistroContent() {
   // Nuevos estados para grupos dinámicos
   const [gruposReales, setGruposReales] = useState<GrupoConEstado[]>([]);
   const [loadingGrupos, setLoadingGrupos] = useState(false);
+  const [diaSinPae, setDiaSinPae] = useState<string | null>(null);
   const [duenos, setDuenos] = useState<Record<string, string>>({});
   const [mapaNombres, setMapaNombres] = useState<Record<string, string>>({});
   const [countsBySede, setCountsBySede] = useState<Record<string, number>>({
@@ -193,7 +199,20 @@ function RegistroContent() {
         console.error('Error al cargar puntos iniciales:', err);
       }
 
+      let grupoPrincipal: string | null = null;
+      try {
+        const { data: perfilGrupo } = await supabase
+          .from('perfiles_publicos')
+          .select('grupo_principal')
+          .eq('id', session.user.id)
+          .single();
+        grupoPrincipal = perfilGrupo?.grupo_principal || null;
+      } catch (err) {
+        console.error('Error al cargar grupo principal:', err);
+      }
+
       setUsuario({
+        grupo_principal: grupoPrincipal,
         email: userEmail,
         nombre: session.user.user_metadata?.nombre || session.user.user_metadata?.full_name || 'Usuario',
         rol: userRole,
@@ -228,10 +247,27 @@ function RegistroContent() {
         .from('asistencia_pae')
         .upsert(pending, { onConflict: 'estudiante_id,fecha' });
 
-      if (error) throw error;
-
-      OfflineService.clearPending();
-      showToast('Sincronización completada con éxito', 'success');
+      if (error && esBloqueoPae(error)) {
+        // Algún registro cae en un día sin PAE o grupo NO ASISTE: sincronizar uno a uno y descartar los rechazados
+        let rechazados = 0;
+        for (const record of pending) {
+          const { error: recordError } = await supabase
+            .from('asistencia_pae')
+            .upsert(record, { onConflict: 'estudiante_id,fecha' });
+          if (!recordError || esBloqueoPae(recordError)) {
+            if (recordError) rechazados++;
+            OfflineService.removeSynced([record]);
+          }
+        }
+        if (rechazados > 0) {
+          showToast(`${rechazados} registros pendientes descartados: el grupo no asistía o no había servicio PAE ese día`, 'error');
+        }
+      } else if (error) {
+        throw error;
+      } else {
+        OfflineService.clearPending();
+        showToast('Sincronización completada con éxito', 'success');
+      }
 
       // Si estamos en la vista de registro, recargar para ver datos frescos
       if (step === 'registro' && grupoSeleccionado) {
@@ -303,7 +339,7 @@ function RegistroContent() {
     if (sedeSeleccionada) {
       fetchGruposReales();
     }
-  }, [sedeSeleccionada, selectedDate]);
+  }, [sedeSeleccionada, selectedDate, usuario?.grupo_principal]);
 
   // 5. Cargar fechas con asistencia para el calendario
   useEffect(() => {
@@ -502,6 +538,28 @@ function RegistroContent() {
 
       const gruposUnicos: GrupoConEstado[] = Array.from(gruposMap.values());
 
+      // Días sin servicio PAE (semana institucional, etc.) y grupos NO ASISTE del horario
+      const { data: diasSinPae } = await supabase
+        .from('dias_sin_pae')
+        .select('motivo, sede')
+        .eq('fecha', today);
+      const diaBloqueado = (diasSinPae || []).find((d: any) => !d.sede || d.sede === sedeDbName);
+      setDiaSinPae(diaBloqueado ? diaBloqueado.motivo : null);
+
+      const { data: horarioDia } = await supabase
+        .from('schedules')
+        .select('items')
+        .eq('date', today)
+        .maybeSingle();
+      const gruposNoAsisten = new Set<string>(
+        (horarioDia?.items || [])
+          .filter((i: any) => i.time === 'NO_ASISTE' || i.time_start === 'NO_ASISTE')
+          .map((i: any) => (i.group || '').trim().toUpperCase())
+      );
+      gruposUnicos.forEach(g => {
+        g.noAsiste = gruposNoAsisten.has(g.nombre.trim().toUpperCase());
+      });
+
       const { data: asistenciaData } = await supabase
         .from('asistencia_pae')
         .select('created_at, estudiante_id, estudiantes!inner(grupo)')
@@ -575,6 +633,12 @@ function RegistroContent() {
       };
 
       gruposUnicos.sort((a, b) => {
+        // El grupo principal del estudiante PAE va primero
+        if (usuario?.grupo_principal) {
+          if (a.nombre === usuario.grupo_principal) return -1;
+          if (b.nombre === usuario.grupo_principal) return 1;
+        }
+
         let gradeA = parseInt(a.grado) || 0;
         let gradeB = parseInt(b.grado) || 0;
 
@@ -749,6 +813,14 @@ function RegistroContent() {
 
   const handleGuardar = async () => {
     if (!usuario?.id) return;
+
+    const grupoActual = gruposReales.find(g => g.nombre === grupoSeleccionado?.nombre);
+    if (diaSinPae || grupoActual?.noAsiste) {
+      playAttendanceError();
+      showToast(diaSinPae ? `No hay servicio PAE este día (${diaSinPae})` : 'Este grupo está marcado como NO ASISTE en el horario de hoy', 'error');
+      return;
+    }
+
     setSaving(true);
     try {
       const updates: PendingAttendance[] = Object.entries(asistencias).map(([estudianteId, estado]) => ({
@@ -767,9 +839,8 @@ function RegistroContent() {
         return;
       }
 
-      // Si hay registros pendientes de antes, incluirlos en el upsert
-      const pending = OfflineService.getPending();
-      const allUpdates = [...pending, ...updates];
+      // Los pendientes offline se sincronizan aparte para que uno rechazado no bloquee este guardado
+      const allUpdates = updates;
 
       // NUEVO: averiguar cuáles ya existían ANTES del upsert (para no contar ediciones)
       const estudianteIds = allUpdates.map(u => u.estudiante_id);
@@ -791,10 +862,15 @@ function RegistroContent() {
           setConflictModalOpen(true);
           return;
         }
+        if (esBloqueoPae(error)) {
+          playAttendanceError();
+          showToast(mensajeBloqueoPae(error), 'error');
+          return;
+        }
         throw error;
       }
 
-      OfflineService.clearPending();
+      syncPendingRecords();
       showToast(`Asistencia guardada para el ${selectedDate}`, 'success');
       playAttendanceSuccess();
       
@@ -1122,13 +1198,29 @@ function RegistroContent() {
                 <p className="text-sm text-gray-400 mt-2">Intenta verificar la base de datos o seleccionar otra sede.</p>
               </div>
             ) : (
+              <>
+              {diaSinPae && (
+                <div className="mb-4 flex items-center gap-3 p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800 dark:text-rose-300">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <p className="text-xs font-bold">No hay servicio PAE este día ({diaSinPae}). No se puede registrar asistencia.</p>
+                </div>
+              )}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 {gruposReales.map(grupo => (
                   <button
                     key={grupo.id}
-                    onClick={() => handleGrupoSelect(grupo)}
+                    onClick={() => {
+                      if (diaSinPae || grupo.noAsiste) {
+                        playAttendanceError();
+                        showToast(diaSinPae ? `No hay servicio PAE este día (${diaSinPae})` : `El grupo ${formatGroupName(grupo.nombre)} no asiste hoy según el horario`, 'error');
+                        return;
+                      }
+                      handleGrupoSelect(grupo);
+                    }}
                     className={`rounded-2xl p-3 shadow-sm border transition-all text-center flex flex-col items-center justify-center min-h-[90px] group active:scale-[0.97]
-                      ${grupo.completado
+                      ${diaSinPae || grupo.noAsiste
+                        ? 'bg-slate-100 dark:bg-gray-800/50 text-slate-400 border-slate-200 dark:border-gray-700 opacity-60'
+                        : grupo.completado
                         ? 'bg-[#0891B2] border-cyan-500 text-white shadow-md shadow-cyan-100'
                         : 'bg-white dark:bg-gray-800 text-slate-900 dark:text-white border-slate-100 dark:border-gray-700 shadow-slate-200/50 dark:shadow-none hover:border-teal-400 dark:hover:border-teal-500'}
                     `}
@@ -1143,9 +1235,12 @@ function RegistroContent() {
                     </div>
                     <div className={`text-[11px] font-medium leading-none mb-2 ${grupo.completado ? 'text-cyan-100' : 'text-slate-400 dark:text-slate-500'}`}>
                       {grupo.estudiantes || 0} estudiantes
+                      {usuario?.grupo_principal === grupo.nombre && <span className="font-black"> · TU GRUPO</span>}
                     </div>
                     <div className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1 ${grupo.completado ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-300'}`}>
-                      {grupo.completado ? (
+                      {grupo.noAsiste && !grupo.completado ? (
+                        'NO ASISTE'
+                      ) : grupo.completado ? (
                         <>
                           <span>COMPLETADO</span>
                           {grupo.horaGuardado && (
@@ -1162,6 +1257,7 @@ function RegistroContent() {
                   </button>
                 ))}
               </div>
+              </>
             )}
           </div>
         )}

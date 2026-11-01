@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import DocenteActivityModal from '@/components/dashboard/DocenteActivityModal';
 import StudentHistoryModal from '@/components/dashboard/StudentHistoryModal';
+import GrupoPrincipalModal from '@/components/dashboard/GrupoPrincipalModal';
 
 interface Estudiante {
   id: string;
@@ -30,6 +31,7 @@ interface Docente {
   avatar_url: string;
   rol: string;
   puntos_gestor_pae?: number;
+  grupo_principal?: string | null;
 }
 
 export default function GestionPage() {
@@ -72,6 +74,7 @@ export default function GestionPage() {
   useModalBack(!!docenteParaRol, () => setDocenteParaRol(null), 'role-change-modal');
 
   const [modificandoRol, setModificandoRol] = useState(false);
+  const [usuarioParaGrupo, setUsuarioParaGrupo] = useState<Docente | null>(null);
 
   // Create Student State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -660,6 +663,9 @@ export default function GestionPage() {
       console.error('Error updating role:', error);
       // Revert on error
       setDocentes(prev => prev.map(d => d.id === docenteId ? { ...d, rol: originalRol } : d));
+    } else if (newRol === 'estudiante_pae') {
+      // Todo estudiante PAE necesita un grupo principal para ganar puntos
+      setUsuarioParaGrupo({ ...docenteParaRol, rol: newRol });
     }
 
     setModificandoRol(false);
@@ -1201,6 +1207,17 @@ export default function GestionPage() {
                         )}
                         <div className="font-black text-gray-900 truncate uppercase text-sm tracking-tight leading-none mb-1 pr-14 dark:text-white">{docente.nombre}</div>
                         <div className="text-[10px] font-bold text-gray-400 truncate pr-14 dark:text-gray-500">{docente.email}</div>
+                        {docente.rol === 'estudiante_pae' && (
+                          <button
+                            onClick={() => usuario?.rol === 'admin' && setUsuarioParaGrupo(docente)}
+                            disabled={usuario?.rol !== 'admin'}
+                            className={`mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${docente.grupo_principal ? 'bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-300'}`}
+                            title={usuario?.rol === 'admin' ? 'Cambiar grupo principal' : undefined}
+                          >
+                            <Users className="w-3 h-3" />
+                            {docente.grupo_principal ? `Grupo ${docente.grupo_principal}` : 'Sin grupo asignado'}
+                          </button>
+                        )}
                         <div className="flex gap-2 mt-4">
                           <button
                             onClick={() => setSelectedDocente(docente)}
@@ -1557,6 +1574,17 @@ export default function GestionPage() {
           <DocenteActivityModal
             docente={selectedDocente}
             onClose={() => setSelectedDocente(null)}
+          />
+        )}
+
+        {usuarioParaGrupo && (
+          <GrupoPrincipalModal
+            usuario={usuarioParaGrupo}
+            onClose={() => setUsuarioParaGrupo(null)}
+            onSaved={(grupo) => {
+              setDocentes(prev => prev.map(d => d.id === usuarioParaGrupo.id ? { ...d, grupo_principal: grupo } : d));
+              setUsuarioParaGrupo(null);
+            }}
           />
         )}
 
