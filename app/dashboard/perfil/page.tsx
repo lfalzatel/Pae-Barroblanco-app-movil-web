@@ -53,6 +53,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import confetti from 'canvas-confetti';
 import PointsBurstAnimation from '@/components/PointsBurstAnimation';
 import GamificationUnlockModal from '@/components/dashboard/GamificationUnlockModal';
+import MedallaModal, { MEDALLAS } from '@/components/dashboard/MedallaModal';
 import SoundSelectionModal, { SoundOption } from '@/components/dashboard/SoundSelectionModal';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import {
@@ -135,6 +136,7 @@ export default function ProfilePage() {
 
     // Animation Toggles State & Gamification Test Modal (Modo 3D activado por defecto)
     const [isGamificationModalTestOpen, setIsGamificationModalTestOpen] = useState(false);
+    const [medallaPrueba, setMedallaPrueba] = useState<number | null>(null);
     const [animToggles, setAnimToggles] = useState({
         powerCard3D: true,
         celebracionConfeti: true,
@@ -1018,6 +1020,19 @@ export default function ProfilePage() {
                                             <span>🎵 Tono</span>
                                         </button>
                                     </div>
+                                    {/* Vista previa de las medallas del podio mensual */}
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {[1, 2, 3].map(puesto => (
+                                            <button
+                                                key={puesto}
+                                                type="button"
+                                                onClick={() => setMedallaPrueba(puesto)}
+                                                className="p-2 rounded-lg bg-white dark:bg-gray-700 hover:bg-amber-100/50 dark:hover:bg-gray-600 border border-amber-200 dark:border-gray-600 text-[10px] font-black uppercase text-amber-800 dark:text-amber-200 flex items-center justify-center gap-1 active:scale-95 transition-all shadow-xs"
+                                            >
+                                                <span>{MEDALLAS[puesto].emoji} {MEDALLAS[puesto].nombre}</span>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 {/* ACORDEÓN INTERNO 1: SONIDOS POR ACCIÓN */}
@@ -1700,6 +1715,22 @@ export default function ProfilePage() {
                     rewardText="¡Excelente puntualidad en la entrega del refrigerio!"
                     badgeName="Estudiante Campeón PAE"
                 />
+
+                {medallaPrueba && (
+                    <MedallaModal
+                        etiqueta="Vista de prueba"
+                        medalla={{
+                            anio: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).getFullYear(),
+                            mes: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).getMonth() + 1,
+                            puesto: medallaPrueba,
+                            nombre: usuario?.nombre || 'Estudiante PAE',
+                            grupo: '8B',
+                            puntos: [0, 28, 24, 18][medallaPrueba],
+                            dias: [0, 19, 17, 12][medallaPrueba]
+                        }}
+                        onClose={() => setMedallaPrueba(null)}
+                    />
+                )}
             </div>
         </div>
     );

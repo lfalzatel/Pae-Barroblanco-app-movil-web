@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { MEDALLAS, nombreMes } from '@/components/dashboard/PodioMensualAnuncio';
+import MedallaModal, { MEDALLAS, nombreMes } from '@/components/dashboard/MedallaModal';
 
 interface PodioRow {
   anio: number;
@@ -13,6 +13,7 @@ interface PodioRow {
   nombre: string | null;
   grupo: string | null;
   puntos: number;
+  dias: number;
 }
 
 interface Medallas {
@@ -28,13 +29,19 @@ export default function MedalleroPanel() {
   const [anio, setAnio] = useState(new Date().getFullYear());
   const [filas, setFilas] = useState<PodioRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [miId, setMiId] = useState<string | null>(null);
+  const [medallaAbierta, setMedallaAbierta] = useState<PodioRow | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setMiId(data.user?.id || null));
+  }, []);
 
   useEffect(() => {
     const cargar = async () => {
       setLoading(true);
       const { data } = await supabase
         .from('podio_mensual_pae')
-        .select('anio, mes, puesto, usuario_id, nombre, grupo, puntos')
+        .select('anio, mes, puesto, usuario_id, nombre, grupo, puntos, dias')
         .eq('anio', anio)
         .order('mes', { ascending: false })
         .order('puesto', { ascending: true });
@@ -110,24 +117,38 @@ export default function MedalleroPanel() {
                 <div key={mes} className="rounded-2xl border border-amber-500/20 bg-amber-500/5 dark:bg-amber-500/10 p-3">
                   <p className="text-xs font-black uppercase tracking-widest text-amber-700 dark:text-amber-300 mb-2">{nombreMes(anio, mes)}</p>
                   <div className="space-y-1.5">
-                    {filas.filter(f => f.mes === mes).map(f => (
-                      <div key={f.puesto} className="flex items-center gap-2">
-                        <span className="text-xl leading-none">{MEDALLAS[f.puesto].emoji}</span>
-                        <span className="flex-1 min-w-0 text-sm font-bold text-gray-800 dark:text-gray-100 truncate">
-                          {f.nombre}
-                          {f.grupo && <span className="text-[10px] text-gray-400 font-semibold"> · {f.grupo}</span>}
-                        </span>
-                        <span className="flex items-center gap-1 text-amber-500 font-black text-xs shrink-0">
-                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />{f.puntos}
-                        </span>
-                      </div>
-                    ))}
+                    {filas.filter(f => f.mes === mes).map(f => {
+                      const esMia = f.usuario_id === miId;
+                      return (
+                        <button
+                          key={f.puesto}
+                          type="button"
+                          disabled={!esMia}
+                          onClick={() => setMedallaAbierta(f)}
+                          className={`w-full flex items-center gap-2 text-left rounded-lg ${esMia ? 'bg-white/70 dark:bg-gray-800/60 p-1.5 -mx-1.5 active:scale-[0.98] transition-transform' : 'cursor-default'}`}
+                        >
+                          <span className="text-xl leading-none">{MEDALLAS[f.puesto].emoji}</span>
+                          <span className="flex-1 min-w-0 text-sm font-bold text-gray-800 dark:text-gray-100 truncate">
+                            {f.nombre}
+                            {f.grupo && <span className="text-[10px] text-gray-400 font-semibold"> · {f.grupo}</span>}
+                          </span>
+                          {esMia && <span className="text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 shrink-0">Ver mi medalla</span>}
+                          <span className="flex items-center gap-1 text-amber-500 font-black text-xs shrink-0">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />{f.puntos}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
+      )}
+
+      {medallaAbierta && (
+        <MedallaModal medalla={medallaAbierta} onClose={() => setMedallaAbierta(null)} />
       )}
     </div>
   );
