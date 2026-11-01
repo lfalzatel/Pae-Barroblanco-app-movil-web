@@ -898,10 +898,21 @@ function RegistroContent() {
             nuevoTotal = profile.puntos_gestor_pae || 0;
             const actualLocal = usuario.puntos_gestor_pae || 0;
             puntosGanados = nuevoTotal - actualLocal;
+            // Actualizar la referencia para que el siguiente guardado no acumule estos puntos
+            setUsuario((prev: any) => prev ? { ...prev, puntos_gestor_pae: nuevoTotal } : prev);
           }
         } catch (err) {
           console.error('Error al consultar puntos ganados:', err);
         }
+      }
+
+      if (puntosGanados <= 0) {
+        // Sin puntos (grupo ya puntuado hoy, edición o grupo ajeno): solo el aviso de guardado
+        if (usuario?.rol === 'estudiante_pae' && usuario?.grupo_principal && grupoSeleccionado?.nombre !== usuario.grupo_principal) {
+          showToast(`Asistencia guardada. Solo sumas puntos con tu grupo ${formatGroupName(usuario.grupo_principal)}`, 'success');
+        }
+        handleBack();
+        return;
       }
 
       let animToggles = { modoHiperDopamina3D: true, explosionParticulas: false };
@@ -912,13 +923,11 @@ function RegistroContent() {
 
       if (animToggles.modoHiperDopamina3D) {
         setNuevoTotalPuntos(nuevoTotal);
-        setGamificationPoints(puntosGanados > 0 ? puntosGanados : 50);
+        setGamificationPoints(puntosGanados);
         setIsGamificationModalOpen(true);
-      } else if (puntosGanados > 0) {
+      } else {
         setNuevoTotalPuntos(nuevoTotal);
         setPointsBurst(puntosGanados);
-      } else {
-        handleBack();
       }
     } catch (error: any) {
       console.error('Error guardando:', error);
@@ -1495,7 +1504,7 @@ function RegistroContent() {
         isOpen={isGamificationModalOpen}
         onClose={() => {
           setIsGamificationModalOpen(false);
-          if (nuevoTotalPuntos && nuevoTotalPuntos > 0 && usuario?.id) {
+          if (gamificationPoints > 0 && usuario?.id) {
             window.dispatchEvent(new CustomEvent('puntosActualizados', { detail: { points: gamificationPoints } }));
           }
           handleBack();
