@@ -63,12 +63,16 @@ ORDER BY nombre;
 BEGIN;
 
 -- B1. Respaldos
+-- Solo registros hechos por estudiantes PAE: los de docentes/admin en días NO ASISTE
+-- corresponden a horarios mal marcados y se conservan.
 CREATE TABLE IF NOT EXISTS public.asistencia_pae_respaldo_2026_11 AS
 SELECT a.*
 FROM public.asistencia_pae a
 JOIN public.estudiantes e ON e.id = a.estudiante_id
-WHERE public.es_dia_sin_pae(a.fecha, e.sede)
-   OR public.grupo_no_asiste(e.grupo, a.fecha);
+JOIN public.perfiles_publicos p ON p.id = a.registrado_por
+WHERE p.rol = 'estudiante_pae'
+  AND (public.es_dia_sin_pae(a.fecha, e.sede)
+       OR public.grupo_no_asiste(e.grupo, a.fecha));
 
 CREATE TABLE IF NOT EXISTS public.puntos_pae_historial_respaldo_2026_11 AS
 SELECT * FROM public.puntos_pae_historial;
