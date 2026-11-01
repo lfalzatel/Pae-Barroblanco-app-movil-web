@@ -41,6 +41,9 @@ function MedallaIcono({ puesto }: { puesto: number }) {
   );
 }
 
+// Los nombres importados traen " _ " en lugar del segundo nombre vacío
+export const limpiarNombre = (nombre: string | null) => (nombre || '').replace(/ _ /g, ' ');
+
 export const nombreMes = (anio: number, mes: number) =>
   new Date(anio, mes - 1, 1).toLocaleString('es-CO', { month: 'long' });
 
@@ -169,7 +172,7 @@ export default function MedallaModal({ medalla, onClose, compartible = true, eti
 
           {medalla.nombre && (
             <p className={`mt-4 text-base font-black uppercase ${estilo.texto} leading-tight`}>
-              {medalla.nombre.replace(/ _ /g, ' ')}
+              {limpiarNombre(medalla.nombre)}
               {medalla.grupo && <span className="block text-[11px] tracking-widest opacity-80">Grupo {medalla.grupo}</span>}
             </p>
           )}

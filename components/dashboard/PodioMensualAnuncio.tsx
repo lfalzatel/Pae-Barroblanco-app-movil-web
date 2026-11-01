@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X, Star, Trophy } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import MedallaModal, { MEDALLAS, nombreMes } from '@/components/dashboard/MedallaModal';
+import MedallaModal, { MEDALLAS, nombreMes, limpiarNombre } from '@/components/dashboard/MedallaModal';
 
 interface PodioRow {
   anio: number;
@@ -128,7 +128,7 @@ export default function PodioMensualAnuncio({ usuario }: { usuario: { id: string
               <div key={r.puesto} className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-gray-700/50">
                 <span className="text-3xl leading-none">{MEDALLAS[r.puesto].emoji}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-black text-sm text-gray-900 dark:text-white truncate">{r.nombre}</p>
+                  <p className="font-black text-sm text-gray-900 dark:text-white truncate">{limpiarNombre(r.nombre)}</p>
                   {r.grupo && <p className="text-[10px] font-bold text-gray-400">Grupo {r.grupo}</p>}
                 </div>
                 <span className="flex items-center gap-1 text-amber-500 font-black text-sm shrink-0">

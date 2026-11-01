@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import MedallaModal, { MEDALLAS, nombreMes } from '@/components/dashboard/MedallaModal';
+import MedallaModal, { MEDALLAS, nombreMes, limpiarNombre } from '@/components/dashboard/MedallaModal';
 
 interface PodioRow {
   anio: number;
@@ -55,7 +55,7 @@ export default function MedalleroPanel() {
   const mapa = new Map<string, Medallas>();
   filas.forEach(f => {
     if (!mapa.has(f.usuario_id)) {
-      mapa.set(f.usuario_id, { usuario_id: f.usuario_id, nombre: f.nombre || 'Estudiante PAE', grupo: f.grupo, oro: 0, plata: 0, bronce: 0 });
+      mapa.set(f.usuario_id, { usuario_id: f.usuario_id, nombre: limpiarNombre(f.nombre) || 'Estudiante PAE', grupo: f.grupo, oro: 0, plata: 0, bronce: 0 });
     }
     const m = mapa.get(f.usuario_id)!;
     if (f.puesto === 1) m.oro++;
@@ -128,11 +128,13 @@ export default function MedalleroPanel() {
                           className={`w-full flex items-center gap-2 text-left rounded-lg ${esMia ? 'bg-white/70 dark:bg-gray-800/60 p-1.5 -mx-1.5 active:scale-[0.98] transition-transform' : 'cursor-default'}`}
                         >
                           <span className="text-xl leading-none">{MEDALLAS[f.puesto].emoji}</span>
-                          <span className="flex-1 min-w-0 text-sm font-bold text-gray-800 dark:text-gray-100 truncate">
-                            {f.nombre}
-                            {f.grupo && <span className="text-[10px] text-gray-400 font-semibold"> · {f.grupo}</span>}
+                          <span className="flex-1 min-w-0 flex flex-col">
+                            <span className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">
+                              {limpiarNombre(f.nombre)}
+                              {f.grupo && <span className="text-[10px] text-gray-400 font-semibold"> · {f.grupo}</span>}
+                            </span>
+                            {esMia && <span className="text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">Ver mi medalla ›</span>}
                           </span>
-                          {esMia && <span className="text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 shrink-0">Ver mi medalla</span>}
                           <span className="flex items-center gap-1 text-amber-500 font-black text-xs shrink-0">
                             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />{f.puntos}
                           </span>
