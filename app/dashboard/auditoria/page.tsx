@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { fechaLocalISO } from '@/lib/fechas';
 import {
     ShieldAlert,
     Search,
@@ -66,7 +67,7 @@ export default function AuditoriaPage() {
         const offset = now.getTimezoneOffset() * 60000;
         return new Date(now.getTime() - offset).toISOString().split('T')[0];
     });
-    const INITIAL_DATE = new Date().toISOString().split('T')[0];
+    const INITIAL_DATE = fechaLocalISO();
     const initialLoadRef = useRef(true);
 
     // Modal for Details

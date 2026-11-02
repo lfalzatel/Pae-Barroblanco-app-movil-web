@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
+import { verificarRol } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -255,6 +256,9 @@ function parseSchoolsFromRows(rows: any[][]): School[] {
 // ── Handler ───────────────────────────────────────────────────────────────────
 export async function GET(req: Request) {
     try {
+        const sesion = await verificarRol(req, ['admin', 'coordinador_pae', 'secretaria_educacion', 'operador']);
+        if (sesion.error) return sesion.error;
+
         const { searchParams } = new URL(req.url);
         const sheetId   = searchParams.get('sheetId')   || DEFAULT_SHEET_ID;
         const sheetName = searchParams.get('sheetName') || null;

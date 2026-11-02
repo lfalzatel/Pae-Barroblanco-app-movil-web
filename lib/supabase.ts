@@ -27,3 +27,9 @@ export const supabase = new Proxy({} as SupabaseClient, {
         return typeof value === 'function' ? value.bind(client) : value;
     }
 });
+
+// Encabezado Authorization con la sesión actual, para llamar a las APIs protegidas
+export async function encabezadoSesion(): Promise<Record<string, string>> {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session ? { Authorization: `Bearer ${session.access_token}` } : {};
+}

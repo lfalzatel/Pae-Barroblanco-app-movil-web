@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { fechaLocalISO } from '@/lib/fechas';
 import { useModalBack } from '@/hooks/useModalBack';
 import { User, Star, X, Calendar, Clock, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -227,7 +228,7 @@ export default function DocenteActivityModal({ docente, onClose }: DocenteActivi
                     if (!d) return <div key={`doc-empty-${i}`} className="aspect-square"></div>;
 
                     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                    const todayStr = new Date().toISOString().split('T')[0];
+                    const todayStr = fechaLocalISO();
                     const record = docenteHistory.find(r => r.fecha === dateStr);
                     const isWeekend = d.getDay() === 0 || d.getDay() === 6;
                     const isFuture = dateStr > todayStr;

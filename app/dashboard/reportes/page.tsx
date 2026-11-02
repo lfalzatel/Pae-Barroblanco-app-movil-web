@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase, encabezadoSesion } from '@/lib/supabase';
 import { Usuario, sedes, calcularEstadisticasHoy } from '@/app/data/demoData';
 import { ArrowLeft, FileDown, Calendar, CheckCircle, XCircle, UserX, Users, Trash2, ChevronDown, UserMinus, Info, X, ChevronLeft, School, Clock, FileText, Download, Sparkles } from 'lucide-react';
 import Link from 'next/link';
@@ -2639,7 +2639,7 @@ function ReportesContent() {
                 try {
                   const res = await fetch('/api/sync-sheets', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', ...(await encabezadoSesion()) },
                     body: JSON.stringify({
                       sheetId: '1NIp7IaTps7E-QqkBc5Yt0rx36HGc-k5d4EiKmtOLFeE',
                       weekStart: (() => {

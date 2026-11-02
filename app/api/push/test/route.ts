@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
+import { verificarRol } from '@/lib/api-auth';
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,18 +20,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Faltan variables de entorno' }, { status: 500 });
     }
 
-    // Verificar el token y obtener el usuario
+    // Verificar el token y el rol en perfiles_publicos (user_metadata lo puede cambiar el propio usuario)
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'No autorizado: sesión inválida' }, { status: 401 });
-    }
-
-    const userRole = user.user_metadata?.rol;
-    if (userRole !== 'admin' && userRole !== 'coordinador_pae') {
-      return NextResponse.json({ error: 'No autorizado: se requiere rol admin o coordinador_pae' }, { status: 403 });
-    }
+    const auth = await verificarRol(req, ['admin', 'coordinador_pae']);
+    if (auth.error) return auth.error;
 
     const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     const privateKey = process.env.VAPID_PRIVATE_KEY;

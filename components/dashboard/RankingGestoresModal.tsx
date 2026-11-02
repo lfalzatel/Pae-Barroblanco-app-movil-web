@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { fechaLocalISO } from '@/lib/fechas';
 import { X, Trophy, Star, ChevronLeft, Medal, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DocenteActivityModal from '@/components/dashboard/DocenteActivityModal';
@@ -28,7 +29,7 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
             setLoading(true);
             const { data: dataGrupos, error: errGrupos } = await supabase.rpc('ranking_grupos_pae', { 
                 p_periodo: periodo, 
-                p_fecha_ref: fechaRef.toISOString().split('T')[0] 
+                p_fecha_ref: fechaLocalISO(fechaRef) 
             });
             
             if (!errGrupos && dataGrupos) {
@@ -40,7 +41,7 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
                     supabase.rpc('ranking_gestores_por_grupo', { 
                         p_grupo: g.grupo, 
                         p_periodo: periodo,
-                        p_fecha_ref: fechaRef.toISOString().split('T')[0] 
+                        p_fecha_ref: fechaLocalISO(fechaRef) 
                     })
                 );
                 
@@ -89,7 +90,7 @@ export default function RankingGestoresModal({ onClose }: { onClose: () => void 
         const { data, error } = await supabase.rpc('ranking_gestores_por_grupo', { 
             p_grupo: grupo, 
             p_periodo: periodo,
-            p_fecha_ref: fechaRef.toISOString().split('T')[0] 
+            p_fecha_ref: fechaLocalISO(fechaRef) 
         });
         if (!error && data) setGestores(data as GestorRanking[]);
         setLoadingGestores(false);

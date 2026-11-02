@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { verificarRol } from '@/lib/api-auth';
 
 // This route uses the SERVICE ROLE key (server-side only) to delete auth users.
 // It must be called from an authenticated admin session.
@@ -25,23 +26,10 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ error: 'userId is required' }, { status: 400 });
         }
 
-        // Verify that the requester is an admin using their session token
-        const authHeader = req.headers.get('Authorization');
-        if (!authHeader?.startsWith('Bearer ')) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-        const token = authHeader.replace('Bearer ', '');
-
-        // Validate the caller's session
-        const { data: { user: caller }, error: callerErr } = await supabaseAdmin.auth.getUser(token);
-        if (callerErr || !caller) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        // Verify caller is admin
-        if (caller.user_metadata?.rol !== 'admin') {
-            return NextResponse.json({ error: 'Forbidden: only admins can delete users' }, { status: 403 });
-        }
+        // Verify caller is admin (role from perfiles_publicos, never from user_metadata)
+        const auth = await verificarRol(req, ['admin']);
+        if (auth.error) return auth.error;
+        const caller = auth.user;
 
         // Prevent admin from deleting themselves
         if (caller.id === userId) {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { fechaLocalISO } from '@/lib/fechas';
 import {
     User,
     Mail,
@@ -756,7 +757,7 @@ export default function ProfilePage() {
                                                 if (!d) return <div key={`empty-${i}`} className="aspect-square"></div>;
 
                                                 const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                                                const todayStr = new Date().toISOString().split('T')[0];
+                                                const todayStr = fechaLocalISO();
 
                                                 const records = history.filter(h => (h.fecha || '').slice(0, 10) === dateStr);
                                                 const hasActivity = records.length > 0;

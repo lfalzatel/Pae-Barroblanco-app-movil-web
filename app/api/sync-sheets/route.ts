@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
+import { verificarRol } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,6 +74,9 @@ const getFriendlyGroupName = (dbCode: string, sede: string) => {
 
 export async function POST(req: Request) {
     try {
+        const sesion = await verificarRol(req, ['admin', 'coordinador_pae']);
+        if (sesion.error) return sesion.error;
+
         const body = await req.json();
         const { sheetId, weekStart } = body;
 

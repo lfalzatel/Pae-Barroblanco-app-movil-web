@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { fechaLocalISO } from '@/lib/fechas';
 import {
   sedes,
   Sede,
@@ -39,6 +40,11 @@ interface GrupoConEstado extends Grupo {
   horaGuardado?: string;
   noAsiste?: boolean;
 }
+
+// Roles que pueden registrar asistencia
+const ROLES_REGISTRO = ['admin', 'coordinador_pae', 'docente', 'estudiante_pae'];
+
+const hoyLocal = () => fechaLocalISO();
 
 // Errores de validación lanzados por el trigger validar_asistencia_pae
 const esBloqueoPae = (error: any) => typeof error?.message === 'string' && error.message.startsWith('PAE_BLOQUEO');
@@ -199,16 +205,28 @@ function RegistroContent() {
         console.error('Error al cargar puntos iniciales:', err);
       }
 
+      // Rol y grupo desde perfiles_publicos: user_metadata lo puede cambiar el propio usuario
       let grupoPrincipal: string | null = null;
       try {
         const { data: perfilGrupo } = await supabase
           .from('perfiles_publicos')
-          .select('grupo_principal')
+          .select('grupo_principal, rol')
           .eq('id', session.user.id)
           .single();
         grupoPrincipal = perfilGrupo?.grupo_principal || null;
+        if (perfilGrupo?.rol) userRole = perfilGrupo.rol;
       } catch (err) {
         console.error('Error al cargar grupo principal:', err);
+      }
+
+      if (!ROLES_REGISTRO.includes(userRole)) {
+        router.replace('/dashboard');
+        return;
+      }
+
+      // El estudiante PAE solo registra el día de hoy
+      if (userRole === 'estudiante_pae' && selectedDate !== hoyLocal()) {
+        setSelectedDate(hoyLocal());
       }
 
       setUsuario({
@@ -492,6 +510,14 @@ function RegistroContent() {
       else newParams.set(key, value);
     });
     router[method](`?${newParams.toString()}`);
+  };
+
+  // Estudiante PAE: solo hoy. Nadie registra fechas futuras.
+  const errorFecha = (fecha: string): string | null => {
+    const hoy = hoyLocal();
+    if (fecha > hoy) return 'No se puede registrar asistencia de una fecha futura';
+    if (usuario?.rol === 'estudiante_pae' && fecha !== hoy) return 'Solo puedes registrar la asistencia del día de hoy';
+    return null;
   };
 
   const showToast = (message: string, type: 'success' | 'error') => {
@@ -779,6 +805,12 @@ function RegistroContent() {
   };
 
   const handleDateChange = (newDate: string) => {
+    const error = errorFecha(newDate);
+    if (error) {
+      playAttendanceError();
+      showToast(error, 'error');
+      return;
+    }
     setSelectedDate(newDate);
     updateUrl({ fecha: newDate });
     if (grupoSeleccionado) {
@@ -813,6 +845,13 @@ function RegistroContent() {
 
   const handleGuardar = async () => {
     if (!usuario?.id) return;
+
+    const errorDeFecha = errorFecha(selectedDate);
+    if (errorDeFecha) {
+      playAttendanceError();
+      showToast(errorDeFecha, 'error');
+      return;
+    }
 
     const grupoActual = gruposReales.find(g => g.nombre === grupoSeleccionado?.nombre);
     if (diaSinPae || grupoActual?.noAsiste) {

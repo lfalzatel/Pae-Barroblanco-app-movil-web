@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { fechaLocalISO } from '@/lib/fechas';
 import {
     AlertTriangle,
     Megaphone,
@@ -119,7 +120,7 @@ export default function NovedadesPage() {
 
     // Form states
     const [formData, setFormData] = useState({
-        fecha_novedad: new Date().toISOString().split('T')[0],
+        fecha_novedad: fechaLocalISO(),
         tipo: 'reduccion_cupos',
         sede: 'Principal',
         grupo: '',
@@ -194,7 +195,7 @@ export default function NovedadesPage() {
     const handleNew = () => {
         setEditingId(null);
         setFormData({
-            fecha_novedad: new Date().toISOString().split('T')[0],
+            fecha_novedad: fechaLocalISO(),
             tipo: 'reduccion_cupos',
             sede: 'Principal',
             grupo: '',

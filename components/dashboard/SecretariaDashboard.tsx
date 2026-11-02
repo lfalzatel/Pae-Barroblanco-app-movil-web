@@ -18,6 +18,7 @@ import {
     FileText
 } from 'lucide-react';
 import AnimatedNumber from '../AnimatedNumber';
+import { encabezadoSesion } from '@/lib/supabase';
 
 const SHEET_ID = '1NIp7IaTps7E-QqkBc5Yt0rx36HGc-k5d4EiKmtOLFeE';
 
@@ -85,7 +86,7 @@ export default function SecretariaDashboard({ usuario }: SecretariaDashboardProp
         setError(null);
         try {
             const url = `/api/sheets-data?sheetId=${SHEET_ID}${sheetName ? `&sheetName=${encodeURIComponent(sheetName)}` : ''}`;
-            const res = await fetch(url);
+            const res = await fetch(url, { headers: await encabezadoSesion() });
             if (!res.ok) throw new Error((await res.json()).error || 'Error al leer datos');
             const json: ApiResponse = await res.json();
             setData(json);
